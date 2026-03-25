@@ -2,6 +2,12 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider, useAuth } from './contexts/AuthContext'
 import LoginPage from './pages/LoginPage'
 import AdminLayout from './pages/admin/AdminLayout'
+import AdminDashboard from './pages/admin/AdminDashboard'
+import AdminResidents from './pages/admin/AdminResidents'
+import AdminUnits from './pages/admin/AdminUnits'
+import AdminPayments from './pages/admin/AdminPayments'
+import AdminMaintenance from './pages/admin/AdminMaintenance'
+import AdminSettings from './pages/admin/AdminSettings'
 import ResidentLayout from './pages/resident/ResidentLayout'
 
 // Guard: ถ้ายังไม่ login → ไป /login
@@ -40,9 +46,15 @@ function AppRoutes() {
       <Route path="/" element={<RequireAuth><RoleRedirect /></RequireAuth>} />
 
       {/* Admin routes */}
-      <Route path="/admin/*" element={
-        <RequireAuth><AdminLayout /></RequireAuth>
-      } />
+      <Route path="/admin" element={<RequireAuth><AdminLayout /></RequireAuth>}>
+        <Route index element={<Navigate to="/admin/dashboard" replace />} />
+        <Route path="dashboard" element={<AdminDashboard />} />
+        <Route path="residents" element={<AdminResidents />} />
+        <Route path="units" element={<AdminUnits />} />
+        <Route path="payments" element={<AdminPayments />} />
+        <Route path="maintenance" element={<AdminMaintenance />} />
+        <Route path="settings" element={<AdminSettings />} />
+      </Route>
 
       {/* Resident routes */}
       <Route path="/resident/*" element={
