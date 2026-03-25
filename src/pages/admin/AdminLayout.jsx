@@ -1,6 +1,7 @@
 import { Outlet, Link, useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext'
 import { useState } from 'react'
+import './AdminLayout.css'
 
 function AdminLayout() {
   const { user, logout } = useAuth()
@@ -14,89 +15,127 @@ function AdminLayout() {
   }
 
   const menuItems = [
-    { path: '/admin/dashboard', label: 'Dashboard', icon: '📊' },
-    { path: '/admin/residents', label: 'ผู้พักอาศัย', icon: '👥' },
-    { path: '/admin/units', label: 'ห้องพัก', icon: '🏠' },
-    { path: '/admin/payments', label: 'การชำระเงิน', icon: '💳' },
-    { path: '/admin/maintenance', label: 'ซ่อมบำรุง', icon: '🔧' },
-    { path: '/admin/settings', label: 'ตั้งค่า', icon: '⚙️' },
+    { path: '/admin/dashboard', label: 'Dashboard', icon: '📊', section: 'MAIN' },
+    { path: '/admin/residents', label: 'ผู้พักอาศัย', icon: '👥', section: 'MANAGEMENT' },
+    { path: '/admin/units', label: 'ห้องพัก', icon: '🏠', section: 'MANAGEMENT' },
+    { path: '/admin/payments', label: 'การชำระเงิน', icon: '💳', section: 'OPERATIONS' },
+    { path: '/admin/maintenance', label: 'ซ่อมบำรุง', icon: '🔧', section: 'OPERATIONS' },
+    { path: '/admin/settings', label: 'ตั้งค่า', icon: '⚙️', section: 'CONFIG' },
   ]
 
+  const groupedMenu = {}
+  menuItems.forEach((item) => {
+    if (!groupedMenu[item.section]) {
+      groupedMenu[item.section] = []
+    }
+    groupedMenu[item.section].push(item)
+  })
+
   return (
-    <div className="min-h-screen bg-gray-100 flex">
+    <div className="app">
       {/* Sidebar */}
-      <aside className={`${
-        sidebarOpen ? 'w-64' : 'w-20'
-      } bg-gray-900 text-white transition-all duration-300 flex flex-col`}>
+      <aside className={`sidebar ${sidebarOpen ? 'open' : 'closed'}`}>
         {/* Logo */}
-        <div className="h-16 flex items-center justify-between px-4 border-b border-gray-800">
-          {sidebarOpen && <h1 className="text-xl font-bold">VMS Admin</h1>}
-          <button
-            onClick={() => setSidebarOpen(!sidebarOpen)}
-            className="p-1 hover:bg-gray-800 rounded"
-          >
-            {sidebarOpen ? '◀' : '▶'}
-          </button>
+        <div className="sb-logo">
+          <div className="sb-logo-ico">🏢</div>
+          {sidebarOpen && (
+            <div>
+              <div className="sb-logo-name">VMS Admin</div>
+              <div className="sb-logo-sub">Village Management</div>
+            </div>
+          )}
         </div>
 
-        {/* Menu */}
-        <nav className="flex-1 px-2 py-4 space-y-2">
-          {menuItems.map((item) => (
-            <Link
-              key={item.path}
-              to={item.path}
-              className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
-                location.pathname === item.path
-                  ? 'bg-blue-600 text-white'
-                  : 'text-gray-300 hover:bg-gray-800'
-              }`}
-            >
-              <span className="text-xl">{item.icon}</span>
-              {sidebarOpen && <span>{item.label}</span>}
-            </Link>
+        {/* Role Pill */}
+        {sidebarOpen && (
+          <div className="sb-role">
+            <div className="sb-role-dot"></div>
+            <div className="sb-role-txt">ADMINISTRATOR</div>
+          </div>
+        )}
+
+        {/* Navigation */}
+        <nav className="sb-nav">
+          {Object.entries(groupedMenu).map(([section, items]) => (
+            <div key={section}>
+              {sidebarOpen && <div className="sb-sec">{section}</div>}
+              {items.map((item) => (
+                <Link
+                  key={item.path}
+                  to={item.path}
+                  className={`sb-item ${location.pathname === item.path ? 'act' : ''}`}
+                >
+                  <span className="sb-ico">{item.icon}</span>
+                  {sidebarOpen && <span>{item.label}</span>}
+                </Link>
+              ))}
+            </div>
           ))}
         </nav>
 
         {/* Footer */}
-        <div className="border-t border-gray-800 p-4 space-y-2">
-          {sidebarOpen && (
-            <p className="text-sm text-gray-400 truncate">{user?.email}</p>
-          )}
-          <button
+        <div className="sb-foot">
+          <div className="sb-user">
+            <div className="av">🧑</div>
+            {sidebarOpen && (
+              <div>
+                <div className="sb-uname">{user?.email || 'Admin'}</div>
+                <div className="sb-urole">Administrator</div>
+              </div>
+            )}
+          </div>
+          <div
+            className="sb-logout"
             onClick={handleLogout}
-            className="w-full flex items-center gap-2 px-4 py-2 rounded-lg bg-red-600 hover:bg-red-700 transition-colors text-sm"
           >
             <span>🚪</span>
-            {sidebarOpen && <span>ออกจากระบบ</span>}
-          </button>
+            {sidebarOpen && <span>Logout</span>}
+          </div>
         </div>
       </aside>
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col">
-        {/* Header */}
-        <header className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-6 shadow-sm">
-          <h2 className="text-2xl font-semibold text-gray-800">
+      <div className="main">
+        {/* Topbar */}
+        <div className="topbar">
+          <button
+            className="tb-ham"
+            onClick={() => setSidebarOpen(!sidebarOpen)}
+          >
+            ☰
+          </button>
+          <h2 className="tb-title">
             {menuItems.find((item) => item.path === location.pathname)?.label || 'Dashboard'}
           </h2>
-          <div className="flex items-center gap-4">
-            <div className="text-right">
-              <p className="text-sm font-medium text-gray-900">{user?.email}</p>
-              <p className="text-xs text-gray-500">ผู้ดูแลระบบ</p>
+          <div className="tb-right">
+            <div style={{ textAlign: 'right', marginRight: '10px' }}>
+              <div style={{ fontSize: '12px', fontWeight: 700, color: 'var(--tx)' }}>
+                {user?.email}
+              </div>
+              <div style={{ fontSize: '10px', color: 'var(--mu)' }}>
+                Administrator
+              </div>
             </div>
             <img
               src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.email}`}
               alt="Avatar"
-              className="w-10 h-10 rounded-full"
+              style={{
+                width: '32px',
+                height: '32px',
+                borderRadius: '50%',
+                border: '2px solid var(--bo)',
+              }}
             />
           </div>
-        </header>
+        </div>
 
         {/* Page Content */}
-        <main className="flex-1 overflow-auto">
+        <div className="page">
           <Outlet />
-        </main>
+        </div>
       </div>
+
+      <div className="sb-overlay" onClick={() => setSidebarOpen(false)}></div>
     </div>
   )
 }
