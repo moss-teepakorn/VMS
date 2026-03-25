@@ -3,6 +3,19 @@ import { AuthProvider, useAuth } from './contexts/AuthContext'
 import LoginPage from './pages/LoginPage'
 import AdminLayout from './pages/admin/AdminLayout'
 import AdminDashboard from './pages/admin/AdminDashboard'
+import AdminHouses from './pages/admin/AdminHouses'
+import AdminVehicles from './pages/admin/AdminVehicles'
+import AdminFees from './pages/admin/AdminFees'
+import AdminRequests from './pages/admin/AdminRequests'
+import AdminIssues from './pages/admin/AdminIssues'
+import AdminViolations from './pages/admin/AdminViolations'
+import AdminAnnouncements from './pages/admin/AdminAnnouncements'
+import AdminReports from './pages/admin/AdminReports'
+import AdminTechnicians from './pages/admin/AdminTechnicians'
+import AdminMarketplace from './pages/admin/AdminMarketplace'
+import AdminConfig from './pages/admin/AdminConfig'
+import AdminUsers from './pages/admin/AdminUsers'
+import AdminLogs from './pages/admin/AdminLogs'
 import AdminResidents from './pages/admin/AdminResidents'
 import AdminUnits from './pages/admin/AdminUnits'
 import AdminPayments from './pages/admin/AdminPayments'
@@ -49,6 +62,19 @@ function AppRoutes() {
       <Route path="/admin" element={<RequireAuth><AdminLayout /></RequireAuth>}>
         <Route index element={<Navigate to="/admin/dashboard" replace />} />
         <Route path="dashboard" element={<AdminDashboard />} />
+        <Route path="houses" element={<AdminHouses />} />
+        <Route path="vehicles" element={<AdminVehicles />} />
+        <Route path="fees" element={<AdminFees />} />
+        <Route path="requests" element={<AdminRequests />} />
+        <Route path="issues" element={<AdminIssues />} />
+        <Route path="violations" element={<AdminViolations />} />
+        <Route path="announcements" element={<AdminAnnouncements />} />
+        <Route path="reports" element={<AdminReports />} />
+        <Route path="technicians" element={<AdminTechnicians />} />
+        <Route path="marketplace" element={<AdminMarketplace />} />
+        <Route path="config" element={<AdminConfig />} />
+        <Route path="users" element={<AdminUsers />} />
+        <Route path="logs" element={<AdminLogs />} />
         <Route path="residents" element={<AdminResidents />} />
         <Route path="units" element={<AdminUnits />} />
         <Route path="payments" element={<AdminPayments />} />
