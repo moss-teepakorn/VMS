@@ -609,20 +609,6 @@ button, input, select, textarea {
     padding: 26px;
   }
 }
-  width: 260px;
-  background: var(--sb);
-  color: var(--sbt);
-  display: flex;
-  flex-direction: column;
-  border-right: 1.5px solid rgba(255, 255, 255, 0.08);
-  transition: all 0.3s ease;
-  position: relative;
-  z-index: 40;
-}
-
-.sidebar.closed {
-  width: 80px;
-}
 
 /* Sidebar Logo */
 .sb-logo {
