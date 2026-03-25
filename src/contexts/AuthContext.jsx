@@ -32,10 +32,13 @@ export function AuthProvider({ children }) {
   async function fetchProfile(userId) {
     const { data, error } = await supabase
       .from('profiles')
-      .select('*, houses(house_no, soi)')
+      .select('*')
       .eq('id', userId)
       .single()
 
+    if (error) {
+      console.error('Error fetching profile:', error)
+    }
     if (!error) setProfile(data)
     setLoading(false)
   }
