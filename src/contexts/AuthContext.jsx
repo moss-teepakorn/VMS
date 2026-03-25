@@ -34,12 +34,27 @@ export function AuthProvider({ children }) {
       .from('profiles')
       .select('*')
       .eq('id', userId)
-      .single()
+      .maybeSingle()
 
     if (error) {
       console.error('Error fetching profile:', error)
     }
-    if (!error) setProfile(data)
+    if (data) {
+      setProfile(data)
+    } else {
+      // ถ้าไม่มี profile ให้สร้างโดยอัตโนมัติ
+      const { data: newProfile, error: createError } = await supabase
+        .from('profiles')
+        .insert([{ id: userId, role: 'resident', is_active: true }])
+        .select()
+        .single()
+
+      if (createError) {
+        console.error('Error creating profile:', createError)
+      } else {
+        setProfile(newProfile)
+      }
+    }
     setLoading(false)
   }
 
