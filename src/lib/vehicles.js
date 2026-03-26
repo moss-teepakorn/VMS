@@ -1,5 +1,7 @@
 import { supabase } from './supabase'
 
+const VEHICLE_IMAGE_BUCKET = 'vehicle-images'
+
 const houseSorter = new Intl.Collator('th-TH', { numeric: true, sensitivity: 'base' })
 
 function normalizeSoiValue(soi) {
@@ -78,6 +80,36 @@ export async function createVehicle(payload) {
   return data
 }
 
+export async function assertUniqueVehiclePlateBrand({ licensePlate, brand, excludeId = null }) {
+  const normalizedPlate = String(licensePlate || '').trim().toLowerCase()
+  const normalizedBrand = String(brand || '').trim().toLowerCase()
+
+  if (!normalizedPlate || !normalizedBrand) {
+    throw new Error('กรุณาระบุทะเบียนรถและยี่ห้อ')
+  }
+
+  const { data, error } = await supabase
+    .from('vehicles')
+    .select('id, license_plate, brand')
+    .ilike('license_plate', licensePlate)
+    .ilike('brand', brand)
+    .limit(20)
+
+  if (error) throw error
+
+  const duplicate = (data || []).find((item) => {
+    if (excludeId && item.id === excludeId) return false
+    return String(item.license_plate || '').trim().toLowerCase() === normalizedPlate
+      && String(item.brand || '').trim().toLowerCase() === normalizedBrand
+  })
+
+  if (duplicate) {
+    throw new Error('ทะเบียนรถและยี่ห้อนี้มีอยู่แล้วในระบบ')
+  }
+
+  return true
+}
+
 export async function updateVehicle(id, updates) {
   const { data, error } = await supabase
     .from('vehicles')
@@ -93,8 +125,76 @@ export async function updateVehicle(id, updates) {
 export async function deleteVehicle(id) {
   const { error } = await supabase
     .from('vehicles')
-    .delete()
+    .update({ status: 'removed' })
     .eq('id', id)
+
+  if (error) throw error
+  return true
+}
+
+export async function listVehicleImages(vehicleId) {
+  const folder = String(vehicleId || '').trim()
+  if (!folder) return []
+
+  const { data, error } = await supabase.storage
+    .from(VEHICLE_IMAGE_BUCKET)
+    .list(folder, { limit: 20, sortBy: { column: 'name', order: 'asc' } })
+
+  if (error) {
+    if (String(error.message || '').toLowerCase().includes('not found')) return []
+    throw error
+  }
+
+  return (data || [])
+    .filter((item) => item.name)
+    .map((item) => {
+      const path = `${folder}/${item.name}`
+      const { data: publicUrlData } = supabase.storage
+        .from(VEHICLE_IMAGE_BUCKET)
+        .getPublicUrl(path)
+
+      return {
+        name: item.name,
+        path,
+        url: publicUrlData?.publicUrl || '',
+      }
+    })
+}
+
+export async function uploadVehicleImages(vehicleId, files) {
+  const folder = String(vehicleId || '').trim()
+  if (!folder || !Array.isArray(files) || files.length === 0) return []
+
+  const uploaded = []
+  for (const file of files) {
+    const fileName = file.name
+    const path = `${folder}/${fileName}`
+    const { error } = await supabase.storage
+      .from(VEHICLE_IMAGE_BUCKET)
+      .upload(path, file, { upsert: true, contentType: file.type || 'image/jpeg' })
+
+    if (error) throw error
+
+    const { data: publicUrlData } = supabase.storage
+      .from(VEHICLE_IMAGE_BUCKET)
+      .getPublicUrl(path)
+
+    uploaded.push({
+      name: fileName,
+      path,
+      url: publicUrlData?.publicUrl || '',
+    })
+  }
+
+  return uploaded
+}
+
+export async function deleteVehicleImagesByPaths(paths) {
+  if (!Array.isArray(paths) || paths.length === 0) return true
+
+  const { error } = await supabase.storage
+    .from(VEHICLE_IMAGE_BUCKET)
+    .remove(paths)
 
   if (error) throw error
   return true

@@ -1,7 +1,16 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import Swal from 'sweetalert2'
 import { listHouses } from '../../lib/houses'
-import { createVehicle, deleteVehicle, listVehicles, updateVehicle } from '../../lib/vehicles'
+import {
+  assertUniqueVehiclePlateBrand,
+  createVehicle,
+  deleteVehicle,
+  deleteVehicleImagesByPaths,
+  listVehicleImages,
+  listVehicles,
+  updateVehicle,
+  uploadVehicleImages,
+} from '../../lib/vehicles'
 
 const VEHICLE_TYPES = [
   { value: 'รถยนต์', label: 'รถยนต์' },
@@ -66,6 +75,9 @@ const EMPTY_FORM = {
   note: '',
 }
 
+const MAX_ATTACHMENTS = 5
+const MAX_IMAGE_SIZE_BYTES = 150 * 1024
+
 function formatDecimal(value) {
   return Number(value || 0).toLocaleString('en-US', {
     minimumFractionDigits: 2,
@@ -85,6 +97,8 @@ const AdminVehicles = () => {
   const [saving, setSaving] = useState(false)
   const [editingVehicle, setEditingVehicle] = useState(null)
   const [form, setForm] = useState(EMPTY_FORM)
+  const [attachments, setAttachments] = useState([])
+  const [removedImagePaths, setRemovedImagePaths] = useState([])
 
   const parsePlate = (plate) => {
     const [prefix = '', number = ''] = String(plate || '').split('-')
@@ -144,10 +158,12 @@ const AdminVehicles = () => {
   const openAddModal = () => {
     setEditingVehicle(null)
     setForm(EMPTY_FORM)
+    setAttachments([])
+    setRemovedImagePaths([])
     setShowModal(true)
   }
 
-  const openEditModal = (vehicle) => {
+  const openEditModal = async (vehicle) => {
     const baseBrand = BRAND_OPTIONS.includes(vehicle.brand || '') ? vehicle.brand : 'อื่นๆ'
     const baseColor = COLOR_OPTIONS.includes(vehicle.color || '') ? vehicle.color : 'อื่นๆ'
 
@@ -170,6 +186,17 @@ const AdminVehicles = () => {
       status: vehicle.status || 'pending',
       note: vehicle.note || '',
     })
+
+    try {
+      const currentImages = await listVehicleImages(vehicle.id)
+      setAttachments(currentImages.map((image) => ({ ...image, source: 'existing' })))
+    } catch (error) {
+      console.error('Error loading vehicle images:', error)
+      await Swal.fire({ icon: 'error', title: 'โหลดรูปภาพไม่สำเร็จ', text: error.message })
+      setAttachments([])
+    }
+
+    setRemovedImagePaths([])
     setShowModal(true)
   }
 
@@ -178,6 +205,137 @@ const AdminVehicles = () => {
     setShowModal(false)
     setEditingVehicle(null)
     setForm(EMPTY_FORM)
+    setAttachments([])
+    setRemovedImagePaths([])
+  }
+
+  const formatFileName = (index) => {
+    const now = new Date()
+    const date = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}`
+    const time = `${String(now.getHours()).padStart(2, '0')}${String(now.getMinutes()).padStart(2, '0')}${String(now.getSeconds()).padStart(2, '0')}`
+    const running = String(index).padStart(3, '0')
+    return `CAR_${date}_${time}_${running}.jpg`
+  }
+
+  const readImageElement = (file) => new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => {
+      const image = new Image()
+      image.onload = () => resolve(image)
+      image.onerror = reject
+      image.src = reader.result
+    }
+    reader.onerror = reject
+    reader.readAsDataURL(file)
+  })
+
+  const canvasToBlob = (canvas, quality) => new Promise((resolve) => {
+    canvas.toBlob((blob) => resolve(blob), 'image/jpeg', quality)
+  })
+
+  const resizeImageToLimit = async (file, sequence) => {
+    const image = await readImageElement(file)
+    const canvas = document.createElement('canvas')
+    const context = canvas.getContext('2d')
+    if (!context) throw new Error('ไม่สามารถประมวลผลรูปภาพได้')
+
+    let width = image.width
+    let height = image.height
+    const maxDimension = 1600
+    if (width > maxDimension || height > maxDimension) {
+      const scale = Math.min(maxDimension / width, maxDimension / height)
+      width = Math.round(width * scale)
+      height = Math.round(height * scale)
+    }
+
+    canvas.width = width
+    canvas.height = height
+    context.drawImage(image, 0, 0, width, height)
+
+    let quality = 0.9
+    let blob = await canvasToBlob(canvas, quality)
+
+    while (blob && blob.size > MAX_IMAGE_SIZE_BYTES && quality > 0.35) {
+      quality -= 0.08
+      blob = await canvasToBlob(canvas, quality)
+    }
+
+    while (blob && blob.size > MAX_IMAGE_SIZE_BYTES && (canvas.width > 720 || canvas.height > 720)) {
+      canvas.width = Math.round(canvas.width * 0.9)
+      canvas.height = Math.round(canvas.height * 0.9)
+      context.clearRect(0, 0, canvas.width, canvas.height)
+      context.drawImage(image, 0, 0, canvas.width, canvas.height)
+      quality = 0.82
+      blob = await canvasToBlob(canvas, quality)
+    }
+
+    if (!blob || blob.size > MAX_IMAGE_SIZE_BYTES) {
+      throw new Error(`ไม่สามารถย่อรูป ${file.name} ให้ต่ำกว่า 150KB ได้`)
+    }
+
+    const fileName = formatFileName(sequence)
+    return new File([blob], fileName, { type: 'image/jpeg' })
+  }
+
+  const handleAttachFiles = async (event) => {
+    const selectedFiles = Array.from(event.target.files || [])
+    event.target.value = ''
+    if (selectedFiles.length === 0) return
+
+    const remainingSlots = MAX_ATTACHMENTS - attachments.length
+    if (remainingSlots <= 0) {
+      await Swal.fire({ icon: 'warning', title: 'แนบรูปได้สูงสุด 5 รูป' })
+      return
+    }
+
+    const filesToProcess = selectedFiles.slice(0, remainingSlots)
+    if (selectedFiles.length > remainingSlots) {
+      await Swal.fire({ icon: 'info', title: `รับได้แค่ ${remainingSlots} รูป`, text: 'ระบบจะใช้เฉพาะรูปชุดแรก' })
+    }
+
+    try {
+      const startIndex = attachments.length + 1
+      const prepared = []
+
+      for (let index = 0; index < filesToProcess.length; index += 1) {
+        const resizedFile = await resizeImageToLimit(filesToProcess[index], startIndex + index)
+        prepared.push({
+          source: 'new',
+          name: resizedFile.name,
+          file: resizedFile,
+          url: URL.createObjectURL(resizedFile),
+        })
+      }
+
+      setAttachments((current) => [...current, ...prepared])
+    } catch (error) {
+      await Swal.fire({ icon: 'error', title: 'แนบรูปไม่สำเร็จ', text: error.message })
+    }
+  }
+
+  const handleRemoveAttachment = (target) => {
+    setAttachments((current) => {
+      const next = current.filter((item) => item !== target)
+      if (target.source === 'new' && target.url) {
+        URL.revokeObjectURL(target.url)
+      }
+      if (target.source === 'existing' && target.path) {
+        setRemovedImagePaths((paths) => [...paths, target.path])
+      }
+      return next
+    })
+  }
+
+  const handlePreviewAttachment = (target) => {
+    if (!target.url) return
+    Swal.fire({
+      imageUrl: target.url,
+      imageAlt: target.name,
+      showConfirmButton: false,
+      showCloseButton: true,
+      width: 'auto',
+      background: '#0f172a',
+    })
   }
 
   const handleChange = (event) => {
@@ -225,16 +383,23 @@ const AdminVehicles = () => {
     }
 
     const licensePlate = `${form.license_plate_prefix.trim()}-${form.license_plate_number.trim()}`
+    const brandName = form.brand === 'อื่นๆ' ? form.brand_other : form.brand
 
     try {
       setSaving(true)
+
+      await assertUniqueVehiclePlateBrand({
+        licensePlate,
+        brand: brandName,
+        excludeId: editingVehicle?.id || null,
+      })
 
       const payload = {
         house_id: form.house_id,
         license_plate: licensePlate,
         province: form.province,
         vehicle_type: form.vehicle_type,
-        brand: form.brand === 'อื่นๆ' ? form.brand_other : form.brand,
+        brand: brandName,
         model: form.model,
         color: form.color === 'อื่นๆ' ? form.color_other : form.color,
         parking_location: form.parking_location,
@@ -245,10 +410,25 @@ const AdminVehicles = () => {
       }
 
       if (editingVehicle) {
-        await updateVehicle(editingVehicle.id, payload)
+        const updated = await updateVehicle(editingVehicle.id, payload)
+        if (removedImagePaths.length > 0) {
+          await deleteVehicleImagesByPaths(removedImagePaths)
+        }
+        const newFiles = attachments
+          .filter((item) => item.source === 'new' && item.file)
+          .map((item) => item.file)
+        if (newFiles.length > 0) {
+          await uploadVehicleImages(updated.id, newFiles)
+        }
         await Swal.fire({ icon: 'success', title: 'บันทึกสำเร็จ', text: `แก้ไขทะเบียน ${licensePlate} แล้ว`, timer: 1400, showConfirmButton: false })
       } else {
-        await createVehicle(payload)
+        const created = await createVehicle(payload)
+        const newFiles = attachments
+          .filter((item) => item.source === 'new' && item.file)
+          .map((item) => item.file)
+        if (newFiles.length > 0) {
+          await uploadVehicleImages(created.id, newFiles)
+        }
         await Swal.fire({ icon: 'success', title: 'เพิ่มข้อมูลสำเร็จ', text: `เพิ่มทะเบียน ${licensePlate} แล้ว`, timer: 1400, showConfirmButton: false })
       }
 
@@ -265,10 +445,10 @@ const AdminVehicles = () => {
   const handleDeleteVehicle = async (vehicle) => {
     const result = await Swal.fire({
       icon: 'warning',
-      title: 'ยืนยันการลบ',
-      text: `ต้องการลบทะเบียน ${vehicle.license_plate} ใช่หรือไม่?`,
+      title: 'ยืนยันการเปลี่ยนเป็นไม่ใช้งาน',
+      text: `ต้องการเปลี่ยนทะเบียน ${vehicle.license_plate} เป็นไม่ใช้งานใช่หรือไม่?`,
       showCancelButton: true,
-      confirmButtonText: 'ลบข้อมูล',
+      confirmButtonText: 'เปลี่ยนเป็นไม่ใช้งาน',
       cancelButtonText: 'ยกเลิก',
       confirmButtonColor: '#c0392b',
     })
@@ -277,7 +457,7 @@ const AdminVehicles = () => {
 
     try {
       await deleteVehicle(vehicle.id)
-      await Swal.fire({ icon: 'success', title: 'ลบสำเร็จ', timer: 1200, showConfirmButton: false })
+      await Swal.fire({ icon: 'success', title: 'อัปเดตสำเร็จ', text: 'เปลี่ยนสถานะเป็นไม่ใช้งานแล้ว', timer: 1200, showConfirmButton: false })
       await loadVehicles({ status: statusFilter, search: searchTerm, soi: soiFilter, vehicleType: vehicleTypeFilter })
     } catch (error) {
       console.error('Error deleting vehicle:', error)
@@ -525,6 +705,65 @@ const AdminVehicles = () => {
                       <span>หมายเหตุ</span>
                       <textarea name="note" value={form.note} onChange={handleChange} rows="1" placeholder="รายละเอียดเพิ่มเติม" />
                     </label>
+                  </div>
+                </section>
+
+                <section className="house-sec">
+                  <div className="house-sec-title">รูปภาพรถ (สูงสุด 5 รูป)</div>
+                  <div className="house-grid house-grid-3">
+                    <label className="house-field house-field-span-3">
+                      <span>แนบไฟล์รูปภาพ</span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        multiple
+                        onChange={handleAttachFiles}
+                        disabled={attachments.length >= MAX_ATTACHMENTS}
+                      />
+                    </label>
+                  </div>
+                  <div style={{ marginTop: '8px', fontSize: '12px', color: 'var(--mu)' }}>
+                    แนบแล้ว {attachments.length}/{MAX_ATTACHMENTS} รูป • ระบบย่อไฟล์ไม่เกิน 150KB และตั้งชื่อ CAR_YYYYMMDD_HHMMSS_001.jpg
+                  </div>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginTop: '10px' }}>
+                    {attachments.length === 0 ? (
+                      <div style={{ fontSize: '12px', color: 'var(--mu)' }}>ยังไม่มีรูปแนบ</div>
+                    ) : attachments.map((image, index) => (
+                      <div key={`${image.name}-${index}`} style={{ width: '78px' }}>
+                        <button
+                          type="button"
+                          onClick={() => handlePreviewAttachment(image)}
+                          style={{
+                            width: '78px',
+                            height: '78px',
+                            borderRadius: '8px',
+                            border: '1px solid var(--bo)',
+                            background: '#fff',
+                            padding: '0',
+                            overflow: 'hidden',
+                            cursor: 'pointer',
+                          }}
+                        >
+                          <img src={image.url} alt={image.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveAttachment(image)}
+                          style={{
+                            marginTop: '4px',
+                            width: '100%',
+                            fontSize: '11px',
+                            border: '1px solid var(--bo)',
+                            borderRadius: '6px',
+                            background: '#fff',
+                            cursor: 'pointer',
+                            padding: '2px 4px',
+                          }}
+                        >
+                          ลบ
+                        </button>
+                      </div>
+                    ))}
                   </div>
                 </section>
               </div>
