@@ -468,7 +468,7 @@ button, input, select, textarea {
 .main {
   width: 100%;
   flex: 1;
-  margin-left: 248px;
+  margin-left: 0;
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -876,6 +876,7 @@ button, input, select, textarea {
   display: flex;
   flex-direction: column;
   width: 100%;
+  margin-left: 0;
   overflow: hidden;
 }
 
