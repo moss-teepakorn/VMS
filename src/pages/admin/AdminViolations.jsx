@@ -66,6 +66,76 @@ function escapeHtml(value) {
     .replace(/'/g, '&#39;')
 }
 
+function isSvgSource(value) {
+  const src = String(value || '').toLowerCase()
+  return src.startsWith('data:image/svg+xml') || src.endsWith('.svg')
+}
+
+async function loadImageElement(url) {
+  if (!url) return null
+  try {
+    const response = await fetch(url)
+    if (!response.ok) return null
+    const blob = await response.blob()
+    const objectUrl = URL.createObjectURL(blob)
+    const image = await new Promise((resolve, reject) => {
+      const img = new Image()
+      img.onload = () => resolve(img)
+      img.onerror = reject
+      img.src = objectUrl
+    })
+    URL.revokeObjectURL(objectUrl)
+    return image
+  } catch {
+    return null
+  }
+}
+
+function wrapTextByWidth(ctx, text, maxWidth) {
+  const normalized = String(text || '-').replace(/\s+/g, ' ').trim() || '-'
+  const lines = []
+  let buffer = ''
+  for (const char of normalized) {
+    const testLine = `${buffer}${char}`
+    if (ctx.measureText(testLine).width <= maxWidth || buffer.length === 0) {
+      buffer = testLine
+    } else {
+      lines.push(buffer)
+      buffer = char
+    }
+  }
+  if (buffer) lines.push(buffer)
+  return lines
+}
+
+function drawImageContain(ctx, image, x, y, width, height) {
+  if (!image) {
+    ctx.fillStyle = '#f9fafb'
+    ctx.fillRect(x, y, width, height)
+    ctx.fillStyle = '#6b7280'
+    ctx.font = '28px Arial, Helvetica, sans-serif'
+    ctx.textAlign = 'center'
+    ctx.fillText('ไม่มีรูปแนบ', x + (width / 2), y + (height / 2))
+    ctx.textAlign = 'left'
+    return
+  }
+
+  const imageRatio = image.width / image.height
+  const boxRatio = width / height
+  let drawWidth = width
+  let drawHeight = height
+  if (imageRatio > boxRatio) {
+    drawHeight = width / imageRatio
+  } else {
+    drawWidth = height * imageRatio
+  }
+  const drawX = x + ((width - drawWidth) / 2)
+  const drawY = y + ((height - drawHeight) / 2)
+  ctx.fillStyle = '#ffffff'
+  ctx.fillRect(x, y, width, height)
+  ctx.drawImage(image, drawX, drawY, drawWidth, drawHeight)
+}
+
 const AdminViolations = () => {
   const [violations, setViolations] = useState([])
   const [houses, setHouses] = useState([])
@@ -356,7 +426,10 @@ const AdminViolations = () => {
   }
 
   const buildReportDocumentParts = (item, images, includeToolbar = true) => {
+    const isPdfMode = !includeToolbar
     const signatureSource = reportIdentity.juristic_signature_url || juristicSignature
+    const signatureImageAllowed = !isPdfMode || !isSvgSource(signatureSource)
+    const logoImageAllowed = !isPdfMode || !isSvgSource(villageLogo)
     const detailRows = `
       <tr><td class="k">บ้าน/เจ้าของ</td><td class="v">${escapeHtml(item.houses?.house_no || '-')} ${escapeHtml(item.houses?.owner_name ? `- ${item.houses.owner_name}` : '')}</td></tr>
       <tr><td class="k">ประเภทการกระทำผิด</td><td class="v">${escapeHtml(item.type || '-')}</td></tr>
@@ -390,10 +463,12 @@ const AdminViolations = () => {
             .toolbar button { border: none; border-radius: 8px; padding: 8px 12px; cursor: pointer; font-size: 13px; }
             .btn-print { background: #2563eb; color: #fff; }
             .btn-close { background: #e5e7eb; color: #111827; }
-            .canvas { padding: 16px 0 30px; }
+            .canvas { padding: ${includeToolbar ? '16px 0 30px' : '0'}; }
             .a4 { width: 210mm; min-height: 297mm; margin: 0 auto 16px; background: #fff; border: 1px solid #d1d5db; padding: 10mm 12mm; display: flex; flex-direction: column; }
+            ${includeToolbar ? '' : `.a4 { width: ${A4_PX_WIDTH}px; min-height: ${A4_PX_HEIGHT}px; margin: 0; border: none; }`}
             .head { display: flex; align-items: center; gap: 12px; margin-bottom: 3mm; }
             .logo { width: 44px; height: 44px; object-fit: contain; }
+            .logo-fallback { width: 44px; height: 44px; border-radius: 12px; background: #0d9488; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; }
             .head h1 { margin: 0 0 2mm; font-size: 21px; }
             .village { font-size: 13px; color: #374151; margin-bottom: 2mm; }
             .meta { font-size: 13px; color: #4b5563; margin-bottom: 4mm; }
@@ -434,7 +509,9 @@ const AdminViolations = () => {
       <div class="canvas">
         <section class="a4">
               <div class="head">
-                <img src="${villageLogo}" class="logo" alt="logo" />
+                ${logoImageAllowed
+      ? `<img src="${villageLogo}" class="logo" alt="logo" />`
+      : '<div class="logo-fallback">GF</div>'}
                 <div>
                   <h1>รายงานการกระทำผิด</h1>
                   <div class="village">${escapeHtml(reportIdentity.village_name || DEFAULT_REPORT_IDENTITY.village_name)}</div>
@@ -446,7 +523,9 @@ const AdminViolations = () => {
               <div class="img-wrap">${firstImage}</div>
               <div class="signature">
                 <div class="signature-box">
-                  <img src="${signatureSource}" class="signature-img" alt="signature" />
+                  ${signatureImageAllowed
+      ? `<img src="${signatureSource}" class="signature-img" alt="signature" />`
+      : ''}
                   <div class="signature-line">(${escapeHtml(reportIdentity.juristic_name || DEFAULT_REPORT_IDENTITY.juristic_name)})</div>
                 </div>
               </div>
@@ -477,40 +556,124 @@ const AdminViolations = () => {
 
   const downloadViolationReportPdf = async (item) => {
     const images = await listViolationImages(item.id)
-    const { styles, canvasHtml } = buildReportDocumentParts(item, images, false)
-    const temp = document.createElement('div')
-    temp.style.position = 'fixed'
-    temp.style.left = '-20000px'
-    temp.style.top = '0'
-    temp.style.width = '210mm'
-    temp.style.background = '#ffffff'
-    temp.innerHTML = `<style>${styles}</style>${canvasHtml}`
-    document.body.appendChild(temp)
+    const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' })
 
-    try {
-      const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' })
-      await new Promise((resolve, reject) => {
-        pdf.html(temp, {
-          margin: [0, 0, 0, 0],
-          autoPaging: 'slice',
-          html2canvas: {
-            scale: 2,
-            useCORS: true,
-            backgroundColor: '#ffffff',
-          },
-          callback: (doc) => {
-            try {
-              doc.save(`${item.report_no || `violation-${item.id}`}.pdf`)
-              resolve(true)
-            } catch (err) {
-              reject(err)
-            }
-          },
-        })
-      })
-    } finally {
-      document.body.removeChild(temp)
+    const pageWidthPx = 1240
+    const pageHeightPx = 1754
+    const marginX = 70
+    const marginY = 78
+    const contentWidth = pageWidthPx - (marginX * 2)
+    const lineHeight = 42
+
+    const createPageCanvas = () => {
+      const canvas = document.createElement('canvas')
+      canvas.width = pageWidthPx
+      canvas.height = pageHeightPx
+      const ctx = canvas.getContext('2d')
+      if (!ctx) throw new Error('ไม่สามารถสร้างเอกสารรายงานได้')
+      ctx.fillStyle = '#ffffff'
+      ctx.fillRect(0, 0, pageWidthPx, pageHeightPx)
+      return { canvas, ctx }
     }
+
+    const signatureSource = reportIdentity.juristic_signature_url || juristicSignature
+    const signatureImage = isSvgSource(signatureSource) ? null : await loadImageElement(signatureSource)
+    const firstEvidenceImage = await loadImageElement(images[0]?.url)
+
+    const firstPage = createPageCanvas()
+    const firstCtx = firstPage.ctx
+
+    firstCtx.fillStyle = '#0d9488'
+    firstCtx.fillRect(marginX, marginY, 64, 64)
+    firstCtx.fillStyle = '#ffffff'
+    firstCtx.font = 'bold 28px Arial, Helvetica, sans-serif'
+    firstCtx.textAlign = 'center'
+    firstCtx.fillText('GF', marginX + 32, marginY + 42)
+    firstCtx.textAlign = 'left'
+
+    firstCtx.fillStyle = '#111827'
+    firstCtx.font = 'bold 46px Arial, Helvetica, sans-serif'
+    firstCtx.fillText('รายงานการกระทำผิด', marginX + 86, marginY + 32)
+    firstCtx.fillStyle = '#374151'
+    firstCtx.font = '28px Arial, Helvetica, sans-serif'
+    firstCtx.fillText(reportIdentity.village_name || DEFAULT_REPORT_IDENTITY.village_name, marginX + 86, marginY + 70)
+    firstCtx.fillStyle = '#4b5563'
+    firstCtx.font = '24px Arial, Helvetica, sans-serif'
+    firstCtx.fillText(`เลขที่รายงาน: ${item.report_no || '-'}   วันที่รายงาน: ${formatDate(item.report_date)}`, marginX, marginY + 118)
+
+    const rows = [
+      ['บ้าน/เจ้าของ', `${item.houses?.house_no || '-'} ${item.houses?.owner_name ? `- ${item.houses.owner_name}` : ''}`],
+      ['ประเภทการกระทำผิด', item.type || '-'],
+      ['วันเกิดเหตุ', formatDate(item.occurred_at)],
+      ['วันครบกำหนดแก้ไข', formatDate(item.due_date)],
+      ['ครั้งที่เตือน', String(item.warning_count ?? 0)],
+      ['ค่าปรับ', `${Number(item.fine_amount || 0).toLocaleString('th-TH')} บาท`],
+      ['รายละเอียด', item.detail || '-'],
+      ['หมายเหตุจากนิติ', item.admin_note || '-'],
+      ['อัปเดตจากลูกบ้าน', item.resident_note || '-'],
+    ]
+
+    let cursorY = marginY + 175
+    for (const [label, value] of rows) {
+      firstCtx.fillStyle = '#111827'
+      firstCtx.font = 'bold 25px Arial, Helvetica, sans-serif'
+      firstCtx.fillText(label, marginX, cursorY)
+      firstCtx.font = '25px Arial, Helvetica, sans-serif'
+      const valueLines = wrapTextByWidth(firstCtx, value, contentWidth - 360)
+      for (let i = 0; i < valueLines.length; i += 1) {
+        firstCtx.fillText(valueLines[i], marginX + 360, cursorY + (i * lineHeight))
+      }
+      cursorY += Math.max(lineHeight, valueLines.length * lineHeight)
+    }
+
+    firstCtx.fillStyle = '#111827'
+    firstCtx.font = 'bold 28px Arial, Helvetica, sans-serif'
+    firstCtx.fillText('รูปภาพหลักฐาน', marginX, cursorY + 20)
+    const evidenceY = cursorY + 36
+    const evidenceHeight = 520
+    firstCtx.strokeStyle = '#d1d5db'
+    firstCtx.lineWidth = 2
+    firstCtx.strokeRect(marginX, evidenceY, contentWidth, evidenceHeight)
+    drawImageContain(firstCtx, firstEvidenceImage, marginX + 2, evidenceY + 2, contentWidth - 4, evidenceHeight - 4)
+
+    const signBoxWidth = 340
+    const signBoxX = marginX + contentWidth - signBoxWidth
+    const signBaseY = evidenceY + evidenceHeight + 60
+    if (signatureImage) {
+      drawImageContain(firstCtx, signatureImage, signBoxX, signBaseY, signBoxWidth, 92)
+    }
+    firstCtx.strokeStyle = '#111827'
+    firstCtx.lineWidth = 1.2
+    firstCtx.beginPath()
+    firstCtx.moveTo(signBoxX, signBaseY + 112)
+    firstCtx.lineTo(signBoxX + signBoxWidth, signBaseY + 112)
+    firstCtx.stroke()
+    firstCtx.fillStyle = '#111827'
+    firstCtx.font = '24px Arial, Helvetica, sans-serif'
+    firstCtx.textAlign = 'center'
+    firstCtx.fillText(`(${reportIdentity.juristic_name || DEFAULT_REPORT_IDENTITY.juristic_name})`, signBoxX + (signBoxWidth / 2), signBaseY + 146)
+    firstCtx.textAlign = 'left'
+
+    pdf.addImage(firstPage.canvas.toDataURL('image/jpeg', 0.95), 'JPEG', 0, 0, 210, 297)
+
+    for (let index = 1; index < images.length; index += 1) {
+      const evidenceImage = await loadImageElement(images[index]?.url)
+      const page = createPageCanvas()
+      const ctx = page.ctx
+      ctx.fillStyle = '#111827'
+      ctx.font = 'bold 42px Arial, Helvetica, sans-serif'
+      ctx.fillText(`หลักฐานเพิ่มเติม ${index + 1}`, marginX, marginY + 20)
+      ctx.strokeStyle = '#d1d5db'
+      ctx.lineWidth = 2
+      const imageY = marginY + 60
+      const imageHeight = pageHeightPx - imageY - marginY
+      ctx.strokeRect(marginX, imageY, contentWidth, imageHeight)
+      drawImageContain(ctx, evidenceImage, marginX + 2, imageY + 2, contentWidth - 4, imageHeight - 4)
+      pdf.addPage('a4', 'portrait')
+      pdf.addImage(page.canvas.toDataURL('image/jpeg', 0.95), 'JPEG', 0, 0, 210, 297)
+    }
+
+    pdf.save(`${item.report_no || `violation-${item.id}`}.pdf`)
   }
 
   const handleOpenPrintPreview = async (item) => {
@@ -533,10 +696,15 @@ const AdminViolations = () => {
 
   const handleDownloadPdf = async (item) => {
     try {
+      console.info('[ViolationPDF] engine=canvas-direct build=', typeof __BUILD_SHA__ !== 'undefined' ? __BUILD_SHA__ : 'unknown')
       await downloadViolationReportPdf(item)
       await showSwal({ icon: 'success', title: 'ดาวน์โหลด PDF สำเร็จ', timer: 1000, showConfirmButton: false })
     } catch (error) {
-      await showSwal({ icon: 'error', title: 'ดาวน์โหลด PDF ไม่สำเร็จ', text: error.message })
+      await showSwal({
+        icon: 'error',
+        title: 'ดาวน์โหลด PDF ไม่สำเร็จ',
+        text: `${error.message} (build ${typeof __BUILD_SHA__ !== 'undefined' ? __BUILD_SHA__ : 'unknown'})`,
+      })
     }
   }
 
