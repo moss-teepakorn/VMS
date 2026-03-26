@@ -68,7 +68,7 @@ export default function LoginPage() {
                   <div className="text-xs text-white/80">{setup.appLineMain} {setup.appLineTail}</div>
                 </div>
               </div>
-              <h1 className="mt-8 text-4xl font-bold leading-tight">Village Management<br />Dashboard</h1>
+              <h1 className="mt-8 text-4xl font-bold leading-tight">Village Management<br />System</h1>
               <p className="mt-4 text-sm text-white/85 max-w-md">ระบบบริหารหมู่บ้าน จัดการทะเบียนลูกบ้าน ยานพาหนะ และค่าส่วนกลางอย่างเป็นระบบ พร้อมการสื่สารระหว่างลูกบ้านและนิติแบบครบวงจร</p>
               <div className="mt-6">
                 <p className="text-xs text-white/70">{setup.address}</p>
