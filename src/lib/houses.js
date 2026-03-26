@@ -15,13 +15,17 @@ function sortHouses(items) {
   })
 }
 
-export async function listHouses({ status = 'all', search = '' } = {}) {
+export async function listHouses({ status = 'all', search = '', soi = 'all' } = {}) {
   let query = supabase
     .from('houses')
     .select('*')
 
   if (status && status !== 'all') {
     query = query.eq('status', status)
+  }
+
+  if (soi && soi !== 'all') {
+    query = query.eq('soi', soi)
   }
 
   if (search && search.trim()) {
@@ -48,6 +52,19 @@ export async function getHouseSetup() {
     feeRatePerSqw: Number(data?.fee_rate_per_sqw ?? 85),
     villageName: data?.village_name || 'The Greenfield',
   }
+}
+
+export async function updateAllHousesFeeRate(feeRatePerSqw) {
+  const rate = Number(feeRatePerSqw || 0)
+
+  const { data, error } = await supabase
+    .from('houses')
+    .update({ fee_rate: rate })
+    .not('id', 'is', null)
+    .select('id')
+
+  if (error) throw error
+  return data?.length ?? 0
 }
 
 export async function createHouse(payload) {

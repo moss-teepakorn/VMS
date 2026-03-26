@@ -5,10 +5,10 @@ import { createVehicle, deleteVehicle, listVehicles, updateVehicle } from '../..
 
 const VEHICLE_TYPES = [
   { value: 'รถยนต์', label: 'รถยนต์' },
-  { value: 'จักรยานยนต์', label: 'จักรยานยนต์' },
-  { value: 'กระบะ', label: 'กระบะ' },
-  { value: 'ตู้', label: 'ตู้' },
-  { value: 'อื่นๆ', label: 'อื่นๆ' },
+  { value: 'รถจักรยานยนต์', label: 'รถจักรยานยนต์' },
+  { value: 'รถกระบะ', label: 'รถกระบะ' },
+  { value: 'รถตู้', label: 'รถตู้' },
+  { value: 'รถอื่นๆ', label: 'รถอื่นๆ' },
 ]
 
 const BRAND_OPTIONS = [
@@ -21,6 +21,19 @@ const BRAND_OPTIONS = [
 const COLOR_OPTIONS = [
   'ขาว', 'ดำ', 'เทา', 'เงิน', 'น้ำเงิน', 'แดง', 'เขียว', 'เหลือง',
   'ส้ม', 'น้ำตาล', 'ม่วง', 'ชมพู', 'ทอง', 'ฟ้า', 'อื่นๆ',
+]
+
+const PROVINCE_OPTIONS = [
+  'กรุงเทพมหานคร', 'กระบี่', 'กาญจนบุรี', 'กาฬสินธุ์', 'กำแพงเพชร', 'ขอนแก่น', 'จันทบุรี', 'ฉะเชิงเทรา',
+  'ชลบุรี', 'ชัยนาท', 'ชัยภูมิ', 'ชุมพร', 'เชียงราย', 'เชียงใหม่', 'ตรัง', 'ตราด', 'ตาก', 'นครนายก',
+  'นครปฐม', 'นครพนม', 'นครราชสีมา', 'นครศรีธรรมราช', 'นครสวรรค์', 'นนทบุรี', 'นราธิวาส', 'น่าน',
+  'บึงกาฬ', 'บุรีรัมย์', 'ปทุมธานี', 'ประจวบคีรีขันธ์', 'ปราจีนบุรี', 'ปัตตานี', 'พระนครศรีอยุธยา',
+  'พะเยา', 'พังงา', 'พัทลุง', 'พิจิตร', 'พิษณุโลก', 'เพชรบุรี', 'เพชรบูรณ์', 'แพร่', 'ภูเก็ต',
+  'มหาสารคาม', 'มุกดาหาร', 'แม่ฮ่องสอน', 'ยะลา', 'ร้อยเอ็ด', 'ระนอง', 'ระยอง', 'ราชบุรี', 'ลพบุรี',
+  'ลำปาง', 'ลำพูน', 'เลย', 'ศรีสะเกษ', 'สกลนคร', 'สงขลา', 'สตูล', 'สมุทรปราการ', 'สมุทรสงคราม',
+  'สมุทรสาคร', 'สระแก้ว', 'สระบุรี', 'สิงห์บุรี', 'สุโขทัย', 'สุพรรณบุรี', 'สุราษฎร์ธานี', 'สุรินทร์',
+  'หนองคาย', 'หนองบัวลำภู', 'อ่างทอง', 'อำนาจเจริญ', 'อุดรธานี', 'อุตรดิตถ์', 'อุทัยธานี', 'อุบลราชธานี',
+  'เบตง',
 ]
 
 const PARKING_OPTIONS = [
@@ -37,7 +50,8 @@ const STATUS_OPTIONS = [
 
 const EMPTY_FORM = {
   house_id: '',
-  license_plate: '',
+  license_plate_prefix: '',
+  license_plate_number: '',
   province: 'กรุงเทพมหานคร',
   vehicle_type: 'รถยนต์',
   brand: 'Toyota',
@@ -71,6 +85,14 @@ const AdminVehicles = () => {
   const [saving, setSaving] = useState(false)
   const [editingVehicle, setEditingVehicle] = useState(null)
   const [form, setForm] = useState(EMPTY_FORM)
+
+  const parsePlate = (plate) => {
+    const [prefix = '', number = ''] = String(plate || '').split('-')
+    return {
+      prefix: prefix.trim(),
+      number: number.trim(),
+    }
+  }
 
   const houseOptions = useMemo(() => ([
     { value: '', label: 'เลือกบ้าน' },
@@ -130,9 +152,11 @@ const AdminVehicles = () => {
     const baseColor = COLOR_OPTIONS.includes(vehicle.color || '') ? vehicle.color : 'อื่นๆ'
 
     setEditingVehicle(vehicle)
+    const parsedPlate = parsePlate(vehicle.license_plate)
     setForm({
       house_id: vehicle.house_id || '',
-      license_plate: vehicle.license_plate || '',
+      license_plate_prefix: parsedPlate.prefix,
+      license_plate_number: parsedPlate.number,
       province: vehicle.province || 'กรุงเทพมหานคร',
       vehicle_type: vehicle.vehicle_type || 'รถยนต์',
       brand: baseBrand,
@@ -185,7 +209,7 @@ const AdminVehicles = () => {
       return
     }
 
-    if (!form.license_plate.trim()) {
+    if (!form.license_plate_prefix.trim() || !form.license_plate_number.trim()) {
       await Swal.fire({ icon: 'warning', title: 'ข้อมูลไม่ครบ', text: 'กรุณากรอกทะเบียนรถ' })
       return
     }
@@ -200,12 +224,14 @@ const AdminVehicles = () => {
       return
     }
 
+    const licensePlate = `${form.license_plate_prefix.trim()}-${form.license_plate_number.trim()}`
+
     try {
       setSaving(true)
 
       const payload = {
         house_id: form.house_id,
-        license_plate: form.license_plate,
+        license_plate: licensePlate,
         province: form.province,
         vehicle_type: form.vehicle_type,
         brand: form.brand === 'อื่นๆ' ? form.brand_other : form.brand,
@@ -220,10 +246,10 @@ const AdminVehicles = () => {
 
       if (editingVehicle) {
         await updateVehicle(editingVehicle.id, payload)
-        await Swal.fire({ icon: 'success', title: 'บันทึกสำเร็จ', text: `แก้ไขทะเบียน ${form.license_plate} แล้ว`, timer: 1400, showConfirmButton: false })
+        await Swal.fire({ icon: 'success', title: 'บันทึกสำเร็จ', text: `แก้ไขทะเบียน ${licensePlate} แล้ว`, timer: 1400, showConfirmButton: false })
       } else {
         await createVehicle(payload)
-        await Swal.fire({ icon: 'success', title: 'เพิ่มข้อมูลสำเร็จ', text: `เพิ่มทะเบียน ${form.license_plate} แล้ว`, timer: 1400, showConfirmButton: false })
+        await Swal.fire({ icon: 'success', title: 'เพิ่มข้อมูลสำเร็จ', text: `เพิ่มทะเบียน ${licensePlate} แล้ว`, timer: 1400, showConfirmButton: false })
       }
 
       closeModal(true)
@@ -368,11 +394,11 @@ const AdminVehicles = () => {
 
       {showModal && (
         <div className="house-mo">
-          <div className="house-md">
+          <div className="house-md house-md-vehicle">
             <div className="house-md-head">
               <div>
                 <div className="house-md-title">🚗 {editingVehicle ? 'แก้ไขข้อมูลรถ' : 'ลงทะเบียนรถใหม่'}</div>
-                <div className="house-md-sub">{form.license_plate || '-'} {form.model ? `— ${form.model}` : ''}</div>
+                <div className="house-md-sub">{(form.license_plate_prefix || form.license_plate_number) ? `${form.license_plate_prefix || ''}${form.license_plate_prefix && form.license_plate_number ? '-' : ''}${form.license_plate_number || ''}` : '-'} {form.model ? `— ${form.model}` : ''}</div>
               </div>
             </div>
 
@@ -388,12 +414,18 @@ const AdminVehicles = () => {
                       </select>
                     </label>
                     <label className="house-field">
-                      <span>ทะเบียนรถ *</span>
-                      <input name="license_plate" value={form.license_plate} onChange={handleChange} placeholder="กท 1234" />
+                      <span>ทะเบียนรถ (ส่วนหน้า) *</span>
+                      <input name="license_plate_prefix" value={form.license_plate_prefix} onChange={handleChange} placeholder="7กจ" />
+                    </label>
+                    <label className="house-field">
+                      <span>ทะเบียนรถ (ส่วนหลัง) *</span>
+                      <input name="license_plate_number" value={form.license_plate_number} onChange={handleChange} placeholder="5533" />
                     </label>
                     <label className="house-field">
                       <span>จังหวัด</span>
-                      <input name="province" value={form.province} onChange={handleChange} placeholder="กรุงเทพมหานคร" />
+                      <select name="province" value={form.province} onChange={handleChange}>
+                        {PROVINCE_OPTIONS.map((province) => <option key={province} value={province}>{province}</option>)}
+                      </select>
                     </label>
                   </div>
                 </section>
@@ -413,10 +445,6 @@ const AdminVehicles = () => {
                         {BRAND_OPTIONS.map((brand) => <option key={brand} value={brand}>{brand}</option>)}
                       </select>
                     </label>
-                    <label className="house-field">
-                      <span>รุ่น</span>
-                      <input name="model" value={form.model} onChange={handleChange} placeholder="เช่น City / Revo" />
-                    </label>
                     {form.brand === 'อื่นๆ' ? (
                       <label className="house-field">
                         <span>ระบุยี่ห้ออื่นๆ *</span>
@@ -425,6 +453,12 @@ const AdminVehicles = () => {
                     ) : (
                       <div />
                     )}
+                  </div>
+                  <div className="house-grid house-grid-3" style={{ marginTop: '8px' }}>
+                    <label className="house-field">
+                      <span>รุ่น</span>
+                      <input name="model" value={form.model} onChange={handleChange} placeholder="เช่น City / Revo" />
+                    </label>
                     <label className="house-field">
                       <span>สี</span>
                       <select name="color" value={form.color} onChange={handleChange}>

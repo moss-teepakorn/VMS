@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import Swal from 'sweetalert2'
-import { createHouse, deleteHouse, getHouseSetup, listHouses, updateHouse } from '../../lib/houses'
+import { createHouse, deleteHouse, getHouseSetup, listHouses, updateAllHousesFeeRate, updateHouse } from '../../lib/houses'
 
 const SOI_OPTIONS = Array.from({ length: 25 }, (_, index) => ({
   value: String(index + 1),
@@ -45,6 +45,7 @@ function formatDecimal(value) {
 
 const AdminHouses = () => {
   const [filterType, setFilterType] = useState('all')
+  const [soiFilter, setSoiFilter] = useState('all')
   const [searchTerm, setSearchTerm] = useState('')
   const [houses, setHouses] = useState([])
   const [loading, setLoading] = useState(false)
@@ -59,6 +60,7 @@ const AdminHouses = () => {
       setLoading(true)
       const data = await listHouses({
         status: override.status ?? filterType,
+        soi: override.soi ?? soiFilter,
         search: override.search ?? searchTerm,
       })
       setHouses(data)
@@ -75,7 +77,7 @@ const AdminHouses = () => {
       try {
         setLoading(true)
         const [houseData, houseSetup] = await Promise.all([
-          listHouses({ status: filterType, search: searchTerm }),
+          listHouses({ status: filterType, soi: soiFilter, search: searchTerm }),
           getHouseSetup(),
         ])
         setHouses(houseData)
@@ -95,6 +97,12 @@ const AdminHouses = () => {
     const area = Number(form.area_sqw || 0)
     return area * 12 * Number(setup.feeRatePerSqw || 0)
   }, [form.area_sqw, setup.feeRatePerSqw])
+
+  const soiOptions = useMemo(() => {
+    const values = [...new Set(houses.map((house) => house.soi).filter(Boolean))]
+      .sort((left, right) => Number(left) - Number(right))
+    return values
+  }, [houses])
 
   const getStatusBadge = (status) => {
     if (status === 'normal')   return { className: 'bd b-ok', label: 'ปกติ' }
@@ -179,7 +187,7 @@ const AdminHouses = () => {
       }
 
       closeModal(true)
-  await loadHouses({ status: filterType, search: searchTerm })
+      await loadHouses({ status: filterType, soi: soiFilter, search: searchTerm })
     } catch (error) {
       console.error('Error saving house:', error)
       await Swal.fire({ icon: 'error', title: 'บันทึกไม่สำเร็จ', text: error.message })
@@ -204,10 +212,49 @@ const AdminHouses = () => {
     try {
       await deleteHouse(house.id)
       await Swal.fire({ icon: 'success', title: 'ลบสำเร็จ', timer: 1400, showConfirmButton: false })
-      await loadHouses()
+      await loadHouses({ status: filterType, soi: soiFilter, search: searchTerm })
     } catch (error) {
       console.error('Error deleting house:', error)
       await Swal.fire({ icon: 'error', title: 'ลบไม่สำเร็จ', text: error.message })
+    }
+  }
+
+  const handleBulkUpdateAnnualFee = async () => {
+    const confirmResult = await Swal.fire({
+      icon: 'question',
+      title: 'อัปเดตค่าส่วนกลางทั้งระบบ',
+      text: `ต้องการอัปเดตอัตราค่าส่วนกลางเป็น ${formatDecimal(setup.feeRatePerSqw)} บาท/ตร.ว./ปี ให้ทุกหลังหรือไม่?`,
+      showCancelButton: true,
+      confirmButtonText: 'อัปเดต',
+      cancelButtonText: 'ยกเลิก',
+    })
+
+    if (!confirmResult.isConfirmed) return
+
+    Swal.fire({
+      title: 'กำลังประมวลผล...',
+      text: 'รอสักครู่ ระบบกำลังอัปเดตข้อมูลบ้านทั้งหมด',
+      allowOutsideClick: false,
+      allowEscapeKey: false,
+      didOpen: () => {
+        Swal.showLoading()
+      },
+    })
+
+    try {
+      const affectedRows = await updateAllHousesFeeRate(setup.feeRatePerSqw)
+      await loadHouses({ status: filterType, soi: soiFilter, search: searchTerm })
+      await Swal.fire({
+        icon: 'success',
+        title: 'อัปเดตสำเร็จ',
+        text: `อัปเดตค่าส่วนกลางแล้ว ${affectedRows} หลัง`,
+      })
+    } catch (error) {
+      await Swal.fire({
+        icon: 'error',
+        title: 'อัปเดตไม่สำเร็จ',
+        text: error.message,
+      })
     }
   }
 
@@ -225,6 +272,7 @@ const AdminHouses = () => {
           </div>
           <div className="ph-acts">
             <button className="btn btn-p btn-sm" onClick={openAddModal}>+ เพิ่มบ้าน</button>
+            <button className="btn btn-a btn-sm" onClick={handleBulkUpdateAnnualFee}>⏳ อัปเดตค่าส่วนกลาง</button>
             <button className="btn btn-o btn-sm" onClick={() => loadHouses()}>🔄 รีเฟรช</button>
           </div>
         </div>
@@ -254,7 +302,15 @@ const AdminHouses = () => {
             <option value="suspended">ระงับกรมที่ดิน</option>
             <option value="lawsuit">ฟ้องร้อง</option>
           </select>
-          <button className="btn btn-a btn-sm" onClick={() => loadHouses()}>ค้นหา</button>
+          <select
+            value={soiFilter}
+            onChange={(e) => setSoiFilter(e.target.value)}
+            style={{ padding: '8px 12px', border: '1px solid var(--bo)', borderRadius: '6px' }}
+          >
+            <option value="all">ทุกซอย</option>
+            {soiOptions.map((soi) => <option key={soi} value={soi}>{`ซอย ${soi}`}</option>)}
+          </select>
+          <button className="btn btn-a btn-sm" onClick={() => loadHouses({ status: filterType, soi: soiFilter, search: searchTerm })}>ค้นหา</button>
         </div>
       </div>
 
@@ -328,7 +384,7 @@ const AdminHouses = () => {
 
       {showModal && (
         <div className="house-mo">
-          <div className="house-md">
+          <div className="house-md house-md-home">
             <div className="house-md-head">
               <div>
                 <div className="house-md-title">🏠 {editingHouse ? 'แก้ไขข้อมูลบ้าน' : 'เพิ่มข้อมูลบ้าน'}</div>
