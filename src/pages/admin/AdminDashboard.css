@@ -525,6 +525,154 @@
   border-bottom: none;
 }
 
+.houses-compact {
+  font-size: 12px;
+}
+
+.houses-compact .ph {
+  padding: 16px;
+}
+
+.houses-compact .ph-h1 {
+  font-size: 20px;
+}
+
+.houses-compact .ph-sub {
+  font-size: 12px;
+}
+
+.houses-compact .btn {
+  font-size: 12px;
+}
+
+.houses-compact .btn-sm {
+  font-size: 12px;
+  padding: 7px 11px;
+}
+
+.houses-filter-row {
+  position: relative;
+  z-index: 1;
+  margin-top: 10px;
+  display: grid;
+  grid-template-columns: minmax(280px, 1fr) 120px 96px 86px;
+  gap: 8px;
+  align-items: center;
+}
+
+.houses-filter-input,
+.houses-filter-select {
+  height: 36px;
+  border: 1px solid rgba(255,255,255,.32);
+  border-radius: 8px;
+  padding: 0 11px;
+  font-size: 12px;
+  color: #1f2937;
+  background: rgba(255,255,255,.97);
+}
+
+.houses-filter-input::placeholder {
+  color: #6b7280;
+}
+
+.houses-filter-select {
+  padding-right: 28px;
+}
+
+.houses-filter-btn {
+  height: 36px;
+  padding: 0 12px;
+}
+
+.houses-table-card-body {
+  padding-top: 10px;
+}
+
+.houses-table-wrap {
+  overflow: auto;
+  max-height: calc(100vh - 330px);
+}
+
+.houses-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: var(--bg2);
+}
+
+.houses-table td {
+  font-size: 12px;
+  line-height: 1.35;
+  padding-top: 10px;
+  padding-bottom: 10px;
+}
+
+.houses-owner-main {
+  color: var(--tx);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.houses-owner-sub {
+  margin-top: 2px;
+  font-size: 11px;
+  color: #7a8699;
+  font-weight: 500;
+}
+
+.houses-status {
+  font-weight: 800;
+  font-size: 11px;
+}
+
+.houses-status-overdue {
+  background: #fde9cf;
+  color: #b45309;
+}
+
+.houses-status-suspended {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+.houses-status-normal {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.houses-status-lawsuit {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.houses-actions-cell {
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.houses-action-btn {
+  min-width: 52px;
+}
+
+.houses-action-delete {
+  background: #fff;
+  color: #dc2626;
+  border: 1px solid #fecaca;
+}
+
+.houses-action-delete:hover {
+  background: #fef2f2;
+  color: #b91c1c;
+}
+
+@media (max-width: 980px) {
+  .houses-filter-row {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
 /* ═════════════════════════════════════════════════
    CHART BOX
 ═════════════════════════════════════════════════ */

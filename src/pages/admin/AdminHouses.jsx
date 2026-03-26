@@ -259,9 +259,8 @@ const AdminHouses = () => {
   }
 
   return (
-    <div className="pane on">
-      {/* Page Header */}
-      <div className="ph">
+    <div className="pane on houses-compact">
+      <div className="ph houses-ph">
         <div className="ph-in">
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
             <div className="ph-ico">🏠</div>
@@ -276,25 +275,19 @@ const AdminHouses = () => {
             <button className="btn btn-o btn-sm" onClick={() => loadHouses()}>🔄 รีเฟรช</button>
           </div>
         </div>
-      </div>
 
-      {/* Filter & Search */}
-      <div className="card" style={{ marginBottom: '16px', marginTop: '16px' }}>
-        <div className="ch">
-          <div className="ct">ค้นหา &amp; กรองข้อมูล</div>
-        </div>
-        <div className="cb" style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+        <div className="houses-filter-row">
           <input
             type="text"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             placeholder="ค้นหาเลขที่บ้าน / เจ้าของ / ผู้ติดต่อ..."
-            style={{ flex: 1, minWidth: '200px', padding: '8px 12px', border: '1px solid var(--bo)', borderRadius: '6px' }}
+            className="houses-filter-input"
           />
           <select
             value={filterType}
             onChange={(e) => setFilterType(e.target.value)}
-            style={{ padding: '8px 12px', border: '1px solid var(--bo)', borderRadius: '6px' }}
+            className="houses-filter-select"
           >
             <option value="all">ทั้งหมด</option>
             <option value="normal">ปกติ</option>
@@ -305,12 +298,12 @@ const AdminHouses = () => {
           <select
             value={soiFilter}
             onChange={(e) => setSoiFilter(e.target.value)}
-            style={{ padding: '8px 12px', border: '1px solid var(--bo)', borderRadius: '6px' }}
+            className="houses-filter-select"
           >
             <option value="all">ทุกซอย</option>
             {soiOptions.map((soi) => <option key={soi} value={soi}>{`ซอย ${soi}`}</option>)}
           </select>
-          <button className="btn btn-a btn-sm" onClick={() => loadHouses({ status: filterType, soi: soiFilter, search: searchTerm })}>ค้นหา</button>
+          <button className="btn btn-a btn-sm houses-filter-btn" onClick={() => loadHouses({ status: filterType, soi: soiFilter, search: searchTerm })}>ค้นหา</button>
         </div>
       </div>
 
@@ -319,9 +312,9 @@ const AdminHouses = () => {
         <div className="ch">
           <div className="ct">รายการบ้านทั้งหมด ({houses.length} หลัง)</div>
         </div>
-        <div className="cb">
-          <div style={{ overflowX: 'auto' }}>
-            <table className="tw" style={{ width: '100%', minWidth: '760px' }}>
+        <div className="cb houses-table-card-body">
+          <div className="houses-table-wrap">
+            <table className="tw houses-table" style={{ width: '100%', minWidth: '760px' }}>
               <thead>
                 <tr>
                   <th>เลขที่</th>
@@ -357,9 +350,9 @@ const AdminHouses = () => {
                         <td><strong>{house.house_no}</strong></td>
                         <td>{house.soi ? `ซอย ${house.soi}` : '-'}</td>
                         <td>
-                          <div>{house.owner_name || '-'}</div>
+                          <div className="houses-owner-main">{house.owner_name || '-'}</div>
                           {(house.resident_name || house.contact_name) && (
-                            <div style={{ fontSize: '11px', color: 'var(--mu)' }}>
+                            <div className="houses-owner-sub">
                               {[house.resident_name, house.contact_name].filter(Boolean).join(' · ')}
                             </div>
                           )}
@@ -367,10 +360,12 @@ const AdminHouses = () => {
                         <td>{house.house_type || '-'}</td>
                         <td>{house.area_sqw ? formatDecimal(house.area_sqw) : '-'}</td>
                         <td>{annualFee}</td>
-                        <td><span className={badge.className}>{badge.label}</span></td>
-                        <td style={{ whiteSpace: 'nowrap' }}>
-                          <button className="btn btn-xs btn-a" style={{ marginRight: '4px' }} onClick={() => openEditModal(house)}>แก้ไข</button>
-                          <button className="btn btn-xs btn-dg" onClick={() => handleDeleteHouse(house)}>ลบ</button>
+                        <td>
+                          <span className={`${badge.className} houses-status houses-status-${house.status}`}>{badge.label}</span>
+                        </td>
+                        <td className="houses-actions-cell">
+                          <button className="btn btn-xs btn-a houses-action-btn" onClick={() => openEditModal(house)}>แก้ไข</button>
+                          <button className="btn btn-xs houses-action-btn houses-action-delete" onClick={() => handleDeleteHouse(house)}>ลบ</button>
                         </td>
                       </tr>
                     )
