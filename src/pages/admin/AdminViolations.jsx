@@ -464,28 +464,28 @@ const AdminViolations = () => {
             .btn-print { background: #2563eb; color: #fff; }
             .btn-close { background: #e5e7eb; color: #111827; }
             .canvas { padding: ${includeToolbar ? '16px 0 30px' : '0'}; }
-            .a4 { width: 210mm; min-height: 297mm; margin: 0 auto 16px; background: #fff; border: 1px solid #d1d5db; padding: 10mm 12mm; display: flex; flex-direction: column; }
-            ${includeToolbar ? '' : `.a4 { width: ${A4_PX_WIDTH}px; min-height: ${A4_PX_HEIGHT}px; margin: 0; border: none; }`}
+            .a4 { width: 210mm; min-height: 297mm; margin: 0 auto 16px; background: #fff; border: 1px solid #d1d5db; padding: 9mm 11mm; display: block; }
             .head { display: flex; align-items: center; gap: 12px; margin-bottom: 3mm; }
             .logo { width: 44px; height: 44px; object-fit: contain; }
             .logo-fallback { width: 44px; height: 44px; border-radius: 12px; background: #0d9488; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; }
-            .head h1 { margin: 0 0 2mm; font-size: 21px; }
-            .village { font-size: 13px; color: #374151; margin-bottom: 2mm; }
-            .meta { font-size: 13px; color: #4b5563; margin-bottom: 4mm; }
-            table { width: 100%; border-collapse: collapse; font-size: 13px; }
+            .head h1 { margin: 0 0 2mm; font-size: 18px; }
+            .village { font-size: 11px; color: #374151; margin-bottom: 2mm; }
+            .meta { font-size: 11px; color: #4b5563; margin-bottom: 4mm; }
+            table { width: 100%; border-collapse: collapse; font-size: 11px; }
             td { padding: 1.8mm 0; vertical-align: top; }
             td.k { width: 42mm; font-weight: 700; }
             td.v { word-break: break-word; }
-            .img-title { margin-top: auto; font-weight: 700; font-size: 14px; }
-            .img-wrap { margin-top: 2mm; border: 1px solid #d1d5db; border-radius: 8px; overflow: hidden; min-height: 112mm; height: 112mm; display: flex; align-items: center; justify-content: center; }
+            .img-title { margin-top: 3mm; font-weight: 700; font-size: 12px; page-break-inside: avoid; break-inside: avoid; }
+            .img-wrap { margin-top: 2mm; border: 1px solid #d1d5db; border-radius: 8px; overflow: hidden; min-height: 90mm; height: 90mm; display: flex; align-items: center; justify-content: center; page-break-inside: avoid; break-inside: avoid; }
             .img-wrap.full { min-height: 250mm; }
             .evd { width: 100%; height: 100%; object-fit: cover; background: #fff; }
             .noimg { color: #6b7280; font-size: 14px; }
             .page-title { margin-bottom: 4mm; font-size: 16px; font-weight: 700; }
-            .signature { margin-top: 5mm; display: flex; justify-content: flex-end; }
-            .signature-box { width: 62mm; text-align: center; }
+            .signature { margin-top: 4mm; display: flex; justify-content: flex-end; page-break-inside: avoid; break-inside: avoid; }
+            .signature-box { width: 58mm; text-align: center; }
             .signature-img { width: 100%; max-height: 20mm; object-fit: contain; }
-            .signature-line { border-top: 1px solid #111827; margin-top: 2mm; padding-top: 2mm; font-size: 12px; }
+            .signature-line { border-top: 1px solid #111827; margin-top: 2mm; padding-top: 2mm; font-size: 11px; }
+            .page-break { page-break-before: always; break-before: page; }
             @media print {
               body { background: #fff; }
               .toolbar { display: none !important; }
