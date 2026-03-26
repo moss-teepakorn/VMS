@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react'
 import { Outlet, useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext'
 import { applyDocumentTitle, getSetupConfig } from '../../lib/setup'
-import { updateUser } from '../../lib/users'
+import { updateUser, getHouseDetail } from '../../lib/users'
+import Swal from 'sweetalert2'
 import villageLogo from '../../assets/village-logo.svg'
 import './AdminLayout.css'
 
@@ -26,6 +27,8 @@ const AdminLayout = () => {
   const [setupOpen, setSetupOpen] = useState(false)
   const [newPassword, setNewPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
+  const [houseNo, setHouseNo] = useState('-')
+  const [showPasswordModal, setShowPasswordModal] = useState(false)
   const [setup, setSetup] = useState({
     villageName: 'The Greenfield',
     appLineMain: 'Village Management',
@@ -66,6 +69,14 @@ const AdminLayout = () => {
     return () => window.removeEventListener('resize', handleResize)
   }, [])
 
+  // Load house_no for current user
+  useEffect(() => {
+    if (!profile?.house_id) { setHouseNo('-'); return }
+    getHouseDetail(profile.house_id)
+      .then((detail) => setHouseNo(detail?.house_no || '-'))
+      .catch(() => setHouseNo('-'))
+  }, [profile?.house_id])
+
   // Navigation menu items (from concept.html)
   const navItems = [
     { section: 'หน้าหลัก', items: [
@@ -103,25 +114,25 @@ const AdminLayout = () => {
   const handleChangeMyPassword = async () => {
     if (!profile?.id) return
     if (!newPassword || !confirmPassword) {
-      alert('กรุณากรอกรหัสผ่านใหม่ให้ครบ')
+      await Swal.fire({ icon: 'warning', title: 'ข้อมูลไม่ครบ', text: 'กรุณากรอกรหัสผ่านใหม่ให้ครบ' })
       return
     }
     if (newPassword.length < 6) {
-      alert('รหัสผ่านต้องอย่างน้อย 6 ตัวอักษร')
+      await Swal.fire({ icon: 'warning', title: 'รหัสผ่านสั้นเกินไป', text: 'รหัสผ่านต้องอย่างน้อย 6 ตัวอักษร' })
       return
     }
     if (newPassword !== confirmPassword) {
-      alert('ยืนยันรหัสผ่านไม่ตรงกัน')
+      await Swal.fire({ icon: 'warning', title: 'รหัสผ่านไม่ตรงกัน', text: 'ยืนยันรหัสผ่านไม่ตรงกัน' })
       return
     }
     try {
       await updateUser(profile.id, { password: newPassword })
       setNewPassword('')
       setConfirmPassword('')
-      setSetupOpen(false)
-      alert('เปลี่ยนรหัสผ่านเรียบร้อย')
+      setShowPasswordModal(false)
+      await Swal.fire({ icon: 'success', title: 'สำเร็จ', text: 'เปลี่ยนรหัสผ่านเรียบร้อย' })
     } catch (error) {
-      alert(`เปลี่ยนรหัสผ่านไม่สำเร็จ: ${error.message}`)
+      await Swal.fire({ icon: 'error', title: 'ไม่สำเร็จ', text: `เปลี่ยนรหัสผ่านไม่สำเร็จ: ${error.message}` })
     }
   }
 
@@ -227,14 +238,18 @@ const AdminLayout = () => {
 
               {setupOpen && (
                 <div className="setup-menu">
-                  <div className="setup-title">Setup</div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                    <div className="setup-title" style={{ marginBottom: 0 }}>Setup</div>
+                    <button style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '16px', color: 'var(--mu)', lineHeight: 1, padding: '0 2px' }} onClick={() => setSetupOpen(false)}>✕</button>
+                  </div>
 
                   <div className="setup-section">
+                    <div style={{ fontSize: '13px', color: 'var(--tx)', marginBottom: '10px', fontWeight: 600 }}>สวัสดี คุณ{profile?.full_name || profile?.username || ''}</div>
                     <div className="setup-label">Profile</div>
                     <div className="setup-profile-row"><span>ชื่อ</span><strong>{profile?.full_name || '-'}</strong></div>
                     <div className="setup-profile-row"><span>Username</span><strong>{profile?.username || '-'}</strong></div>
                     <div className="setup-profile-row"><span>บทบาท</span><strong>{roleLabel(profile?.role)}</strong></div>
-                    <div className="setup-profile-row"><span>บ้าน</span><strong>{profile?.house_id || '-'}</strong></div>
+                    <div className="setup-profile-row"><span>บ้าน</span><strong>{houseNo}</strong></div>
                   </div>
 
                   <div className="setup-section">
@@ -252,22 +267,8 @@ const AdminLayout = () => {
                   </div>
 
                   <div className="setup-section">
-                    <div className="setup-label">เปลี่ยนรหัสผ่าน</div>
-                    <input
-                      type="password"
-                      className="setup-input"
-                      placeholder="รหัสผ่านใหม่"
-                      value={newPassword}
-                      onChange={(e) => setNewPassword(e.target.value)}
-                    />
-                    <input
-                      type="password"
-                      className="setup-input"
-                      placeholder="ยืนยันรหัสผ่านใหม่"
-                      value={confirmPassword}
-                      onChange={(e) => setConfirmPassword(e.target.value)}
-                    />
-                    <button className="btn btn-p btn-sm" style={{ width: '100%' }} onClick={handleChangeMyPassword}>บันทึกรหัสผ่านใหม่</button>
+                    <button className="btn btn-p btn-sm" style={{ width: '100%' }} onClick={() => { setSetupOpen(false); setShowPasswordModal(true) }}>🔑 เปลี่ยนรหัสผ่าน</button>
+                    <button className="btn btn-g btn-sm" style={{ width: '100%', marginTop: '6px' }} onClick={() => setSetupOpen(false)}>ปิด</button>
                   </div>
                 </div>
               )}
@@ -281,6 +282,38 @@ const AdminLayout = () => {
             <Outlet />
           </ModalContext.Provider>
         </div>
+
+        {/* Password Change Modal */}
+        {showPasswordModal && (
+          <div className="house-mo">
+            <div className="house-md" style={{ maxWidth: '400px' }}>
+              <div className="house-md-head">
+                <div>
+                  <div className="house-md-title">🔑 เปลี่ยนรหัสผ่าน</div>
+                  <div className="house-md-sub">{profile?.full_name || profile?.username}</div>
+                </div>
+              </div>
+              <div className="house-md-body">
+                <section className="house-sec">
+                  <div className="house-grid" style={{ gridTemplateColumns: '1fr' }}>
+                    <label className="house-field">
+                      <span>รหัสผ่านใหม่ <strong style={{ color: '#dc2626' }}>*</strong></span>
+                      <input type="password" placeholder="อย่างน้อย 6 ตัวอักษร" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} />
+                    </label>
+                    <label className="house-field">
+                      <span>ยืนยันรหัสผ่านใหม่ <strong style={{ color: '#dc2626' }}>*</strong></span>
+                      <input type="password" placeholder="กรอกรหัสผ่านอีกครั้ง" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} />
+                    </label>
+                  </div>
+                </section>
+              </div>
+              <div className="house-md-foot">
+                <button className="btn btn-g" type="button" onClick={() => { setShowPasswordModal(false); setNewPassword(''); setConfirmPassword('') }}>ยกเลิก</button>
+                <button className="btn btn-p" type="button" onClick={handleChangeMyPassword}>บันทึก</button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Modal */}
         <div className={`mo ${modalOpen ? 'show' : ''}`}>
