@@ -660,6 +660,15 @@ button, input, select, textarea {
   margin-top: 2px;
 }
 
+.sb-build {
+  padding: 0 12px 10px;
+  margin-top: -4px;
+  font-size: 9px;
+  color: rgba(255,255,255,.45);
+  font-family: monospace;
+  text-align: left;
+}
+
 /* Role Pill */
 .sb-role {
   padding: 10px 12px;
