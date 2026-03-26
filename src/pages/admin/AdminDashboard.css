@@ -601,8 +601,17 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 12px;
-  flex-wrap: wrap;
+  gap: 8px;
+  flex-wrap: nowrap;
+  min-width: 0;
+}
+
+.houses-list-head .ct {
+  flex-shrink: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .houses-list-actions {
@@ -723,7 +732,20 @@
     padding: 0 14px;
   }
 
+  .houses-list-head {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .houses-list-head .ct {
+    white-space: normal;
+    overflow: visible;
+    text-overflow: unset;
+  }
+
   .houses-list-actions {
+    width: 100%;
     flex-wrap: nowrap;
     overflow-x: auto;
   }
