@@ -314,7 +314,7 @@ const AdminHouses = () => {
         </div>
         <div className="cb houses-table-card-body">
           <div className="houses-table-wrap">
-            <table className="tw houses-table" style={{ width: '100%', minWidth: '760px' }}>
+            <table className="tw houses-table" style={{ width: '100%', minWidth: '540px' }}>
               <thead>
                 <tr>
                   <th>เลขที่</th>
