@@ -24,6 +24,10 @@ const EMPTY_FORM = {
   occurred_at: '',
   status: 'pending',
   due_date: '',
+  report_no: '',
+  report_date: '',
+  warning_count: '0',
+  fine_amount: '0',
   admin_note: '',
   resident_note: '',
 }
@@ -84,6 +88,7 @@ const AdminViolations = () => {
   const getStatusBadge = (status) => {
     if (status === 'resolved') return { className: 'bd b-ok', label: 'แก้ไขแล้ว' }
     if (status === 'in_progress') return { className: 'bd b-ac', label: 'กำลังดำเนินการ' }
+    if (status === 'not_fixed') return { className: 'bd b-er', label: 'ไม่แก้ไข' }
     if (status === 'pending') return { className: 'bd b-wn', label: 'รอดำเนินการ' }
     if (status === 'cancelled') return { className: 'bd b-dg', label: 'ยกเลิก' }
     return { className: 'bd b-mu', label: status }
@@ -108,6 +113,10 @@ const AdminViolations = () => {
       occurred_at: item.occurred_at || '',
       status: item.status || 'pending',
       due_date: item.due_date || '',
+      report_no: item.report_no || '',
+      report_date: item.report_date || '',
+      warning_count: String(item.warning_count ?? 0),
+      fine_amount: String(item.fine_amount ?? 0),
       admin_note: item.admin_note || '',
       resident_note: item.resident_note || '',
     })
@@ -230,6 +239,11 @@ const AdminViolations = () => {
     if (!form.house_id) { await showSwal({ icon: 'warning', title: 'ข้อมูลไม่ครบ', text: 'กรุณาเลือกบ้าน' }); return }
     const typeName = form.type === 'อื่นๆ' ? form.type_other.trim() : form.type
     if (!typeName) { await showSwal({ icon: 'warning', title: 'ข้อมูลไม่ครบ', text: 'กรุณาระบุประเภทการกระทำผิด' }); return }
+    const warningCount = Number(form.warning_count || 0)
+    const fineAmount = Number(form.fine_amount || 0)
+    if (warningCount < 0) { await showSwal({ icon: 'warning', title: 'ข้อมูลไม่ถูกต้อง', text: 'จำนวนครั้งเตือนต้องไม่ติดลบ' }); return }
+    if (fineAmount < 0) { await showSwal({ icon: 'warning', title: 'ข้อมูลไม่ถูกต้อง', text: 'ค่าปรับต้องไม่ติดลบ' }); return }
+    if (form.status === 'not_fixed' && fineAmount <= 0) { await showSwal({ icon: 'warning', title: 'ข้อมูลไม่ครบ', text: 'กรณีไม่แก้ไข ต้องระบุค่าปรับมากกว่า 0' }); return }
     try {
       setSaving(true)
       const payload = {
@@ -239,6 +253,10 @@ const AdminViolations = () => {
         occurred_at: form.occurred_at || null,
         status: form.status,
         due_date: form.due_date || null,
+        report_no: form.report_no || null,
+        report_date: form.report_date || null,
+        warning_count: warningCount,
+        fine_amount: fineAmount,
         admin_note: form.admin_note,
         resident_note: form.resident_note || null,
       }
@@ -320,6 +338,7 @@ const AdminViolations = () => {
             <option value="all">ทุกสถานะ</option>
             <option value="pending">รอดำเนินการ</option>
             <option value="in_progress">กำลังดำเนินการ</option>
+            <option value="not_fixed">ไม่แก้ไข</option>
             <option value="resolved">แก้ไขแล้ว</option>
             <option value="cancelled">ยกเลิก</option>
           </select>
@@ -338,15 +357,19 @@ const AdminViolations = () => {
                 <th>ประเภท</th>
                 <th>รายละเอียด</th>
                 <th>วันเกิดเหตุ</th>
+                <th>เลขที่รายงาน</th>
+                <th>วันที่รายงาน</th>
+                <th>เตือน</th>
+                <th>ค่าปรับ</th>
                 <th>วันครบกำหนด</th>
                 <th>สถานะ</th>
                 <th></th>
               </tr></thead>
               <tbody>
                 {loading ? (
-                  <tr><td colSpan="8" style={{ textAlign: 'center', color: 'var(--mu)', padding: '20px' }}>กำลังโหลด...</td></tr>
+                  <tr><td colSpan="12" style={{ textAlign: 'center', color: 'var(--mu)', padding: '20px' }}>กำลังโหลด...</td></tr>
                 ) : violations.length === 0 ? (
-                  <tr><td colSpan="8" style={{ textAlign: 'center', color: 'var(--mu)', padding: '20px' }}>ไม่พบข้อมูล</td></tr>
+                  <tr><td colSpan="12" style={{ textAlign: 'center', color: 'var(--mu)', padding: '20px' }}>ไม่พบข้อมูล</td></tr>
                 ) : violations.map((item) => {
                   const badge = getStatusBadge(item.status)
                   return (
@@ -358,6 +381,10 @@ const AdminViolations = () => {
                       <td>{item.type || '-'}</td>
                       <td style={{ maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.detail || '-'}</td>
                       <td>{formatDate(item.occurred_at)}</td>
+                      <td>{item.report_no || '-'}</td>
+                      <td>{formatDate(item.report_date)}</td>
+                      <td>{item.warning_count ?? 0}</td>
+                      <td>{Number(item.fine_amount || 0).toLocaleString('th-TH')}</td>
                       <td>{formatDate(item.due_date)}</td>
                       <td><span className={badge.className}>{badge.label}</span></td>
                       <td style={{ whiteSpace: 'nowrap' }}>
@@ -413,16 +440,33 @@ const AdminViolations = () => {
                 </section>
 
                 <section className="house-sec">
-                  <div className="house-sec-title">สถานะและกำหนดการ</div>
+                  <div className="house-sec-title">สถานะ รายงาน และกำหนดการ</div>
                   <div className="house-grid house-grid-3">
                     <label className="house-field">
                       <span>สถานะ</span>
                       <select name="status" value={form.status} onChange={handleChange}>
                         <option value="pending">รอดำเนินการ</option>
                         <option value="in_progress">กำลังดำเนินการ</option>
+                        <option value="not_fixed">ไม่แก้ไข</option>
                         <option value="resolved">แก้ไขแล้ว</option>
                         <option value="cancelled">ยกเลิก</option>
                       </select>
+                    </label>
+                    <label className="house-field">
+                      <span>เลขที่รายงาน</span>
+                      <input name="report_no" value={form.report_no} onChange={handleChange} placeholder="เช่น VIO-2026-001" />
+                    </label>
+                    <label className="house-field">
+                      <span>วันที่ออกรายงาน</span>
+                      <input type="date" name="report_date" value={form.report_date} onChange={handleChange} />
+                    </label>
+                    <label className="house-field">
+                      <span>ครั้งที่เตือน</span>
+                      <input type="number" min="0" name="warning_count" value={form.warning_count} onChange={handleChange} />
+                    </label>
+                    <label className="house-field">
+                      <span>ค่าปรับ (บาท)</span>
+                      <input type="number" min="0" name="fine_amount" value={form.fine_amount} onChange={handleChange} placeholder="0" />
                     </label>
                     <label className="house-field">
                       <span>วันครบกำหนดแก้ไข</span>

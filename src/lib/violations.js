@@ -6,7 +6,7 @@ const MAX_VIOLATION_IMAGE_BYTES = 100 * 1024
 export async function listViolations({ status = 'all', search = '' } = {}) {
   const { data, error } = await supabase
     .from('violations')
-    .select('id, house_id, type, detail, occurred_at, status, due_date, admin_note, resident_note, resident_updated_at, created_at, houses(id, house_no, soi, owner_name)')
+    .select('id, house_id, type, detail, occurred_at, status, due_date, warning_count, fine_amount, report_no, report_date, admin_note, resident_note, resident_updated_at, created_at, houses(id, house_no, soi, owner_name)')
     .order('created_at', { ascending: false })
 
   if (error) throw error
@@ -37,6 +37,10 @@ export async function createViolation(payload) {
     occurred_at: payload.occurred_at || null,
     status: payload.status || 'pending',
     due_date: payload.due_date || null,
+    warning_count: Number(payload.warning_count || 0),
+    fine_amount: Number(payload.fine_amount || 0),
+    report_no: payload.report_no?.trim() || null,
+    report_date: payload.report_date || null,
     admin_note: payload.admin_note?.trim() || null,
     resident_note: payload.resident_note?.trim() || null,
     resident_updated_at: payload.resident_updated_at || null,
@@ -45,7 +49,7 @@ export async function createViolation(payload) {
   const { data, error } = await supabase
     .from('violations')
     .insert([record])
-    .select('id, house_id, type, detail, occurred_at, status, due_date, admin_note, resident_note, resident_updated_at, created_at, houses(id, house_no, soi, owner_name)')
+    .select('id, house_id, type, detail, occurred_at, status, due_date, warning_count, fine_amount, report_no, report_date, admin_note, resident_note, resident_updated_at, created_at, houses(id, house_no, soi, owner_name)')
     .single()
 
   if (error) throw error
@@ -63,7 +67,7 @@ export async function updateViolation(id, updates) {
     .from('violations')
     .update(patch)
     .eq('id', id)
-    .select('id, house_id, type, detail, occurred_at, status, due_date, admin_note, resident_note, resident_updated_at, created_at, houses(id, house_no, soi, owner_name)')
+    .select('id, house_id, type, detail, occurred_at, status, due_date, warning_count, fine_amount, report_no, report_date, admin_note, resident_note, resident_updated_at, created_at, houses(id, house_no, soi, owner_name)')
     .single()
 
   if (error) throw error
@@ -152,7 +156,7 @@ export async function listHouseViolations(houseId, { status = 'all', search = ''
 
   const { data, error } = await supabase
     .from('violations')
-    .select('id, house_id, type, detail, occurred_at, status, due_date, admin_note, resident_note, resident_updated_at, created_at')
+    .select('id, house_id, type, detail, occurred_at, status, due_date, warning_count, fine_amount, report_no, report_date, admin_note, resident_note, resident_updated_at, created_at')
     .eq('house_id', houseIdValue)
     .order('created_at', { ascending: false })
 
@@ -181,7 +185,7 @@ export async function residentUpdateViolation(id, payload = {}) {
     .from('violations')
     .update(patch)
     .eq('id', id)
-    .select('id, house_id, type, detail, occurred_at, status, due_date, admin_note, resident_note, resident_updated_at, created_at')
+    .select('id, house_id, type, detail, occurred_at, status, due_date, warning_count, fine_amount, report_no, report_date, admin_note, resident_note, resident_updated_at, created_at')
     .single()
 
   if (error) throw error

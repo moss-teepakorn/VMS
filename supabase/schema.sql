@@ -170,15 +170,23 @@ create table if not exists violations (
   occurred_at date,
   image_url   text,
   status      text default 'pending',
-  -- pending / in_progress / resolved / cancelled
+  -- pending / in_progress / not_fixed / resolved / cancelled
   due_date    date,
+  report_no   text,
+  report_date date,
+  warning_count int default 0,
+  fine_amount numeric default 0,
   admin_note  text,
+  resident_note text,
+  resident_updated_at timestamptz,
   created_at  timestamptz default now()
 );
 
 -- ── 10. ANNOUNCEMENTS (ประกาศ) ──────────────────────────────────────
 create table if not exists announcements (
   id         uuid primary key default gen_random_uuid(),
+  announcement_no text,
+  announcement_date date,
   title      text not null,
   content    text,
   type       text    default 'normal',

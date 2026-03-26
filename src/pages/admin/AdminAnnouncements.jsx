@@ -2,18 +2,26 @@ import React, { useEffect, useState } from 'react'
 import Swal from 'sweetalert2'
 import {
   createAnnouncement,
+  deleteAnnouncementImagesByPaths,
   deleteAnnouncement,
   listAnnouncements,
+  listAnnouncementImages,
+  uploadAnnouncementImage,
   updateAnnouncement,
 } from '../../lib/announcements'
 
 const EMPTY_FORM = {
+  announcement_no: '',
+  announcement_date: '',
   title: '',
   content: '',
   type: 'normal',
   is_pinned: false,
-  image_url: '',
 }
+
+const MAX_ATTACHMENTS = 1
+const MAX_IMAGE_SIZE_BYTES = 100 * 1024
+const MAX_IMAGE_TARGET_BYTES = 95 * 1024
 
 const TYPE_OPTIONS = [
   { value: 'urgent', label: 'ด่วน', badge: 'bd b-er' },
@@ -40,6 +48,8 @@ const AdminAnnouncements = () => {
   const [saving, setSaving] = useState(false)
   const [editingItem, setEditingItem] = useState(null)
   const [form, setForm] = useState(EMPTY_FORM)
+  const [attachments, setAttachments] = useState([])
+  const [removedImagePaths, setRemovedImagePaths] = useState([])
 
   const loadData = async (override = {}) => {
     try {
@@ -62,19 +72,39 @@ const AdminAnnouncements = () => {
 
   const openAddModal = () => {
     setEditingItem(null)
-    setForm(EMPTY_FORM)
+    const today = new Date()
+    const ymd = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`
+    setForm({ ...EMPTY_FORM, announcement_date: ymd })
+    setAttachments([])
+    setRemovedImagePaths([])
     setShowModal(true)
   }
 
-  const openEditModal = (item) => {
+  const openEditModal = async (item) => {
     setEditingItem(item)
     setForm({
+      announcement_no: item.announcement_no || '',
+      announcement_date: item.announcement_date || '',
       title: item.title || '',
       content: item.content || '',
       type: item.type || 'normal',
       is_pinned: Boolean(item.is_pinned),
-      image_url: item.image_url || '',
     })
+
+    try {
+      const currentImages = await listAnnouncementImages(item.id)
+      if (currentImages.length > 0) {
+        setAttachments([ { ...currentImages[0], source: 'existing' } ])
+      } else if (item.image_url) {
+        setAttachments([ { source: 'existing', name: 'image', path: null, url: item.image_url } ])
+      } else {
+        setAttachments([])
+      }
+    } catch {
+      setAttachments([])
+    }
+
+    setRemovedImagePaths([])
     setShowModal(true)
   }
 
@@ -83,6 +113,114 @@ const AdminAnnouncements = () => {
     setShowModal(false)
     setEditingItem(null)
     setForm(EMPTY_FORM)
+    setAttachments([])
+    setRemovedImagePaths([])
+  }
+
+  const formatFileName = () => {
+    const now = new Date()
+    const date = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}`
+    const time = `${String(now.getHours()).padStart(2, '0')}${String(now.getMinutes()).padStart(2, '0')}${String(now.getSeconds()).padStart(2, '0')}`
+    return `ANN_${date}_${time}_001.jpg`
+  }
+
+  const readImageElement = (file) => new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => {
+      const image = new Image()
+      image.onload = () => resolve(image)
+      image.onerror = reject
+      image.src = reader.result
+    }
+    reader.onerror = reject
+    reader.readAsDataURL(file)
+  })
+
+  const canvasToBlob = (canvas, quality) => new Promise((resolve) => {
+    canvas.toBlob((blob) => resolve(blob), 'image/jpeg', quality)
+  })
+
+  const resizeImageToLimit = async (file) => {
+    const image = await readImageElement(file)
+    const canvas = document.createElement('canvas')
+    const context = canvas.getContext('2d')
+    if (!context) throw new Error('ไม่สามารถประมวลผลรูปภาพได้')
+
+    let width = image.width
+    let height = image.height
+    const maxDimension = 1600
+    if (width > maxDimension || height > maxDimension) {
+      const scale = Math.min(maxDimension / width, maxDimension / height)
+      width = Math.round(width * scale)
+      height = Math.round(height * scale)
+    }
+
+    canvas.width = width
+    canvas.height = height
+    context.drawImage(image, 0, 0, width, height)
+
+    let quality = 0.9
+    let blob = await canvasToBlob(canvas, quality)
+
+    while (blob && blob.size > MAX_IMAGE_TARGET_BYTES && quality > 0.25) {
+      quality -= 0.08
+      blob = await canvasToBlob(canvas, quality)
+    }
+
+    while (blob && blob.size > MAX_IMAGE_TARGET_BYTES && (canvas.width > 480 || canvas.height > 480)) {
+      canvas.width = Math.round(canvas.width * 0.9)
+      canvas.height = Math.round(canvas.height * 0.9)
+      context.clearRect(0, 0, canvas.width, canvas.height)
+      context.drawImage(image, 0, 0, canvas.width, canvas.height)
+      quality = 0.82
+      blob = await canvasToBlob(canvas, quality)
+
+      while (blob && blob.size > MAX_IMAGE_TARGET_BYTES && quality > 0.25) {
+        quality -= 0.08
+        blob = await canvasToBlob(canvas, quality)
+      }
+    }
+
+    if (!blob || blob.size > MAX_IMAGE_SIZE_BYTES) {
+      throw new Error(`ไม่สามารถย่อรูป ${file.name} ให้ต่ำกว่า 100KB ได้`)
+    }
+
+    return new File([blob], formatFileName(), { type: 'image/jpeg' })
+  }
+
+  const handleAttachFile = async (event) => {
+    const selected = Array.from(event.target.files || [])
+    event.target.value = ''
+    if (selected.length === 0) return
+
+    if (selected.length > MAX_ATTACHMENTS) {
+      await showSwal({ icon: 'info', title: 'แนบได้ครั้งละ 1 รูป', text: 'ระบบจะใช้เฉพาะรูปแรก' })
+    }
+
+    try {
+      const resized = await resizeImageToLimit(selected[0])
+      setAttachments((current) => {
+        current.forEach((item) => {
+          if (item.source === 'new' && item.url) URL.revokeObjectURL(item.url)
+        })
+        return [{ source: 'new', name: resized.name, file: resized, url: URL.createObjectURL(resized) }]
+      })
+    } catch (error) {
+      await showSwal({ icon: 'error', title: 'แนบรูปไม่สำเร็จ', text: error.message })
+    }
+  }
+
+  const handleRemoveAttachment = (target) => {
+    setAttachments((current) => {
+      if (target.source === 'new' && target.url) URL.revokeObjectURL(target.url)
+      if (target.source === 'existing' && target.path) setRemovedImagePaths((paths) => [...paths, target.path])
+      return current.filter((item) => item !== target)
+    })
+  }
+
+  const handlePreviewAttachment = (target) => {
+    if (!target.url) return
+    showSwal({ imageUrl: target.url, imageAlt: target.name, showConfirmButton: false, showCloseButton: true, width: 'auto', background: '#0f172a' })
   }
 
   const handleChange = (e) => {
@@ -93,22 +231,62 @@ const AdminAnnouncements = () => {
   const handleSubmit = async (e) => {
     e.preventDefault()
     if (!form.title.trim()) { await showSwal({ icon: 'warning', title: 'ข้อมูลไม่ครบ', text: 'กรุณากรอกหัวข้อประกาศ' }); return }
+    if (!form.announcement_no.trim()) { await showSwal({ icon: 'warning', title: 'ข้อมูลไม่ครบ', text: 'กรุณากรอกเลขที่ประกาศ' }); return }
+    if (!form.announcement_date) { await showSwal({ icon: 'warning', title: 'ข้อมูลไม่ครบ', text: 'กรุณาเลือกวันที่ประกาศ' }); return }
     try {
       setSaving(true)
       const payload = {
+        announcement_no: form.announcement_no,
+        announcement_date: form.announcement_date,
         title: form.title,
         content: form.content,
         type: form.type,
         is_pinned: form.is_pinned,
-        image_url: form.image_url || null,
       }
+
+      let recordId = null
+      let nextImageUrl = null
+
       if (editingItem) {
-        await updateAnnouncement(editingItem.id, payload)
+        const updated = await updateAnnouncement(editingItem.id, payload)
+        recordId = updated.id
+        nextImageUrl = updated.image_url || null
+
+        if (removedImagePaths.length > 0) {
+          await deleteAnnouncementImagesByPaths(removedImagePaths)
+          nextImageUrl = null
+        }
+
+        const newFile = attachments.find((item) => item.source === 'new' && item.file)?.file
+        if (newFile) {
+          const uploaded = await uploadAnnouncementImage(updated.id, newFile)
+          nextImageUrl = uploaded?.url || null
+        }
+
+        if (nextImageUrl !== updated.image_url) {
+          await updateAnnouncement(updated.id, { image_url: nextImageUrl })
+        }
+
         await showSwal({ icon: 'success', title: 'บันทึกสำเร็จ', timer: 1400, showConfirmButton: false })
       } else {
-        await createAnnouncement(payload)
+        const created = await createAnnouncement({ ...payload, image_url: null })
+        recordId = created.id
+
+        const newFile = attachments.find((item) => item.source === 'new' && item.file)?.file
+        if (newFile) {
+          const uploaded = await uploadAnnouncementImage(created.id, newFile)
+          nextImageUrl = uploaded?.url || null
+        }
+
+        if (nextImageUrl) {
+          await updateAnnouncement(created.id, { image_url: nextImageUrl })
+        }
+
         await showSwal({ icon: 'success', title: 'เพิ่มประกาศสำเร็จ', timer: 1400, showConfirmButton: false })
       }
+
+      if (!recordId) throw new Error('ไม่สามารถบันทึกรายการได้')
+
       closeModal(true)
       await loadData({ type: typeFilter, search: searchTerm })
     } catch (err) {
@@ -186,26 +364,30 @@ const AdminAnnouncements = () => {
             <table className="tw" style={{ width: '100%', minWidth: '700px' }}>
               <thead><tr>
                 <th>ปักหมุด</th>
+                <th>เลขที่ประกาศ</th>
+                <th>วันที่ประกาศ</th>
                 <th>หัวข้อ</th>
                 <th>ประเภท</th>
                 <th>เนื้อหา</th>
-                <th>วันที่</th>
+                <th>รูป</th>
                 <th></th>
               </tr></thead>
               <tbody>
                 {loading ? (
-                  <tr><td colSpan="6" style={{ textAlign: 'center', color: 'var(--mu)', padding: '20px' }}>กำลังโหลด...</td></tr>
+                  <tr><td colSpan="8" style={{ textAlign: 'center', color: 'var(--mu)', padding: '20px' }}>กำลังโหลด...</td></tr>
                 ) : announcements.length === 0 ? (
-                  <tr><td colSpan="6" style={{ textAlign: 'center', color: 'var(--mu)', padding: '20px' }}>ไม่พบข้อมูล</td></tr>
+                  <tr><td colSpan="8" style={{ textAlign: 'center', color: 'var(--mu)', padding: '20px' }}>ไม่พบข้อมูล</td></tr>
                 ) : announcements.map((item) => {
                   const badge = getTypeBadge(item.type)
                   return (
                     <tr key={item.id}>
                       <td style={{ textAlign: 'center' }}>{item.is_pinned ? '📌' : ''}</td>
+                      <td>{item.announcement_no || '-'}</td>
+                      <td>{formatDate(item.announcement_date)}</td>
                       <td><strong>{item.title}</strong></td>
                       <td><span className={badge.className}>{badge.label}</span></td>
                       <td style={{ maxWidth: '260px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: 'var(--mu)', fontSize: '13px' }}>{item.content || '-'}</td>
-                      <td>{formatDate(item.created_at)}</td>
+                      <td>{item.image_url ? 'มีรูป' : '-'}</td>
                       <td style={{ whiteSpace: 'nowrap' }}>
                         <button className="btn btn-xs btn-a" style={{ marginRight: '4px' }} onClick={() => openEditModal(item)}>แก้ไข</button>
                         <button className="btn btn-xs btn-dg" onClick={() => handleDelete(item)}>ลบ</button>
@@ -233,6 +415,14 @@ const AdminAnnouncements = () => {
                 <section className="house-sec">
                   <div className="house-sec-title">ข้อมูลประกาศ</div>
                   <div className="house-grid house-grid-3">
+                    <label className="house-field">
+                      <span>เลขที่ประกาศ *</span>
+                      <input name="announcement_no" value={form.announcement_no} onChange={handleChange} placeholder="เช่น ANN-2026-001" />
+                    </label>
+                    <label className="house-field">
+                      <span>วันที่ประกาศ *</span>
+                      <input type="date" name="announcement_date" value={form.announcement_date} onChange={handleChange} />
+                    </label>
                     <label className="house-field house-field-span-2">
                       <span>หัวข้อประกาศ *</span>
                       <input name="title" value={form.title} onChange={handleChange} placeholder="เช่น ประชุมผู้ถือหุ้น" />
@@ -247,14 +437,45 @@ const AdminAnnouncements = () => {
                       <span>เนื้อหา</span>
                       <textarea name="content" value={form.content} onChange={handleChange} rows="5" placeholder="รายละเอียดของประกาศ" />
                     </label>
-                    <label className="house-field house-field-span-2">
-                      <span>URL รูปภาพ (ถ้ามี)</span>
-                      <input name="image_url" value={form.image_url} onChange={handleChange} placeholder="https://..." />
-                    </label>
                     <label className="house-field" style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: '8px', paddingTop: '20px' }}>
                       <input type="checkbox" name="is_pinned" checked={form.is_pinned} onChange={handleChange} style={{ width: '16px', height: '16px', cursor: 'pointer' }} />
                       <span style={{ margin: 0 }}>📌 ปักหมุดประกาศนี้</span>
                     </label>
+                  </div>
+                </section>
+
+                <section className="house-sec">
+                  <div className="house-sec-title">รูปประกาศ (1 รูปต่อ 1 ประกาศ)</div>
+                  <div className="house-grid house-grid-3">
+                    <label className="house-field house-field-span-3">
+                      <span>แนบไฟล์รูปภาพ</span>
+                      <input type="file" accept="image/*" onChange={handleAttachFile} />
+                    </label>
+                  </div>
+                  <div style={{ marginTop: '8px', fontSize: '12px', color: 'var(--mu)' }}>
+                    แนบได้สูงสุด 1 รูป • ระบบย่อไฟล์ไม่เกิน 100KB และตั้งชื่อ ANN_YYYYMMDD_HHMMSS_001.jpg
+                  </div>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginTop: '8px' }}>
+                    {attachments.length === 0 ? (
+                      <div style={{ fontSize: '12px', color: 'var(--mu)' }}>ยังไม่มีรูปแนบ</div>
+                    ) : attachments.map((image, index) => (
+                      <div key={`${image.name}-${index}`} style={{ width: '80px' }}>
+                        <button
+                          type="button"
+                          onClick={() => handlePreviewAttachment(image)}
+                          style={{ width: '80px', height: '80px', borderRadius: '8px', border: '1px solid var(--bo)', background: '#fff', padding: '0', overflow: 'hidden', cursor: 'pointer' }}
+                        >
+                          <img src={image.url} alt={image.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveAttachment(image)}
+                          style={{ marginTop: '4px', width: '100%', fontSize: '10px', border: '1px solid var(--bo)', borderRadius: '6px', background: '#fff', cursor: 'pointer', padding: '2px 4px' }}
+                        >
+                          ลบ
+                        </button>
+                      </div>
+                    ))}
                   </div>
                 </section>
               </div>
