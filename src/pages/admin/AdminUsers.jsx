@@ -1,17 +1,51 @@
-import React, { useContext } from 'react'
+import React, { useContext, useState, useEffect } from 'react'
 import { ModalContext } from './AdminLayout'
+import { getUsers, createUser } from '../../lib/users'
 
 const AdminUsers = () => {
   const { openModal } = useContext(ModalContext)
+  const [users, setUsers] = useState([])
+  const [loading, setLoading] = useState(false)
+
+  useEffect(() => {
+    loadUsers()
+  }, [])
+
+  const loadUsers = async () => {
+    setLoading(true)
+    try {
+      const data = await getUsers()
+      setUsers(data)
+    } catch (error) {
+      console.error('Error loading users:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
 
   const handleAddUser = () => {
     openModal('เพิ่มผู้ใช้ใหม่', {
       name: { label: 'ชื่อ-นามสกุล', type: 'text', placeholder: 'นายสมชาติ' },
       email: { label: 'อีเมล', type: 'email', placeholder: 'email@example.com' },
       phone: { label: 'เบอร์', type: 'tel', placeholder: '098-xxx-xxxx' },
-      role: { label: 'บทบาท', type: 'text', placeholder: 'ผู้ดูแล/Admin' },
-    }, (data) => {
-      console.log('Add user:', data)
+      role: { label: 'บทบาท', type: 'select', options: [
+        { label: 'Admin', value: 'admin' },
+        { label: 'จัดการ', value: 'manager' },
+        { label: 'เจ้าหน้าที่', value: 'staff' },
+        { label: 'สมาชิก', value: 'member' }
+      ]},
+    }, async (data) => {
+      try {
+        await createUser({
+          name: data.name?.value,
+          email: data.email?.value,
+          phone: data.phone?.value,
+          role: data.role?.value,
+        })
+        loadUsers()
+      } catch (error) {
+        console.error('Error adding user:', error)
+      }
     })
   }
   return (
@@ -32,19 +66,32 @@ const AdminUsers = () => {
       </div>
 
       <div className="card" style={{ marginTop: '16px' }}>
-        <div className="ch"><div className="ct">รายชื่อผู้ใช้งาน</div></div>
+        <div className="ch"><div className="ct">รายชื่อผู้ใช้งาน ({users.length})</div></div>
         <div className="cb">
-          <div style={{ overflowX: 'auto' }}>
-            <table className="tw" style={{ width: '100%', minWidth: '600px' }}>
-              <thead><tr>
-                <th>ชื่อ</th><th>อีเมล</th><th>บทบาท</th><th>สถานะ</th><th/>
-              </tr></thead>
-              <tbody>
-                <tr><td>นายสมชาติ ใจดี</td><td>somchai@greenfield.th</td><td><span className="bd b-pr">เจ้าหน้าที่นิติ</span></td><td><span className="bd b-ok">ใช้งาน</span></td><td><button className="btn btn-xs btn-o">ดู</button></td></tr>
-                <tr><td>นางสาวพิชญา สุขใจ</td><td>pichaya@greenfield.th</td><td><span className="bd b-pr">เจ้าหน้าที่</span></td><td><span className="bd b-ok">ใช้งาน</span></td><td><button className="btn btn-xs btn-o">ดู</button></td></tr>
-              </tbody>
-            </table>
-          </div>
+          {loading ? (
+            <div style={{ padding: '20px', textAlign: 'center', color: '#999' }}>กำลังโหลด...</div>
+          ) : users.length === 0 ? (
+            <div style={{ padding: '20px', textAlign: 'center', color: '#999' }}>ไม่มีข้อมูลผู้ใช้</div>
+          ) : (
+            <div style={{ overflowX: 'auto' }}>
+              <table className="tw" style={{ width: '100%', minWidth: '600px' }}>
+                <thead><tr>
+                  <th>ชื่อ</th><th>อีเมล</th><th>เบอร์โทร</th><th>บทบาท</th><th/>
+                </tr></thead>
+                <tbody>
+                  {users.map((user) => (
+                    <tr key={user.id}>
+                      <td>{user.name || '-'}</td>
+                      <td>{user.email}</td>
+                      <td>{user.phone || '-'}</td>
+                      <td><span className="bd b-pr">{user.role || 'member'}</span></td>
+                      <td><button className="btn btn-xs btn-o">ดู</button></td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
       </div>
     </div>

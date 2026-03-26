@@ -1,14 +1,36 @@
-import React, { useContext } from 'react'
+import React, { useContext, useState, useEffect } from 'react'
 import { ModalContext } from './AdminLayout'
+import { getAuditLogs } from '../../lib/auditLogs'
 
 const AdminLogs = () => {
   const { openModal } = useContext(ModalContext)
+  const [logs, setLogs] = useState([])
+  const [loading, setLoading] = useState(false)
 
-  const handleViewLog = (logId) => {
-    openModal('\u0e23า\u0e22\u0e25\u0e30\u0e40\u0e2d\u0e35\u0e22\u0e14 Log ID: ' + logId, {
-      timestamp: { label: '\u0e40\u0e27\u0e25\u0e32\u0e2a\u0e21\u0e2b', type: 'text', placeholder: '' },
-      action: { label: '\u0e01\u0e32\u0e23\u0e01\u0e23\u0e23\u0e21\u0e01\u0e32ร', type: 'text', placeholder: '' },
-      user: { label: '\u0e1c\u0e39\u0e49\u0e43\u0e0a\u0e49', type: 'text', placeholder: '' },
+  useEffect(() => {
+    loadLogs()
+  }, [])
+
+  const loadLogs = async () => {
+    setLoading(true)
+    try {
+      const data = await getAuditLogs(100)
+      setLogs(data)
+    } catch (error) {
+      console.error('Error loading logs:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleViewLog = (log) => {
+    const newValues = log.new_values ? JSON.stringify(log.new_values, null, 2) : '-'
+    const actionBg = log.action === 'INSERT' ? 'b-pr' : log.action === 'UPDATE' ? 'b-a' : 'b-mu'
+    openModal('รายละเอียด Log: ' + log.action, {
+      timestamp: { label: 'เวลา', type: 'text', value: new Date(log.acted_at).toLocaleString('th-TH'), disabled: true },
+      user: { label: 'ผู้ใช้', type: 'text', value: log.profiles?.name || 'System', disabled: true },
+      action: { label: 'การดำเนินการ', type: 'text', value: log.action, disabled: true },
+      table: { label: 'ตาราข้อมูล', type: 'text', value: log.table_name, disabled: true },
     }, null)
   }
   return (
@@ -26,20 +48,36 @@ const AdminLogs = () => {
       </div>
 
       <div className="card" style={{ marginTop: '16px' }}>
-        <div className="ch"><div className="ct">ข้อมูล Log ล่าสุด</div></div>
+        <div className="ch"><div className="ct">ข้อมูล Log ล่าสุด ({logs.length})</div></div>
         <div className="cb">
-          <div style={{ overflowX: 'auto' }}>
-            <table className="tw" style={{ width: '100%', minWidth: '700px', fontSize: '12px' }}>
-              <thead><tr>
-                <th>เวลา</th><th>ผู้ใช้</th><th>การดำเนินการ</th><th>รายละเอียด</th>
-              </tr></thead>
-              <tbody>
-                <tr><td>14:30:22</td><td>อ.สมชาติ</td><td><span className="bd b-pr">สร้าง</span></td><td>บ้าน 10/1 - เพิ่มข้อมูลใหม่</td></tr>
-                <tr><td>14:25:15</td><td>อ.พิชญา</td><td><span className="bd b-a">แก้ไข</span></td><td>ค่าส่วนกลาง - อัปเดตข้อมูล</td></tr>
-                <tr><td>14:20:08</td><td>ระบบ</td><td><span className="bd b-mu">ระบบ</span></td><td>Backup ฐานข้อมูลประจำวัน</td></tr>
-              </tbody>
-            </table>
-          </div>
+          {loading ? (
+            <div style={{ padding: '20px', textAlign: 'center', color: '#999' }}>กำลังโหลด...</div>
+          ) : logs.length === 0 ? (
+            <div style={{ padding: '20px', textAlign: 'center', color: '#999' }}>ไม่มีข้อมูล Log</div>
+          ) : (
+            <div style={{ overflowX: 'auto' }}>
+              <table className="tw" style={{ width: '100%', minWidth: '700px', fontSize: '12px' }}>
+                <thead><tr>
+                  <th>เวลา</th><th>ผู้ใช้</th><th>การดำเนินการ</th><th>ตาราข้อมูล</th><th/>
+                </tr></thead>
+                <tbody>
+                  {logs.map((log) => {
+                    const actionBg = log.action === 'INSERT' ? 'b-pr' : log.action === 'UPDATE' ? 'b-a' : 'b-mu'
+                    const time = new Date(log.acted_at).toLocaleString('th-TH', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+                    return (
+                      <tr key={log.id}>
+                        <td>{time}</td>
+                        <td>{log.profiles?.name || 'System'}</td>
+                        <td><span className={`bd ${actionBg}`}>{log.action}</span></td>
+                        <td>{log.table_name}</td>
+                        <td><button className="btn btn-xs btn-o" onClick={() => handleViewLog(log)}>ดู</button></td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
       </div>
     </div>
