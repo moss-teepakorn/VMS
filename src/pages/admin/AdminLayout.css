@@ -1186,6 +1186,10 @@ button, input, select, textarea {
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
+.house-grid-4 {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
 .house-field {
   display: flex;
   flex-direction: column;
@@ -1291,7 +1295,8 @@ button, input, select, textarea {
   }
 
   .house-grid-2,
-  .house-grid-3 {
+  .house-grid-3,
+  .house-grid-4 {
     grid-template-columns: 1fr;
   }
 

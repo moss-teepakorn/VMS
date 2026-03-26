@@ -347,10 +347,12 @@ const AdminVehicles = () => {
         <div className="ch"><div className="ct">ยานพาหนะทั้งหมด ({vehicles.length} รายการ)</div></div>
         <div className="cb">
           <div style={{ overflowX: 'auto' }}>
-            <table className="tw" style={{ width: '100%', minWidth: '980px' }}>
+            <table className="tw" style={{ width: '100%', minWidth: '1120px' }}>
               <thead><tr>
                 <th>ซอย</th>
                 <th>บ้านเลขที่ / เจ้าของบ้าน</th>
+                <th>ทะเบียนรถ</th>
+                <th>ประเภทรถ</th>
                 <th>ยี่ห้อ / รุ่น</th>
                 <th>สี</th>
                 <th>ที่จอด</th>
@@ -360,9 +362,9 @@ const AdminVehicles = () => {
               </tr></thead>
               <tbody>
                 {loading ? (
-                  <tr><td colSpan="8" style={{ textAlign: 'center', color: 'var(--mu)', padding: '20px' }}>กำลังโหลดข้อมูล...</td></tr>
+                  <tr><td colSpan="10" style={{ textAlign: 'center', color: 'var(--mu)', padding: '20px' }}>กำลังโหลดข้อมูล...</td></tr>
                 ) : vehicles.length === 0 ? (
-                  <tr><td colSpan="8" style={{ textAlign: 'center', color: 'var(--mu)', padding: '20px' }}>ไม่พบข้อมูลรถ</td></tr>
+                  <tr><td colSpan="10" style={{ textAlign: 'center', color: 'var(--mu)', padding: '20px' }}>ไม่พบข้อมูลรถ</td></tr>
                 ) : (
                   vehicles.map((vehicle) => {
                     const badge = getStatusBadge(vehicle.status)
@@ -371,8 +373,10 @@ const AdminVehicles = () => {
                         <td>{vehicle.houses?.soi ? `ซอย ${vehicle.houses.soi}` : '-'}</td>
                         <td>
                           <div><strong>{vehicle.houses?.house_no || '-'}</strong> {vehicle.houses?.owner_name ? `- ${vehicle.houses.owner_name}` : ''}</div>
-                          <div style={{ fontSize: '11px', color: 'var(--mu)' }}>{vehicle.vehicle_type || '-'} · {vehicle.license_plate || '-'} {vehicle.province ? `(${vehicle.province})` : ''}</div>
+                          <div style={{ fontSize: '11px', color: 'var(--mu)' }}>{vehicle.province ? `(${vehicle.province})` : '-'}</div>
                         </td>
+                        <td><strong>{vehicle.license_plate || '-'}</strong></td>
+                        <td>{vehicle.vehicle_type || '-'}</td>
                         <td>{vehicle.brand || '-'} {vehicle.model || ''}</td>
                         <td>{vehicle.color || '-'}</td>
                         <td>{vehicle.parking_location || '-'}{vehicle.parking_lock_no ? ` (${vehicle.parking_lock_no})` : ''}</td>
@@ -406,7 +410,7 @@ const AdminVehicles = () => {
               <div className="house-md-body">
                 <section className="house-sec">
                   <div className="house-sec-title">บ้านและข้อมูลทะเบียน</div>
-                  <div className="house-grid house-grid-3">
+                  <div className="house-grid house-grid-4">
                     <label className="house-field">
                       <span>บ้าน *</span>
                       <select name="house_id" value={form.house_id} onChange={handleChange}>
@@ -439,18 +443,18 @@ const AdminVehicles = () => {
                         {PROVINCE_OPTIONS.map((province) => <option key={province} value={province}>{province}</option>)}
                       </select>
                     </label>
-                  </div>
-                </section>
-
-                <section className="house-sec">
-                  <div className="house-sec-title">รายละเอียดรถ</div>
-                  <div className="house-grid house-grid-3">
                     <label className="house-field">
                       <span>ประเภทรถ</span>
                       <select name="vehicle_type" value={form.vehicle_type} onChange={handleChange}>
                         {VEHICLE_TYPES.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
                       </select>
                     </label>
+                  </div>
+                </section>
+
+                <section className="house-sec">
+                  <div className="house-sec-title">รายละเอียดรถ</div>
+                  <div className="house-grid house-grid-3">
                     <label className="house-field">
                       <span>ยี่ห้อ</span>
                       <select name="brand" value={form.brand} onChange={handleChange}>
