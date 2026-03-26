@@ -298,7 +298,6 @@ const AdminHouses = () => {
             <option value="all">ทุกซอย</option>
             {soiOptions.map((soi) => <option key={soi} value={soi}>{`ซอย ${soi}`}</option>)}
           </select>
-          <button className="btn btn-a btn-sm houses-filter-btn" onClick={() => loadHouses({ status: filterType, soi: soiFilter, search: searchTerm })}>ค้นหา</button>
         </div>
       </div>
 
@@ -309,6 +308,7 @@ const AdminHouses = () => {
           <div className="houses-list-actions">
             <button className="btn btn-p btn-sm" onClick={openAddModal}>+ เพิ่มบ้าน</button>
             <button className="btn btn-a btn-sm" onClick={handleBulkUpdateAnnualFee}>⏳ อัปเดตค่าส่วนกลาง</button>
+            <button className="btn btn-a btn-sm" onClick={() => loadHouses({ status: filterType, soi: soiFilter, search: searchTerm })}>ค้นหา</button>
             <button className="btn btn-g btn-sm" onClick={() => loadHouses()}>🔄 รีเฟรช</button>
           </div>
         </div>

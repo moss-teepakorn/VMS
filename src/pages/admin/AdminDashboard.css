@@ -560,9 +560,7 @@
 }
 
 .houses-filter-input {
-  flex: 1;
-  min-width: 220px;
-  max-width: 600px;
+  flex-grow: 1;
   height: 34px;
   border: 1px solid rgba(255,255,255,.32);
   border-radius: 8px;
@@ -591,13 +589,6 @@
 
 .houses-filter-select:nth-child(3) {
   width: 136px;
-}
-
-.houses-filter-btn {
-  flex-shrink: 0;
-  width: 86px;
-  height: 34px;
-  padding: 0 12px;
 }
 
 .houses-list-head {
