@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react'
+import Swal from 'sweetalert2'
 import {
   getUsers,
   createUser,
@@ -12,9 +13,6 @@ import {
 const EMPTY_FORM = {
   username: '',
   password: '',
-  full_name: '',
-  email: '',
-  phone: '',
   role: 'resident',
   is_active: true,
   house_id: '',
@@ -42,6 +40,7 @@ const AdminUsers = () => {
       setUsers(data)
     } catch (error) {
       console.error('Error loading users:', error)
+      await Swal.fire({ icon: 'error', title: 'โหลดข้อมูลไม่สำเร็จ', text: error.message })
     } finally {
       setLoading(false)
     }
@@ -53,8 +52,23 @@ const AdminUsers = () => {
       setHouses(rows)
     } catch (error) {
       console.error('Error loading houses:', error)
+      await Swal.fire({ icon: 'error', title: 'โหลดบ้านไม่สำเร็จ', text: error.message })
     }
   }
+
+  const getHouseNo = (houseId) => {
+    if (!houseId) return '-'
+    const house = houses.find((item) => item.id === houseId)
+    return house?.house_no || '-'
+  }
+
+  const getHouseOwnerName = (houseId, fallback = '-') => {
+    if (!houseId) return fallback
+    const house = houses.find((item) => item.id === houseId)
+    return house?.owner_name || fallback
+  }
+
+  const getRoleText = (role) => (role === 'admin' ? 'ผู้ดูแลระบบ' : 'ลูกบ้าน')
 
   const openAddModal = () => {
     setEditingUser(null)
@@ -68,13 +82,11 @@ const AdminUsers = () => {
     setForm({
       username: user.username || '',
       password: '',
-      full_name: user.full_name || '',
-      email: user.email || '',
-      phone: user.phone || '',
       role: user.role || 'resident',
       is_active: user.is_active ?? true,
       house_id: user.house_id || '',
     })
+
     if (user.house_id) {
       try {
         const detail = await getHouseDetail(user.house_id)
@@ -107,16 +119,19 @@ const AdminUsers = () => {
   const handleSelectHouse = async (event) => {
     const houseId = event.target.value
     setForm((prev) => ({ ...prev, house_id: houseId }))
+
     if (!houseId) {
       setSelectedHouse(null)
       return
     }
+
     try {
       const detail = await getHouseDetail(houseId)
       setSelectedHouse(detail)
     } catch (error) {
       console.error('Error loading house detail:', error)
       setSelectedHouse(null)
+      await Swal.fire({ icon: 'error', title: 'โหลดข้อมูลบ้านไม่สำเร็จ', text: error.message })
     }
   }
 
@@ -124,8 +139,6 @@ const AdminUsers = () => {
     if (!form.house_id) return 'กรุณาเลือกบ้านเลขที่'
     if (!form.username.trim()) return 'กรุณากรอก username'
     if (!form.password.trim()) return 'กรุณากรอก password'
-    if (!form.email.trim()) return 'กรุณากรอก email'
-    if (!form.phone.trim()) return 'กรุณากรอกเบอร์โทร'
     return null
   }
 
@@ -133,7 +146,7 @@ const AdminUsers = () => {
     event.preventDefault()
     const validationError = validateForm()
     if (validationError) {
-      alert(validationError)
+      await Swal.fire({ icon: 'warning', title: 'ข้อมูลไม่ครบ', text: validationError })
       return
     }
 
@@ -142,9 +155,9 @@ const AdminUsers = () => {
       const payload = {
         username: form.username,
         password: form.password,
-        full_name: form.full_name,
-        email: form.email,
-        phone: form.phone,
+        full_name: selectedHouse?.owner_name || '',
+        email: selectedHouse?.email || '',
+        phone: selectedHouse?.phone || '',
         role: form.role,
         is_active: form.is_active,
         house_id: form.house_id,
@@ -157,43 +170,58 @@ const AdminUsers = () => {
       }
       closeModal()
       await loadUsers()
+      await Swal.fire({ icon: 'success', title: 'สำเร็จ', text: 'บันทึกข้อมูลผู้ใช้เรียบร้อย' })
     } catch (error) {
       console.error('Save user failed:', error)
-      alert(`บันทึกไม่สำเร็จ: ${error.message}`)
+      await Swal.fire({ icon: 'error', title: 'บันทึกไม่สำเร็จ', text: error.message })
     } finally {
       setSaving(false)
     }
   }
 
   const handleDeleteUser = async (user) => {
-    const ok = window.confirm(`ยืนยันลบผู้ใช้: ${user.full_name || user.username || user.id} ?`)
-    if (!ok) return
+    const result = await Swal.fire({
+      icon: 'question',
+      title: 'ยืนยันการลบผู้ใช้งาน',
+      text: user.username || user.full_name || user.id,
+      showCancelButton: true,
+      confirmButtonText: 'ลบ',
+      cancelButtonText: 'ยกเลิก',
+    })
+    if (!result.isConfirmed) return
+
     try {
       await deleteUser(user.id)
-      loadUsers()
+      await loadUsers()
+      await Swal.fire({ icon: 'success', title: 'ลบสำเร็จ', text: 'ลบผู้ใช้งานเรียบร้อย' })
     } catch (error) {
-      alert(`ลบผู้ใช้ไม่สำเร็จ: ${error.message}`)
+      await Swal.fire({ icon: 'error', title: 'ลบไม่สำเร็จ', text: error.message })
     }
   }
 
   const handleQuickResetPassword = async (user) => {
-    const next = window.prompt(`ตั้งรหัสผ่านใหม่ของ ${user.username}`, '')
-    if (!next) return
+    const result = await Swal.fire({
+      title: `เปลี่ยนรหัสผ่าน: ${user.username}`,
+      input: 'password',
+      inputPlaceholder: 'กรอกรหัสผ่านใหม่ (อย่างน้อย 6 ตัวอักษร)',
+      showCancelButton: true,
+      confirmButtonText: 'บันทึก',
+      cancelButtonText: 'ยกเลิก',
+      inputValidator: (value) => {
+        if (!value) return 'กรุณากรอกรหัสผ่านใหม่'
+        if (value.length < 6) return 'รหัสผ่านต้องอย่างน้อย 6 ตัวอักษร'
+        return undefined
+      },
+    })
+    if (!result.isConfirmed) return
+
     try {
-      await updateUser(user.id, { password: next })
-      alert('เปลี่ยนรหัสผ่านเรียบร้อย')
+      await updateUser(user.id, { password: result.value })
+      await Swal.fire({ icon: 'success', title: 'สำเร็จ', text: 'เปลี่ยนรหัสผ่านเรียบร้อย' })
     } catch (error) {
-      alert(`เปลี่ยนรหัสผ่านไม่สำเร็จ: ${error.message}`)
+      await Swal.fire({ icon: 'error', title: 'ไม่สำเร็จ', text: error.message })
     }
   }
-
-  const getHouseNo = (houseId) => {
-    if (!houseId) return '-'
-    const house = houses.find((item) => item.id === houseId)
-    return house?.house_no || '-'
-  }
-
-  const getRoleText = (role) => (role === 'admin' ? 'ผู้ดูแลระบบ' : 'ลูกบ้าน')
 
   return (
     <div className="pane on">
@@ -203,7 +231,7 @@ const AdminUsers = () => {
             <div className="ph-ico">👥</div>
             <div>
               <div className="ph-h1">ผู้ใช้งานระบบ</div>
-              <div className="ph-sub">จัดการโปรไฟล์ login จากตาราง profiles</div>
+              <div className="ph-sub">จัดการโปรไฟล์</div>
             </div>
           </div>
           <div className="ph-acts">
@@ -225,7 +253,7 @@ const AdminUsers = () => {
                 <thead><tr>
                   <th>บ้านเลขที่</th>
                   <th>username</th>
-                  <th>ชื่อ</th>
+                  <th>ชื่อ-นามสกุล</th>
                   <th>email</th>
                   <th>เบอร์โทร</th>
                   <th>บทบาท</th>
@@ -239,7 +267,7 @@ const AdminUsers = () => {
                     <tr key={user.id}>
                       <td>{getHouseNo(user.house_id)}</td>
                       <td>{user.username || '-'}</td>
-                      <td>{user.full_name || '-'}</td>
+                      <td>{getHouseOwnerName(user.house_id, user.full_name || '-')}</td>
                       <td>{user.email || '-'}</td>
                       <td>{user.phone || '-'}</td>
                       <td><span className="bd b-pr">{getRoleText(user.role)}</span></td>
@@ -266,7 +294,7 @@ const AdminUsers = () => {
             <div className="house-md-head">
               <div>
                 <div className="house-md-title">👥 {editingUser ? 'แก้ไขผู้ใช้งานระบบ' : 'เพิ่มผู้ใช้งานระบบ'}</div>
-                <div className="house-md-sub">{form.username || '-'} {form.full_name ? `— ${form.full_name}` : ''}</div>
+                <div className="house-md-sub">{form.username || '-'} {selectedHouse?.owner_name ? `— ${selectedHouse.owner_name}` : ''}</div>
               </div>
             </div>
 
@@ -285,12 +313,20 @@ const AdminUsers = () => {
                       </select>
                     </label>
                     <label className="house-field">
-                      <span>เจ้าของบ้าน (ดึงจาก houses)</span>
+                      <span>เจ้าของบ้าน</span>
                       <input value={selectedHouse?.owner_name || '-'} readOnly className="house-readonly" />
                     </label>
                     <label className="house-field house-field-span-2">
-                      <span>ที่อยู่ (ดึงจาก houses)</span>
+                      <span>ที่อยู่</span>
                       <input value={selectedHouse?.address || '-'} readOnly className="house-readonly" />
+                    </label>
+                    <label className="house-field">
+                      <span>email</span>
+                      <input value={selectedHouse?.email || '-'} readOnly className="house-readonly" />
+                    </label>
+                    <label className="house-field">
+                      <span>เบอร์โทร</span>
+                      <input value={selectedHouse?.phone || '-'} readOnly className="house-readonly" />
                     </label>
                   </div>
                 </section>
@@ -306,17 +342,9 @@ const AdminUsers = () => {
                       <span>password <strong style={{ color: '#dc2626' }}>*</strong></span>
                       <input name="password" type="password" value={form.password} onChange={handleChange} placeholder="อย่างน้อย 6 ตัวอักษร" />
                     </label>
-                    <label className="house-field">
-                      <span>email <strong style={{ color: '#dc2626' }}>*</strong></span>
-                      <input name="email" type="email" value={form.email} onChange={handleChange} placeholder="name@example.com" />
-                    </label>
-                    <label className="house-field">
-                      <span>เบอร์โทร <strong style={{ color: '#dc2626' }}>*</strong></span>
-                      <input name="phone" value={form.phone} onChange={handleChange} placeholder="08x-xxx-xxxx" />
-                    </label>
-                    <label className="house-field">
+                    <label className="house-field house-field-span-2">
                       <span>ชื่อ-นามสกุล</span>
-                      <input name="full_name" value={form.full_name} onChange={handleChange} placeholder="นายสมชาย ใจดี" />
+                      <input value={selectedHouse?.owner_name || '-'} readOnly className="house-readonly" />
                     </label>
                     <label className="house-field">
                       <span>บทบาท</span>
