@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
+import { applyDocumentTitle, getSetupConfig } from '../lib/setup'
+import villageLogo from '../assets/village-logo.svg'
 
 export default function LoginPage() {
   const { signIn, user, profile, loading } = useAuth()
@@ -10,6 +12,12 @@ export default function LoginPage() {
   const [error, setError] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [showPass, setShowPass] = useState(false)
+  const [setup, setSetup] = useState({
+    villageName: 'The Greenfield',
+    appLineMain: 'Village Management',
+    appLineTail: 'System',
+    version: 'v12.3',
+  })
 
   // ถ้า login แล้ว redirect ไปหน้าที่ถูก
   useEffect(() => {
@@ -17,6 +25,15 @@ export default function LoginPage() {
       navigate(profile.role === 'admin' ? '/admin/dashboard' : '/resident/home', { replace: true })
     }
   }, [user, profile, loading, navigate])
+
+  useEffect(() => {
+    const loadSetup = async () => {
+      const next = await getSetupConfig()
+      setSetup(next)
+      applyDocumentTitle(next.villageName)
+    }
+    loadSetup()
+  }, [])
 
   async function handleSubmit(e) {
     e.preventDefault()
@@ -30,119 +47,125 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-950 to-slate-900 flex items-center justify-center p-4 relative overflow-hidden">
+    <div className="min-h-screen bg-gradient-to-br from-sky-700 via-cyan-600 to-emerald-500 flex items-center justify-center p-3 sm:p-6 relative overflow-hidden">
 
       {/* Background decoration */}
       <div className="absolute inset-0 pointer-events-none select-none">
-        <div className="absolute top-[-10%] left-[-5%] w-[500px] h-[500px] rounded-full bg-blue-500/5 blur-3xl" />
-        <div className="absolute bottom-[-10%] right-[-5%] w-[600px] h-[600px] rounded-full bg-green-500/5 blur-3xl" />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] rounded-full border border-white/[0.02]" />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] rounded-full border border-white/[0.03]" />
+        <div className="absolute top-[-8%] left-[-5%] w-[520px] h-[520px] rounded-full bg-sky-300/20 blur-3xl" />
+        <div className="absolute bottom-[-12%] right-[-6%] w-[560px] h-[560px] rounded-full bg-emerald-300/20 blur-3xl" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(255,255,255,0.18),transparent_38%),radial-gradient(circle_at_85%_15%,rgba(255,255,255,0.12),transparent_34%),radial-gradient(circle_at_80%_78%,rgba(255,255,255,0.14),transparent_30%)]" />
       </div>
 
-      <div className="w-full max-w-sm relative z-10">
-
-        {/* Logo + Title */}
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-500 to-green-500 mb-4 shadow-lg shadow-blue-500/25">
-            <svg viewBox="0 0 32 32" fill="none" className="w-9 h-9">
-              <path d="M4 28 L4 14 L16 6 L28 14 L28 28 Z" stroke="white" strokeWidth="1.5" strokeLinejoin="round" fill="none"/>
-              <path d="M12 28 L12 20 L20 20 L20 28" stroke="white" strokeWidth="1.5" strokeLinejoin="round" fill="none"/>
-              <path d="M9 17 L16 12 L23 17" stroke="white" strokeWidth="1" strokeOpacity="0.5" fill="none"/>
-            </svg>
+      <div className="w-full max-w-[980px] relative z-10">
+        <div className="grid grid-cols-1 lg:grid-cols-2 rounded-3xl overflow-hidden shadow-2xl shadow-slate-900/30 border border-white/30 bg-white/10 backdrop-blur-md min-h-[620px]">
+          <div className="hidden lg:flex flex-col justify-between p-10 bg-gradient-to-br from-sky-700/55 to-emerald-600/55 text-white">
+            <div>
+              <div className="inline-flex items-center gap-3 rounded-2xl px-4 py-3 bg-white/20 border border-white/30">
+                <img src={villageLogo} alt="Village Logo" className="w-12 h-12 rounded-xl object-cover" />
+                <div>
+                  <div className="text-lg font-semibold leading-tight">{setup.villageName}</div>
+                  <div className="text-xs text-white/80">{setup.appLineMain} {setup.appLineTail}</div>
+                </div>
+              </div>
+              <h1 className="mt-8 text-4xl font-bold leading-tight">Village Management<br />Dashboard</h1>
+              <p className="mt-4 text-sm text-white/85 max-w-md">บริหารจัดการหมู่บ้านแบบรวมศูนย์ พร้อมงานทะเบียนบ้าน ยานพาหนะ ค่าส่วนกลาง และการสื่อสารของนิติบุคคล</p>
+            </div>
+            <div className="text-xs text-white/80">{setup.villageName} · {setup.version}</div>
           </div>
-          <h1 className="text-2xl font-semibold text-white tracking-tight">The Greenfield</h1>
-          <p className="text-sm text-slate-400 mt-1">ระบบจัดการหมู่บ้าน</p>
-        </div>
 
-        {/* Card */}
-        <div className="bg-white/[0.06] backdrop-blur-xl border border-white/10 rounded-2xl p-6 shadow-2xl">
+          <div className="flex items-center justify-center p-5 sm:p-8 bg-white/92">
+            <div className="w-full max-w-md">
+              <div className="text-center mb-7 lg:hidden">
+                <img src={villageLogo} alt="Village Logo" className="w-16 h-16 mx-auto rounded-2xl object-cover shadow-md" />
+                <h1 className="text-2xl font-bold text-slate-800 mt-3">{setup.villageName}</h1>
+                <p className="text-sm text-slate-500">{setup.appLineMain} {setup.appLineTail}</p>
+              </div>
 
-          <h2 className="text-base font-medium text-white mb-5">เข้าสู่ระบบ</h2>
+              <div className="bg-white border border-slate-200 rounded-2xl p-6 sm:p-7 shadow-xl">
+                <h2 className="text-xl font-bold text-slate-800 mb-1">เข้าสู่ระบบ</h2>
+                <p className="text-sm text-slate-500 mb-5">กรอกข้อมูลเพื่อเข้าสู่ระบบจัดการหมู่บ้าน</p>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
+                <form onSubmit={handleSubmit} className="space-y-4">
 
-            {/* Email */}
-            <div>
-              <label className="block text-xs font-medium text-slate-400 mb-1.5">
-                อีเมล
-              </label>
-              <input
-                type="email"
-                value={email}
-                onChange={e => setEmail(e.target.value)}
-                required
-                autoComplete="email"
-                placeholder="your@email.com"
-                className="w-full bg-white/[0.08] border border-white/10 rounded-lg px-3.5 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-blue-400 focus:bg-white/[0.12] transition"
-              />
-            </div>
+                  {/* Email */}
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-600 mb-1.5">ชื่อผู้ใช้</label>
+                    <input
+                      type="email"
+                      value={email}
+                      onChange={e => setEmail(e.target.value)}
+                      required
+                      autoComplete="email"
+                      placeholder="username@email.com"
+                      className="w-full bg-white border border-slate-300 rounded-lg px-3.5 py-2.5 text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200 transition"
+                    />
+                  </div>
 
-            {/* Password */}
-            <div>
-              <label className="block text-xs font-medium text-slate-400 mb-1.5">
-                รหัสผ่าน
-              </label>
-              <div className="relative">
-                <input
-                  type={showPass ? 'text' : 'password'}
-                  value={password}
-                  onChange={e => setPassword(e.target.value)}
-                  required
-                  autoComplete="current-password"
-                  placeholder="••••••••"
-                  className="w-full bg-white/[0.08] border border-white/10 rounded-lg px-3.5 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-blue-400 focus:bg-white/[0.12] transition pr-10"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPass(v => !v)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 transition"
-                  tabIndex={-1}
-                >
-                  {showPass ? (
-                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
-                    </svg>
-                  ) : (
-                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                    </svg>
+                  {/* Password */}
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-600 mb-1.5">รหัสผ่าน</label>
+                    <div className="relative">
+                      <input
+                        type={showPass ? 'text' : 'password'}
+                        value={password}
+                        onChange={e => setPassword(e.target.value)}
+                        required
+                        autoComplete="current-password"
+                        placeholder="กรอกรหัสผ่าน"
+                        className="w-full bg-white border border-slate-300 rounded-lg px-3.5 py-2.5 text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200 transition pr-10"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPass(v => !v)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-700 transition"
+                        tabIndex={-1}
+                      >
+                        {showPass ? (
+                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
+                          </svg>
+                        ) : (
+                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                          </svg>
+                        )}
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Error */}
+                  {error && (
+                    <div className="flex items-start gap-2 bg-red-50 border border-red-200 rounded-lg px-3 py-2.5">
+                      <svg className="w-4 h-4 text-red-500 mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+                      </svg>
+                      <p className="text-xs text-red-600">{error}</p>
+                    </div>
                   )}
-                </button>
+
+                  {/* Submit */}
+                  <button
+                    type="submit"
+                    disabled={submitting || !email || !password}
+                    className="w-full bg-gradient-to-r from-sky-600 to-blue-700 hover:from-sky-700 hover:to-blue-800 text-white rounded-lg py-2.5 text-sm font-semibold transition-all duration-150 disabled:opacity-40 disabled:cursor-not-allowed shadow-lg shadow-sky-500/20 flex items-center justify-center gap-2 mt-2"
+                  >
+                    {submitting ? (
+                      <>
+                        <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                        <span>กำลังเข้าสู่ระบบ...</span>
+                      </>
+                    ) : '🔑 เข้าสู่ระบบ'}
+                  </button>
+                </form>
               </div>
+
+              <p className="text-center text-xs text-slate-500 mt-4">
+                {setup.villageName} · {setup.version}
+              </p>
             </div>
-
-            {/* Error */}
-            {error && (
-              <div className="flex items-start gap-2 bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2.5">
-                <svg className="w-4 h-4 text-red-400 mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
-                </svg>
-                <p className="text-xs text-red-300">{error}</p>
-              </div>
-            )}
-
-            {/* Submit */}
-            <button
-              type="submit"
-              disabled={submitting || !email || !password}
-              className="w-full bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white rounded-lg py-2.5 text-sm font-medium transition-all duration-150 disabled:opacity-40 disabled:cursor-not-allowed shadow-lg shadow-blue-500/25 flex items-center justify-center gap-2 mt-2"
-            >
-              {submitting ? (
-                <>
-                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                  <span>กำลังเข้าสู่ระบบ...</span>
-                </>
-              ) : 'เข้าสู่ระบบ'}
-            </button>
-          </form>
+          </div>
         </div>
-
-        {/* Footer */}
-        <p className="text-center text-xs text-slate-600 mt-6">
-          นิติบุคคลหมู่บ้านเดอะกรีนฟิลด์ &nbsp;·&nbsp; v2.2
-        </p>
       </div>
     </div>
   )

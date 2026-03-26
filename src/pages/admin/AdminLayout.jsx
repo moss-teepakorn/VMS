@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react'
 import { Outlet, useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext'
+import { applyDocumentTitle, getSetupConfig } from '../../lib/setup'
+import villageLogo from '../../assets/village-logo.svg'
 import './AdminLayout.css'
 
 // Create a global modal context for easy access
@@ -15,6 +17,12 @@ const AdminLayout = () => {
   const { user, logout } = useAuth()
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [theme, setTheme] = useState(localStorage.getItem('vms-theme') || 'normal')
+  const [setup, setSetup] = useState({
+    villageName: 'The Greenfield',
+    appLineMain: 'Village Management',
+    appLineTail: 'System',
+    version: 'v12.3',
+  })
   
   // Modal state
   const [modalOpen, setModalOpen] = useState(false)
@@ -28,6 +36,15 @@ const AdminLayout = () => {
     document.body.setAttribute('data-theme', theme)
     localStorage.setItem('vms-theme', theme)
   }, [theme])
+
+  useEffect(() => {
+    const loadSetup = async () => {
+      const next = await getSetupConfig()
+      setSetup(next)
+      applyDocumentTitle(next.villageName)
+    }
+    loadSetup()
+  }, [])
 
   // Close sidebar on larger screens
   useEffect(() => {
@@ -116,10 +133,16 @@ const AdminLayout = () => {
       <aside className={`sidebar ${sidebarOpen ? 'open' : ''}`} id="sidebar">
         {/* Logo */}
         <div className="sb-logo">
-          <div className="sb-logo-ico">🏘️</div>
+          <div className="sb-logo-ico sb-logo-ico-img">
+            <img src={villageLogo} alt="Village Logo" className="sb-logo-image" />
+          </div>
           <div>
-            <div className="sb-logo-name">The Greenfield</div>
-            <div className="sb-logo-sub">Village Management v12.3</div>
+            <div className="sb-logo-name">{setup.villageName}</div>
+            <div className="sb-logo-sub">
+              <span className="sb-logo-sub-main">{setup.appLineMain}</span>
+              <span className="sb-logo-sub-tail"> {setup.appLineTail}</span>
+              <span className="sb-logo-sub-ver"> {setup.version}</span>
+            </div>
           </div>
         </div>
         <div className="sb-build">build {BUILD_SHA} · {BUILD_DATE}</div>

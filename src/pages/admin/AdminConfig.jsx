@@ -169,15 +169,17 @@ const AdminConfig = () => {
                     <span>ภาษา</span>
                     <input name="system_language" value={form.system_language || ''} onChange={handleChange} />
                   </label>
-                  <div className="house-field" style={{ justifyContent: 'flex-end' }}>
-                    <label style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                      <input type="checkbox" name="enable_marketplace" checked={Boolean(form.enable_marketplace)} onChange={handleChange} />
-                      เปิด Marketplace
-                    </label>
-                    <label style={{ display: 'flex', gap: '8px', alignItems: 'center', marginTop: '8px' }}>
-                      <input type="checkbox" name="enable_technicians" checked={Boolean(form.enable_technicians)} onChange={handleChange} />
-                      เปิดทำเนียบช่าง
-                    </label>
+                  <div className="house-field house-field-span-3" style={{ gap: '10px' }}>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '16px' }}>
+                      <label className="cfg-toggle">
+                        <input className="cfg-checkbox" type="checkbox" name="enable_marketplace" checked={Boolean(form.enable_marketplace)} onChange={handleChange} />
+                        <span>เปิด Marketplace</span>
+                      </label>
+                      <label className="cfg-toggle">
+                        <input className="cfg-checkbox" type="checkbox" name="enable_technicians" checked={Boolean(form.enable_technicians)} onChange={handleChange} />
+                        <span>เปิดทำเนียบช่าง</span>
+                      </label>
+                    </div>
                   </div>
                 </div>
               </div>

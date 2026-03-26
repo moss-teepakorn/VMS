@@ -4,25 +4,6 @@
 -- วิธีใช้: Copy ทั้งหมด วางใน Supabase SQL Editor กด Run
 -- ============================================================
 
--- ── 1. SETTINGS (ตั้งค่าระบบ legacy — ถูกแทนที่ด้วย system_config) ──
-create table if not exists settings (
-  id          uuid primary key default gen_random_uuid(),
-  key         text unique not null,
-  value       text,
-  description text,
-  updated_at  timestamptz default now()
-);
-
-insert into settings (key, value, description) values
-  ('village_name',           'The Greenfield', 'ชื่อหมู่บ้าน'),
-  ('fee_rate',               '10',             'อัตราค่าส่วนกลาง บาท/ตร.ว./เดือน'),
-  ('waste_fee_per_vehicle',  '100',            'ค่าขยะต่อคัน/เดือน'),
-  ('parking_fee_per_vehicle','300',            'ค่าจอดรถส่วนกลางต่อคัน/เดือน'),
-  ('overdue_fine_rate',      '0.1',            'อัตราค่าปรับค้างชำระ (10%)'),
-  ('notice_fee',             '200',            'ค่าทวงถาม/ครั้ง'),
-  ('current_year',           '2568',           'ปี พ.ศ. ปัจจุบัน')
-on conflict (key) do nothing;
-
 -- ── 2. HOUSES (ข้อมูลบ้าน) ──────────────────────────────────────────
 create table if not exists houses (
   id              uuid    primary key default gen_random_uuid(),
@@ -353,7 +334,6 @@ alter table technicians         enable row level security;
 alter table technician_services enable row level security;
 alter table marketplace         enable row level security;
 alter table announcements       enable row level security;
-alter table settings            enable row level security;
 alter table work_reports        enable row level security;
 alter table audit_logs          enable row level security;
 alter table system_config       enable row level security;
@@ -372,8 +352,6 @@ create policy "admin_all" on issues
 create policy "admin_all" on issue_logs
   for all using ((select role from profiles where id = auth.uid()) = 'admin');
 create policy "admin_all" on violations
-  for all using ((select role from profiles where id = auth.uid()) = 'admin');
-create policy "admin_all" on settings
   for all using ((select role from profiles where id = auth.uid()) = 'admin');
 create policy "admin_all_work_reports" on work_reports
   for all using ((select role from profiles where id = auth.uid()) = 'admin');
