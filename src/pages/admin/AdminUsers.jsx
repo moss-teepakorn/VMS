@@ -1,6 +1,6 @@
 import React, { useContext, useState, useEffect } from 'react'
 import { ModalContext } from './AdminLayout'
-import { getUsers, createUser } from '../../lib/users'
+import { getUsers, createUser, updateUser, deleteUser, formatDateTime } from '../../lib/users'
 
 const AdminUsers = () => {
   const { openModal } = useContext(ModalContext)
@@ -23,30 +23,101 @@ const AdminUsers = () => {
     }
   }
 
+  const roleOptions = [
+    { label: 'Admin', value: 'admin' },
+    { label: 'Resident', value: 'resident' },
+  ]
+
+  const statusOptions = [
+    { label: 'Active', value: 'true' },
+    { label: 'Inactive', value: 'false' },
+  ]
+
   const handleAddUser = () => {
     openModal('เพิ่มผู้ใช้ใหม่', {
-      name: { label: 'ชื่อ-นามสกุล', type: 'text', placeholder: 'นายสมชาติ' },
-      email: { label: 'อีเมล', type: 'email', placeholder: 'email@example.com' },
+      id: { label: 'Auth User ID (UUID)', type: 'text', placeholder: 'ใส่ UUID จาก auth.users' },
+      full_name: { label: 'ชื่อ-นามสกุล', type: 'text', placeholder: 'นายสมชาติ' },
       phone: { label: 'เบอร์', type: 'tel', placeholder: '098-xxx-xxxx' },
-      role: { label: 'บทบาท', type: 'select', options: [
-        { label: 'Admin', value: 'admin' },
-        { label: 'จัดการ', value: 'manager' },
-        { label: 'เจ้าหน้าที่', value: 'staff' },
-        { label: 'สมาชิก', value: 'member' }
-      ]},
+      role: { label: 'บทบาท', type: 'select', options: roleOptions },
+      is_active: { label: 'สถานะ', type: 'select', options: statusOptions },
     }, async (data) => {
       try {
+        if (!data.id?.value) {
+          alert('กรุณาใส่ Auth User ID ก่อน')
+          return
+        }
         await createUser({
-          name: data.name?.value,
-          email: data.email?.value,
+          id: data.id?.value,
+          full_name: data.full_name?.value,
           phone: data.phone?.value,
           role: data.role?.value,
+          is_active: data.is_active?.value !== 'false',
         })
         loadUsers()
       } catch (error) {
         console.error('Error adding user:', error)
+        alert(`เพิ่มผู้ใช้ไม่สำเร็จ: ${error.message}`)
       }
     })
+  }
+
+  const handleEditUser = (user) => {
+    openModal('แก้ไขผู้ใช้', {
+      full_name: { label: 'ชื่อ-นามสกุล', type: 'text', value: user.full_name || '' },
+      phone: { label: 'เบอร์', type: 'tel', value: user.phone || '' },
+      role: { label: 'บทบาท', type: 'select', value: user.role || 'resident', options: roleOptions },
+      is_active: { label: 'สถานะ', type: 'select', value: user.is_active ? 'true' : 'false', options: statusOptions },
+    }, async (data) => {
+      try {
+        await updateUser(user.id, {
+          full_name: data.full_name?.value,
+          phone: data.phone?.value,
+          role: data.role?.value,
+          is_active: data.is_active?.value !== 'false',
+        })
+        loadUsers()
+      } catch (error) {
+        console.error('Error updating user:', error)
+        alert(`แก้ไขผู้ใช้ไม่สำเร็จ: ${error.message}`)
+      }
+    })
+  }
+
+  const handleDeleteUser = async (user) => {
+    const ok = window.confirm(`ยืนยันลบผู้ใช้: ${user.full_name || user.id} ?`)
+    if (!ok) return
+    try {
+      await deleteUser(user.id)
+      loadUsers()
+    } catch (error) {
+      console.error('Error deleting user:', error)
+      alert(`ลบผู้ใช้ไม่สำเร็จ: ${error.message}`)
+    }
+  }
+
+  const handleToggleActive = async (user) => {
+    try {
+      await updateUser(user.id, { is_active: !user.is_active })
+      loadUsers()
+    } catch (error) {
+      console.error('Error toggling active:', error)
+      alert(`อัปเดตสถานะไม่สำเร็จ: ${error.message}`)
+    }
+  }
+
+  const handleChangeRole = async (user) => {
+    const nextRole = user.role === 'admin' ? 'resident' : 'admin'
+    try {
+      await updateUser(user.id, { role: nextRole })
+      loadUsers()
+    } catch (error) {
+      console.error('Error changing role:', error)
+      alert(`เปลี่ยนบทบาทไม่สำเร็จ: ${error.message}`)
+    }
+  }
+
+  const handleResetPassword = (user) => {
+    alert(`รีเซ็ตรหัสผ่านของ ${user.full_name || user.id}: โปรดใช้ Supabase Auth Admin API (ผ่าน backend/server) เพื่อความปลอดภัย`)
   }
   return (
     <div className="pane on">
@@ -60,7 +131,7 @@ const AdminUsers = () => {
             </div>
           </div>
           <div className="ph-acts">
-            <button className="btn btn-p btn-sm">+ เพิ่มผู้ใช้ใหม่</button>
+            <button className="btn btn-p btn-sm" onClick={handleAddUser}>+ เพิ่มผู้ใช้ใหม่</button>
           </div>
         </div>
       </div>
@@ -74,18 +145,40 @@ const AdminUsers = () => {
             <div style={{ padding: '20px', textAlign: 'center', color: '#999' }}>ไม่มีข้อมูลผู้ใช้</div>
           ) : (
             <div style={{ overflowX: 'auto' }}>
-              <table className="tw" style={{ width: '100%', minWidth: '600px' }}>
+              <table className="tw" style={{ width: '100%', minWidth: '980px' }}>
                 <thead><tr>
-                  <th>ชื่อ</th><th>อีเมล</th><th>เบอร์โทร</th><th>บทบาท</th><th/>
+                  <th>ชื่อ</th>
+                  <th>อีเมล</th>
+                  <th>เบอร์โทร</th>
+                  <th>บทบาท</th>
+                  <th>สถานะ</th>
+                  <th>วันที่สร้าง</th>
+                  <th>ล่าสุดเข้าใช้งาน</th>
+                  <th>จัดการ</th>
                 </tr></thead>
                 <tbody>
                   {users.map((user) => (
                     <tr key={user.id}>
-                      <td>{user.name || '-'}</td>
-                      <td>{user.email}</td>
+                      <td>{user.full_name || '-'}</td>
+                      <td>-</td>
                       <td>{user.phone || '-'}</td>
-                      <td><span className="bd b-pr">{user.role || 'member'}</span></td>
-                      <td><button className="btn btn-xs btn-o">ดู</button></td>
+                      <td><span className="bd b-pr">{user.role || 'resident'}</span></td>
+                      <td>
+                        {user.is_active ? (
+                          <span className="bd b-ok">active</span>
+                        ) : (
+                          <span className="bd b-mu">inactive</span>
+                        )}
+                      </td>
+                      <td>{formatDateTime(user.created_at)}</td>
+                      <td>-</td>
+                      <td style={{ whiteSpace: 'nowrap' }}>
+                        <button className="btn btn-xs btn-a" style={{ marginRight: '4px' }} onClick={() => handleEditUser(user)}>แก้ไข</button>
+                        <button className="btn btn-xs btn-o" style={{ marginRight: '4px' }} onClick={() => handleChangeRole(user)}>สลับบทบาท</button>
+                        <button className="btn btn-xs btn-o" style={{ marginRight: '4px' }} onClick={() => handleToggleActive(user)}>{user.is_active ? 'ปิดใช้งาน' : 'เปิดใช้งาน'}</button>
+                        <button className="btn btn-xs btn-o" style={{ marginRight: '4px' }} onClick={() => handleResetPassword(user)}>รีเซ็ตรหัสผ่าน</button>
+                        <button className="btn btn-xs btn-dg" onClick={() => handleDeleteUser(user)}>ลบ</button>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
