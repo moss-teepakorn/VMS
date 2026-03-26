@@ -1213,6 +1213,30 @@ button, input, select, textarea {
   resize: none;
 }
 
+.plate-split-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.plate-split-wrap .plate-prefix {
+  width: 34%;
+  min-width: 88px;
+  text-align: center;
+}
+
+.plate-split-wrap .plate-number {
+  width: 66%;
+  min-width: 120px;
+  text-align: center;
+}
+
+.plate-dash {
+  color: #6a7a8c;
+  font-size: 16px;
+  font-weight: 700;
+}
+
 .house-field input:focus,
 .house-field select:focus,
 .house-field textarea:focus {

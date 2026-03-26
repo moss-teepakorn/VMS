@@ -414,12 +414,24 @@ const AdminVehicles = () => {
                       </select>
                     </label>
                     <label className="house-field">
-                      <span>ทะเบียนรถ (ส่วนหน้า) *</span>
-                      <input name="license_plate_prefix" value={form.license_plate_prefix} onChange={handleChange} placeholder="7กจ" />
-                    </label>
-                    <label className="house-field">
-                      <span>ทะเบียนรถ (ส่วนหลัง) *</span>
-                      <input name="license_plate_number" value={form.license_plate_number} onChange={handleChange} placeholder="5533" />
+                      <span>ทะเบียนรถ *</span>
+                      <div className="plate-split-wrap">
+                        <input
+                          className="plate-prefix"
+                          name="license_plate_prefix"
+                          value={form.license_plate_prefix}
+                          onChange={handleChange}
+                          placeholder="7กจ"
+                        />
+                        <span className="plate-dash">-</span>
+                        <input
+                          className="plate-number"
+                          name="license_plate_number"
+                          value={form.license_plate_number}
+                          onChange={handleChange}
+                          placeholder="5533"
+                        />
+                      </div>
                     </label>
                     <label className="house-field">
                       <span>จังหวัด</span>
