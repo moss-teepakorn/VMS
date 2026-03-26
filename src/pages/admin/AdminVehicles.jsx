@@ -484,7 +484,7 @@ const AdminVehicles = () => {
   }
 
   return (
-    <div className="pane on">
+    <div className="pane on" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
       <div className="ph">
         <div className="ph-in">
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -501,7 +501,7 @@ const AdminVehicles = () => {
         </div>
       </div>
 
-      <div className="card" style={{ marginTop: '16px', marginBottom: '16px' }}>
+      <div className="card">
         <div className="ch"><div className="ct">ค้นหาและกรองข้อมูลรถ</div></div>
         <div className="cb" style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
           <input
@@ -541,7 +541,7 @@ const AdminVehicles = () => {
         </div>
       </div>
 
-      <div className="card" style={{ marginTop: '16px' }}>
+      <div className="card">
         <div className="ch"><div className="ct">ยานพาหนะทั้งหมด ({vehicles.length} รายการ)</div></div>
         <div className="cb">
           <div style={{ overflowX: 'auto' }}>
