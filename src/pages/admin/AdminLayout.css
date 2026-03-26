@@ -669,7 +669,7 @@ button, input, select, textarea {
   width: 100%;
   flex: 1;
   overflow-y: auto;
-  background: var(--bg);
+  background: var(--bg2);
   padding-bottom: 60px;
 }
 
