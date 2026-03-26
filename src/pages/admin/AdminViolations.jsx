@@ -136,6 +136,46 @@ function drawImageContain(ctx, image, x, y, width, height) {
   ctx.drawImage(image, drawX, drawY, drawWidth, drawHeight)
 }
 
+function prepareSignatureImageForPdf(image) {
+  if (!image) return null
+  const canvas = document.createElement('canvas')
+  canvas.width = image.width
+  canvas.height = image.height
+  const ctx = canvas.getContext('2d')
+  if (!ctx) return image
+
+  ctx.drawImage(image, 0, 0)
+  const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height)
+  const data = imgData.data
+
+  for (let i = 0; i < data.length; i += 4) {
+    const r = data[i]
+    const g = data[i + 1]
+    const b = data[i + 2]
+    const a = data[i + 3]
+    if (a < 12) continue
+
+    const isRedBorderLike = r > 150 && g < 125 && b < 125
+    if (isRedBorderLike) {
+      data[i + 3] = 0
+      continue
+    }
+
+    const luminance = 0.299 * r + 0.587 * g + 0.114 * b
+    if (luminance > 242) {
+      data[i + 3] = 0
+      continue
+    }
+
+    data[i] = 18
+    data[i + 1] = 18
+    data[i + 2] = 18
+  }
+
+  ctx.putImageData(imgData, 0, 0)
+  return canvas
+}
+
 const AdminViolations = () => {
   const [violations, setViolations] = useState([])
   const [houses, setHouses] = useState([])
@@ -563,7 +603,7 @@ const AdminViolations = () => {
     const marginX = 70
     const marginY = 78
     const contentWidth = pageWidthPx - (marginX * 2)
-    const lineHeight = 42
+    const lineHeight = 32
 
     const createPageCanvas = () => {
       const canvas = document.createElement('canvas')
@@ -577,7 +617,8 @@ const AdminViolations = () => {
     }
 
     const signatureSource = reportIdentity.juristic_signature_url || juristicSignature
-    const signatureImage = isSvgSource(signatureSource) ? null : await loadImageElement(signatureSource)
+    const signatureRawImage = isSvgSource(signatureSource) ? null : await loadImageElement(signatureSource)
+    const signatureImage = prepareSignatureImageForPdf(signatureRawImage)
     const firstEvidenceImage = await loadImageElement(images[0]?.url)
 
     const firstPage = createPageCanvas()
@@ -586,19 +627,19 @@ const AdminViolations = () => {
     firstCtx.fillStyle = '#0d9488'
     firstCtx.fillRect(marginX, marginY, 64, 64)
     firstCtx.fillStyle = '#ffffff'
-    firstCtx.font = 'bold 28px Arial, Helvetica, sans-serif'
+    firstCtx.font = 'bold 24px Arial, Helvetica, sans-serif'
     firstCtx.textAlign = 'center'
     firstCtx.fillText('GF', marginX + 32, marginY + 42)
     firstCtx.textAlign = 'left'
 
     firstCtx.fillStyle = '#111827'
-    firstCtx.font = 'bold 46px Arial, Helvetica, sans-serif'
+    firstCtx.font = 'bold 38px Arial, Helvetica, sans-serif'
     firstCtx.fillText('รายงานการกระทำผิด', marginX + 86, marginY + 32)
     firstCtx.fillStyle = '#374151'
-    firstCtx.font = '28px Arial, Helvetica, sans-serif'
+    firstCtx.font = '22px Arial, Helvetica, sans-serif'
     firstCtx.fillText(reportIdentity.village_name || DEFAULT_REPORT_IDENTITY.village_name, marginX + 86, marginY + 70)
     firstCtx.fillStyle = '#4b5563'
-    firstCtx.font = '24px Arial, Helvetica, sans-serif'
+    firstCtx.font = '18px Arial, Helvetica, sans-serif'
     firstCtx.fillText(`เลขที่รายงาน: ${item.report_no || '-'}   วันที่รายงาน: ${formatDate(item.report_date)}`, marginX, marginY + 118)
 
     const rows = [
@@ -616,9 +657,9 @@ const AdminViolations = () => {
     let cursorY = marginY + 175
     for (const [label, value] of rows) {
       firstCtx.fillStyle = '#111827'
-      firstCtx.font = 'bold 25px Arial, Helvetica, sans-serif'
+      firstCtx.font = 'bold 20px Arial, Helvetica, sans-serif'
       firstCtx.fillText(label, marginX, cursorY)
-      firstCtx.font = '25px Arial, Helvetica, sans-serif'
+      firstCtx.font = '20px Arial, Helvetica, sans-serif'
       const valueLines = wrapTextByWidth(firstCtx, value, contentWidth - 360)
       for (let i = 0; i < valueLines.length; i += 1) {
         firstCtx.fillText(valueLines[i], marginX + 360, cursorY + (i * lineHeight))
@@ -627,31 +668,31 @@ const AdminViolations = () => {
     }
 
     firstCtx.fillStyle = '#111827'
-    firstCtx.font = 'bold 28px Arial, Helvetica, sans-serif'
+    firstCtx.font = 'bold 22px Arial, Helvetica, sans-serif'
     firstCtx.fillText('รูปภาพหลักฐาน', marginX, cursorY + 20)
     const evidenceY = cursorY + 36
-    const evidenceHeight = 520
+    const evidenceHeight = 390
     firstCtx.strokeStyle = '#d1d5db'
     firstCtx.lineWidth = 2
     firstCtx.strokeRect(marginX, evidenceY, contentWidth, evidenceHeight)
     drawImageContain(firstCtx, firstEvidenceImage, marginX + 2, evidenceY + 2, contentWidth - 4, evidenceHeight - 4)
 
-    const signBoxWidth = 340
+    const signBoxWidth = 300
     const signBoxX = marginX + contentWidth - signBoxWidth
-    const signBaseY = evidenceY + evidenceHeight + 60
+    const signBaseY = evidenceY + evidenceHeight + 46
     if (signatureImage) {
-      drawImageContain(firstCtx, signatureImage, signBoxX, signBaseY, signBoxWidth, 92)
+      drawImageContain(firstCtx, signatureImage, signBoxX, signBaseY, signBoxWidth, 72)
     }
     firstCtx.strokeStyle = '#111827'
     firstCtx.lineWidth = 1.2
     firstCtx.beginPath()
-    firstCtx.moveTo(signBoxX, signBaseY + 112)
-    firstCtx.lineTo(signBoxX + signBoxWidth, signBaseY + 112)
+    firstCtx.moveTo(signBoxX, signBaseY + 90)
+    firstCtx.lineTo(signBoxX + signBoxWidth, signBaseY + 90)
     firstCtx.stroke()
     firstCtx.fillStyle = '#111827'
-    firstCtx.font = '24px Arial, Helvetica, sans-serif'
+    firstCtx.font = '18px Arial, Helvetica, sans-serif'
     firstCtx.textAlign = 'center'
-    firstCtx.fillText(`(${reportIdentity.juristic_name || DEFAULT_REPORT_IDENTITY.juristic_name})`, signBoxX + (signBoxWidth / 2), signBaseY + 146)
+    firstCtx.fillText(`(${reportIdentity.juristic_name || DEFAULT_REPORT_IDENTITY.juristic_name})`, signBoxX + (signBoxWidth / 2), signBaseY + 120)
     firstCtx.textAlign = 'left'
 
     pdf.addImage(firstPage.canvas.toDataURL('image/jpeg', 0.95), 'JPEG', 0, 0, 210, 297)
