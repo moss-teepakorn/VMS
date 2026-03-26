@@ -32,12 +32,14 @@ create table if not exists houses (
 create table if not exists profiles (
   id         uuid primary key references auth.users(id) on delete cascade,
   full_name  text,
+  email      text,
   role       text    default 'resident',
   -- admin / resident
   house_id   uuid    references houses(id),
   phone      text,
   avatar_url text,
   is_active  boolean default true,
+  last_login_at timestamptz,
   created_at timestamptz default now()
 );
 

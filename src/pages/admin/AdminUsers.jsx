@@ -1,6 +1,6 @@
 import React, { useContext, useState, useEffect } from 'react'
 import { ModalContext } from './AdminLayout'
-import { getUsers, createUser, updateUser, deleteUser, formatDateTime } from '../../lib/users'
+import { getUsers, createUser, updateUser, deleteUser, sendResetPasswordEmail, formatDateTime } from '../../lib/users'
 
 const AdminUsers = () => {
   const { openModal } = useContext(ModalContext)
@@ -37,6 +37,7 @@ const AdminUsers = () => {
     openModal('เพิ่มผู้ใช้ใหม่', {
       id: { label: 'Auth User ID (UUID)', type: 'text', placeholder: 'ใส่ UUID จาก auth.users' },
       full_name: { label: 'ชื่อ-นามสกุล', type: 'text', placeholder: 'นายสมชาติ' },
+      email: { label: 'อีเมล', type: 'email', placeholder: 'name@example.com' },
       phone: { label: 'เบอร์', type: 'tel', placeholder: '098-xxx-xxxx' },
       role: { label: 'บทบาท', type: 'select', options: roleOptions },
       is_active: { label: 'สถานะ', type: 'select', options: statusOptions },
@@ -49,6 +50,7 @@ const AdminUsers = () => {
         await createUser({
           id: data.id?.value,
           full_name: data.full_name?.value,
+          email: data.email?.value,
           phone: data.phone?.value,
           role: data.role?.value,
           is_active: data.is_active?.value !== 'false',
@@ -64,6 +66,7 @@ const AdminUsers = () => {
   const handleEditUser = (user) => {
     openModal('แก้ไขผู้ใช้', {
       full_name: { label: 'ชื่อ-นามสกุล', type: 'text', value: user.full_name || '' },
+      email: { label: 'อีเมล', type: 'email', value: user.email || '' },
       phone: { label: 'เบอร์', type: 'tel', value: user.phone || '' },
       role: { label: 'บทบาท', type: 'select', value: user.role || 'resident', options: roleOptions },
       is_active: { label: 'สถานะ', type: 'select', value: user.is_active ? 'true' : 'false', options: statusOptions },
@@ -71,6 +74,7 @@ const AdminUsers = () => {
       try {
         await updateUser(user.id, {
           full_name: data.full_name?.value,
+          email: data.email?.value,
           phone: data.phone?.value,
           role: data.role?.value,
           is_active: data.is_active?.value !== 'false',
@@ -116,8 +120,13 @@ const AdminUsers = () => {
     }
   }
 
-  const handleResetPassword = (user) => {
-    alert(`รีเซ็ตรหัสผ่านของ ${user.full_name || user.id}: โปรดใช้ Supabase Auth Admin API (ผ่าน backend/server) เพื่อความปลอดภัย`)
+  const handleResetPassword = async (user) => {
+    try {
+      await sendResetPasswordEmail(user.email)
+      alert(`ส่งอีเมลรีเซ็ตรหัสผ่านแล้ว: ${user.email}`)
+    } catch (error) {
+      alert(`ส่งอีเมลรีเซ็ตรหัสผ่านไม่สำเร็จ: ${error.message}`)
+    }
   }
   return (
     <div className="pane on">
@@ -160,7 +169,7 @@ const AdminUsers = () => {
                   {users.map((user) => (
                     <tr key={user.id}>
                       <td>{user.full_name || '-'}</td>
-                      <td>-</td>
+                      <td>{user.email || '-'}</td>
                       <td>{user.phone || '-'}</td>
                       <td><span className="bd b-pr">{user.role || 'resident'}</span></td>
                       <td>
@@ -171,7 +180,7 @@ const AdminUsers = () => {
                         )}
                       </td>
                       <td>{formatDateTime(user.created_at)}</td>
-                      <td>-</td>
+                      <td>{formatDateTime(user.last_login_at)}</td>
                       <td style={{ whiteSpace: 'nowrap' }}>
                         <button className="btn btn-xs btn-a" style={{ marginRight: '4px' }} onClick={() => handleEditUser(user)}>แก้ไข</button>
                         <button className="btn btn-xs btn-o" style={{ marginRight: '4px' }} onClick={() => handleChangeRole(user)}>สลับบทบาท</button>
