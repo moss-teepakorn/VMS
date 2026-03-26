@@ -754,12 +754,105 @@
     white-space: nowrap;
     flex-shrink: 0;
   }
+
+  .houses-desktop-only {
+    display: none;
+  }
+
+  .houses-mobile-only {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 4px 0;
+  }
+}
+
+@media (min-width: 701px) {
+  .houses-desktop-only {
+    display: block;
+  }
+
+  .houses-mobile-only {
+    display: none;
+  }
 }
 
 @media (min-width: 701px) and (max-width: 980px) {
   .houses-filter-row {
     grid-template-columns: 1fr 140px 120px 80px;
   }
+}
+
+/* Mobile House Cards */
+.houses-mcard {
+  background: var(--card);
+  border: 1px solid var(--bo);
+  border-radius: 10px;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.houses-mcard-top {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.houses-mcard-no {
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--tx);
+}
+
+.houses-mcard-soi {
+  font-size: 12px;
+  color: var(--mu);
+  background: var(--bg2);
+  border-radius: 5px;
+  padding: 2px 7px;
+}
+
+.houses-mcard-badge {
+  margin-left: auto;
+}
+
+.houses-mcard-owner {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--tx);
+}
+
+.houses-mcard-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  margin-top: 2px;
+  font-size: 12px;
+  color: var(--mu);
+}
+
+.houses-mcard-label {
+  font-weight: 600;
+  color: var(--tx);
+  opacity: 0.6;
+}
+
+.houses-mcard-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 6px;
+  padding-top: 8px;
+  border-top: 1px solid var(--bo);
+}
+
+.houses-card-empty {
+  text-align: center;
+  color: var(--mu);
+  padding: 20px;
+  font-size: 13px;
 }
 
 /* ═════════════════════════════════════════════════

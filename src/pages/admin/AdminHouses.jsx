@@ -313,7 +313,8 @@ const AdminHouses = () => {
           </div>
         </div>
         <div className="cb houses-table-card-body">
-          <div className="houses-table-wrap">
+          {/* Desktop Table */}
+          <div className="houses-table-wrap houses-desktop-only">
             <table className="tw houses-table" style={{ width: '100%', minWidth: '540px' }}>
               <thead>
                 <tr>
@@ -329,22 +330,13 @@ const AdminHouses = () => {
               </thead>
               <tbody>
                 {loading ? (
-                  <tr>
-                    <td colSpan="8" style={{ textAlign: 'center', color: 'var(--mu)', padding: '20px' }}>
-                      กำลังโหลดข้อมูล...
-                    </td>
-                  </tr>
+                  <tr><td colSpan="8" style={{ textAlign: 'center', color: 'var(--mu)', padding: '20px' }}>กำลังโหลดข้อมูล...</td></tr>
                 ) : houses.length === 0 ? (
-                  <tr>
-                    <td colSpan="8" style={{ textAlign: 'center', color: 'var(--mu)', padding: '20px' }}>
-                      ไม่พบข้อมูลบ้าน
-                    </td>
-                  </tr>
+                  <tr><td colSpan="8" style={{ textAlign: 'center', color: 'var(--mu)', padding: '20px' }}>ไม่พบข้อมูลบ้าน</td></tr>
                 ) : (
                   houses.map((house) => {
                     const badge = getStatusBadge(house.status)
                     const annualFee = formatDecimal(house.annual_fee)
-
                     return (
                       <tr key={house.id}>
                         <td><strong>{house.house_no}</strong></td>
@@ -352,17 +344,13 @@ const AdminHouses = () => {
                         <td>
                           <div className="houses-owner-main">{house.owner_name || '-'}</div>
                           {(house.resident_name || house.contact_name) && (
-                            <div className="houses-owner-sub">
-                              {[house.resident_name, house.contact_name].filter(Boolean).join(' · ')}
-                            </div>
+                            <div className="houses-owner-sub">{[house.resident_name, house.contact_name].filter(Boolean).join(' · ')}</div>
                           )}
                         </td>
                         <td>{house.house_type || '-'}</td>
                         <td>{house.area_sqw ? formatDecimal(house.area_sqw) : '-'}</td>
                         <td>{annualFee}</td>
-                        <td>
-                          <span className={`${badge.className} houses-status houses-status-${house.status}`}>{badge.label}</span>
-                        </td>
+                        <td><span className={`${badge.className} houses-status houses-status-${house.status}`}>{badge.label}</span></td>
                         <td className="houses-actions-cell">
                           <div className="houses-actions-inner">
                             <button className="btn btn-xs btn-a houses-action-btn" onClick={() => openEditModal(house)}>แก้ไข</button>
@@ -375,6 +363,42 @@ const AdminHouses = () => {
                 )}
               </tbody>
             </table>
+          </div>
+
+          {/* Mobile Cards */}
+          <div className="houses-mobile-only">
+            {loading ? (
+              <div className="houses-card-empty">กำลังโหลดข้อมูล...</div>
+            ) : houses.length === 0 ? (
+              <div className="houses-card-empty">ไม่พบข้อมูลบ้าน</div>
+            ) : (
+              houses.map((house) => {
+                const badge = getStatusBadge(house.status)
+                const annualFee = formatDecimal(house.annual_fee)
+                return (
+                  <div key={house.id} className="houses-mcard">
+                    <div className="houses-mcard-top">
+                      <div className="houses-mcard-no">{house.house_no}</div>
+                      <div className="houses-mcard-soi">{house.soi ? `ซอย ${house.soi}` : '-'}</div>
+                      <span className={`${badge.className} houses-status houses-status-${house.status} houses-mcard-badge`}>{badge.label}</span>
+                    </div>
+                    <div className="houses-mcard-owner">{house.owner_name || '-'}</div>
+                    {(house.resident_name || house.contact_name) && (
+                      <div className="houses-owner-sub">{[house.resident_name, house.contact_name].filter(Boolean).join(' · ')}</div>
+                    )}
+                    <div className="houses-mcard-meta">
+                      <span><span className="houses-mcard-label">ประเภท</span> {house.house_type || '-'}</span>
+                      <span><span className="houses-mcard-label">พื้นที่</span> {house.area_sqw ? formatDecimal(house.area_sqw) : '-'} ตร.ว.</span>
+                      <span><span className="houses-mcard-label">ค่าส่วนกลาง/ปี</span> {annualFee}</span>
+                    </div>
+                    <div className="houses-mcard-actions">
+                      <button className="btn btn-xs btn-a houses-action-btn" onClick={() => openEditModal(house)}>แก้ไข</button>
+                      <button className="btn btn-xs houses-action-btn houses-action-delete" onClick={() => handleDeleteHouse(house)}>ลบ</button>
+                    </div>
+                  </div>
+                )
+              })
+            )}
           </div>
         </div>
       </div>
