@@ -25,6 +25,7 @@ const EMPTY_FORM = {
   status: 'pending',
   due_date: '',
   admin_note: '',
+  resident_note: '',
 }
 
 const MAX_ATTACHMENTS = 5
@@ -82,6 +83,7 @@ const AdminViolations = () => {
 
   const getStatusBadge = (status) => {
     if (status === 'resolved') return { className: 'bd b-ok', label: 'แก้ไขแล้ว' }
+    if (status === 'in_progress') return { className: 'bd b-ac', label: 'กำลังดำเนินการ' }
     if (status === 'pending') return { className: 'bd b-wn', label: 'รอดำเนินการ' }
     if (status === 'cancelled') return { className: 'bd b-dg', label: 'ยกเลิก' }
     return { className: 'bd b-mu', label: status }
@@ -107,6 +109,7 @@ const AdminViolations = () => {
       status: item.status || 'pending',
       due_date: item.due_date || '',
       admin_note: item.admin_note || '',
+      resident_note: item.resident_note || '',
     })
     try {
       const imgs = await listViolationImages(item.id)
@@ -237,6 +240,7 @@ const AdminViolations = () => {
         status: form.status,
         due_date: form.due_date || null,
         admin_note: form.admin_note,
+        resident_note: form.resident_note || null,
       }
       if (editingItem) {
         const updated = await updateViolation(editingItem.id, payload)
@@ -315,6 +319,7 @@ const AdminViolations = () => {
           <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} style={{ padding: '8px 12px', border: '1px solid var(--bo)', borderRadius: '6px' }}>
             <option value="all">ทุกสถานะ</option>
             <option value="pending">รอดำเนินการ</option>
+            <option value="in_progress">กำลังดำเนินการ</option>
             <option value="resolved">แก้ไขแล้ว</option>
             <option value="cancelled">ยกเลิก</option>
           </select>
@@ -414,6 +419,7 @@ const AdminViolations = () => {
                       <span>สถานะ</span>
                       <select name="status" value={form.status} onChange={handleChange}>
                         <option value="pending">รอดำเนินการ</option>
+                        <option value="in_progress">กำลังดำเนินการ</option>
                         <option value="resolved">แก้ไขแล้ว</option>
                         <option value="cancelled">ยกเลิก</option>
                       </select>
@@ -435,6 +441,10 @@ const AdminViolations = () => {
                     <label className="house-field">
                       <span>หมายเหตุ admin</span>
                       <textarea name="admin_note" value={form.admin_note} onChange={handleChange} rows="3" placeholder="บันทึกของเจ้าหน้าที่" />
+                    </label>
+                    <label className="house-field">
+                      <span>อัปเดตจากลูกบ้าน</span>
+                      <textarea name="resident_note" value={form.resident_note} onChange={handleChange} rows="3" placeholder="ข้อความอัปเดตจากลูกบ้าน" />
                     </label>
                   </div>
                 </section>

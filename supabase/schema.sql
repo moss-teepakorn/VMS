@@ -170,7 +170,7 @@ create table if not exists violations (
   occurred_at date,
   image_url   text,
   status      text default 'pending',
-  -- pending / resolved / cancelled
+  -- pending / in_progress / resolved / cancelled
   due_date    date,
   admin_note  text,
   created_at  timestamptz default now()
