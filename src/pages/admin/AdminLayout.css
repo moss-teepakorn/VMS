@@ -537,11 +537,22 @@ button, input, select, textarea {
   width: 20px;
   height: 20px;
   border-radius: 50%;
-  background: var(--bo);
+  background: #999;
   cursor: pointer;
   transition: all .15s;
   border: 2px solid transparent;
 }
+
+.th-dot:nth-child(1) { background: #1B4F72; }
+.th-dot:nth-child(2) { background: #1C2833; }
+.th-dot:nth-child(3) { background: #922B21; }
+.th-dot:nth-child(4) { background: #16A085; }
+.th-dot:nth-child(5) { background: #8B5A11; }
+.th-dot:nth-child(6) { background: #6C3483; }
+.th-dot:nth-child(7) { background: #00695C; }
+.th-dot:nth-child(8) { background: #D84315; }
+.th-dot:nth-child(9) { background: #512DA8; }
+.th-dot:nth-child(10) { background: #795548; }
 
 .th-dot:hover {
   transform: scale(1.1);
@@ -946,4 +957,110 @@ button, input, select, textarea {
   .page {
     padding: 14px;
   }
+}
+
+/* ══════════════════════════════════════
+   MODAL DIALOGS
+══════════════════════════════════════ */
+.mo {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0,0,0,0);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+  padding: 16px;
+  animation: fadeIn .2s;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.mo.show {
+  display: flex;
+  background: rgba(0,0,0,.5);
+}
+
+.md {
+  background: var(--card);
+  border-radius: var(--r);
+  border: 1px solid var(--bo);
+  box-shadow: 0 10px 40px rgba(0,0,0,.3);
+  max-height: 90vh;
+  overflow-y: auto;
+  width: 100%;
+  max-width: 500px;
+  animation: slideUp .3s ease-out;
+}
+
+@keyframes slideUp {
+  from { transform: translateY(20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+.md.wide {
+  max-width: 700px;
+}
+
+.md-hd {
+  padding: 20px;
+  border-bottom: 1.5px solid var(--bo);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: linear-gradient(135deg, var(--pr) 0%, var(--prb) 100%);
+  color: #fff;
+  border-radius: var(--r) var(--r) 0 0;
+}
+
+.md-hd h2 {
+  font-size: 16px;
+  font-weight: 700;
+  color: #fff;
+  margin: 0;
+}
+
+.md-close {
+  background: none;
+  border: none;
+  font-size: 20px;
+  cursor: pointer;
+  color: rgba(255,255,255,.8);
+  padding: 0;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition: all .15s;
+}
+
+.md-close:hover {
+  color: #fff;
+  background: rgba(255,255,255,.2);
+}
+
+.md-bd {
+  padding: 20px;
+}
+
+.md-ft {
+  padding: 16px 20px;
+  border-top: 1.5px solid var(--bo);
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  background: var(--bg2);
+  border-radius: 0 0 var(--r) var(--r);
+}
+
+.md-ft .btn {
+  margin: 0;
 }

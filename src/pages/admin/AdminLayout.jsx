@@ -3,12 +3,22 @@ import { Outlet, useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext'
 import './AdminLayout.css'
 
+// Create a global modal context for easy access
+export const ModalContext = React.createContext()
+
 const AdminLayout = () => {
   const navigate = useNavigate()
   const location = useLocation()
   const { user, logout } = useAuth()
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [theme, setTheme] = useState(localStorage.getItem('vms-theme') || 'normal')
+  
+  // Modal state
+  const [modalOpen, setModalOpen] = useState(false)
+  const [modalTitle, setModalTitle] = useState('')
+  const [modalContent, setModalContent] = useState('')
+  const [modalFields, setModalFields] = useState({})
+  const [modalCallback, setModalCallback] = useState(null)
 
   // Apply theme to document
   useEffect(() => {
@@ -63,6 +73,31 @@ const AdminLayout = () => {
 
   const isNavItemActive = (path) => {
     return location.pathname === path
+  }
+
+  // Modal functions
+  const openModal = (title, fields = {}, callback = null) => {
+    setModalTitle(title)
+    setModalFields(fields)
+    setModalCallback(() => callback)
+    setModalOpen(true)
+  }
+
+  const closeModal = () => {
+    setModalOpen(false)
+    setTimeout(() => {
+      setModalTitle('')
+      setModalContent('')
+      setModalFields({})
+      setModalCallback(null)
+    }, 300)
+  }
+
+  const handleModalSubmit = () => {
+    if (modalCallback) {
+      modalCallback(modalFields)
+    }
+    closeModal()
   }
 
   return (
@@ -154,7 +189,44 @@ const AdminLayout = () => {
 
         {/* Page Content */}
         <div className="page">
-          <Outlet />
+          <ModalContext.Provider value={{ openModal, closeModal, modalFields, setModalFields }}>
+            <Outlet />
+          </ModalContext.Provider>
+        </div>
+
+        {/* Modal */}
+        <div className={`mo ${modalOpen ? 'show' : ''}`} onClick={closeModal}>
+          <div className="md" onClick={(e) => e.stopPropagation()}>
+            <div className="md-hd">
+              <h2>{modalTitle}</h2>
+              <button className="md-close" onClick={closeModal}>✕</button>
+            </div>
+            <div className="md-bd">
+              {Object.entries(modalFields).length > 0 ? (
+                <div className="fg">
+                  {Object.entries(modalFields).map(([key, value]) => (
+                    <div key={key} style={{ marginBottom: '12px' }}>
+                      <label className="fl">{value.label}</label>
+                      <input 
+                        type={value.type || 'text'} 
+                        placeholder={value.placeholder || ''}
+                        onChange={(e) => setModalFields({...modalFields, [key]: {...value, value: e.target.value}})}
+                        style={{ width: '100%', padding: '8px 12px', border: '1px solid var(--bo)', borderRadius: '6px' }}
+                      />
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div style={{ textAlign: 'center', color: 'var(--mu)', padding: '20px' }}>
+                  โปรแกรมกำเนิดหนังสือการทำงาน
+                </div>
+              )}
+            </div>
+            <div className="md-ft">
+              <button className="btn btn-g" onClick={closeModal}>ยกเลิก</button>
+              <button className="btn btn-p" onClick={handleModalSubmit}>บันทึก</button>
+            </div>
+          </div>
         </div>
       </div>
     </div>

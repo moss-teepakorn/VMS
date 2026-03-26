@@ -1,6 +1,18 @@
-import React from 'react'
+import React, { useContext } from 'react'
+import { ModalContext } from './AdminLayout'
 
 const AdminReports = () => {
+  const { openModal } = useContext(ModalContext)
+
+  const handleAddReport = () => {
+    openModal('สร้างรายงานใหม่', {
+      title: { label: 'ชื่อรายงาน', type: 'text', placeholder: 'รายงานบัญชี' },
+      period: { label: 'ระยะเวลา', type: 'text', placeholder: 'มกราคม - มีนาคม' },
+      type: { label: 'ประเภท', type: 'text', placeholder: 'การเงิน' },
+    }, (data) => {
+      console.log('Add report:', data)
+    })
+  }
   return (
     <div className="pane on">
       <div className="ph">

@@ -1,6 +1,19 @@
-import React from 'react'
+import React, { useContext } from 'react'
+import { ModalContext } from './AdminLayout'
 
 const AdminUsers = () => {
+  const { openModal } = useContext(ModalContext)
+
+  const handleAddUser = () => {
+    openModal('เพิ่มผู้ใช้ใหม่', {
+      name: { label: 'ชื่อ-นามสกุล', type: 'text', placeholder: 'นายสมชาติ' },
+      email: { label: 'อีเมล', type: 'email', placeholder: 'email@example.com' },
+      phone: { label: 'เบอร์', type: 'tel', placeholder: '098-xxx-xxxx' },
+      role: { label: 'บทบาท', type: 'text', placeholder: 'ผู้ดูแล/Admin' },
+    }, (data) => {
+      console.log('Add user:', data)
+    })
+  }
   return (
     <div className="pane on">
       <div className="ph">

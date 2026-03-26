@@ -1,6 +1,18 @@
-import React from 'react'
+import React, { useContext } from 'react'
+import { ModalContext } from './AdminLayout'
 
 const AdminAnnouncements = () => {
+  const { openModal } = useContext(ModalContext)
+
+  const handleAddAnnouncement = () => {
+    openModal('ประกาศใหม่', {
+      title: { label: 'หัวข้อ', type: 'text', placeholder: 'ประกาศที่สำคัญ' },
+      content: { label: 'เนื้อหา', type: 'text', placeholder: 'รายละเอียดประกาศ' },
+      priority: { label: 'ความสำคัญ', type: 'text', placeholder: 'ธรรมดา/สำคัญ/ด่วน' },
+    }, (data) => {
+      console.log('Add announcement:', data)
+    })
+  }
   return (
     <div className="pane on">
       <div className="ph">

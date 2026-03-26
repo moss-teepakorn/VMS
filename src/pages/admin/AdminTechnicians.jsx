@@ -1,6 +1,18 @@
-import React from 'react'
+import React, { useContext } from 'react'
+import { ModalContext } from './AdminLayout'
 
 const AdminTechnicians = () => {
+  const { openModal } = useContext(ModalContext)
+
+  const handleAddTechnician = () => {
+    openModal('เพิ่มช่างซ่อมใหม่', {
+      name: { label: 'ชื่อ-นามสกุล', type: 'text', placeholder: 'นายสมชาติ' },
+      phone: { label: 'เบอร์โทร', type: 'tel', placeholder: '098-xxx-xxxx' },
+      specialty: { label: 'ความเชี่ยวชาญ', type: 'text', placeholder: 'ไฟฟ้า' },
+    }, (data) => {
+      console.log('Add technician:', data)
+    })
+  }
   return (
     <div className="pane on">
       <div className="ph">

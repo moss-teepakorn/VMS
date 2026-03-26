@@ -1,6 +1,19 @@
-import React from 'react'
+import React, { useContext } from 'react'
+import { ModalContext } from './AdminLayout'
 
 const AdminIssues = () => {
+  const { openModal } = useContext(ModalContext)
+
+  const handleAddIssue = () => {
+    openModal('รายงานปัญหาใหม่', {
+      title: { label: 'เรื่อง', type: 'text', placeholder: 'ปัญหาไฟฟ้า' },
+      description: { label: 'รายละเอียด', type: 'text', placeholder: 'อธิบายปัญหา' },
+      location: { label: 'สถานที่', type: 'text', placeholder: '1/1' },
+      severity: { label: 'ความรุนแรง', type: 'text', placeholder: 'ปกติ/เร่งด่วน' },
+    }, (data) => {
+      console.log('Add issue:', data)
+    })
+  }
   return (
     <div className="pane on">
       <div className="ph">

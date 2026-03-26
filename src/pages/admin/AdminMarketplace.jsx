@@ -1,6 +1,18 @@
-import React from 'react'
+import React, { useContext } from 'react'
+import { ModalContext } from './AdminLayout'
 
 const AdminMarketplace = () => {
+  const { openModal } = useContext(ModalContext)
+
+  const handleAddProduct = () => {
+    openModal('เพิ่มสินค้า', {
+      name: { label: 'ชื่อสินค้า', type: 'text', placeholder: 'ชื่อสินค้า' },
+      price: { label: 'ราคา', type: 'number', placeholder: '500' },
+      description: { label: 'รายละเอียด', type: 'text', placeholder: 'รายละเอียดสินค้า' },
+    }, (data) => {
+      console.log('Add product:', data)
+    })
+  }
   return (
     <div className="pane on">
       <div className="ph">

@@ -1,7 +1,20 @@
-import React, { useState } from 'react'
+import React, { useState, useContext } from 'react'
+import { ModalContext } from './AdminLayout'
 
 const AdminHouses = () => {
+  const { openModal } = useContext(ModalContext)
   const [filterType, setFilterType] = useState('all')
+
+  const handleAddHouse = () => {
+    openModal('เพิ่มบ้านใหม่', {
+      number: { label: 'เลขที่บ้าน', type: 'text', placeholder: 'เช่น 10/1' },
+      owner: { label: 'ชื่อเจ้าของ', type: 'text', placeholder: 'นายสมชาติ ใจดี' },
+      phone: { label: 'เบอร์โทร', type: 'tel', placeholder: '098-xxx-xxxx' },
+      area: { label: 'พื้นที่ (ตร.ม.)', type: 'number', placeholder: '150' },
+    }, (data) => {
+      console.log('Add house:', data)
+    })
+  }
 
   return (
     <div className="pane on">
@@ -16,7 +29,7 @@ const AdminHouses = () => {
             </div>
           </div>
           <div className="ph-acts">
-            <button className="btn btn-p btn-sm">+ เพิ่มบ้าน</button>
+            <button className="btn btn-p btn-sm" onClick={handleAddHouse}>+ เพิ่มบ้าน</button>
             <button className="btn btn-o btn-sm">🔄 รีฟรช</button>
           </div>
         </div>

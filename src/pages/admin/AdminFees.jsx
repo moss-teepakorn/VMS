@@ -1,6 +1,18 @@
-import React from 'react'
+import React, { useContext } from 'react'
+import { ModalContext } from './AdminLayout'
 
 const AdminFees = () => {
+  const { openModal } = useContext(ModalContext)
+
+  const handleAddFee = () => {
+    openModal('สร้างใบแจ้งหนี้', {
+      month: { label: 'เดือน', type: 'text', placeholder: 'มกราคม' },
+      year: { label: 'ปี', type: 'number', placeholder: '2567' },
+      amount: { label: 'จำนวนเงิน (บาท)', type: 'number', placeholder: '2750' },
+    }, (data) => {
+      console.log('Add fee:', data)
+    })
+  }
   return (
     <div className="pane on">
       <div className="ph">
@@ -13,7 +25,7 @@ const AdminFees = () => {
             </div>
           </div>
           <div className="ph-acts">
-            <button className="btn btn-p btn-sm">+ สร้างใบแจ้งหนี้</button>
+            <button className="btn btn-p btn-sm" onClick={handleAddFee}>+ สร้างใบแจ้งหนี้</button>
           </div>
         </div>
       </div>

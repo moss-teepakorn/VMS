@@ -1,6 +1,18 @@
-import React from 'react'
+import React, { useContext } from 'react'
+import { ModalContext } from './AdminLayout'
 
 const AdminViolations = () => {
+  const { openModal } = useContext(ModalContext)
+
+  const handleAddViolation = () => {
+    openModal('แจ้งกระทำผิดใหม่', {
+      type: { label: 'ประเภท', type: 'text', placeholder: 'จอดรถขวาง' },
+      house: { label: 'เลขที่บ้าน', type: 'text', placeholder: '10/1' },
+      description: { label: 'อธิบายการกระทำ', type: 'text', placeholder: 'รายละเอียด' },
+    }, (data) => {
+      console.log('Add violation:', data)
+    })
+  }
   return (
     <div className="pane on">
       <div className="ph">
@@ -11,6 +23,9 @@ const AdminViolations = () => {
               <div className="ph-h1">แจ้งกระทำผิด</div>
               <div className="ph-sub">การละเมิดข้อบังคับ</div>
             </div>
+          </div>
+          <div className="ph-acts">
+            <button className="btn btn-p btn-sm" onClick={handleAddViolation}>+ แจ้งกระทำผิด</button>
           </div>
         </div>
       </div>

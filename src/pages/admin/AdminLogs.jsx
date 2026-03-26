@@ -1,6 +1,16 @@
-import React from 'react'
+import React, { useContext } from 'react'
+import { ModalContext } from './AdminLayout'
 
 const AdminLogs = () => {
+  const { openModal } = useContext(ModalContext)
+
+  const handleViewLog = (logId) => {
+    openModal('\u0e23า\u0e22\u0e25\u0e30\u0e40\u0e2d\u0e35\u0e22\u0e14 Log ID: ' + logId, {
+      timestamp: { label: '\u0e40\u0e27\u0e25\u0e32\u0e2a\u0e21\u0e2b', type: 'text', placeholder: '' },
+      action: { label: '\u0e01\u0e32\u0e23\u0e01\u0e23\u0e23\u0e21\u0e01\u0e32ร', type: 'text', placeholder: '' },
+      user: { label: '\u0e1c\u0e39\u0e49\u0e43\u0e0a\u0e49', type: 'text', placeholder: '' },
+    }, null)
+  }
   return (
     <div className="pane on">
       <div className="ph">

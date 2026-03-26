@@ -1,6 +1,18 @@
-import React from 'react'
+import React, { useContext } from 'react'
+import { ModalContext } from './AdminLayout'
 
 const AdminRequests = () => {
+  const { openModal } = useContext(ModalContext)
+
+  const handleAddRequest = () => {
+    openModal('สร้างรายการคำขอใหม่', {
+      type: { label: 'ประเภทคำขอ', type: 'text', placeholder: 'ซ่อมแซม' },
+      description: { label: 'รายละเอียด', type: 'text', placeholder: 'อธิบายปัญหา' },
+      house: { label: 'เลขที่บ้าน', type: 'text', placeholder: '10/1' },
+    }, (data) => {
+      console.log('Add request:', data)
+    })
+  }
   return (
     <div className="pane on">
       <div className="ph">

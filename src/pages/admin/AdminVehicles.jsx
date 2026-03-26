@@ -1,6 +1,21 @@
-import React from 'react'
+import React, { useContext } from 'react'
+import { ModalContext } from './AdminLayout'
 
 const AdminVehicles = () => {
+  const { openModal } = useContext(ModalContext)
+
+  const handleAddVehicle = () => {
+    openModal('ลงทะเบียนรถใหม่', {
+      licensePlate: { label: 'ทะเบียน', type: 'text', placeholder: 'เช่น กท 1234' },
+      brand: { label: 'ยี่ห้อ', type: 'text', placeholder: 'Toyota' },
+      model: { label: 'รุ่น', type: 'text', placeholder: 'Altis' },
+      owner: { label: 'เจ้าของ', type: 'text', placeholder: 'นายสมชาติ ใจดี' },
+      color: { label: 'สี', type: 'text', placeholder: 'สีขาว' },
+    }, (data) => {
+      console.log('Add vehicle:', data)
+    })
+  }
+
   return (
     <div className="pane on">
       <div className="ph">
@@ -13,7 +28,7 @@ const AdminVehicles = () => {
             </div>
           </div>
           <div className="ph-acts">
-            <button className="btn btn-p btn-sm">+ ลงทะเบียนรถใหม่</button>
+            <button className="btn btn-p btn-sm" onClick={handleAddVehicle}>+ ลงทะเบียนรถใหม่</button>
           </div>
         </div>
       </div>

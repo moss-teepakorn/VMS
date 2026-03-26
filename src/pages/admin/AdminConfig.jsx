@@ -1,6 +1,8 @@
-import React, { useState } from 'react'
+import React, { useState, useContext } from 'react'
+import { ModalContext } from './AdminLayout'
 
 const AdminConfig = () => {
+  const { openModal } = useContext(ModalContext)
   const [settings, setSettings] = useState({ siteName: 'The Greenfield', maxHouses: 128 })
 
   return (
