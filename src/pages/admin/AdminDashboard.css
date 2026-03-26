@@ -526,7 +526,7 @@
   font-size: 12px;
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 20px;
 }
 
 .houses-compact .ph {
