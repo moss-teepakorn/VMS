@@ -13,6 +13,9 @@ import {
 const EMPTY_FORM = {
   username: '',
   password: '',
+  full_name: '',
+  email: '',
+  phone: '',
   role: 'resident',
   is_active: true,
   house_id: '',
@@ -82,6 +85,9 @@ const AdminUsers = () => {
     setForm({
       username: user.username || '',
       password: '',
+      full_name: user.full_name || '',
+      email: user.email || '',
+      phone: user.phone || '',
       role: user.role || 'resident',
       is_active: user.is_active ?? true,
       house_id: user.house_id || '',
@@ -128,6 +134,12 @@ const AdminUsers = () => {
     try {
       const detail = await getHouseDetail(houseId)
       setSelectedHouse(detail)
+      setForm((prev) => ({
+        ...prev,
+        full_name: detail?.owner_name || detail?.resident_name || detail?.contact_name || prev.full_name,
+        email: detail?.email || prev.email,
+        phone: detail?.phone || prev.phone,
+      }))
     } catch (error) {
       console.error('Error loading house detail:', error)
       setSelectedHouse(null)
@@ -139,6 +151,9 @@ const AdminUsers = () => {
     if (!form.house_id) return 'กรุณาเลือกบ้านเลขที่'
     if (!form.username.trim()) return 'กรุณากรอก username'
     if (!form.password.trim()) return 'กรุณากรอก password'
+    if (!form.full_name.trim()) return 'กรุณากรอกชื่อ-นามสกุล'
+    if (!form.email.trim()) return 'กรุณากรอก email'
+    if (!form.phone.trim()) return 'กรุณากรอกเบอร์โทร'
     return null
   }
 
@@ -155,9 +170,9 @@ const AdminUsers = () => {
       const payload = {
         username: form.username,
         password: form.password,
-        full_name: selectedHouse?.owner_name || '',
-        email: selectedHouse?.email || '',
-        phone: selectedHouse?.phone || '',
+        full_name: form.full_name,
+        email: form.email,
+        phone: form.phone,
         role: form.role,
         is_active: form.is_active,
         house_id: form.house_id,
@@ -322,11 +337,11 @@ const AdminUsers = () => {
                     </label>
                     <label className="house-field">
                       <span>email</span>
-                      <input value={selectedHouse?.email || '-'} readOnly className="house-readonly" />
+                      <input name="email" type="email" value={form.email} onChange={handleChange} placeholder="name@example.com" />
                     </label>
                     <label className="house-field">
                       <span>เบอร์โทร</span>
-                      <input value={selectedHouse?.phone || '-'} readOnly className="house-readonly" />
+                      <input name="phone" value={form.phone} onChange={handleChange} placeholder="08x-xxx-xxxx" />
                     </label>
                   </div>
                 </section>
@@ -344,7 +359,7 @@ const AdminUsers = () => {
                     </label>
                     <label className="house-field house-field-span-2">
                       <span>ชื่อ-นามสกุล</span>
-                      <input value={selectedHouse?.owner_name || '-'} readOnly className="house-readonly" />
+                      <input name="full_name" value={form.full_name} onChange={handleChange} placeholder="ชื่อ-นามสกุล" />
                     </label>
                     <label className="house-field">
                       <span>บทบาท</span>

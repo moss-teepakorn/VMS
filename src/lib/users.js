@@ -6,6 +6,15 @@ function toLowerOrNull(value) {
   return trimmed || null
 }
 
+function generateUuid() {
+  if (globalThis.crypto?.randomUUID) return globalThis.crypto.randomUUID()
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (char) => {
+    const random = Math.random() * 16 | 0
+    const value = char === 'x' ? random : (random & 0x3 | 0x8)
+    return value.toString(16)
+  })
+}
+
 export async function getUsers() {
   try {
     const { data, error } = await supabase
@@ -30,6 +39,7 @@ export async function createUser(userData) {
     const passwordHash = await bcrypt.hash(userData.password || '', 10)
 
     const payload = {
+      id: userData.id || generateUuid(),
       username: toLowerOrNull(userData.username),
       password_hash: passwordHash,
       full_name: userData.full_name,
@@ -39,8 +49,6 @@ export async function createUser(userData) {
       house_id: userData.house_id || null,
       is_active: userData.is_active ?? true,
     }
-
-    if (userData.id) payload.id = userData.id
 
     const { data, error } = await supabase
       .from('profiles')
@@ -125,12 +133,22 @@ export async function getHouseDetail(houseId) {
   if (!houseId) return null
   const { data, error } = await supabase
     .from('houses')
-    .select('id, house_no, soi, owner_name, resident_name, contact_name, phone, address, status')
+    .select('*')
     .eq('id', houseId)
     .maybeSingle()
 
   if (error) throw error
-  return data ?? null
+  if (!data) return null
+
+  return {
+    ...data,
+    owner_name: data.owner_name || data.OWNER_NAME || '',
+    resident_name: data.resident_name || data.RESIDENT_NAME || '',
+    contact_name: data.contact_name || data.CONTACT_NAME || '',
+    phone: data.phone || data.PHONE || '',
+    email: data.email || data.EMAIL || data.contact_email || data.CONTACT_EMAIL || '',
+    address: data.address || data.ADDRESS || '',
+  }
 }
 
 export function formatDateTime(value) {
