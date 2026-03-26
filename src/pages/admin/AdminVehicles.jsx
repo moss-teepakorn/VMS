@@ -77,12 +77,25 @@ const EMPTY_FORM = {
 
 const MAX_ATTACHMENTS = 5
 const MAX_IMAGE_SIZE_BYTES = 100 * 1024
+const MAX_IMAGE_TARGET_BYTES = 95 * 1024
 
 function formatDecimal(value) {
   return Number(value || 0).toLocaleString('en-US', {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   })
+}
+
+function blurActiveElement() {
+  const activeElement = document.activeElement
+  if (activeElement instanceof HTMLElement) {
+    activeElement.blur()
+  }
+}
+
+function showSwal(options) {
+  blurActiveElement()
+  return Swal.fire({ returnFocus: false, ...options })
 }
 
 const AdminVehicles = () => {
@@ -138,7 +151,7 @@ const AdminVehicles = () => {
       setHouses(houseData)
     } catch (error) {
       console.error('Error loading vehicles:', error)
-      await Swal.fire({ icon: 'error', title: 'โหลดข้อมูลไม่สำเร็จ', text: error.message })
+      await showSwal({ icon: 'error', title: 'โหลดข้อมูลไม่สำเร็จ', text: error.message })
     } finally {
       setLoading(false)
     }
@@ -192,7 +205,7 @@ const AdminVehicles = () => {
       setAttachments(currentImages.map((image) => ({ ...image, source: 'existing' })))
     } catch (error) {
       console.error('Error loading vehicle images:', error)
-      await Swal.fire({ icon: 'error', title: 'โหลดรูปภาพไม่สำเร็จ', text: error.message })
+      await showSwal({ icon: 'error', title: 'โหลดรูปภาพไม่สำเร็จ', text: error.message })
       setAttachments([])
     }
 
@@ -255,18 +268,23 @@ const AdminVehicles = () => {
     let quality = 0.9
     let blob = await canvasToBlob(canvas, quality)
 
-    while (blob && blob.size > MAX_IMAGE_SIZE_BYTES && quality > 0.35) {
+    while (blob && blob.size > MAX_IMAGE_TARGET_BYTES && quality > 0.25) {
       quality -= 0.08
       blob = await canvasToBlob(canvas, quality)
     }
 
-    while (blob && blob.size > MAX_IMAGE_SIZE_BYTES && (canvas.width > 720 || canvas.height > 720)) {
+    while (blob && blob.size > MAX_IMAGE_TARGET_BYTES && (canvas.width > 480 || canvas.height > 480)) {
       canvas.width = Math.round(canvas.width * 0.9)
       canvas.height = Math.round(canvas.height * 0.9)
       context.clearRect(0, 0, canvas.width, canvas.height)
       context.drawImage(image, 0, 0, canvas.width, canvas.height)
       quality = 0.82
       blob = await canvasToBlob(canvas, quality)
+
+      while (blob && blob.size > MAX_IMAGE_TARGET_BYTES && quality > 0.25) {
+        quality -= 0.08
+        blob = await canvasToBlob(canvas, quality)
+      }
     }
 
     if (!blob || blob.size > MAX_IMAGE_SIZE_BYTES) {
@@ -284,13 +302,13 @@ const AdminVehicles = () => {
 
     const remainingSlots = MAX_ATTACHMENTS - attachments.length
     if (remainingSlots <= 0) {
-      await Swal.fire({ icon: 'warning', title: 'แนบรูปได้สูงสุด 5 รูป' })
+      await showSwal({ icon: 'warning', title: 'แนบรูปได้สูงสุด 5 รูป' })
       return
     }
 
     const filesToProcess = selectedFiles.slice(0, remainingSlots)
     if (selectedFiles.length > remainingSlots) {
-      await Swal.fire({ icon: 'info', title: `รับได้แค่ ${remainingSlots} รูป`, text: 'ระบบจะใช้เฉพาะรูปชุดแรก' })
+      await showSwal({ icon: 'info', title: `รับได้แค่ ${remainingSlots} รูป`, text: 'ระบบจะใช้เฉพาะรูปชุดแรก' })
     }
 
     try {
@@ -309,7 +327,7 @@ const AdminVehicles = () => {
 
       setAttachments((current) => [...current, ...prepared])
     } catch (error) {
-      await Swal.fire({ icon: 'error', title: 'แนบรูปไม่สำเร็จ', text: error.message })
+      await showSwal({ icon: 'error', title: 'แนบรูปไม่สำเร็จ', text: error.message })
     }
   }
 
@@ -328,7 +346,7 @@ const AdminVehicles = () => {
 
   const handlePreviewAttachment = (target) => {
     if (!target.url) return
-    Swal.fire({
+    showSwal({
       imageUrl: target.url,
       imageAlt: target.name,
       showConfirmButton: false,
@@ -363,22 +381,22 @@ const AdminVehicles = () => {
     event.preventDefault()
 
     if (!form.house_id) {
-      await Swal.fire({ icon: 'warning', title: 'ข้อมูลไม่ครบ', text: 'กรุณาเลือกบ้าน' })
+      await showSwal({ icon: 'warning', title: 'ข้อมูลไม่ครบ', text: 'กรุณาเลือกบ้าน' })
       return
     }
 
     if (!form.license_plate_prefix.trim() || !form.license_plate_number.trim()) {
-      await Swal.fire({ icon: 'warning', title: 'ข้อมูลไม่ครบ', text: 'กรุณากรอกทะเบียนรถ' })
+      await showSwal({ icon: 'warning', title: 'ข้อมูลไม่ครบ', text: 'กรุณากรอกทะเบียนรถ' })
       return
     }
 
     if (form.brand === 'อื่นๆ' && !form.brand_other.trim()) {
-      await Swal.fire({ icon: 'warning', title: 'ข้อมูลไม่ครบ', text: 'กรุณากรอกยี่ห้อรถ (อื่นๆ)' })
+      await showSwal({ icon: 'warning', title: 'ข้อมูลไม่ครบ', text: 'กรุณากรอกยี่ห้อรถ (อื่นๆ)' })
       return
     }
 
     if (form.color === 'อื่นๆ' && !form.color_other.trim()) {
-      await Swal.fire({ icon: 'warning', title: 'ข้อมูลไม่ครบ', text: 'กรุณากรอกสีรถ (อื่นๆ)' })
+      await showSwal({ icon: 'warning', title: 'ข้อมูลไม่ครบ', text: 'กรุณากรอกสีรถ (อื่นๆ)' })
       return
     }
 
@@ -420,7 +438,7 @@ const AdminVehicles = () => {
         if (newFiles.length > 0) {
           await uploadVehicleImages(updated.id, newFiles)
         }
-        await Swal.fire({ icon: 'success', title: 'บันทึกสำเร็จ', text: `แก้ไขทะเบียน ${licensePlate} แล้ว`, timer: 1400, showConfirmButton: false })
+        await showSwal({ icon: 'success', title: 'บันทึกสำเร็จ', text: `แก้ไขทะเบียน ${licensePlate} แล้ว`, timer: 1400, showConfirmButton: false })
       } else {
         const created = await createVehicle(payload)
         const newFiles = attachments
@@ -429,21 +447,21 @@ const AdminVehicles = () => {
         if (newFiles.length > 0) {
           await uploadVehicleImages(created.id, newFiles)
         }
-        await Swal.fire({ icon: 'success', title: 'เพิ่มข้อมูลสำเร็จ', text: `เพิ่มทะเบียน ${licensePlate} แล้ว`, timer: 1400, showConfirmButton: false })
+        await showSwal({ icon: 'success', title: 'เพิ่มข้อมูลสำเร็จ', text: `เพิ่มทะเบียน ${licensePlate} แล้ว`, timer: 1400, showConfirmButton: false })
       }
 
       closeModal(true)
       await loadVehicles({ status: statusFilter, search: searchTerm, soi: soiFilter, vehicleType: vehicleTypeFilter })
     } catch (error) {
       console.error('Error saving vehicle:', error)
-      await Swal.fire({ icon: 'error', title: 'บันทึกไม่สำเร็จ', text: error.message })
+      await showSwal({ icon: 'error', title: 'บันทึกไม่สำเร็จ', text: error.message })
     } finally {
       setSaving(false)
     }
   }
 
   const handleDeleteVehicle = async (vehicle) => {
-    const result = await Swal.fire({
+    const result = await showSwal({
       icon: 'warning',
       title: 'ยืนยันการเปลี่ยนเป็นไม่ใช้งาน',
       text: `ต้องการเปลี่ยนทะเบียน ${vehicle.license_plate} เป็นไม่ใช้งานใช่หรือไม่?`,
@@ -457,11 +475,11 @@ const AdminVehicles = () => {
 
     try {
       await deleteVehicle(vehicle.id)
-      await Swal.fire({ icon: 'success', title: 'อัปเดตสำเร็จ', text: 'เปลี่ยนสถานะเป็นไม่ใช้งานแล้ว', timer: 1200, showConfirmButton: false })
+      await showSwal({ icon: 'success', title: 'อัปเดตสำเร็จ', text: 'เปลี่ยนสถานะเป็นไม่ใช้งานแล้ว', timer: 1200, showConfirmButton: false })
       await loadVehicles({ status: statusFilter, search: searchTerm, soi: soiFilter, vehicleType: vehicleTypeFilter })
     } catch (error) {
       console.error('Error deleting vehicle:', error)
-      await Swal.fire({ icon: 'error', title: 'ลบไม่สำเร็จ', text: error.message })
+      await showSwal({ icon: 'error', title: 'ลบไม่สำเร็จ', text: error.message })
     }
   }
 
@@ -617,7 +635,7 @@ const AdminVehicles = () => {
                         />
                       </div>
                     </label>
-                    <label className="house-field">
+                    <label className="house-field house-field-province">
                       <span>จังหวัด</span>
                       <select name="province" value={form.province} onChange={handleChange}>
                         {PROVINCE_OPTIONS.map((province) => <option key={province} value={province}>{province}</option>)}
@@ -723,7 +741,7 @@ const AdminVehicles = () => {
                     </label>
                   </div>
                   <div style={{ marginTop: '8px', fontSize: '12px', color: 'var(--mu)' }}>
-                    แนบแล้ว {attachments.length}/{MAX_ATTACHMENTS} รูป • ระบบย่อไฟล์ไม่เกิน 150KB และตั้งชื่อ CAR_YYYYMMDD_HHMMSS_001.jpg
+                    แนบแล้ว {attachments.length}/{MAX_ATTACHMENTS} รูป • ระบบย่อไฟล์ไม่เกิน 100KB และตั้งชื่อ CAR_YYYYMMDD_HHMMSS_001.jpg
                   </div>
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginTop: '10px' }}>
                     {attachments.length === 0 ? (

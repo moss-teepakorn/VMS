@@ -1,6 +1,7 @@
 import { supabase } from './supabase'
 
 const VEHICLE_IMAGE_BUCKET = 'vehicle-images'
+const MAX_VEHICLE_IMAGE_BYTES = 100 * 1024
 
 const houseSorter = new Intl.Collator('th-TH', { numeric: true, sensitivity: 'base' })
 
@@ -167,6 +168,10 @@ export async function uploadVehicleImages(vehicleId, files) {
 
   const uploaded = []
   for (const file of files) {
+    if (file.size > MAX_VEHICLE_IMAGE_BYTES) {
+      throw new Error(`ไฟล์ ${file.name} มีขนาดเกิน 100KB`)
+    }
+
     const fileName = file.name
     const path = `${folder}/${fileName}`
     const { error } = await supabase.storage
