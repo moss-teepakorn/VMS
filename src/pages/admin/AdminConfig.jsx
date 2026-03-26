@@ -1,6 +1,12 @@
 import React, { useEffect, useState } from 'react'
 import Swal from 'sweetalert2'
-import { getSystemConfig, updateSystemConfig } from '../../lib/systemConfig'
+import {
+  deleteSystemAssetByPath,
+  extractSystemAssetPath,
+  getSystemConfig,
+  updateSystemConfig,
+  uploadJuristicSignature,
+} from '../../lib/systemConfig'
 
 const NUMBER_FIELDS = [
   'fee_rate_per_sqw',
@@ -22,6 +28,9 @@ const AdminConfig = () => {
   const [saving, setSaving] = useState(false)
   const [configId, setConfigId] = useState('')
   const [form, setForm] = useState({})
+  const [signatureFile, setSignatureFile] = useState(null)
+  const [signaturePreviewUrl, setSignaturePreviewUrl] = useState('')
+  const [removeSignature, setRemoveSignature] = useState(false)
 
   useEffect(() => {
     const loadConfig = async () => {
@@ -30,6 +39,9 @@ const AdminConfig = () => {
         const config = await getSystemConfig()
         setConfigId(config.id)
         setForm(config)
+        setSignatureFile(null)
+        setRemoveSignature(false)
+        setSignaturePreviewUrl(config.juristic_signature_url || '')
       } catch (error) {
         await Swal.fire({ icon: 'error', title: 'โหลดค่าระบบไม่สำเร็จ', text: error.message })
       } finally {
@@ -55,6 +67,35 @@ const AdminConfig = () => {
     setForm((prev) => ({ ...prev, [name]: value }))
   }
 
+  const handleSignatureFile = (event) => {
+    const file = event.target.files?.[0]
+    event.target.value = ''
+    if (!file) return
+
+    const allowed = ['image/png', 'image/jpeg', 'image/jpg', 'image/webp']
+    if (!allowed.includes(file.type)) {
+      Swal.fire({ icon: 'warning', title: 'ไฟล์ไม่รองรับ', text: 'กรุณาอัปโหลดไฟล์ PNG/JPG/WEBP' })
+      return
+    }
+
+    if (signaturePreviewUrl.startsWith('blob:')) {
+      URL.revokeObjectURL(signaturePreviewUrl)
+    }
+
+    setSignatureFile(file)
+    setRemoveSignature(false)
+    setSignaturePreviewUrl(URL.createObjectURL(file))
+  }
+
+  const handleRemoveSignature = () => {
+    if (signaturePreviewUrl.startsWith('blob:')) {
+      URL.revokeObjectURL(signaturePreviewUrl)
+    }
+    setSignatureFile(null)
+    setSignaturePreviewUrl('')
+    setRemoveSignature(true)
+  }
+
   const handleSave = async () => {
     if (!configId) return
 
@@ -65,8 +106,33 @@ const AdminConfig = () => {
         payload[field] = Number(payload[field] || 0)
       })
 
+      const previousSignaturePath = form.juristic_signature_path || extractSystemAssetPath(form.juristic_signature_url)
+
+      if (removeSignature) {
+        if (previousSignaturePath) {
+          await deleteSystemAssetByPath(previousSignaturePath)
+        }
+        payload.juristic_signature_url = null
+        payload.juristic_signature_path = null
+      }
+
+      if (signatureFile) {
+        if (previousSignaturePath) {
+          await deleteSystemAssetByPath(previousSignaturePath)
+        }
+        const uploaded = await uploadJuristicSignature(signatureFile)
+        payload.juristic_signature_url = uploaded?.url || null
+        payload.juristic_signature_path = uploaded?.path || null
+      }
+
       const updated = await updateSystemConfig(configId, payload)
       setForm(updated)
+      setSignatureFile(null)
+      setRemoveSignature(false)
+      if (signaturePreviewUrl.startsWith('blob:')) {
+        URL.revokeObjectURL(signaturePreviewUrl)
+      }
+      setSignaturePreviewUrl(updated.juristic_signature_url || '')
       await Swal.fire({ icon: 'success', title: 'บันทึกสำเร็จ', timer: 1200, showConfirmButton: false })
     } catch (error) {
       await Swal.fire({ icon: 'error', title: 'บันทึกไม่สำเร็จ', text: error.message })
@@ -115,6 +181,22 @@ const AdminConfig = () => {
                     <span>อีเมลนิติบุคคล</span>
                     <input name="juristic_email" value={form.juristic_email || ''} onChange={handleChange} />
                   </label>
+                  <div className="house-field house-field-span-3">
+                    <span>ลายเซ็นนิติ (PNG/JPG)</span>
+                    <input type="file" accept="image/png,image/jpeg,image/webp" onChange={handleSignatureFile} />
+                    <div style={{ marginTop: '8px', display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+                      {signaturePreviewUrl ? (
+                        <>
+                          <div style={{ width: '220px', height: '72px', border: '1px solid var(--bo)', borderRadius: '8px', background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
+                            <img src={signaturePreviewUrl} alt="juristic-signature" style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />
+                          </div>
+                          <button type="button" className="btn btn-xs btn-dg" onClick={handleRemoveSignature}>ลบลายเซ็น</button>
+                        </>
+                      ) : (
+                        <div style={{ fontSize: '12px', color: 'var(--mu)' }}>ยังไม่มีลายเซ็นที่อัปโหลด</div>
+                      )}
+                    </div>
+                  </div>
                   <label className="house-field">
                     <span>ธนาคาร</span>
                     <input name="bank_name" value={form.bank_name || ''} onChange={handleChange} />

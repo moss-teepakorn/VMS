@@ -286,6 +286,8 @@ create table if not exists system_config (
   juristic_name           text    default 'นิติบุคคลหมู่บ้านเดอะกรีนฟิลด์',
   juristic_phone          text    default '02-123-4567',
   juristic_email          text    default 'niti@greenfield.co.th',
+  juristic_signature_url  text,
+  juristic_signature_path text,
   bank_name               text    default 'กสิกรไทย',
   bank_account_no         text,
   bank_account_name       text    default 'นิติบุคคลหมู่บ้าน เดอะกรีนฟิลด์',
@@ -319,6 +321,7 @@ insert into system_config default values;
 create or replace view public_config as
   select
     village_name, juristic_name, juristic_phone,
+    juristic_signature_url,
     bank_name, bank_account_no, bank_account_name,
     invoice_message, date_format, system_language
   from system_config

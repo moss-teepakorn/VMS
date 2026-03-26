@@ -1,10 +1,14 @@
 import { supabase } from './supabase'
 
+const SYSTEM_ASSET_BUCKET = 'system-assets'
+
 const DEFAULT_SYSTEM_CONFIG = {
   village_name: 'The Greenfield',
   juristic_name: 'นิติบุคคลหมู่บ้านเดอะกรีนฟิลด์',
   juristic_phone: '02-123-4567',
   juristic_email: 'niti@greenfield.co.th',
+  juristic_signature_url: '',
+  juristic_signature_path: '',
   bank_name: 'กสิกรไทย',
   bank_account_no: '',
   bank_account_name: 'นิติบุคคลหมู่บ้าน เดอะกรีนฟิลด์',
@@ -75,4 +79,48 @@ export async function updateSystemConfig(configId, updates) {
 
   if (error) throw error
   return normalizeConfigRow(data)
+}
+
+export function extractSystemAssetPath(publicUrl) {
+  const value = String(publicUrl || '').trim()
+  if (!value) return ''
+  const marker = `/storage/v1/object/public/${SYSTEM_ASSET_BUCKET}/`
+  const index = value.indexOf(marker)
+  if (index < 0) return ''
+  return decodeURIComponent(value.slice(index + marker.length))
+}
+
+export async function uploadJuristicSignature(file) {
+  if (!file) return null
+  const extension = String(file.name || 'png').split('.').pop()?.toLowerCase() || 'png'
+  const safeExt = ['png', 'jpg', 'jpeg', 'webp'].includes(extension) ? extension : 'png'
+  const fileName = `signature_${Date.now()}.${safeExt}`
+  const path = `juristic/${fileName}`
+
+  const { error } = await supabase.storage
+    .from(SYSTEM_ASSET_BUCKET)
+    .upload(path, file, { upsert: true, contentType: file.type || 'image/png' })
+
+  if (error) throw error
+
+  const { data: publicUrlData } = supabase.storage
+    .from(SYSTEM_ASSET_BUCKET)
+    .getPublicUrl(path)
+
+  return {
+    path,
+    url: publicUrlData?.publicUrl || '',
+  }
+}
+
+export async function deleteSystemAssetByPath(path) {
+  const target = String(path || '').trim()
+  if (!target) return true
+
+  const { error } = await supabase.storage
+    .from(SYSTEM_ASSET_BUCKET)
+    .remove([target])
+
+  if (error) throw error
+  return true
 }

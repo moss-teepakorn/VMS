@@ -54,6 +54,7 @@ function showSwal(options) {
 const DEFAULT_REPORT_IDENTITY = {
   village_name: 'The Greenfield',
   juristic_name: 'นิติบุคคลหมู่บ้านเดอะกรีนฟิลด์',
+  juristic_signature_url: '',
 }
 
 function escapeHtml(value) {
@@ -112,6 +113,7 @@ const AdminViolations = () => {
         setReportIdentity({
           village_name: config?.village_name || DEFAULT_REPORT_IDENTITY.village_name,
           juristic_name: config?.juristic_name || DEFAULT_REPORT_IDENTITY.juristic_name,
+          juristic_signature_url: config?.juristic_signature_url || '',
         })
       } catch {
         setReportIdentity(DEFAULT_REPORT_IDENTITY)
@@ -354,6 +356,7 @@ const AdminViolations = () => {
   }
 
   const buildReportPreviewHtml = (item, images) => {
+    const signatureSource = reportIdentity.juristic_signature_url || juristicSignature
     const detailRows = `
       <tr><td class="k">บ้าน/เจ้าของ</td><td class="v">${escapeHtml(item.houses?.house_no || '-')} ${escapeHtml(item.houses?.owner_name ? `- ${item.houses.owner_name}` : '')}</td></tr>
       <tr><td class="k">ประเภทการกระทำผิด</td><td class="v">${escapeHtml(item.type || '-')}</td></tr>
@@ -445,7 +448,7 @@ const AdminViolations = () => {
               <div class="img-wrap">${firstImage}</div>
               <div class="signature">
                 <div class="signature-box">
-                  <img src="${juristicSignature}" class="signature-img" alt="signature" />
+                  <img src="${signatureSource}" class="signature-img" alt="signature" />
                   <div class="signature-line">(${escapeHtml(reportIdentity.juristic_name || DEFAULT_REPORT_IDENTITY.juristic_name)})</div>
                 </div>
               </div>
@@ -529,6 +532,7 @@ const AdminViolations = () => {
 
   const downloadViolationReportPdf = async (item) => {
     const images = await listViolationImages(item.id)
+    const signatureSource = reportIdentity.juristic_signature_url || juristicSignature
     const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' })
     const pageWidth = 210
     const pageHeight = 297
@@ -585,7 +589,7 @@ const AdminViolations = () => {
       pdf.text('ไม่มีรูปแนบ', margin, 175)
     }
 
-    await addImageFitBox(pdf, juristicSignature, pageWidth - 74, 258, 62, 16, 'contain')
+    await addImageFitBox(pdf, signatureSource, pageWidth - 74, 258, 62, 16, 'contain')
     pdf.setFont('helvetica', 'normal')
     pdf.setFontSize(10)
     pdf.text(`(${reportIdentity.juristic_name || DEFAULT_REPORT_IDENTITY.juristic_name})`, pageWidth - 43, 279, { align: 'center' })
