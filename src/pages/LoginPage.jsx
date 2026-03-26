@@ -4,6 +4,10 @@ import { useAuth } from '../contexts/AuthContext'
 import { applyDocumentTitle, getSetupConfig } from '../lib/setup'
 import villageLogo from '../assets/village-logo.svg'
 
+const BUILD_SHA = typeof __BUILD_SHA__ !== 'undefined' ? __BUILD_SHA__ : 'local'
+const BUILD_DATE = typeof __BUILD_DATE__ !== 'undefined' ? __BUILD_DATE__ : '-'
+const APP_VERSION = '1.0.0'
+
 export default function LoginPage() {
   const { signIn, user, profile, loading } = useAuth()
   const navigate = useNavigate()
@@ -165,17 +169,13 @@ export default function LoginPage() {
                 </form>
               </div>
 
-              <div className="mt-6 text-center">
-                <p className="text-xs text-slate-500 mb-1">{setup.villageName}</p>
-                <p className="text-xs text-slate-400">{setup.version}</p>
-              </div>
             </div>
           </div>
         </div>
 
         {/* Footer */}
         <footer className="fixed bottom-0 right-0 left-0 bg-black/80 border-t border-slate-700 px-6 py-3 text-center text-xs text-slate-400">
-          <p>{setup.villageName} · v{setup.version}</p>
+          <p>{setup.villageName} | version {APP_VERSION} | Built no : {BUILD_SHA} | Built date : {BUILD_DATE}</p>
         </footer>
       </div>
     </div>
