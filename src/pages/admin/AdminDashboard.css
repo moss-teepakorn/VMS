@@ -554,14 +554,15 @@
   position: relative;
   z-index: 1;
   margin-top: 10px;
-  display: grid;
-  grid-template-columns: minmax(220px, 0.72fr) 152px 136px 86px;
+  display: flex;
   gap: 8px;
   align-items: center;
 }
 
-.houses-filter-input,
-.houses-filter-select {
+.houses-filter-input {
+  flex: 1;
+  min-width: 220px;
+  max-width: 600px;
   height: 34px;
   border: 1px solid rgba(255,255,255,.32);
   border-radius: 8px;
@@ -576,10 +577,25 @@
 }
 
 .houses-filter-select {
+  flex-shrink: 0;
+  width: 152px;
+  height: 34px;
+  border: 1px solid rgba(255,255,255,.32);
+  border-radius: 8px;
+  padding: 0 11px;
   padding-right: 28px;
+  font-size: 12px;
+  color: #1f2937;
+  background: rgba(255,255,255,.97);
+}
+
+.houses-filter-select:nth-child(3) {
+  width: 136px;
 }
 
 .houses-filter-btn {
+  flex-shrink: 0;
+  width: 86px;
   height: 34px;
   padding: 0 12px;
 }
