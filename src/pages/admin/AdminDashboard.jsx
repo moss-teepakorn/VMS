@@ -77,13 +77,48 @@ const AdminDashboard = () => {
           <div className="ch">
             <h3>💰 ยอดชำระ vs ค้าง — 6 เดือน</h3>
           </div>
-          <div className="chart-wrap" id="ch-pay6">Loading chart...</div>
+          <div className="chart-wrap">
+            <svg viewBox="0 0 600 250" style={{ width: '100%', height: '200px' }}>
+              {/* Bars for payment vs pending */}
+              <rect x="50" y="160" width="30" height="60" fill="#28B463" />
+              <rect x="90" y="140" width="30" height="80" fill="#28B463" />
+              <rect x="130" y="150" width="30" height="70" fill="#28B463" />
+              <rect x="170" y="130" width="30" height="90" fill="#28B463" />
+              <rect x="210" y="120" width="30" height="100" fill="#28B463" />
+              <rect x="250" y="100" width="30" height="120" fill="#28B463" />
+              <rect x="70" y="175" width="20" height="45" fill="#C0392B" />
+              <rect x="110" y="165" width="20" height="55" fill="#C0392B" />
+              <rect x="150" y="170" width="20" height="50" fill="#C0392B" />
+              <rect x="190" y="160" width="20" height="60" fill="#C0392B" />
+              <rect x="230" y="155" width="20" height="65" fill="#C0392B" />
+              <rect x="270" y="140" width="20" height="80" fill="#C0392B" />
+              <text x="40" y="240" fontSize="12" fill="#666">ม.ค.</text>
+              <text x="80" y="240" fontSize="12" fill="#666">ก.พ.</text>
+              <text x="120" y="240" fontSize="12" fill="#666">มี.ค.</text>
+              <text x="165" y="240" fontSize="12" fill="#666">เม.ย.</text>
+              <text x="205" y="240" fontSize="12" fill="#666">พ.ค.</text>
+              <text x="245" y="240" fontSize="12" fill="#666">มิ.ย.</text>
+              <text x="300" y="20" fontSize="14" fontWeight="600" fill="#333">เก็บได้ 3.2M ฿ ค้าง 848k ฿</text>
+            </svg>
+          </div>
         </div>
         <div className="chart-box">
           <div className="ch">
             <h3>🏠 สถานะบ้านทั้งหมด (128 หลัง)</h3>
           </div>
-          <div className="chart-wrap" id="ch-hstatus">Loading chart...</div>
+          <div className="chart-wrap">
+            <svg viewBox="0 0 300 250" style={{ width: '100%', height: '200px' }}>
+              {/* Pie chart for house status */}
+              <circle cx="120" cy="100" r="70" fill="#28B463" />
+              <circle cx="120" cy="100" r="60" fill="white" />
+              <circle cx="120" cy="100" r="60" fill="#28B463" style={{ clipPath: 'polygon(50% 50%, 50% 0%, 100% 0%, 100% 100%, 50% 100%)' }} opacity="0.8" />
+              <text x="120" y="105" textAnchor="middle" fontSize="16" fontWeight="700" fill="#333">104</text>
+              <text x="120" y="125" textAnchor="middle" fontSize="12" fill="#666">อยู่อาศัย</text>
+              <text x="220" y="50" fontSize="12" fill="#333">⚪ ว่าง: 16 หลัง</text>
+              <text x="220" y="70" fontSize="12" fill="#333">🟡 รอจด: 8 หลัง</text>
+              <text x="220" y="90" fontSize="12" fill="#333">🟢 อยู่: 104 หลัง</text>
+            </svg>
+          </div>
         </div>
       </div>
 
@@ -93,13 +128,47 @@ const AdminDashboard = () => {
           <div className="ch">
             <h3>📈 ยอดเก็บ vs ค้างรายไตรมาส</h3>
           </div>
-          <div className="chart-wrap" id="ch-qfee">Loading chart...</div>
+          <div className="chart-wrap">
+            <svg viewBox="0 0 600 250" style={{ width: '100%', height: '200px' }}>
+              {/* Quarterly comparison */}
+              <rect x="60" y="120" width="50" height="80" fill="#1B4F72" />
+              <rect x="120" y="100" width="50" height="100" fill="#1B4F72" />
+              <rect x="180" y="90" width="50" height="110" fill="#1B4F72" />
+              <rect x="240" y="110" width="50" height="90" fill="#1B4F72" />
+              <rect x="85" y="160" width="20" height="40" fill="#E67E22" />
+              <rect x="145" y="150" width="20" height="50" fill="#E67E22" />
+              <rect x="205" y="145" width="20" height="55" fill="#E67E22" />
+              <rect x="265" y="155" width="20" height="45" fill="#E67E22" />
+              <text x="80" y="230" fontSize="12" fill="#666">ไตรมาส 1</text>
+              <text x="140" y="230" fontSize="12" fill="#666">ไตรมาส 2</text>
+              <text x="200" y="230" fontSize="12" fill="#666">ไตรมาส 3</text>
+              <text x="260" y="230" fontSize="12" fill="#666">ไตรมาส 4</text>
+              <text x="320" y="40" fontSize="12" fontWeight="600" fill="#333">🟦 เก็บได้</text>
+              <text x="320" y="70" fontSize="12" fontWeight="600" fill="#333">🟧 ค้างชำระ</text>
+            </svg>
+          </div>
         </div>
         <div className="chart-box">
           <div className="ch">
             <h3>🔧 ปัญหาตามประเภท</h3>
           </div>
-          <div className="chart-wrap" id="ch-issues">Loading chart...</div>
+          <div className="chart-wrap">
+            <svg viewBox="0 0 400 250" style={{ width: '100%', height: '200px' }}>
+              {/* Issue types breakdown */}
+              <rect x="40" y="80" width="40" height="100" fill="#E67E22" />
+              <rect x="95" y="120" width="40" height="60" fill="#C0392B" />
+              <rect x="150" y="100" width="40" height="80" fill="#3498DB" />
+              <rect x="205" y="110" width="40" height="70" fill="#8E44AD" />
+              <text x="50" y="200" textAnchor="middle" fontSize="11" fill="#666">ไฟฟ้า</text>
+              <text x="105" y="200" textAnchor="middle" fontSize="11" fill="#666">น้ำ</text>
+              <text x="160" y="200" textAnchor="middle" fontSize="11" fill="#666">ซ่อม</text>
+              <text x="215" y="200" textAnchor="middle" fontSize="11" fill="#666">อื่นๆ</text>
+              <text x="50" y="60" textAnchor="middle" fontSize="12" fontWeight="600" fill="#333">8</text>
+              <text x="105" y="100" textAnchor="middle" fontSize="12" fontWeight="600" fill="#333">4</text>
+              <text x="160" y="75" textAnchor="middle" fontSize="12" fontWeight="600" fill="#333">6</text>
+              <text x="215" y="85" textAnchor="middle" fontSize="12" fontWeight="600" fill="#333">5</text>
+            </svg>
+          </div>
         </div>
       </div>
 

@@ -38,8 +38,55 @@ const AdminReports = () => {
       <div className="card" style={{ marginTop: '16px' }}>
         <div className="ch"><div className="ct">ประวัติการประชุม</div></div>
         <div className="cb">
-          <div style={{ minHeight: '150px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--mu)' }}>
-            ข้อมูลประวัติการประชุม
+          <div style={{ overflowX: 'auto' }}>
+            <table className="tw" style={{ width: '100%', minWidth: '500px' }}>
+              <thead>
+                <tr>
+                  <th>ลำดับที่</th>
+                  <th>วันที่</th>
+                  <th>ประเภท</th>
+                  <th>ผู้มาประชุม</th>
+                  <th>สถานะ</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>242</td>
+                  <td>14 มีนาคม 2568</td>
+                  <td><span className="bd b-p">ประชุมประจำเดือน</span></td>
+                  <td>98 คน</td>
+                  <td><span className="bd b-ok">สำเร็จ</span></td>
+                </tr>
+                <tr>
+                  <td>241</td>
+                  <td>14 กุมภาพันธ์ 2568</td>
+                  <td><span className="bd b-p">ประชุมประจำเดือน</span></td>
+                  <td>97 คน</td>
+                  <td><span className="bd b-ok">สำเร็จ</span></td>
+                </tr>
+                <tr>
+                  <td>240</td>
+                  <td>14 มกราคม 2568</td>
+                  <td><span className="bd b-p">ประชุมประจำเดือน</span></td>
+                  <td>96 คน</td>
+                  <td><span className="bd b-ok">สำเร็จ</span></td>
+                </tr>
+                <tr>
+                  <td>239</td>
+                  <td>14 ธันวาคม 2567</td>
+                  <td><span className="bd b-w">ประชุมพิเศษ</span></td>
+                  <td>102 คน</td>
+                  <td><span className="bd b-ok">สำเร็จ</span></td>
+                </tr>
+                <tr>
+                  <td>238</td>
+                  <td>14 พฤศจิกายน 2567</td>
+                  <td><span className="bd b-p">ประชุมประจำเดือน</span></td>
+                  <td>99 คน</td>
+                  <td><span className="bd b-ok">สำเร็จ</span></td>
+                </tr>
+              </tbody>
+            </table>
           </div>
         </div>
       </div>
