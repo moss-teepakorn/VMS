@@ -355,7 +355,7 @@ const AdminViolations = () => {
     }
   }
 
-  const buildReportPreviewHtml = (item, images) => {
+  const buildReportDocumentParts = (item, images, includeToolbar = true) => {
     const signatureSource = reportIdentity.juristic_signature_url || juristicSignature
     const detailRows = `
       <tr><td class="k">บ้าน/เจ้าของ</td><td class="v">${escapeHtml(item.houses?.house_no || '-')} ${escapeHtml(item.houses?.owner_name ? `- ${item.houses.owner_name}` : '')}</td></tr>
@@ -382,12 +382,7 @@ const AdminViolations = () => {
       </section>
     `).join('')
 
-    return `
-      <html>
-        <head>
-          <meta charset="utf-8" />
-          <title>รายงานการกระทำผิด ${escapeHtml(item.report_no || '')}</title>
-          <style>
+    const styles = `
             * { box-sizing: border-box; }
             body { margin: 0; background: #f3f4f6; font-family: Arial, Helvetica, sans-serif; color: #111827; }
             .toolbar { position: sticky; top: 0; z-index: 20; background: #111827; color: #fff; padding: 10px 14px; display: flex; justify-content: space-between; align-items: center; }
@@ -423,18 +418,21 @@ const AdminViolations = () => {
               .a4 { margin: 0; border: none; page-break-after: always; }
               .a4:last-child { page-break-after: auto; }
             }
-          </style>
-        </head>
-        <body>
-          <div class="toolbar">
+    `
+
+    const toolbarHtml = includeToolbar ? `
+      <div class="toolbar">
             <div>ตัวอย่างรายงาน A4 • ${escapeHtml(item.report_no || '-')}</div>
             <div class="actions">
               <button class="btn-print" onclick="window.print()">Print</button>
               <button class="btn-close" onclick="window.close()">ปิด</button>
             </div>
           </div>
-          <div class="canvas">
-            <section class="a4">
+    ` : ''
+
+    const canvasHtml = `
+      <div class="canvas">
+        <section class="a4">
               <div class="head">
                 <img src="${villageLogo}" class="logo" alt="logo" />
                 <div>
@@ -454,148 +452,65 @@ const AdminViolations = () => {
               </div>
             </section>
             ${extraPages}
-          </div>
+      </div>
+    `
+
+    return { styles, toolbarHtml, canvasHtml }
+  }
+
+  const buildReportPreviewHtml = (item, images) => {
+    const { styles, toolbarHtml, canvasHtml } = buildReportDocumentParts(item, images, true)
+    return `
+      <html>
+        <head>
+          <meta charset="utf-8" />
+          <title>รายงานการกระทำผิด ${escapeHtml(item.report_no || '')}</title>
+          <style>${styles}</style>
+        </head>
+        <body>
+          ${toolbarHtml}
+          ${canvasHtml}
         </body>
       </html>
     `
   }
 
-  const toDataUrl = async (imageUrl) => {
-    const response = await fetch(imageUrl)
-    if (!response.ok) throw new Error('โหลดรูปสำหรับ PDF ไม่สำเร็จ')
-    const blob = await response.blob()
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader()
-      reader.onloadend = () => resolve(reader.result)
-      reader.onerror = reject
-      reader.readAsDataURL(blob)
-    })
-  }
-
-  const toPngDataUrl = async (imageUrl) => {
-    const rawDataUrl = await toDataUrl(imageUrl)
-    const image = await new Promise((resolve, reject) => {
-      const img = new Image()
-      img.onload = () => resolve(img)
-      img.onerror = reject
-      img.src = rawDataUrl
-    })
-    const canvas = document.createElement('canvas')
-    canvas.width = image.width || 1024
-    canvas.height = image.height || 1024
-    const context = canvas.getContext('2d')
-    if (!context) throw new Error('ไม่สามารถประมวลผลรูปได้')
-    context.drawImage(image, 0, 0)
-    return {
-      dataUrl: canvas.toDataURL('image/png'),
-      width: image.width || 1024,
-      height: image.height || 1024,
-    }
-  }
-
-  const addImageFitBox = async (pdf, imageUrl, x, y, boxWidth, boxHeight, mode = 'contain') => {
-    const { dataUrl, width, height } = await toPngDataUrl(imageUrl)
-    const imageRatio = width / height
-    const boxRatio = boxWidth / boxHeight
-
-    let drawWidth = boxWidth
-    let drawHeight = boxHeight
-
-    if (mode === 'cover') {
-      if (imageRatio > boxRatio) {
-        drawHeight = boxHeight
-        drawWidth = drawHeight * imageRatio
-      } else {
-        drawWidth = boxWidth
-        drawHeight = drawWidth / imageRatio
-      }
-    } else if (imageRatio > boxRatio) {
-      drawWidth = boxWidth
-      drawHeight = drawWidth / imageRatio
-    } else {
-      drawHeight = boxHeight
-      drawWidth = drawHeight * imageRatio
-    }
-
-    const drawX = x + ((boxWidth - drawWidth) / 2)
-    const drawY = y + ((boxHeight - drawHeight) / 2)
-    pdf.addImage(dataUrl, 'PNG', drawX, drawY, drawWidth, drawHeight)
-  }
-
-  const addImageToPdfPage = async (pdf, imageUrl, pageWidth, pageHeight) => {
-    const margin = 12
-    const drawWidth = pageWidth - margin * 2
-    const yBase = 165
-    const availableHeight = 90
-    await addImageFitBox(pdf, imageUrl, margin, yBase, drawWidth, availableHeight, 'cover')
-  }
-
   const downloadViolationReportPdf = async (item) => {
     const images = await listViolationImages(item.id)
-    const signatureSource = reportIdentity.juristic_signature_url || juristicSignature
-    const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' })
-    const pageWidth = 210
-    const pageHeight = 297
-    const margin = 12
-    const contentWidth = pageWidth - margin * 2
+    const { styles, canvasHtml } = buildReportDocumentParts(item, images, false)
+    const temp = document.createElement('div')
+    temp.style.position = 'fixed'
+    temp.style.left = '-20000px'
+    temp.style.top = '0'
+    temp.style.width = '210mm'
+    temp.style.background = '#ffffff'
+    temp.innerHTML = `<style>${styles}</style>${canvasHtml}`
+    document.body.appendChild(temp)
 
-    await addImageFitBox(pdf, villageLogo, margin, 10, 18, 18, 'contain')
-
-    pdf.setFont('helvetica', 'bold')
-    pdf.setFontSize(18)
-    pdf.text('รายงานการกระทำผิด', margin + 22, 18)
-
-    pdf.setFont('helvetica', 'normal')
-    pdf.setFontSize(11)
-    pdf.text(`${reportIdentity.village_name || DEFAULT_REPORT_IDENTITY.village_name}`, margin + 22, 24)
-
-    pdf.text(`เลขที่รายงาน: ${item.report_no || '-'}`, margin, 31)
-    pdf.text(`วันที่รายงาน: ${formatDate(item.report_date)}`, margin + 90, 31)
-
-    const detailLines = [
-      `บ้าน/เจ้าของ: ${(item.houses?.house_no || '-')} ${(item.houses?.owner_name ? `- ${item.houses.owner_name}` : '')}`,
-      `ประเภทการกระทำผิด: ${item.type || '-'}`,
-      `วันเกิดเหตุ: ${formatDate(item.occurred_at)}`,
-      `วันครบกำหนดแก้ไข: ${formatDate(item.due_date)}`,
-      `ครั้งที่เตือน: ${item.warning_count ?? 0}`,
-      `ค่าปรับ: ${Number(item.fine_amount || 0).toLocaleString('th-TH')} บาท`,
-      `รายละเอียด: ${item.detail || '-'}`,
-      `หมายเหตุจากนิติ: ${item.admin_note || '-'}`,
-      `อัปเดตจากลูกบ้าน: ${item.resident_note || '-'}`,
-    ]
-
-    let cursorY = 39
-    detailLines.forEach((line) => {
-      const wrapped = pdf.splitTextToSize(line, contentWidth)
-      pdf.text(wrapped, margin, cursorY)
-      cursorY += wrapped.length * 5
-    })
-
-    pdf.setFont('helvetica', 'bold')
-    pdf.text('รูปภาพหลักฐาน', margin, 160)
-    pdf.setFont('helvetica', 'normal')
-
-    if (images.length > 0) {
-      await addImageToPdfPage(pdf, images[0].url, pageWidth, pageHeight)
-      for (let index = 1; index < images.length; index += 1) {
-        pdf.addPage('a4', 'portrait')
-        pdf.setFont('helvetica', 'bold')
-        pdf.setFontSize(14)
-        pdf.text(`หลักฐานเพิ่มเติม ${index + 1}`, margin, 20)
-        pdf.setFont('helvetica', 'normal')
-        await addImageToPdfPage(pdf, images[index].url, pageWidth, pageHeight)
-      }
-    } else {
-      pdf.text('ไม่มีรูปแนบ', margin, 175)
+    try {
+      const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' })
+      await new Promise((resolve, reject) => {
+        pdf.html(temp, {
+          margin: [0, 0, 0, 0],
+          autoPaging: 'slice',
+          html2canvas: {
+            scale: 2,
+            useCORS: true,
+            backgroundColor: '#ffffff',
+          },
+          callback: (doc) => {
+            try {
+              doc.save(`${item.report_no || `violation-${item.id}`}.pdf`)
+              resolve(true)
+            } catch (err) {
+              reject(err)
+            }
+          },
+        })
+      })
+    } finally {
+      document.body.removeChild(temp)
     }
-
-    await addImageFitBox(pdf, signatureSource, pageWidth - 74, 258, 62, 16, 'contain')
-    pdf.setFont('helvetica', 'normal')
-    pdf.setFontSize(10)
-    pdf.text(`(${reportIdentity.juristic_name || DEFAULT_REPORT_IDENTITY.juristic_name})`, pageWidth - 43, 279, { align: 'center' })
-    pdf.line(pageWidth - 74, 274, pageWidth - 12, 274)
-
-    pdf.save(`${item.report_no || `violation-${item.id}`}.pdf`)
   }
 
   const handleOpenPrintPreview = async (item) => {
