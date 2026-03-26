@@ -6,6 +6,9 @@ import './AdminLayout.css'
 // Create a global modal context for easy access
 export const ModalContext = React.createContext()
 
+const BUILD_SHA = typeof __BUILD_SHA__ !== 'undefined' ? __BUILD_SHA__ : 'local'
+const BUILD_DATE = typeof __BUILD_DATE__ !== 'undefined' ? __BUILD_DATE__ : '-'
+
 const AdminLayout = () => {
   const navigate = useNavigate()
   const location = useLocation()
@@ -119,7 +122,7 @@ const AdminLayout = () => {
             <div className="sb-logo-sub">Village Management v12.3</div>
           </div>
         </div>
-        <div className="sb-build">build 48f6cbf · 26/03/2026</div>
+        <div className="sb-build">build {BUILD_SHA} · {BUILD_DATE}</div>
 
         {/* Navigation */}
         <div style={{ display: 'flex', flexDirection: 'column', flex: 1, overflow: 'hidden', minHeight: 0 }}>
