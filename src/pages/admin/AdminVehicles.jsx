@@ -713,13 +713,13 @@ const AdminVehicles = () => {
                       <span>ค่าจอด</span>
                       <input name="parking_fee" value={form.parking_fee} onChange={handleChange} placeholder="0.00" />
                     </label>
-                    <label className="house-field house-field-span-2">
+                    <label className="house-field">
                       <span>สถานะ</span>
                       <select name="status" value={form.status} onChange={handleChange}>
                         {STATUS_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
                       </select>
                     </label>
-                    <label className="house-field house-field-span-3">
+                    <label className="house-field house-field-span-2">
                       <span>หมายเหตุ</span>
                       <textarea name="note" value={form.note} onChange={handleChange} rows="1" placeholder="รายละเอียดเพิ่มเติม" />
                     </label>
@@ -743,17 +743,17 @@ const AdminVehicles = () => {
                   <div style={{ marginTop: '8px', fontSize: '12px', color: 'var(--mu)' }}>
                     แนบแล้ว {attachments.length}/{MAX_ATTACHMENTS} รูป • ระบบย่อไฟล์ไม่เกิน 100KB และตั้งชื่อ CAR_YYYYMMDD_HHMMSS_001.jpg
                   </div>
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginTop: '10px' }}>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginTop: '8px' }}>
                     {attachments.length === 0 ? (
                       <div style={{ fontSize: '12px', color: 'var(--mu)' }}>ยังไม่มีรูปแนบ</div>
                     ) : attachments.map((image, index) => (
-                      <div key={`${image.name}-${index}`} style={{ width: '78px' }}>
+                      <div key={`${image.name}-${index}`} style={{ width: '64px' }}>
                         <button
                           type="button"
                           onClick={() => handlePreviewAttachment(image)}
                           style={{
-                            width: '78px',
-                            height: '78px',
+                            width: '64px',
+                            height: '64px',
                             borderRadius: '8px',
                             border: '1px solid var(--bo)',
                             background: '#fff',
@@ -770,7 +770,7 @@ const AdminVehicles = () => {
                           style={{
                             marginTop: '4px',
                             width: '100%',
-                            fontSize: '11px',
+                            fontSize: '10px',
                             border: '1px solid var(--bo)',
                             borderRadius: '6px',
                             background: '#fff',

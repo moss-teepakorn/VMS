@@ -1135,7 +1135,7 @@ button, input, select, textarea {
 }
 
 .house-md-vehicle {
-  height: min(96vh, 900px);
+  height: min(92vh, 840px);
 }
 
 .house-md form {
@@ -1273,12 +1273,34 @@ button, input, select, textarea {
 }
 
 .house-md-vehicle .house-md-body {
+  padding: 8px 10px 8px;
+  overflow-y: hidden;
   scrollbar-width: none;
 }
 
 .house-md-vehicle .house-md-body::-webkit-scrollbar {
   width: 0;
   height: 0;
+}
+
+.house-md-vehicle .house-sec {
+  padding: 6px 0 8px;
+}
+
+.house-md-vehicle .house-sec-title {
+  margin-bottom: 6px;
+  font-size: 12.5px;
+}
+
+.house-md-vehicle .house-grid {
+  gap: 6px 8px;
+}
+
+.house-md-vehicle .house-field input,
+.house-md-vehicle .house-field select,
+.house-md-vehicle .house-field textarea {
+  min-height: 34px;
+  padding: 6px 8px;
 }
 
 .swal2-container {
