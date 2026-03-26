@@ -466,6 +466,7 @@ button, input, select, textarea {
 
 /* ─── MAIN ─── */
 .main {
+  width: 100%;
   flex: 1;
   margin-left: 248px;
   display: flex;
@@ -475,12 +476,14 @@ button, input, select, textarea {
 
 @media(max-width: 1023px) {
   .main {
+    width: 100%;
     margin-left: 0;
   }
 }
 
 /* ─── TOPBAR ─── */
 .topbar {
+  width: 100%;
   height: 56px;
   background: var(--card);
   border-bottom: 1.5px solid var(--bo);
@@ -587,6 +590,7 @@ button, input, select, textarea {
 
 /* ─── PAGE CONTENT ─── */
 .page {
+  width: 100%;
   flex: 1;
   overflow-y: auto;
   background: var(--bg);
@@ -605,6 +609,7 @@ button, input, select, textarea {
 }
 
 .pane.on {
+  width: 100%;
   display: block;
   padding: 16px;
 }
