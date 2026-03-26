@@ -755,7 +755,7 @@ const AdminViolations = () => {
   }
 
   return (
-    <div className="pane on">
+    <div className="pane on" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
       <div className="ph">
         <div className="ph-in">
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -767,22 +767,21 @@ const AdminViolations = () => {
           </div>
           <div className="ph-acts">
             <button className="btn btn-p btn-sm" onClick={openAddModal}>+ แจ้งกระทำผิดใหม่</button>
-            <button className="btn btn-o btn-sm" onClick={() => loadData({ status: statusFilter, search: searchTerm })}>🔄 รีเฟรช</button>
+            <button className="btn btn-g btn-sm" onClick={() => loadData({ status: statusFilter, search: searchTerm })}>🔄 รีเฟรช</button>
           </div>
         </div>
       </div>
 
-      <div className="card" style={{ marginTop: '16px', marginBottom: '16px' }}>
+      <div className="card">
         <div className="ch"><div className="ct">ค้นหาและกรองข้อมูล</div></div>
-        <div className="cb" style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+        <div className="cb filter-row">
           <input
             type="text"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             placeholder="ค้นหา ประเภท / บ้าน / เจ้าของ"
-            style={{ flex: 1, minWidth: '240px', padding: '8px 12px', border: '1px solid var(--bo)', borderRadius: '6px' }}
           />
-          <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} style={{ padding: '8px 12px', border: '1px solid var(--bo)', borderRadius: '6px' }}>
+          <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
             <option value="all">ทุกสถานะ</option>
             <option value="pending">รอดำเนินการ</option>
             <option value="in_progress">กำลังดำเนินการ</option>
@@ -835,12 +834,12 @@ const AdminViolations = () => {
                       <td>{Number(item.fine_amount || 0).toLocaleString('th-TH')}</td>
                       <td>{formatDate(item.due_date)}</td>
                       <td><span className={badge.className}>{badge.label}</span></td>
-                      <td style={{ whiteSpace: 'nowrap' }}>
-                        <button className="btn btn-xs btn-o" style={{ marginRight: '4px' }} onClick={() => handleOpenPrintPreview(item)}>พิมพ์</button>
-                        <button className="btn btn-xs btn-p" style={{ marginRight: '4px' }} onClick={() => handleDownloadPdf(item)}>PDF</button>
-                        <button className="btn btn-xs btn-a" style={{ marginRight: '4px' }} onClick={() => openEditModal(item)}>แก้ไข</button>
+                      <td><div className="td-acts">
+                        <button className="btn btn-xs btn-o" onClick={() => handleOpenPrintPreview(item)}>พิมพ์</button>
+                        <button className="btn btn-xs btn-p" onClick={() => handleDownloadPdf(item)}>PDF</button>
+                        <button className="btn btn-xs btn-a" onClick={() => openEditModal(item)}>แก้ไข</button>
                         <button className="btn btn-xs btn-dg" onClick={() => handleDelete(item)}>ลบ</button>
-                      </td>
+                      </div></td>
                     </tr>
                   )
                 })}

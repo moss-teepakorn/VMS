@@ -1143,6 +1143,47 @@ canvas {
 .overflow-hidden { overflow: hidden; }
 .truncate { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
+/* ── Shared Filter Row (all pages) ── */
+.filter-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.filter-row input[type="text"],
+.filter-row input[type="search"] {
+  flex: 1;
+  min-width: 200px;
+  padding: 8px 12px;
+  border: 1px solid var(--bo);
+  border-radius: 6px;
+  background: var(--card);
+  color: var(--tx);
+}
+
+.filter-row select {
+  padding: 8px 12px;
+  border: 1px solid var(--bo);
+  border-radius: 6px;
+  background: var(--card);
+  color: var(--tx);
+}
+
+/* ── Shared Table Action Buttons (all pages) ── */
+.td-acts {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+@media (max-width: 700px) {
+  .filter-row input[type="text"],
+  .filter-row input[type="search"] {
+    flex-basis: 100%;
+  }
+}
+
 /* ═════════════════════════════════════════════════
    RESPONSIVE
 ═════════════════════════════════════════════════ */

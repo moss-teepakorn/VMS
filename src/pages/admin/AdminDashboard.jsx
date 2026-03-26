@@ -55,7 +55,7 @@ const AdminDashboard = () => {
   }
 
   return (
-    <div className="pane on">
+    <div className="pane on" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
       {/* Page Header */}
       <div className="ph">
         <div className="ph-in">
@@ -122,7 +122,7 @@ const AdminDashboard = () => {
       </div>
 
       {/* Charts Row 1 */}
-      <div className="g2" style={{ marginBottom: '14px' }}>
+      <div className="g2">
         <div className="chart-box">
           <div className="ch">
             <h3>💰 ยอดชำระ vs ค้าง — 6 เดือน</h3>
@@ -165,7 +165,7 @@ const AdminDashboard = () => {
       </div>
 
       {/* Charts Row 2 */}
-      <div className="g2" style={{ marginBottom: '14px' }}>
+      <div className="g2">
         <div className="chart-box">
           <div className="ch">
             <h3>📈 ยอดเก็บ vs ค้างรายไตรมาส</h3>

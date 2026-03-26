@@ -14,7 +14,7 @@ const AdminRequests = () => {
     })
   }
   return (
-    <div className="pane on">
+    <div className="pane on" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
       <div className="ph">
         <div className="ph-in">
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -27,7 +27,7 @@ const AdminRequests = () => {
         </div>
       </div>
 
-      <div className="card" style={{ marginTop: '16px' }}>
+      <div className="card">
         <div className="ch"><div className="ct">คำขอลำดับสำคัญ</div></div>
         <div className="cb">
           <div style={{ overflowX: 'auto' }}>

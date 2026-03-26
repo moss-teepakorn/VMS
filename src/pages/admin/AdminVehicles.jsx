@@ -496,25 +496,23 @@ const AdminVehicles = () => {
           </div>
           <div className="ph-acts">
             <button className="btn btn-p btn-sm" onClick={openAddModal}>+ ลงทะเบียนรถใหม่</button>
-            <button className="btn btn-o btn-sm" onClick={() => loadVehicles({ status: statusFilter, search: searchTerm, soi: soiFilter, vehicleType: vehicleTypeFilter })}>🔄 รีเฟรช</button>
+            <button className="btn btn-g btn-sm" onClick={() => loadVehicles({ status: statusFilter, search: searchTerm, soi: soiFilter, vehicleType: vehicleTypeFilter })}>🔄 รีเฟรช</button>
           </div>
         </div>
       </div>
 
       <div className="card">
         <div className="ch"><div className="ct">ค้นหาและกรองข้อมูลรถ</div></div>
-        <div className="cb" style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+        <div className="cb filter-row">
           <input
             type="text"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             placeholder="ค้นหา ทะเบียน / บ้าน / เจ้าของ / ยี่ห้อ / สี"
-            style={{ flex: 1, minWidth: '240px', padding: '8px 12px', border: '1px solid var(--bo)', borderRadius: '6px' }}
           />
           <select
             value={soiFilter}
             onChange={(e) => setSoiFilter(e.target.value)}
-            style={{ padding: '8px 12px', border: '1px solid var(--bo)', borderRadius: '6px' }}
           >
             <option value="all">ทุกซอย</option>
             {soiOptions.map((soi) => <option key={soi} value={soi}>{`ซอย ${soi}`}</option>)}
@@ -522,7 +520,6 @@ const AdminVehicles = () => {
           <select
             value={vehicleTypeFilter}
             onChange={(e) => setVehicleTypeFilter(e.target.value)}
-            style={{ padding: '8px 12px', border: '1px solid var(--bo)', borderRadius: '6px' }}
           >
             <option value="all">ทุกประเภท</option>
             {VEHICLE_TYPES.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}
@@ -530,7 +527,6 @@ const AdminVehicles = () => {
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            style={{ padding: '8px 12px', border: '1px solid var(--bo)', borderRadius: '6px' }}
           >
             <option value="all">ทั้งหมด</option>
             <option value="active">ใช้งาน</option>
@@ -580,10 +576,10 @@ const AdminVehicles = () => {
                         <td>{vehicle.parking_location || '-'}{vehicle.parking_lock_no ? ` (${vehicle.parking_lock_no})` : ''}</td>
                         <td>{formatDecimal(vehicle.parking_fee)}</td>
                         <td><span className={badge.className}>{badge.label}</span></td>
-                        <td style={{ whiteSpace: 'nowrap' }}>
-                          <button className="btn btn-xs btn-a" style={{ marginRight: '4px' }} onClick={() => openEditModal(vehicle)}>แก้ไข</button>
+                        <td><div className="td-acts">
+                          <button className="btn btn-xs btn-a" onClick={() => openEditModal(vehicle)}>แก้ไข</button>
                           <button className="btn btn-xs btn-dg" onClick={() => handleDeleteVehicle(vehicle)}>ลบ</button>
-                        </td>
+                        </div></td>
                       </tr>
                     )
                   })

@@ -158,7 +158,7 @@ const AdminTechnicians = () => {
   }
 
   return (
-    <div className="pane on">
+    <div className="pane on" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
       <div className="ph">
         <div className="ph-in">
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -170,22 +170,21 @@ const AdminTechnicians = () => {
           </div>
           <div className="ph-acts">
             <button className="btn btn-p btn-sm" onClick={openAddModal}>+ เพิ่มช่างใหม่</button>
-            <button className="btn btn-o btn-sm" onClick={() => loadData({ status: statusFilter, search: searchTerm })}>🔄 รีเฟรช</button>
+            <button className="btn btn-g btn-sm" onClick={() => loadData({ status: statusFilter, search: searchTerm })}>🔄 รีเฟรช</button>
           </div>
         </div>
       </div>
 
-      <div className="card" style={{ marginTop: '16px', marginBottom: '16px' }}>
+      <div className="card">
         <div className="ch"><div className="ct">ค้นหาและกรองข้อมูล</div></div>
-        <div className="cb" style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+        <div className="cb filter-row">
           <input
             type="text"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             placeholder="ค้นหา ชื่อ / เบอร์โทร / Line ID / ความเชี่ยวชาญ"
-            style={{ flex: 1, minWidth: '240px', padding: '8px 12px', border: '1px solid var(--bo)', borderRadius: '6px' }}
           />
-          <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} style={{ padding: '8px 12px', border: '1px solid var(--bo)', borderRadius: '6px' }}>
+          <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
             <option value="all">ทุกสถานะ</option>
             <option value="pending">รออนุมัติ</option>
             <option value="approved">อนุมัติแล้ว</option>
@@ -225,10 +224,10 @@ const AdminTechnicians = () => {
                       <td style={{ maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{skills || '-'}</td>
                       <td>{item.rating > 0 ? `${Number(item.rating).toFixed(1)} (${item.review_count})` : '-'}</td>
                       <td><span className={badge.className}>{badge.label}</span></td>
-                      <td style={{ whiteSpace: 'nowrap' }}>
-                        <button className="btn btn-xs btn-a" style={{ marginRight: '4px' }} onClick={() => openEditModal(item)}>แก้ไข</button>
+                      <td><div className="td-acts">
+                        <button className="btn btn-xs btn-a" onClick={() => openEditModal(item)}>แก้ไข</button>
                         <button className="btn btn-xs btn-dg" onClick={() => handleDelete(item)}>ลบ</button>
-                      </td>
+                      </div></td>
                     </tr>
                   )
                 })}

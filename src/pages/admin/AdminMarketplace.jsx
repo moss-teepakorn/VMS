@@ -200,7 +200,7 @@ const AdminMarketplace = () => {
   }
 
   return (
-    <div className="pane on">
+    <div className="pane on" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
       <div className="ph">
         <div className="ph-in">
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -212,26 +212,25 @@ const AdminMarketplace = () => {
           </div>
           <div className="ph-acts">
             <button className="btn btn-p btn-sm" onClick={openAddModal}>+ โพสต์ใหม่</button>
-            <button className="btn btn-o btn-sm" onClick={() => loadData({ status: statusFilter, listing_type: typeFilter, search: searchTerm })}>🔄 รีเฟรช</button>
+            <button className="btn btn-g btn-sm" onClick={() => loadData({ status: statusFilter, listing_type: typeFilter, search: searchTerm })}>🔄 รีเฟรช</button>
           </div>
         </div>
       </div>
 
-      <div className="card" style={{ marginTop: '16px', marginBottom: '16px' }}>
+      <div className="card">
         <div className="ch"><div className="ct">ค้นหาและกรองข้อมูล</div></div>
-        <div className="cb" style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+        <div className="cb filter-row">
           <input
             type="text"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             placeholder="ค้นหา ชื่อ / หมวด / บ้าน"
-            style={{ flex: 1, minWidth: '240px', padding: '8px 12px', border: '1px solid var(--bo)', borderRadius: '6px' }}
           />
-          <select value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)} style={{ padding: '8px 12px', border: '1px solid var(--bo)', borderRadius: '6px' }}>
+          <select value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)}>
             <option value="all">ทุกประเภทลิสต์</option>
             {LISTING_TYPES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
           </select>
-          <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} style={{ padding: '8px 12px', border: '1px solid var(--bo)', borderRadius: '6px' }}>
+          <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
             <option value="all">ทุกสถานะ</option>
             {STATUS_OPTIONS.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
           </select>
@@ -273,13 +272,13 @@ const AdminMarketplace = () => {
                       <td>{item.contact || '-'}</td>
                       <td><span className={sBadge.className}>{sBadge.label}</span></td>
                       <td>{formatDate(item.created_at)}</td>
-                      <td style={{ whiteSpace: 'nowrap' }}>
+                      <td><div className="td-acts">
                         {item.status === 'pending' && (
-                          <button className="btn btn-xs btn-ok" style={{ marginRight: '4px' }} onClick={() => handleApprove(item)}>อนุมัติ</button>
+                          <button className="btn btn-xs btn-ok" onClick={() => handleApprove(item)}>อนุมัติ</button>
                         )}
-                        <button className="btn btn-xs btn-a" style={{ marginRight: '4px' }} onClick={() => openEditModal(item)}>แก้ไข</button>
+                        <button className="btn btn-xs btn-a" onClick={() => openEditModal(item)}>แก้ไข</button>
                         <button className="btn btn-xs btn-dg" onClick={() => handleDelete(item)}>ลบ</button>
-                      </td>
+                      </div></td>
                     </tr>
                   )
                 })}

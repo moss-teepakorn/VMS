@@ -21,7 +21,7 @@ export default function AdminPayments() {
   }, [])
 
   return (
-    <div className="pane on">
+    <div className="pane on" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
       <div className="ph">
         <div className="ph-in">
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -34,7 +34,7 @@ export default function AdminPayments() {
         </div>
       </div>
 
-      <div className="card" style={{ marginTop: '16px' }}>
+        <div className="card">
         <div className="ch"><div className="ct">รายการชำระเงินทั้งหมด</div></div>
         <div className="cb">
           <div style={{ overflowX: 'auto' }}>

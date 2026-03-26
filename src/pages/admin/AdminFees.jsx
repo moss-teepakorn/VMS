@@ -157,7 +157,7 @@ const AdminFees = () => {
   }
 
   return (
-    <div className="pane on">
+    <div className="pane on" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
       <div className="ph">
         <div className="ph-in">
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -169,22 +169,22 @@ const AdminFees = () => {
           </div>
           <div className="ph-acts">
             <button className="btn btn-p btn-sm" onClick={handleAddFee}>+ สร้างใบแจ้งหนี้</button>
-            <button className="btn btn-o btn-sm" onClick={() => loadFeeData()}>🔄 รีเฟรช</button>
+            <button className="btn btn-g btn-sm" onClick={() => loadFeeData()}>🔄 รีเฟรช</button>
           </div>
         </div>
       </div>
 
-      <div className="card" style={{ marginTop: '16px' }}>
+      <div className="card">
         <div className="ch"><div className="ct">กรองใบแจ้งหนี้</div></div>
-        <div className="cb" style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
-          <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} style={{ padding: '8px 12px', border: '1px solid var(--bo)', borderRadius: '6px' }}>
+        <div className="cb filter-row">
+          <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
             <option value="all">ทุกสถานะ</option>
             <option value="unpaid">ยังไม่ชำระ</option>
             <option value="pending">รอตรวจสอบ</option>
             <option value="paid">ชำระแล้ว</option>
             <option value="overdue">ค้างชำระ</option>
           </select>
-          <select value={yearFilter} onChange={(e) => setYearFilter(e.target.value)} style={{ padding: '8px 12px', border: '1px solid var(--bo)', borderRadius: '6px' }}>
+          <select value={yearFilter} onChange={(e) => setYearFilter(e.target.value)}>
             <option value="all">ทุกปี</option>
             {yearOptions.map((year) => <option key={year} value={year}>{year}</option>)}
           </select>
@@ -192,13 +192,13 @@ const AdminFees = () => {
         </div>
       </div>
 
-      <div className="stats" style={{ marginTop: '16px' }}>
+  <div className="stats">
         <div className="sc"><div className="sc-ico a">💵</div><div><div className="sc-v">฿{summary.totalCollected.toLocaleString('th-TH')}</div><div className="sc-l">รวมเก็บแล้ว</div></div></div>
         <div className="sc"><div className="sc-ico d">⏳</div><div><div className="sc-v">฿{summary.totalOutstanding.toLocaleString('th-TH')}</div><div className="sc-l">ค้างชำระ</div></div></div>
         <div className="sc"><div className="sc-ico p">🧾</div><div><div className="sc-v">฿{summary.totalInvoiced.toLocaleString('th-TH')}</div><div className="sc-l">ยอดออกใบแจ้งหนี้</div></div></div>
       </div>
 
-      <div className="card" style={{ marginTop: '16px' }}>
+      <div className="card">
         <div className="ch"><div className="ct">ใบแจ้งหนี้ล่าสุด</div></div>
         <div className="cb">
           <div style={{ overflowX: 'auto' }}>
@@ -230,11 +230,11 @@ const AdminFees = () => {
                         <td>{fee.due_date ? new Date(fee.due_date).toLocaleDateString('th-TH') : '-'}</td>
                         <td><strong>฿{Number(fee.total_amount || 0).toLocaleString('th-TH')}</strong></td>
                         <td><span className={badge.className}>{badge.label}</span></td>
-                        <td style={{ whiteSpace: 'nowrap' }}>
-                          <button className="btn btn-xs btn-a" style={{ marginRight: '4px' }} onClick={() => handleEditFee(fee)}>แก้ไข</button>
-                          {fee.status !== 'paid' && <button className="btn btn-xs btn-p" style={{ marginRight: '4px' }} onClick={() => handleAddPayment(fee)}>รับชำระ</button>}
+                        <td><div className="td-acts">
+                          <button className="btn btn-xs btn-a" onClick={() => handleEditFee(fee)}>แก้ไข</button>
+                          {fee.status !== 'paid' && <button className="btn btn-xs btn-p" onClick={() => handleAddPayment(fee)}>รับชำระ</button>}
                           <button className="btn btn-xs btn-dg" onClick={() => handleDeleteFee(fee)}>ลบ</button>
-                        </td>
+                        </div></td>
                       </tr>
                     )
                   })
@@ -245,7 +245,7 @@ const AdminFees = () => {
         </div>
       </div>
 
-      <div className="card" style={{ marginTop: '16px' }}>
+      <div className="card">
         <div className="ch"><div className="ct">การชำระเงินล่าสุด</div></div>
         <div className="cb">
           <div style={{ overflowX: 'auto' }}>

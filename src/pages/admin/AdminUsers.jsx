@@ -239,7 +239,7 @@ const AdminUsers = () => {
   }
 
   return (
-    <div className="pane on">
+    <div className="pane on" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
       <div className="ph">
         <div className="ph-in">
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -255,7 +255,7 @@ const AdminUsers = () => {
         </div>
       </div>
 
-      <div className="card" style={{ marginTop: '16px' }}>
+      <div className="card">
         <div className="ch"><div className="ct">รายชื่อผู้ใช้งาน ({users.length})</div></div>
         <div className="cb">
           {loading ? (
@@ -289,11 +289,11 @@ const AdminUsers = () => {
                       <td>{user.is_active ? <span className="bd b-ok">active</span> : <span className="bd b-mu">inactive</span>}</td>
                       <td>{formatDateTime(user.created_at)}</td>
                       <td>{formatDateTime(user.last_login_at)}</td>
-                      <td style={{ whiteSpace: 'nowrap' }}>
-                        <button className="btn btn-xs btn-a" style={{ marginRight: '4px' }} onClick={() => openEditModal(user)}>แก้ไข</button>
-                        <button className="btn btn-xs btn-o" style={{ marginRight: '4px' }} onClick={() => handleQuickResetPassword(user)}>เปลี่ยนรหัสผ่าน</button>
+                      <td><div className="td-acts">
+                        <button className="btn btn-xs btn-a" onClick={() => openEditModal(user)}>แก้ไข</button>
+                        <button className="btn btn-xs btn-o" onClick={() => handleQuickResetPassword(user)}>เปลี่ยนรหัสผ่าน</button>
                         <button className="btn btn-xs btn-dg" onClick={() => handleDeleteUser(user)}>ลบ</button>
-                      </td>
+                      </div></td>
                     </tr>
                   ))}
                 </tbody>
