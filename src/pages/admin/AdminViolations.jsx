@@ -1,7 +1,10 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import Swal from 'sweetalert2'
 import { jsPDF } from 'jspdf'
+import villageLogo from '../../assets/village-logo.svg'
+import juristicSignature from '../../assets/juristic-signature.svg'
 import { listHouses } from '../../lib/houses'
+import { getSystemConfig } from '../../lib/systemConfig'
 import {
   createViolation,
   deleteViolation,
@@ -48,6 +51,11 @@ function showSwal(options) {
   return Swal.fire({ returnFocus: false, ...options })
 }
 
+const DEFAULT_REPORT_IDENTITY = {
+  village_name: 'The Greenfield',
+  juristic_name: 'นิติบุคคลหมู่บ้านเดอะกรีนฟิลด์',
+}
+
 function escapeHtml(value) {
   return String(value ?? '')
     .replace(/&/g, '&amp;')
@@ -69,6 +77,7 @@ const AdminViolations = () => {
   const [form, setForm] = useState(EMPTY_FORM)
   const [attachments, setAttachments] = useState([])
   const [removedImagePaths, setRemovedImagePaths] = useState([])
+  const [reportIdentity, setReportIdentity] = useState(DEFAULT_REPORT_IDENTITY)
 
   const houseOptions = useMemo(() => ([
     { value: '', label: 'เลือกบ้าน' },
@@ -95,6 +104,21 @@ const AdminViolations = () => {
   }
 
   useEffect(() => { loadData() }, [])
+
+  useEffect(() => {
+    const loadReportIdentity = async () => {
+      try {
+        const config = await getSystemConfig()
+        setReportIdentity({
+          village_name: config?.village_name || DEFAULT_REPORT_IDENTITY.village_name,
+          juristic_name: config?.juristic_name || DEFAULT_REPORT_IDENTITY.juristic_name,
+        })
+      } catch {
+        setReportIdentity(DEFAULT_REPORT_IDENTITY)
+      }
+    }
+    loadReportIdentity()
+  }, [])
 
   const getStatusBadge = (status) => {
     if (status === 'resolved') return { className: 'bd b-ok', label: 'แก้ไขแล้ว' }
@@ -370,18 +394,25 @@ const AdminViolations = () => {
             .btn-close { background: #e5e7eb; color: #111827; }
             .canvas { padding: 16px 0 30px; }
             .a4 { width: 210mm; min-height: 297mm; margin: 0 auto 16px; background: #fff; border: 1px solid #d1d5db; padding: 10mm 12mm; display: flex; flex-direction: column; }
-            .head h1 { margin: 0 0 3mm; font-size: 21px; }
+            .head { display: flex; align-items: center; gap: 12px; margin-bottom: 3mm; }
+            .logo { width: 44px; height: 44px; object-fit: contain; }
+            .head h1 { margin: 0 0 2mm; font-size: 21px; }
+            .village { font-size: 13px; color: #374151; margin-bottom: 2mm; }
             .meta { font-size: 13px; color: #4b5563; margin-bottom: 4mm; }
             table { width: 100%; border-collapse: collapse; font-size: 13px; }
             td { padding: 1.8mm 0; vertical-align: top; }
             td.k { width: 42mm; font-weight: 700; }
             td.v { word-break: break-word; }
             .img-title { margin-top: auto; font-weight: 700; font-size: 14px; }
-            .img-wrap { margin-top: 2mm; border: 1px solid #d1d5db; border-radius: 8px; overflow: hidden; min-height: 102mm; display: flex; align-items: center; justify-content: center; }
+            .img-wrap { margin-top: 2mm; border: 1px solid #d1d5db; border-radius: 8px; overflow: hidden; min-height: 112mm; height: 112mm; display: flex; align-items: center; justify-content: center; }
             .img-wrap.full { min-height: 250mm; }
-            .evd { width: 100%; height: 100%; object-fit: contain; background: #fff; }
+            .evd { width: 100%; height: 100%; object-fit: cover; background: #fff; }
             .noimg { color: #6b7280; font-size: 14px; }
             .page-title { margin-bottom: 4mm; font-size: 16px; font-weight: 700; }
+            .signature { margin-top: 5mm; display: flex; justify-content: flex-end; }
+            .signature-box { width: 62mm; text-align: center; }
+            .signature-img { width: 100%; max-height: 20mm; object-fit: contain; }
+            .signature-line { border-top: 1px solid #111827; margin-top: 2mm; padding-top: 2mm; font-size: 12px; }
             @media print {
               body { background: #fff; }
               .toolbar { display: none !important; }
@@ -402,12 +433,22 @@ const AdminViolations = () => {
           <div class="canvas">
             <section class="a4">
               <div class="head">
-                <h1>รายงานการกระทำผิด</h1>
-                <div class="meta">เลขที่รายงาน: ${escapeHtml(item.report_no || '-')} • วันที่รายงาน: ${escapeHtml(formatDate(item.report_date))}</div>
+                <img src="${villageLogo}" class="logo" alt="logo" />
+                <div>
+                  <h1>รายงานการกระทำผิด</h1>
+                  <div class="village">${escapeHtml(reportIdentity.village_name || DEFAULT_REPORT_IDENTITY.village_name)}</div>
+                  <div class="meta">เลขที่รายงาน: ${escapeHtml(item.report_no || '-')} • วันที่รายงาน: ${escapeHtml(formatDate(item.report_date))}</div>
+                </div>
               </div>
               <table><tbody>${detailRows}</tbody></table>
               <div class="img-title">รูปภาพหลักฐาน</div>
               <div class="img-wrap">${firstImage}</div>
+              <div class="signature">
+                <div class="signature-box">
+                  <img src="${juristicSignature}" class="signature-img" alt="signature" />
+                  <div class="signature-line">(${escapeHtml(reportIdentity.juristic_name || DEFAULT_REPORT_IDENTITY.juristic_name)})</div>
+                </div>
+              </div>
             </section>
             ${extraPages}
           </div>
@@ -428,26 +469,62 @@ const AdminViolations = () => {
     })
   }
 
-  const addImageToPdfPage = async (pdf, imageUrl, pageWidth, pageHeight) => {
-    const dataUrl = await toDataUrl(imageUrl)
-    const img = await new Promise((resolve, reject) => {
-      const image = new Image()
-      image.onload = () => resolve(image)
-      image.onerror = reject
-      image.src = dataUrl
+  const toPngDataUrl = async (imageUrl) => {
+    const rawDataUrl = await toDataUrl(imageUrl)
+    const image = await new Promise((resolve, reject) => {
+      const img = new Image()
+      img.onload = () => resolve(img)
+      img.onerror = reject
+      img.src = rawDataUrl
     })
+    const canvas = document.createElement('canvas')
+    canvas.width = image.width || 1024
+    canvas.height = image.height || 1024
+    const context = canvas.getContext('2d')
+    if (!context) throw new Error('ไม่สามารถประมวลผลรูปได้')
+    context.drawImage(image, 0, 0)
+    return {
+      dataUrl: canvas.toDataURL('image/png'),
+      width: image.width || 1024,
+      height: image.height || 1024,
+    }
+  }
 
+  const addImageFitBox = async (pdf, imageUrl, x, y, boxWidth, boxHeight, mode = 'contain') => {
+    const { dataUrl, width, height } = await toPngDataUrl(imageUrl)
+    const imageRatio = width / height
+    const boxRatio = boxWidth / boxHeight
+
+    let drawWidth = boxWidth
+    let drawHeight = boxHeight
+
+    if (mode === 'cover') {
+      if (imageRatio > boxRatio) {
+        drawHeight = boxHeight
+        drawWidth = drawHeight * imageRatio
+      } else {
+        drawWidth = boxWidth
+        drawHeight = drawWidth / imageRatio
+      }
+    } else if (imageRatio > boxRatio) {
+      drawWidth = boxWidth
+      drawHeight = drawWidth / imageRatio
+    } else {
+      drawHeight = boxHeight
+      drawWidth = drawHeight * imageRatio
+    }
+
+    const drawX = x + ((boxWidth - drawWidth) / 2)
+    const drawY = y + ((boxHeight - drawHeight) / 2)
+    pdf.addImage(dataUrl, 'PNG', drawX, drawY, drawWidth, drawHeight)
+  }
+
+  const addImageToPdfPage = async (pdf, imageUrl, pageWidth, pageHeight) => {
     const margin = 12
     const drawWidth = pageWidth - margin * 2
-    const availableHeight = 115
-    const ratio = img.height / img.width
-    let drawHeight = drawWidth * ratio
-    if (drawHeight > availableHeight) {
-      drawHeight = availableHeight
-    }
-    const yBase = pageHeight - margin - availableHeight
-    const y = yBase + ((availableHeight - drawHeight) / 2)
-    pdf.addImage(dataUrl, 'JPEG', margin, y, drawWidth, drawHeight)
+    const yBase = 165
+    const availableHeight = 90
+    await addImageFitBox(pdf, imageUrl, margin, yBase, drawWidth, availableHeight, 'cover')
   }
 
   const downloadViolationReportPdf = async (item) => {
@@ -458,14 +535,18 @@ const AdminViolations = () => {
     const margin = 12
     const contentWidth = pageWidth - margin * 2
 
+    await addImageFitBox(pdf, villageLogo, margin, 10, 18, 18, 'contain')
+
     pdf.setFont('helvetica', 'bold')
     pdf.setFontSize(18)
-    pdf.text('รายงานการกระทำผิด', margin, 18)
+    pdf.text('รายงานการกระทำผิด', margin + 22, 18)
 
     pdf.setFont('helvetica', 'normal')
     pdf.setFontSize(11)
-    pdf.text(`เลขที่รายงาน: ${item.report_no || '-'}`, margin, 25)
-    pdf.text(`วันที่รายงาน: ${formatDate(item.report_date)}`, margin + 90, 25)
+    pdf.text(`${reportIdentity.village_name || DEFAULT_REPORT_IDENTITY.village_name}`, margin + 22, 24)
+
+    pdf.text(`เลขที่รายงาน: ${item.report_no || '-'}`, margin, 31)
+    pdf.text(`วันที่รายงาน: ${formatDate(item.report_date)}`, margin + 90, 31)
 
     const detailLines = [
       `บ้าน/เจ้าของ: ${(item.houses?.house_no || '-')} ${(item.houses?.owner_name ? `- ${item.houses.owner_name}` : '')}`,
@@ -479,7 +560,7 @@ const AdminViolations = () => {
       `อัปเดตจากลูกบ้าน: ${item.resident_note || '-'}`,
     ]
 
-    let cursorY = 33
+    let cursorY = 39
     detailLines.forEach((line) => {
       const wrapped = pdf.splitTextToSize(line, contentWidth)
       pdf.text(wrapped, margin, cursorY)
@@ -487,7 +568,7 @@ const AdminViolations = () => {
     })
 
     pdf.setFont('helvetica', 'bold')
-    pdf.text('รูปภาพหลักฐาน', margin, pageHeight - 130)
+    pdf.text('รูปภาพหลักฐาน', margin, 160)
     pdf.setFont('helvetica', 'normal')
 
     if (images.length > 0) {
@@ -501,8 +582,14 @@ const AdminViolations = () => {
         await addImageToPdfPage(pdf, images[index].url, pageWidth, pageHeight)
       }
     } else {
-      pdf.text('ไม่มีรูปแนบ', margin, pageHeight - 120)
+      pdf.text('ไม่มีรูปแนบ', margin, 175)
     }
+
+    await addImageFitBox(pdf, juristicSignature, pageWidth - 74, 258, 62, 16, 'contain')
+    pdf.setFont('helvetica', 'normal')
+    pdf.setFontSize(10)
+    pdf.text(`(${reportIdentity.juristic_name || DEFAULT_REPORT_IDENTITY.juristic_name})`, pageWidth - 43, 279, { align: 'center' })
+    pdf.line(pageWidth - 74, 274, pageWidth - 12, 274)
 
     pdf.save(`${item.report_no || `violation-${item.id}`}.pdf`)
   }
