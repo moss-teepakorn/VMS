@@ -269,7 +269,6 @@ const AdminHouses = () => {
               <div className="ph-sub">จัดการข้อมูลหลัง 128 หลัง</div>
             </div>
           </div>
-          <button className="btn btn-a btn-sm" onClick={() => loadHouses({ status: filterType, soi: soiFilter, search: searchTerm })}>ค้นหา</button>
         </div>
 
         <div className="houses-filter-row">
@@ -299,6 +298,7 @@ const AdminHouses = () => {
             <option value="all">ทุกซอย</option>
             {soiOptions.map((soi) => <option key={soi} value={soi}>{`ซอย ${soi}`}</option>)}
           </select>
+          <button className="btn btn-a btn-sm houses-filter-btn" onClick={() => loadHouses({ status: filterType, soi: soiFilter, search: searchTerm })}>ค้นหา</button>
         </div>
       </div>
 

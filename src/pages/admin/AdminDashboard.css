@@ -47,9 +47,7 @@
   position: relative;
   z-index: 1;
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
+  align-items: flex-start;
 }
 
 .ph-ico {
@@ -553,13 +551,14 @@
   position: relative;
   z-index: 1;
   margin-top: 10px;
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(220px, 1fr) 152px 136px 86px;
   gap: 8px;
   align-items: center;
 }
 
 .houses-filter-input {
-  flex-grow: 1;
+  min-width: 220px;
   height: 34px;
   border: 1px solid rgba(255,255,255,.32);
   border-radius: 8px;
