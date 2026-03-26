@@ -11,7 +11,7 @@ const APP_VERSION = '1.0.0'
 export default function LoginPage() {
   const { signIn, user, profile, loading } = useAuth()
   const navigate = useNavigate()
-  const [email, setEmail] = useState('')
+  const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [submitting, setSubmitting] = useState(false)
@@ -44,9 +44,9 @@ export default function LoginPage() {
     e.preventDefault()
     setError('')
     setSubmitting(true)
-    const { error } = await signIn(email, password)
+    const { error } = await signIn(username, password)
     if (error) {
-      setError('อีเมลหรือรหัสผ่านไม่ถูกต้อง กรุณาลองใหม่อีกครั้ง')
+      setError(error.message || 'ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง กรุณาลองใหม่อีกครั้ง')
       setSubmitting(false)
     }
   }
@@ -100,12 +100,12 @@ export default function LoginPage() {
                   <div>
                     <label className="block text-sm font-semibold text-slate-600 mb-2">ชื่อผู้ใช้</label>
                     <input
-                      type="email"
-                      value={email}
-                      onChange={e => setEmail(e.target.value)}
+                      type="text"
+                      value={username}
+                      onChange={e => setUsername(e.target.value)}
                       required
-                      autoComplete="email"
-                      placeholder="username@email.com"
+                      autoComplete="username"
+                      placeholder="username"
                       className="w-full bg-white border border-slate-300 rounded-lg px-4 py-3 text-base text-slate-800 placeholder-slate-400 focus:outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200 transition"
                     />
                   </div>
@@ -156,7 +156,7 @@ export default function LoginPage() {
                   {/* Submit */}
                   <button
                     type="submit"
-                    disabled={submitting || !email || !password}
+                    disabled={submitting || !username || !password}
                     className="w-full bg-gradient-to-r from-sky-600 to-blue-700 hover:from-sky-700 hover:to-blue-800 text-white rounded-lg py-3 text-base font-semibold transition-all duration-150 disabled:opacity-40 disabled:cursor-not-allowed shadow-lg shadow-sky-500/20 flex items-center justify-center gap-2 mt-3"
                   >
                     {submitting ? (

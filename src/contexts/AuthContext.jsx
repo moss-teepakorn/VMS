@@ -1,7 +1,17 @@
 import { createContext, useContext, useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
+import bcrypt from 'bcryptjs'
 
 const AuthContext = createContext(null)
+const SESSION_KEY = 'vms-local-auth'
+
+function safeParse(value) {
+  try {
+    return JSON.parse(value)
+  } catch {
+    return null
+  }
+}
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null)
@@ -9,62 +19,52 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    // ดึง session ปัจจุบัน
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user ?? null)
-      if (session?.user) fetchProfile(session.user.id)
-      else setLoading(false)
-    })
-
-    // ฟัง auth state เปลี่ยน (login / logout)
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null)
-      if (session?.user) fetchProfile(session.user.id)
-      else {
-        setProfile(null)
-        setLoading(false)
-      }
-    })
-
-    return () => subscription.unsubscribe()
-  }, [])
-
-  async function fetchProfile(userId) {
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', userId)
-      .maybeSingle()
-
-    if (error) {
-      console.error('Error fetching profile:', error)
-    }
-    if (data) {
-      setProfile(data)
-    } else {
-      // ถ้าไม่มี profile ให้สร้างโดยอัตโนมัติ
-      const { data: newProfile, error: createError } = await supabase
-        .from('profiles')
-        .insert([{ id: userId, role: 'resident', is_active: true }])
-        .select()
-        .single()
-
-      if (createError) {
-        console.error('Error creating profile:', createError)
-      } else {
-        setProfile(newProfile)
-      }
+    const raw = localStorage.getItem(SESSION_KEY)
+    const session = safeParse(raw)
+    if (session?.user && session?.profile) {
+      setUser(session.user)
+      setProfile(session.profile)
     }
     setLoading(false)
-  }
+  }, [])
 
-  async function signIn(email, password) {
-    const { error } = await supabase.auth.signInWithPassword({ email, password })
-    return { error }
+  async function signIn(username, password) {
+    try {
+      const normalized = (username || '').trim().toLowerCase()
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('id, username, password_hash, role, house_id, full_name, phone, email, is_active, created_at, last_login_at')
+        .eq('username', normalized)
+        .maybeSingle()
+
+      if (error) return { error }
+      if (!data) return { error: { message: 'ไม่พบผู้ใช้งาน' } }
+      if (!data.is_active) return { error: { message: 'บัญชีถูกปิดการใช้งาน' } }
+
+      const ok = await bcrypt.compare(password || '', data.password_hash || '')
+      if (!ok) return { error: { message: 'ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง' } }
+
+      const nowIso = new Date().toISOString()
+      await supabase
+        .from('profiles')
+        .update({ last_login_at: nowIso })
+        .eq('id', data.id)
+
+      const nextProfile = { ...data, last_login_at: nowIso }
+      const nextUser = { id: data.id, username: data.username }
+      setUser(nextUser)
+      setProfile(nextProfile)
+      localStorage.setItem(SESSION_KEY, JSON.stringify({ user: nextUser, profile: nextProfile }))
+      return { error: null }
+    } catch (error) {
+      return { error }
+    }
   }
 
   async function signOut() {
-    await supabase.auth.signOut()
+    localStorage.removeItem(SESSION_KEY)
+    setUser(null)
+    setProfile(null)
   }
 
   const logout = signOut

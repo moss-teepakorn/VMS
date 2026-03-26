@@ -12,10 +12,14 @@ const BUILD_SHA = typeof __BUILD_SHA__ !== 'undefined' ? __BUILD_SHA__ : 'local'
 const BUILD_DATE = typeof __BUILD_DATE__ !== 'undefined' ? __BUILD_DATE__ : '-'
 const APP_VERSION = '1.0.0'
 
+function roleLabel(role) {
+  return role === 'admin' ? 'ผู้ดูแลระบบ' : 'ลูกบ้าน'
+}
+
 const AdminLayout = () => {
   const navigate = useNavigate()
   const location = useLocation()
-  const { user, logout } = useAuth()
+  const { profile, logout } = useAuth()
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [theme, setTheme] = useState(localStorage.getItem('vms-theme') || 'normal')
   const [setup, setSetup] = useState({
@@ -147,7 +151,7 @@ const AdminLayout = () => {
           {/* Role Badge */}
           <div className="sb-role">
             <span className="sb-role-dot"></span>
-            <span className="sb-role-txt">เจ้าหน้าที่นิติ</span>
+            <span className="sb-role-txt">{roleLabel(profile?.role)}</span>
           </div>
 
           {/* Menu Sections */}

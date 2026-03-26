@@ -31,6 +31,22 @@ function RequireAuth({ children }) {
   return children
 }
 
+function RequireAdmin({ children }) {
+  const { profile, loading } = useAuth()
+  if (loading) return <PageLoader />
+  if (!profile) return <Navigate to="/login" replace />
+  if (profile.role !== 'admin') return <Navigate to="/resident/home" replace />
+  return children
+}
+
+function RequireResident({ children }) {
+  const { profile, loading } = useAuth()
+  if (loading) return <PageLoader />
+  if (!profile) return <Navigate to="/login" replace />
+  if (profile.role !== 'resident') return <Navigate to="/admin/dashboard" replace />
+  return children
+}
+
 // Guard: ถ้า login แล้ว → ไปหน้าที่ตรงกับ role อัตโนมัติ
 function RoleRedirect() {
   const { profile, loading } = useAuth()
@@ -59,7 +75,7 @@ function AppRoutes() {
       <Route path="/" element={<RequireAuth><RoleRedirect /></RequireAuth>} />
 
       {/* Admin routes */}
-      <Route path="/admin" element={<RequireAuth><AdminLayout /></RequireAuth>}>
+      <Route path="/admin" element={<RequireAuth><RequireAdmin><AdminLayout /></RequireAdmin></RequireAuth>}>
         <Route index element={<Navigate to="/admin/dashboard" replace />} />
         <Route path="dashboard" element={<AdminDashboard />} />
         <Route path="houses" element={<AdminHouses />} />
@@ -84,7 +100,7 @@ function AppRoutes() {
 
       {/* Resident routes */}
       <Route path="/resident/*" element={
-        <RequireAuth><ResidentLayout /></RequireAuth>
+        <RequireAuth><RequireResident><ResidentLayout /></RequireResident></RequireAuth>
       } />
 
       {/* Fallback */}

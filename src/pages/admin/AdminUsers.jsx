@@ -1,6 +1,6 @@
 import React, { useContext, useState, useEffect } from 'react'
 import { ModalContext } from './AdminLayout'
-import { getUsers, createUser, updateUser, deleteUser, sendResetPasswordEmail, formatDateTime } from '../../lib/users'
+import { getUsers, createUser, updateUser, deleteUser, formatDateTime } from '../../lib/users'
 
 const AdminUsers = () => {
   const { openModal } = useContext(ModalContext)
@@ -24,8 +24,8 @@ const AdminUsers = () => {
   }
 
   const roleOptions = [
-    { label: 'Admin', value: 'admin' },
-    { label: 'Resident', value: 'resident' },
+    { label: 'ผู้ดูแลระบบ', value: 'admin' },
+    { label: 'ลูกบ้าน', value: 'resident' },
   ]
 
   const statusOptions = [
@@ -35,23 +35,27 @@ const AdminUsers = () => {
 
   const handleAddUser = () => {
     openModal('เพิ่มผู้ใช้ใหม่', {
-      id: { label: 'Auth User ID (UUID)', type: 'text', placeholder: 'ใส่ UUID จาก auth.users' },
+      username: { label: 'ชื่อผู้ใช้', type: 'text', placeholder: 'username' },
+      password: { label: 'รหัสผ่าน', type: 'password', placeholder: 'อย่างน้อย 6 ตัวอักษร' },
       full_name: { label: 'ชื่อ-นามสกุล', type: 'text', placeholder: 'นายสมชาติ' },
       email: { label: 'อีเมล', type: 'email', placeholder: 'name@example.com' },
       phone: { label: 'เบอร์', type: 'tel', placeholder: '098-xxx-xxxx' },
+      house_id: { label: 'house_id', type: 'text', placeholder: 'เว้นว่างได้ (หนึ่งบ้านมีหลายผู้ใช้ได้)' },
       role: { label: 'บทบาท', type: 'select', options: roleOptions },
       is_active: { label: 'สถานะ', type: 'select', options: statusOptions },
     }, async (data) => {
       try {
-        if (!data.id?.value) {
-          alert('กรุณาใส่ Auth User ID ก่อน')
+        if (!data.username?.value || !data.password?.value) {
+          alert('กรุณาระบุชื่อผู้ใช้และรหัสผ่าน')
           return
         }
         await createUser({
-          id: data.id?.value,
+          username: data.username?.value,
+          password: data.password?.value,
           full_name: data.full_name?.value,
           email: data.email?.value,
           phone: data.phone?.value,
+          house_id: data.house_id?.value,
           role: data.role?.value,
           is_active: data.is_active?.value !== 'false',
         })
@@ -65,17 +69,23 @@ const AdminUsers = () => {
 
   const handleEditUser = (user) => {
     openModal('แก้ไขผู้ใช้', {
+      username: { label: 'ชื่อผู้ใช้', type: 'text', value: user.username || '' },
+      password: { label: 'รหัสผ่านใหม่ (ถ้าไม่เปลี่ยนให้เว้นว่าง)', type: 'password', value: '' },
       full_name: { label: 'ชื่อ-นามสกุล', type: 'text', value: user.full_name || '' },
       email: { label: 'อีเมล', type: 'email', value: user.email || '' },
       phone: { label: 'เบอร์', type: 'tel', value: user.phone || '' },
+      house_id: { label: 'house_id', type: 'text', value: user.house_id || '' },
       role: { label: 'บทบาท', type: 'select', value: user.role || 'resident', options: roleOptions },
       is_active: { label: 'สถานะ', type: 'select', value: user.is_active ? 'true' : 'false', options: statusOptions },
     }, async (data) => {
       try {
         await updateUser(user.id, {
+          username: data.username?.value,
+          password: data.password?.value,
           full_name: data.full_name?.value,
           email: data.email?.value,
           phone: data.phone?.value,
+          house_id: data.house_id?.value,
           role: data.role?.value,
           is_active: data.is_active?.value !== 'false',
         })
@@ -120,13 +130,21 @@ const AdminUsers = () => {
     }
   }
 
-  const handleResetPassword = async (user) => {
-    try {
-      await sendResetPasswordEmail(user.email)
-      alert(`ส่งอีเมลรีเซ็ตรหัสผ่านแล้ว: ${user.email}`)
-    } catch (error) {
-      alert(`ส่งอีเมลรีเซ็ตรหัสผ่านไม่สำเร็จ: ${error.message}`)
-    }
+  const handleResetPassword = (user) => {
+    openModal('ตั้งรหัสผ่านใหม่', {
+      password: { label: 'รหัสผ่านใหม่', type: 'password', placeholder: 'อย่างน้อย 6 ตัวอักษร' },
+    }, async (data) => {
+      try {
+        if (!data.password?.value) {
+          alert('กรุณากรอกรหัสผ่านใหม่')
+          return
+        }
+        await updateUser(user.id, { password: data.password?.value })
+        alert('เปลี่ยนรหัสผ่านเรียบร้อย')
+      } catch (error) {
+        alert(`เปลี่ยนรหัสผ่านไม่สำเร็จ: ${error.message}`)
+      }
+    })
   }
   return (
     <div className="pane on">
@@ -156,9 +174,11 @@ const AdminUsers = () => {
             <div style={{ overflowX: 'auto' }}>
               <table className="tw" style={{ width: '100%', minWidth: '980px' }}>
                 <thead><tr>
+                  <th>ชื่อผู้ใช้</th>
                   <th>ชื่อ</th>
                   <th>อีเมล</th>
                   <th>เบอร์โทร</th>
+                  <th>บ้าน (house_id)</th>
                   <th>บทบาท</th>
                   <th>สถานะ</th>
                   <th>วันที่สร้าง</th>
@@ -168,10 +188,12 @@ const AdminUsers = () => {
                 <tbody>
                   {users.map((user) => (
                     <tr key={user.id}>
+                      <td>{user.username || '-'}</td>
                       <td>{user.full_name || '-'}</td>
                       <td>{user.email || '-'}</td>
                       <td>{user.phone || '-'}</td>
-                      <td><span className="bd b-pr">{user.role || 'resident'}</span></td>
+                      <td>{user.house_id || '-'}</td>
+                      <td><span className="bd b-pr">{user.role === 'admin' ? 'ผู้ดูแลระบบ' : 'ลูกบ้าน'}</span></td>
                       <td>
                         {user.is_active ? (
                           <span className="bd b-ok">active</span>

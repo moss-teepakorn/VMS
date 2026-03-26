@@ -1,10 +1,11 @@
 import { supabase } from './supabase'
+import bcrypt from 'bcryptjs'
 
 export async function getUsers() {
   try {
     const { data, error } = await supabase
       .from('profiles')
-      .select('id, full_name, email, phone, role, is_active, created_at, last_login_at')
+      .select('id, username, full_name, email, phone, role, house_id, is_active, created_at, last_login_at')
       .order('created_at', { ascending: false })
 
     if (error) {
@@ -21,14 +22,19 @@ export async function getUsers() {
 
 export async function createUser(userData) {
   try {
+    const passwordHash = await bcrypt.hash(userData.password || '', 10)
+
     const { data, error } = await supabase
       .from('profiles')
       .insert([{
         id: userData.id,
+        username: (userData.username || '').trim().toLowerCase(),
+        password_hash: passwordHash,
         full_name: userData.full_name,
         email: userData.email,
         phone: userData.phone,
         role: userData.role || 'resident',
+        house_id: userData.house_id || null,
         is_active: userData.is_active ?? true,
       }])
       .select()
@@ -47,11 +53,16 @@ export async function createUser(userData) {
 export async function updateUser(userId, updates) {
   try {
     const payload = {}
+    if (typeof updates.username !== 'undefined') payload.username = (updates.username || '').trim().toLowerCase()
     if (typeof updates.full_name !== 'undefined') payload.full_name = updates.full_name
     if (typeof updates.email !== 'undefined') payload.email = updates.email
     if (typeof updates.phone !== 'undefined') payload.phone = updates.phone
     if (typeof updates.role !== 'undefined') payload.role = updates.role
+    if (typeof updates.house_id !== 'undefined') payload.house_id = updates.house_id || null
     if (typeof updates.is_active !== 'undefined') payload.is_active = updates.is_active
+    if (typeof updates.password !== 'undefined' && updates.password) {
+      payload.password_hash = await bcrypt.hash(updates.password, 10)
+    }
 
     const { data, error } = await supabase
       .from('profiles')
@@ -89,11 +100,7 @@ export async function deleteUser(userId) {
 }
 
 export async function sendResetPasswordEmail(email) {
-  if (!email) throw new Error('ไม่พบอีเมลผู้ใช้')
-  const redirectTo = `${window.location.origin}/login`
-  const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo })
-  if (error) throw new Error(error.message)
-  return true
+  throw new Error('ระบบนี้ไม่ใช้ Supabase Auth แล้ว กรุณาใช้การตั้งรหัสผ่านใหม่ในหน้าผู้ใช้ระบบ')
 }
 
 export function formatDateTime(value) {

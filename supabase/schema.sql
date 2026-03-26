@@ -30,7 +30,9 @@ create table if not exists houses (
 
 -- ── 3. PROFILES (ผู้ใช้งาน) ────────────────────────────────────────
 create table if not exists profiles (
-  id         uuid primary key references auth.users(id) on delete cascade,
+  id         uuid primary key default gen_random_uuid(),
+  username   text unique not null,
+  password_hash text not null,
   full_name  text,
   email      text,
   role       text    default 'resident',
@@ -39,7 +41,11 @@ create table if not exists profiles (
   phone      text,
   avatar_url text,
   is_active  boolean default true,
+  failed_login_count int default 0,
+  locked_until timestamptz,
   last_login_at timestamptz,
+  password_changed_at timestamptz,
+  updated_at timestamptz default now(),
   created_at timestamptz default now()
 );
 
