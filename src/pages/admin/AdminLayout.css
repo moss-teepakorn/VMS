@@ -528,6 +528,82 @@ button, input, select, textarea {
   flex-shrink: 0;
 }
 
+.setup-wrap {
+  position: relative;
+}
+
+.setup-menu {
+  position: absolute;
+  right: 0;
+  top: 36px;
+  width: 320px;
+  max-width: calc(100vw - 24px);
+  background: var(--card);
+  border: 1px solid var(--bo);
+  border-radius: 12px;
+  box-shadow: 0 14px 36px rgba(0,0,0,.2);
+  padding: 12px;
+  z-index: 50;
+}
+
+.setup-title {
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--tx);
+  margin-bottom: 8px;
+}
+
+.setup-section {
+  border-top: 1px solid var(--bo);
+  padding-top: 10px;
+  margin-top: 10px;
+}
+
+.setup-section:first-of-type {
+  border-top: none;
+  padding-top: 0;
+  margin-top: 0;
+}
+
+.setup-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--mu);
+  margin-bottom: 8px;
+}
+
+.setup-profile-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 12px;
+  margin-bottom: 6px;
+  color: var(--tx);
+}
+
+.setup-profile-row span {
+  color: var(--mu);
+}
+
+.setup-profile-row strong {
+  max-width: 180px;
+  text-align: right;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.setup-input {
+  width: 100%;
+  border: 1px solid var(--bo);
+  border-radius: 8px;
+  background: var(--card);
+  color: var(--tx);
+  padding: 8px 10px;
+  margin-bottom: 8px;
+  font-size: 12px;
+}
+
 .theme-strip {
   display: flex;
   gap: 4px;

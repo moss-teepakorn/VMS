@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { Outlet, useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext'
 import { applyDocumentTitle, getSetupConfig } from '../../lib/setup'
+import { updateUser } from '../../lib/users'
 import villageLogo from '../../assets/village-logo.svg'
 import './AdminLayout.css'
 
@@ -22,6 +23,9 @@ const AdminLayout = () => {
   const { profile, logout } = useAuth()
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [theme, setTheme] = useState(localStorage.getItem('vms-theme') || 'normal')
+  const [setupOpen, setSetupOpen] = useState(false)
+  const [newPassword, setNewPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
   const [setup, setSetup] = useState({
     villageName: 'The Greenfield',
     appLineMain: 'Village Management',
@@ -94,6 +98,31 @@ const AdminLayout = () => {
   const handleLogout = async () => {
     await logout()
     navigate('/login')
+  }
+
+  const handleChangeMyPassword = async () => {
+    if (!profile?.id) return
+    if (!newPassword || !confirmPassword) {
+      alert('กรุณากรอกรหัสผ่านใหม่ให้ครบ')
+      return
+    }
+    if (newPassword.length < 6) {
+      alert('รหัสผ่านต้องอย่างน้อย 6 ตัวอักษร')
+      return
+    }
+    if (newPassword !== confirmPassword) {
+      alert('ยืนยันรหัสผ่านไม่ตรงกัน')
+      return
+    }
+    try {
+      await updateUser(profile.id, { password: newPassword })
+      setNewPassword('')
+      setConfirmPassword('')
+      setSetupOpen(false)
+      alert('เปลี่ยนรหัสผ่านเรียบร้อย')
+    } catch (error) {
+      alert(`เปลี่ยนรหัสผ่านไม่สำเร็จ: ${error.message}`)
+    }
   }
 
   const isNavItemActive = (path) => {
@@ -193,23 +222,56 @@ const AdminLayout = () => {
             Dashboard — <span className="hl">ภาพรวม</span>
           </div>
           <div className="tb-right">
-            {/* Theme dots */}
-            <div className="theme-strip">
-              {['normal', 'dark', 'rose', 'sage', 'sand', 'violet', 'teal', 'coral', 'mauve', 'dustyrose'].map((t) => (
-                <div
-                  key={t}
-                  className={`th-dot ${theme === t ? 'on' : ''}`}
-                  onClick={() => setTheme(t)}
-                  title={t}
-                />
-              ))}
-            </div>
+            <div className="setup-wrap">
+              <div className="tb-ico" onClick={() => setSetupOpen((prev) => !prev)}>⚙️</div>
 
-            {/* Notification icon */}
-            <div className="tb-ico" onClick={() => alert('Notifications')}>
-              🔔<span className="ndot"></span>
+              {setupOpen && (
+                <div className="setup-menu">
+                  <div className="setup-title">Setup</div>
+
+                  <div className="setup-section">
+                    <div className="setup-label">Profile</div>
+                    <div className="setup-profile-row"><span>ชื่อ</span><strong>{profile?.full_name || '-'}</strong></div>
+                    <div className="setup-profile-row"><span>Username</span><strong>{profile?.username || '-'}</strong></div>
+                    <div className="setup-profile-row"><span>บทบาท</span><strong>{roleLabel(profile?.role)}</strong></div>
+                    <div className="setup-profile-row"><span>บ้าน</span><strong>{profile?.house_id || '-'}</strong></div>
+                  </div>
+
+                  <div className="setup-section">
+                    <div className="setup-label">Theme</div>
+                    <div className="theme-strip">
+                      {['normal', 'dark', 'rose', 'sage', 'sand', 'violet', 'teal', 'coral', 'mauve', 'dustyrose'].map((t) => (
+                        <div
+                          key={t}
+                          className={`th-dot ${theme === t ? 'on' : ''}`}
+                          onClick={() => setTheme(t)}
+                          title={t}
+                        />
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="setup-section">
+                    <div className="setup-label">เปลี่ยนรหัสผ่าน</div>
+                    <input
+                      type="password"
+                      className="setup-input"
+                      placeholder="รหัสผ่านใหม่"
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
+                    />
+                    <input
+                      type="password"
+                      className="setup-input"
+                      placeholder="ยืนยันรหัสผ่านใหม่"
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                    />
+                    <button className="btn btn-p btn-sm" style={{ width: '100%' }} onClick={handleChangeMyPassword}>บันทึกรหัสผ่านใหม่</button>
+                  </div>
+                </div>
+              )}
             </div>
-            <div className="tb-ico" onClick={() => alert('Settings')}>⚙️</div>
           </div>
         </div>
 

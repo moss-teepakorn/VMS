@@ -1,6 +1,11 @@
 import { supabase } from './supabase'
 import bcrypt from 'bcryptjs'
 
+function toLowerOrNull(value) {
+  const trimmed = (value || '').trim().toLowerCase()
+  return trimmed || null
+}
+
 export async function getUsers() {
   try {
     const { data, error } = await supabase
@@ -24,19 +29,22 @@ export async function createUser(userData) {
   try {
     const passwordHash = await bcrypt.hash(userData.password || '', 10)
 
+    const payload = {
+      username: toLowerOrNull(userData.username),
+      password_hash: passwordHash,
+      full_name: userData.full_name,
+      email: userData.email,
+      phone: userData.phone,
+      role: userData.role || 'resident',
+      house_id: userData.house_id || null,
+      is_active: userData.is_active ?? true,
+    }
+
+    if (userData.id) payload.id = userData.id
+
     const { data, error } = await supabase
       .from('profiles')
-      .insert([{
-        id: userData.id,
-        username: (userData.username || '').trim().toLowerCase(),
-        password_hash: passwordHash,
-        full_name: userData.full_name,
-        email: userData.email,
-        phone: userData.phone,
-        role: userData.role || 'resident',
-        house_id: userData.house_id || null,
-        is_active: userData.is_active ?? true,
-      }])
+      .insert([payload])
       .select()
 
     if (error) {
@@ -53,7 +61,7 @@ export async function createUser(userData) {
 export async function updateUser(userId, updates) {
   try {
     const payload = {}
-    if (typeof updates.username !== 'undefined') payload.username = (updates.username || '').trim().toLowerCase()
+    if (typeof updates.username !== 'undefined') payload.username = toLowerOrNull(updates.username)
     if (typeof updates.full_name !== 'undefined') payload.full_name = updates.full_name
     if (typeof updates.email !== 'undefined') payload.email = updates.email
     if (typeof updates.phone !== 'undefined') payload.phone = updates.phone
@@ -101,6 +109,28 @@ export async function deleteUser(userId) {
 
 export async function sendResetPasswordEmail(email) {
   throw new Error('ระบบนี้ไม่ใช้ Supabase Auth แล้ว กรุณาใช้การตั้งรหัสผ่านใหม่ในหน้าผู้ใช้ระบบ')
+}
+
+export async function listHouseOptions() {
+  const { data, error } = await supabase
+    .from('houses')
+    .select('id, house_no, soi, owner_name, address, status')
+    .order('house_no', { ascending: true })
+
+  if (error) throw error
+  return data ?? []
+}
+
+export async function getHouseDetail(houseId) {
+  if (!houseId) return null
+  const { data, error } = await supabase
+    .from('houses')
+    .select('id, house_no, soi, owner_name, resident_name, contact_name, phone, address, status')
+    .eq('id', houseId)
+    .maybeSingle()
+
+  if (error) throw error
+  return data ?? null
 }
 
 export function formatDateTime(value) {
