@@ -364,8 +364,10 @@ const AdminHouses = () => {
                           <span className={`${badge.className} houses-status houses-status-${house.status}`}>{badge.label}</span>
                         </td>
                         <td className="houses-actions-cell">
-                          <button className="btn btn-xs btn-a houses-action-btn" onClick={() => openEditModal(house)}>แก้ไข</button>
-                          <button className="btn btn-xs houses-action-btn houses-action-delete" onClick={() => handleDeleteHouse(house)}>ลบ</button>
+                          <div className="houses-actions-inner">
+                            <button className="btn btn-xs btn-a houses-action-btn" onClick={() => openEditModal(house)}>แก้ไข</button>
+                            <button className="btn btn-xs houses-action-btn houses-action-delete" onClick={() => handleDeleteHouse(house)}>ลบ</button>
+                          </div>
                         </td>
                       </tr>
                     )

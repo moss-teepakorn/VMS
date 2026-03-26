@@ -589,6 +589,11 @@
   width: 136px;
 }
 
+.houses-filter-btn {
+  height: 34px;
+  padding: 0 14px;
+}
+
 .houses-list-head {
   display: flex;
   justify-content: space-between;
@@ -667,7 +672,12 @@
 
 .houses-actions-cell {
   white-space: nowrap;
-  display: flex;
+  vertical-align: middle;
+  text-align: right;
+}
+
+.houses-actions-inner {
+  display: inline-flex;
   align-items: center;
   gap: 6px;
 }
