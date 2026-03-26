@@ -611,18 +611,18 @@ button, input, select, textarea {
 .pane.on {
   width: 100%;
   display: block;
-  padding: 16px;
+  padding: 8px;
 }
 
 @media(min-width: 640px) {
   .pane.on {
-    padding: 22px;
+    padding: 10px;
   }
 }
 
 @media(min-width: 1024px) {
   .pane.on {
-    padding: 26px;
+    padding: 12px;
   }
 }
 
@@ -937,14 +937,14 @@ button, input, select, textarea {
   flex: 1;
   overflow-y: auto;
   overflow-x: hidden;
-  padding: 20px;
+  padding: 8px;
   width: 100%;
   box-sizing: border-box;
 }
 
 @media (min-width: 768px) {
   .page {
-    padding: 26px;
+    padding: 10px;
   }
 }
 
