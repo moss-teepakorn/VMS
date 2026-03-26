@@ -17,6 +17,7 @@ export default function LoginPage() {
     appLineMain: 'Village Management',
     appLineTail: 'System',
     version: 'v12.3',
+    address: 'Gusto Suksawat 26 -1',
   })
 
   // ถ้า login แล้ว redirect ไปหน้าที่ถูก
@@ -68,28 +69,32 @@ export default function LoginPage() {
                 </div>
               </div>
               <h1 className="mt-8 text-4xl font-bold leading-tight">Village Management<br />Dashboard</h1>
-              <p className="mt-4 text-sm text-white/85 max-w-md">บริหารจัดการหมู่บ้านแบบรวมศูนย์ พร้อมงานทะเบียนบ้าน ยานพาหนะ ค่าส่วนกลาง และการสื่อสารของนิติบุคคล</p>
+              <p className="mt-4 text-sm text-white/85 max-w-md">ระบบบริหารหมู่บ้าน จัดการทะเบียนลูกบ้าน ยานพาหนะ และค่าส่วนกลางอย่างเป็นระบบ พร้อมการสื่สารระหว่างลูกบ้านและนิติแบบครบวงจร</p>
+              <div className="mt-6">
+                <p className="text-xs text-white/70">{setup.address}</p>
+              </div>
             </div>
             <div className="text-xs text-white/80">{setup.villageName} · {setup.version}</div>
           </div>
 
-          <div className="flex items-center justify-center p-5 sm:p-8 bg-white/92">
-            <div className="w-full max-w-md">
-              <div className="text-center mb-7 lg:hidden">
-                <img src={villageLogo} alt="Village Logo" className="w-16 h-16 mx-auto rounded-2xl object-cover shadow-md" />
-                <h1 className="text-2xl font-bold text-slate-800 mt-3">{setup.villageName}</h1>
-                <p className="text-sm text-slate-500">{setup.appLineMain} {setup.appLineTail}</p>
+          <div className="flex items-center justify-center p-8 sm:p-12 bg-white/92">
+            <div className="w-full max-w-lg">
+              <div className="text-center mb-8 lg:hidden">
+                <img src={villageLogo} alt="Village Logo" className="w-20 h-20 mx-auto rounded-2xl object-cover shadow-md" />
+                <h1 className="text-3xl font-bold text-slate-800 mt-4">{setup.villageName}</h1>
+                <p className="text-xs text-slate-500 mt-1">{setup.appLineMain}</p>
+                <p className="text-xs text-slate-400 mt-0.5" style={{ fontSize: '6px' }}>{setup.appLineTail}</p>
               </div>
 
-              <div className="bg-white border border-slate-200 rounded-2xl p-6 sm:p-7 shadow-xl">
-                <h2 className="text-xl font-bold text-slate-800 mb-1">เข้าสู่ระบบ</h2>
-                <p className="text-sm text-slate-500 mb-5">กรอกข้อมูลเพื่อเข้าสู่ระบบจัดการหมู่บ้าน</p>
+              <div className="bg-white border border-slate-200 rounded-3xl p-8 sm:p-10 shadow-xl">
+                <h2 className="text-2xl font-bold text-slate-800 mb-2">เข้าสู่ระบบ</h2>
+                <p className="text-base text-slate-500 mb-7">กรอกข้อมูลเพื่อเข้าสู่ระบบจัดการหมู่บ้าน</p>
 
-                <form onSubmit={handleSubmit} className="space-y-4">
+                <form onSubmit={handleSubmit} className="space-y-5">
 
                   {/* Email */}
                   <div>
-                    <label className="block text-xs font-semibold text-slate-600 mb-1.5">ชื่อผู้ใช้</label>
+                    <label className="block text-sm font-semibold text-slate-600 mb-2">ชื่อผู้ใช้</label>
                     <input
                       type="email"
                       value={email}
@@ -97,13 +102,13 @@ export default function LoginPage() {
                       required
                       autoComplete="email"
                       placeholder="username@email.com"
-                      className="w-full bg-white border border-slate-300 rounded-lg px-3.5 py-2.5 text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200 transition"
+                      className="w-full bg-white border border-slate-300 rounded-lg px-4 py-3 text-base text-slate-800 placeholder-slate-400 focus:outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200 transition"
                     />
                   </div>
 
                   {/* Password */}
                   <div>
-                    <label className="block text-xs font-semibold text-slate-600 mb-1.5">รหัสผ่าน</label>
+                    <label className="block text-sm font-semibold text-slate-600 mb-2">รหัสผ่าน</label>
                     <div className="relative">
                       <input
                         type={showPass ? 'text' : 'password'}
@@ -112,7 +117,7 @@ export default function LoginPage() {
                         required
                         autoComplete="current-password"
                         placeholder="กรอกรหัสผ่าน"
-                        className="w-full bg-white border border-slate-300 rounded-lg px-3.5 py-2.5 text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200 transition pr-10"
+                        className="w-full bg-white border border-slate-300 rounded-lg px-4 py-3 text-base text-slate-800 placeholder-slate-400 focus:outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200 transition pr-10"
                       />
                       <button
                         type="button"
@@ -136,11 +141,11 @@ export default function LoginPage() {
 
                   {/* Error */}
                   {error && (
-                    <div className="flex items-start gap-2 bg-red-50 border border-red-200 rounded-lg px-3 py-2.5">
-                      <svg className="w-4 h-4 text-red-500 mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <div className="flex items-start gap-2 bg-red-50 border border-red-200 rounded-lg px-4 py-3">
+                      <svg className="w-5 h-5 text-red-500 mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                         <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
                       </svg>
-                      <p className="text-xs text-red-600">{error}</p>
+                      <p className="text-sm text-red-600">{error}</p>
                     </div>
                   )}
 
@@ -148,7 +153,7 @@ export default function LoginPage() {
                   <button
                     type="submit"
                     disabled={submitting || !email || !password}
-                    className="w-full bg-gradient-to-r from-sky-600 to-blue-700 hover:from-sky-700 hover:to-blue-800 text-white rounded-lg py-2.5 text-sm font-semibold transition-all duration-150 disabled:opacity-40 disabled:cursor-not-allowed shadow-lg shadow-sky-500/20 flex items-center justify-center gap-2 mt-2"
+                    className="w-full bg-gradient-to-r from-sky-600 to-blue-700 hover:from-sky-700 hover:to-blue-800 text-white rounded-lg py-3 text-base font-semibold transition-all duration-150 disabled:opacity-40 disabled:cursor-not-allowed shadow-lg shadow-sky-500/20 flex items-center justify-center gap-2 mt-3"
                   >
                     {submitting ? (
                       <>
@@ -160,9 +165,10 @@ export default function LoginPage() {
                 </form>
               </div>
 
-              <p className="text-center text-xs text-slate-500 mt-4">
-                {setup.villageName} · {setup.version}
-              </p>
+              <div className="mt-6 text-center">
+                <p className="text-xs text-slate-500 mb-1">{setup.villageName}</p>
+                <p className="text-xs text-slate-400">{setup.version}</p>
+              </div>
             </div>
           </div>
         </div>

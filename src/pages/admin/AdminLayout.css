@@ -594,6 +594,7 @@ button, input, select, textarea {
   flex: 1;
   overflow-y: auto;
   background: var(--bg);
+  padding-bottom: 60px;
 }
 
 .view {
@@ -683,8 +684,8 @@ button, input, select, textarea {
 }
 
 .sb-logo-sub-tail {
-  font-size: 8.8px;
-  color: rgba(255,255,255,.72);
+  font-size: 6.5px;
+  color: rgba(255,255,255,.65);
 }
 
 .sb-logo-sub-ver {
