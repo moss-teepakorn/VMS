@@ -10,6 +10,7 @@ export const ModalContext = React.createContext()
 
 const BUILD_SHA = typeof __BUILD_SHA__ !== 'undefined' ? __BUILD_SHA__ : 'local'
 const BUILD_DATE = typeof __BUILD_DATE__ !== 'undefined' ? __BUILD_DATE__ : '-'
+const APP_VERSION = '1.0.0'
 
 const AdminLayout = () => {
   const navigate = useNavigate()
@@ -21,7 +22,7 @@ const AdminLayout = () => {
     villageName: 'The Greenfield',
     appLineMain: 'Village Management',
     appLineTail: 'System',
-    version: 'v12.3',
+    version: '1.0.0',
   })
   
   // Modal state
@@ -138,14 +139,8 @@ const AdminLayout = () => {
           </div>
           <div>
             <div className="sb-logo-name">{setup.villageName}</div>
-            <div className="sb-logo-sub">
-              <span className="sb-logo-sub-main">{setup.appLineMain}</span>
-              <span className="sb-logo-sub-tail"> {setup.appLineTail}</span>
-              <span className="sb-logo-sub-ver"> {setup.version}</span>
-            </div>
           </div>
         </div>
-        <div className="sb-build">build {BUILD_SHA} · {BUILD_DATE}</div>
 
         {/* Navigation */}
         <div style={{ display: 'flex', flexDirection: 'column', flex: 1, overflow: 'hidden', minHeight: 0 }}>
@@ -278,7 +273,7 @@ const AdminLayout = () => {
 
         {/* Footer */}
         <footer className="fixed bottom-0 right-0 left-0 sm:left-60 bg-white/80 border-t border-slate-200 px-6 py-3 text-center text-xs text-slate-500">
-          <p>{setup.villageName} · v{setup.version} · Built on {BUILD_DATE}</p>
+          <p>{setup.villageName} | version {APP_VERSION} | Built no : {BUILD_SHA} | Built date : {BUILD_DATE}</p>
         </footer>
       </div>
     </div>
