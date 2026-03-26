@@ -239,7 +239,7 @@ const AdminUsers = () => {
   }
 
   return (
-    <div className="pane on" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+    <div className="pane on page-compact" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
       <div className="ph">
         <div className="ph-in">
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -249,20 +249,18 @@ const AdminUsers = () => {
               <div className="ph-sub">จัดการโปรไฟล์</div>
             </div>
           </div>
-          <div className="ph-acts">
-            <button className="btn btn-p btn-sm" onClick={openAddModal}>+ เพิ่มผู้ใช้ใหม่</button>
-          </div>
         </div>
       </div>
 
       <div className="card">
-        <div className="ch"><div className="ct">รายชื่อผู้ใช้งาน ({users.length})</div></div>
-        <div className="cb">
-          {loading ? (
-            <div style={{ padding: '20px', textAlign: 'center', color: '#999' }}>กำลังโหลด...</div>
-          ) : users.length === 0 ? (
-            <div style={{ padding: '20px', textAlign: 'center', color: '#999' }}>ไม่มีข้อมูลผู้ใช้</div>
-          ) : (
+        <div className="ch page-list-head">
+          <div className="ct">รายชื่อผู้ใช้งาน ({users.length})</div>
+          <div className="page-list-actions">
+            <button className="btn btn-p btn-sm" onClick={openAddModal}>+ เพิ่มผู้ใช้ใหม่</button>
+          </div>
+        </div>
+        <div className="cb page-table-body">
+          <div className="desktop-only">
             <div style={{ overflowX: 'auto' }}>
               <table className="tw" style={{ width: '100%', minWidth: '1080px' }}>
                 <thead><tr>
@@ -278,7 +276,11 @@ const AdminUsers = () => {
                   <th>จัดการ</th>
                 </tr></thead>
                 <tbody>
-                  {users.map((user) => (
+                  {loading ? (
+                    <tr><td colSpan="10" style={{ textAlign: 'center', color: 'var(--mu)', padding: '20px' }}>กำลังโหลด...</td></tr>
+                  ) : users.length === 0 ? (
+                    <tr><td colSpan="10" style={{ textAlign: 'center', color: 'var(--mu)', padding: '20px' }}>ไม่มีข้อมูลผู้ใช้</td></tr>
+                  ) : users.map((user) => (
                     <tr key={user.id}>
                       <td>{getHouseNo(user.house_id)}</td>
                       <td>{user.username || '-'}</td>
@@ -299,7 +301,34 @@ const AdminUsers = () => {
                 </tbody>
               </table>
             </div>
-          )}
+          </div>
+          <div className="mobile-only">
+            {loading ? (
+              <div className="mcard-empty">กำลังโหลด...</div>
+            ) : users.length === 0 ? (
+              <div className="mcard-empty">ไม่มีข้อมูลผู้ใช้</div>
+            ) : users.map((user) => (
+              <div key={user.id} className="mcard">
+                <div className="mcard-top">
+                  <div>
+                    <div className="mcard-title">{getHouseOwnerName(user.house_id, user.full_name || '-')}</div>
+                    <div className="mcard-sub">{user.username || '-'} · บ้าน {getHouseNo(user.house_id)}</div>
+                  </div>
+                  <span className="bd b-pr mcard-badge">{getRoleText(user.role)}</span>
+                </div>
+                <div className="mcard-meta">
+                  {user.email && <span><span className="mcard-label">email</span> {user.email}</span>}
+                  {user.phone && <span><span className="mcard-label">เบอร์</span> {user.phone}</span>}
+                  <span><span className="mcard-label">สถานะ</span> {user.is_active ? <span className="bd b-ok">active</span> : <span className="bd b-mu">inactive</span>}</span>
+                </div>
+                <div className="mcard-actions">
+                  <button className="btn btn-xs btn-a" onClick={() => openEditModal(user)}>แก้ไข</button>
+                  <button className="btn btn-xs btn-o" onClick={() => handleQuickResetPassword(user)}>เปลี่ยนรหัสผ่าน</button>
+                  <button className="btn btn-xs btn-dg" onClick={() => handleDeleteUser(user)}>ลบ</button>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
 

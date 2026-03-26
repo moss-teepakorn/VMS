@@ -1184,6 +1184,233 @@ canvas {
   }
 }
 
+/* ════════════════════════════════════════════════
+   GENERIC PAGE COMPACT (matches AdminHouses pattern)
+════════════════════════════════════════════════ */
+.page-compact {
+  font-size: 12px;
+}
+
+.page-compact .ph {
+  padding: 16px;
+}
+
+.page-compact .ph-h1 {
+  font-size: 20px;
+}
+
+.page-compact .ph-sub {
+  font-size: 12px;
+}
+
+.page-compact .btn {
+  font-size: 12px;
+}
+
+.page-compact .btn-sm {
+  font-size: 12px;
+  padding: 7px 11px;
+}
+
+/* Filter row inside ph header */
+.page-filter-row {
+  position: relative;
+  z-index: 1;
+  margin-top: 10px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.page-filter-input {
+  flex: 1;
+  min-width: 200px;
+  height: 34px;
+  border: 1px solid rgba(255,255,255,.32);
+  border-radius: 8px;
+  padding: 0 11px;
+  font-size: 12px;
+  color: #1f2937;
+  background: rgba(255,255,255,.97);
+}
+
+.page-filter-input::placeholder {
+  color: #6b7280;
+}
+
+.page-filter-select {
+  flex-shrink: 0;
+  height: 34px;
+  border: 1px solid rgba(255,255,255,.32);
+  border-radius: 8px;
+  padding: 0 11px;
+  padding-right: 28px;
+  font-size: 12px;
+  color: #1f2937;
+  background: rgba(255,255,255,.97);
+}
+
+.page-filter-btn {
+  flex-shrink: 0;
+  height: 34px;
+  padding: 0 14px;
+}
+
+/* Data card header with title + action buttons */
+.page-list-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: nowrap;
+  min-width: 0;
+}
+
+.page-list-head .ct {
+  flex-shrink: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.page-list-actions {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  flex-wrap: wrap;
+}
+
+.page-table-body {
+  padding-top: 10px;
+}
+
+/* Desktop / Mobile visibility */
+@media (max-width: 700px) {
+  .desktop-only {
+    display: none;
+  }
+
+  .mobile-only {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 4px 0;
+  }
+
+  .page-filter-input {
+    flex-basis: 100%;
+    min-width: 0;
+  }
+
+  .page-list-head {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .page-list-head .ct {
+    white-space: normal;
+    overflow: visible;
+    text-overflow: unset;
+  }
+
+  .page-list-actions {
+    width: 100%;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+  }
+
+  .page-list-actions .btn {
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+}
+
+@media (min-width: 701px) {
+  .desktop-only {
+    display: block;
+  }
+
+  .mobile-only {
+    display: none;
+  }
+}
+
+/* Generic Mobile Card */
+.mcard {
+  background: var(--card);
+  border: 1px solid var(--bo);
+  border-radius: 10px;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.mcard-top {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.mcard-title {
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--tx);
+}
+
+.mcard-sub {
+  font-size: 12px;
+  color: var(--mu);
+  background: var(--bg2);
+  border-radius: 5px;
+  padding: 2px 7px;
+}
+
+.mcard-badge {
+  margin-left: auto;
+}
+
+.mcard-body {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--tx);
+}
+
+.mcard-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  margin-top: 2px;
+  font-size: 12px;
+  color: var(--mu);
+}
+
+.mcard-label {
+  font-weight: 600;
+  color: var(--tx);
+  opacity: 0.6;
+}
+
+.mcard-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 6px;
+  padding-top: 8px;
+  border-top: 1px solid var(--bo);
+  flex-wrap: wrap;
+}
+
+.mcard-empty {
+  text-align: center;
+  color: var(--mu);
+  padding: 20px;
+  font-size: 13px;
+}
+
 /* ═════════════════════════════════════════════════
    RESPONSIVE
 ═════════════════════════════════════════════════ */

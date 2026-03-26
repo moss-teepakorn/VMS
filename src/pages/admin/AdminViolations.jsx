@@ -755,7 +755,7 @@ const AdminViolations = () => {
   }
 
   return (
-    <div className="pane on" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+    <div className="pane on page-compact" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
       <div className="ph">
         <div className="ph-in">
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -765,23 +765,16 @@ const AdminViolations = () => {
               <div className="ph-sub">บันทึกการละเมิดข้อบังคับของหมู่บ้าน</div>
             </div>
           </div>
-          <div className="ph-acts">
-            <button className="btn btn-p btn-sm" onClick={openAddModal}>+ แจ้งกระทำผิดใหม่</button>
-            <button className="btn btn-g btn-sm" onClick={() => loadData({ status: statusFilter, search: searchTerm })}>🔄 รีเฟรช</button>
-          </div>
         </div>
-      </div>
-
-      <div className="card">
-        <div className="ch"><div className="ct">ค้นหาและกรองข้อมูล</div></div>
-        <div className="cb filter-row">
+        <div className="page-filter-row">
           <input
+            className="page-filter-input"
             type="text"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             placeholder="ค้นหา ประเภท / บ้าน / เจ้าของ"
           />
-          <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
+          <select className="page-filter-select" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
             <option value="all">ทุกสถานะ</option>
             <option value="pending">รอดำเนินการ</option>
             <option value="in_progress">กำลังดำเนินการ</option>
@@ -789,62 +782,101 @@ const AdminViolations = () => {
             <option value="resolved">แก้ไขแล้ว</option>
             <option value="cancelled">ยกเลิก</option>
           </select>
-          <button className="btn btn-a btn-sm" onClick={() => loadData({ status: statusFilter, search: searchTerm })}>ค้นหา</button>
+          <button className="btn btn-a btn-sm page-filter-btn" onClick={() => loadData({ status: statusFilter, search: searchTerm })}>ค้นหา</button>
         </div>
       </div>
 
       <div className="card">
-        <div className="ch"><div className="ct">รายการทั้งหมด ({violations.length} รายการ)</div></div>
-        <div className="cb">
-          <div style={{ overflowX: 'auto' }}>
-            <table className="tw" style={{ width: '100%', minWidth: '900px' }}>
-              <thead><tr>
-                <th>ซอย</th>
-                <th>บ้าน / เจ้าของ</th>
-                <th>ประเภท</th>
-                <th>รายละเอียด</th>
-                <th>วันเกิดเหตุ</th>
-                <th>เลขที่รายงาน</th>
-                <th>วันที่รายงาน</th>
-                <th>เตือน</th>
-                <th>ค่าปรับ</th>
-                <th>วันครบกำหนด</th>
-                <th>สถานะ</th>
-                <th></th>
-              </tr></thead>
-              <tbody>
-                {loading ? (
-                  <tr><td colSpan="12" style={{ textAlign: 'center', color: 'var(--mu)', padding: '20px' }}>กำลังโหลด...</td></tr>
-                ) : violations.length === 0 ? (
-                  <tr><td colSpan="12" style={{ textAlign: 'center', color: 'var(--mu)', padding: '20px' }}>ไม่พบข้อมูล</td></tr>
-                ) : violations.map((item) => {
-                  const badge = getStatusBadge(item.status)
-                  return (
-                    <tr key={item.id}>
-                      <td>{item.houses?.soi ? `ซอย ${item.houses.soi}` : '-'}</td>
-                      <td>
-                        <div><strong>{item.houses?.house_no || '-'}</strong> {item.houses?.owner_name ? `- ${item.houses.owner_name}` : ''}</div>
-                      </td>
-                      <td>{item.type || '-'}</td>
-                      <td style={{ maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.detail || '-'}</td>
-                      <td>{formatDate(item.occurred_at)}</td>
-                      <td>{item.report_no || '-'}</td>
-                      <td>{formatDate(item.report_date)}</td>
-                      <td>{item.warning_count ?? 0}</td>
-                      <td>{Number(item.fine_amount || 0).toLocaleString('th-TH')}</td>
-                      <td>{formatDate(item.due_date)}</td>
-                      <td><span className={badge.className}>{badge.label}</span></td>
-                      <td><div className="td-acts">
-                        <button className="btn btn-xs btn-o" onClick={() => handleOpenPrintPreview(item)}>พิมพ์</button>
-                        <button className="btn btn-xs btn-p" onClick={() => handleDownloadPdf(item)}>PDF</button>
-                        <button className="btn btn-xs btn-a" onClick={() => openEditModal(item)}>แก้ไข</button>
-                        <button className="btn btn-xs btn-dg" onClick={() => handleDelete(item)}>ลบ</button>
-                      </div></td>
-                    </tr>
-                  )
-                })}
-              </tbody>
-            </table>
+        <div className="ch page-list-head">
+          <div className="ct">รายการทั้งหมด ({violations.length} รายการ)</div>
+          <div className="page-list-actions">
+            <button className="btn btn-p btn-sm" onClick={openAddModal}>+ แจ้งกระทำผิดใหม่</button>
+            <button className="btn btn-g btn-sm" onClick={() => loadData({ status: statusFilter, search: searchTerm })}>🔄 รีเฟรช</button>
+          </div>
+        </div>
+        <div className="cb page-table-body">
+          <div className="desktop-only">
+            <div style={{ overflowX: 'auto' }}>
+              <table className="tw" style={{ width: '100%', minWidth: '900px' }}>
+                <thead><tr>
+                  <th>ซอย</th>
+                  <th>บ้าน / เจ้าของ</th>
+                  <th>ประเภท</th>
+                  <th>รายละเอียด</th>
+                  <th>วันเกิดเหตุ</th>
+                  <th>เลขที่รายงาน</th>
+                  <th>วันที่รายงาน</th>
+                  <th>เตือน</th>
+                  <th>ค่าปรับ</th>
+                  <th>วันครบกำหนด</th>
+                  <th>สถานะ</th>
+                  <th></th>
+                </tr></thead>
+                <tbody>
+                  {loading ? (
+                    <tr><td colSpan="12" style={{ textAlign: 'center', color: 'var(--mu)', padding: '20px' }}>กำลังโหลด...</td></tr>
+                  ) : violations.length === 0 ? (
+                    <tr><td colSpan="12" style={{ textAlign: 'center', color: 'var(--mu)', padding: '20px' }}>ไม่พบข้อมูล</td></tr>
+                  ) : violations.map((item) => {
+                    const badge = getStatusBadge(item.status)
+                    return (
+                      <tr key={item.id}>
+                        <td>{item.houses?.soi ? `ซอย ${item.houses.soi}` : '-'}</td>
+                        <td>
+                          <div><strong>{item.houses?.house_no || '-'}</strong> {item.houses?.owner_name ? `- ${item.houses.owner_name}` : ''}</div>
+                        </td>
+                        <td>{item.type || '-'}</td>
+                        <td style={{ maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.detail || '-'}</td>
+                        <td>{formatDate(item.occurred_at)}</td>
+                        <td>{item.report_no || '-'}</td>
+                        <td>{formatDate(item.report_date)}</td>
+                        <td>{item.warning_count ?? 0}</td>
+                        <td>{Number(item.fine_amount || 0).toLocaleString('th-TH')}</td>
+                        <td>{formatDate(item.due_date)}</td>
+                        <td><span className={badge.className}>{badge.label}</span></td>
+                        <td><div className="td-acts">
+                          <button className="btn btn-xs btn-o" onClick={() => handleOpenPrintPreview(item)}>พิมพ์</button>
+                          <button className="btn btn-xs btn-p" onClick={() => handleDownloadPdf(item)}>PDF</button>
+                          <button className="btn btn-xs btn-a" onClick={() => openEditModal(item)}>แก้ไข</button>
+                          <button className="btn btn-xs btn-dg" onClick={() => handleDelete(item)}>ลบ</button>
+                        </div></td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+          <div className="mobile-only">
+            {loading ? (
+              <div className="mcard-empty">กำลังโหลด...</div>
+            ) : violations.length === 0 ? (
+              <div className="mcard-empty">ไม่พบข้อมูล</div>
+            ) : violations.map((item) => {
+              const badge = getStatusBadge(item.status)
+              return (
+                <div key={item.id} className="mcard">
+                  <div className="mcard-top">
+                    <div className="mcard-title">{item.houses?.house_no || '-'}</div>
+                    <div className="mcard-sub">{item.houses?.soi ? `ซอย ${item.houses.soi}` : '-'}</div>
+                    <span className={`${badge.className} mcard-badge`}>{badge.label}</span>
+                  </div>
+                  <div className="mcard-body">{item.type || '-'}</div>
+                  <div className="mcard-meta">
+                    <span><span className="mcard-label">วันเกิดเหตุ</span> {formatDate(item.occurred_at)}</span>
+                    <span><span className="mcard-label">เลขที่รายงาน</span> {item.report_no || '-'}</span>
+                    <span><span className="mcard-label">เตือนครั้งที่</span> {item.warning_count ?? 0}</span>
+                    <span><span className="mcard-label">ค่าปรับ</span> {Number(item.fine_amount || 0).toLocaleString('th-TH')} บาท</span>
+                  </div>
+                  <div className="mcard-actions">
+                    <button className="btn btn-xs btn-o" onClick={() => handleOpenPrintPreview(item)}>พิมพ์</button>
+                    <button className="btn btn-xs btn-p" onClick={() => handleDownloadPdf(item)}>PDF</button>
+                    <button className="btn btn-xs btn-a" onClick={() => openEditModal(item)}>แก้ไข</button>
+                    <button className="btn btn-xs btn-dg" onClick={() => handleDelete(item)}>ลบ</button>
+                  </div>
+                </div>
+              )
+            })}
           </div>
         </div>
       </div>

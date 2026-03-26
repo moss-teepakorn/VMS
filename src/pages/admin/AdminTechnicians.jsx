@@ -158,7 +158,7 @@ const AdminTechnicians = () => {
   }
 
   return (
-    <div className="pane on" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+    <div className="pane on page-compact" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
       <div className="ph">
         <div className="ph-in">
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -168,71 +168,101 @@ const AdminTechnicians = () => {
               <div className="ph-sub">รายชื่อช่างซ่อมแซมของชุมชน</div>
             </div>
           </div>
-          <div className="ph-acts">
-            <button className="btn btn-p btn-sm" onClick={openAddModal}>+ เพิ่มช่างใหม่</button>
-            <button className="btn btn-g btn-sm" onClick={() => loadData({ status: statusFilter, search: searchTerm })}>🔄 รีเฟรช</button>
-          </div>
         </div>
-      </div>
-
-      <div className="card">
-        <div className="ch"><div className="ct">ค้นหาและกรองข้อมูล</div></div>
-        <div className="cb filter-row">
+        <div className="page-filter-row">
           <input
+            className="page-filter-input"
             type="text"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             placeholder="ค้นหา ชื่อ / เบอร์โทร / Line ID / ความเชี่ยวชาญ"
           />
-          <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
+          <select className="page-filter-select" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
             <option value="all">ทุกสถานะ</option>
             <option value="pending">รออนุมัติ</option>
             <option value="approved">อนุมัติแล้ว</option>
             <option value="suspended">ระงับ</option>
           </select>
-          <button className="btn btn-a btn-sm" onClick={() => loadData({ status: statusFilter, search: searchTerm })}>ค้นหา</button>
+          <button className="btn btn-a btn-sm page-filter-btn" onClick={() => loadData({ status: statusFilter, search: searchTerm })}>ค้นหา</button>
         </div>
       </div>
 
       <div className="card">
-        <div className="ch"><div className="ct">รายชื่อช่างทั้งหมด ({technicians.length} คน)</div></div>
-        <div className="cb">
-          <div style={{ overflowX: 'auto' }}>
-            <table className="tw" style={{ width: '100%', minWidth: '800px' }}>
-              <thead><tr>
-                <th>ชื่อ-นามสกุล</th>
-                <th>เบอร์โทร</th>
-                <th>Line ID</th>
-                <th>ความเชี่ยวชาญ</th>
-                <th>คะแนน</th>
-                <th>สถานะ</th>
-                <th></th>
-              </tr></thead>
-              <tbody>
-                {loading ? (
-                  <tr><td colSpan="7" style={{ textAlign: 'center', color: 'var(--mu)', padding: '20px' }}>กำลังโหลด...</td></tr>
-                ) : technicians.length === 0 ? (
-                  <tr><td colSpan="7" style={{ textAlign: 'center', color: 'var(--mu)', padding: '20px' }}>ไม่พบข้อมูล</td></tr>
-                ) : technicians.map((item) => {
-                  const badge = getStatusBadge(item.status)
-                  const skills = (item.technician_services || []).map((s) => s.skill).filter(Boolean).join(', ')
-                  return (
-                    <tr key={item.id}>
-                      <td><strong>{item.name}</strong>{item.note ? <div style={{ fontSize: '11px', color: 'var(--mu)' }}>{item.note}</div> : null}</td>
-                      <td>{item.phone || '-'}</td>
-                      <td>{item.line_id || '-'}</td>
-                      <td style={{ maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{skills || '-'}</td>
-                      <td>{item.rating > 0 ? `${Number(item.rating).toFixed(1)} (${item.review_count})` : '-'}</td>
-                      <td><span className={badge.className}>{badge.label}</span></td>
-                      <td><div className="td-acts">
-                        <button className="btn btn-xs btn-a" onClick={() => openEditModal(item)}>แก้ไข</button>
-                        <button className="btn btn-xs btn-dg" onClick={() => handleDelete(item)}>ลบ</button>
-                      </div></td>
-                    </tr>
-                  )
-                })}
-              </tbody>
-            </table>
+        <div className="ch page-list-head">
+          <div className="ct">รายชื่อช่างทั้งหมด ({technicians.length} คน)</div>
+          <div className="page-list-actions">
+            <button className="btn btn-p btn-sm" onClick={openAddModal}>+ เพิ่มช่างใหม่</button>
+            <button className="btn btn-g btn-sm" onClick={() => loadData({ status: statusFilter, search: searchTerm })}>🔄 รีเฟรช</button>
+          </div>
+        </div>
+        <div className="cb page-table-body">
+          <div className="desktop-only">
+            <div style={{ overflowX: 'auto' }}>
+              <table className="tw" style={{ width: '100%', minWidth: '800px' }}>
+                <thead><tr>
+                  <th>ชื่อ-นามสกุล</th>
+                  <th>เบอร์โทร</th>
+                  <th>Line ID</th>
+                  <th>ความเชี่ยวชาญ</th>
+                  <th>คะแนน</th>
+                  <th>สถานะ</th>
+                  <th></th>
+                </tr></thead>
+                <tbody>
+                  {loading ? (
+                    <tr><td colSpan="7" style={{ textAlign: 'center', color: 'var(--mu)', padding: '20px' }}>กำลังโหลด...</td></tr>
+                  ) : technicians.length === 0 ? (
+                    <tr><td colSpan="7" style={{ textAlign: 'center', color: 'var(--mu)', padding: '20px' }}>ไม่พบข้อมูล</td></tr>
+                  ) : technicians.map((item) => {
+                    const badge = getStatusBadge(item.status)
+                    const skills = (item.technician_services || []).map((s) => s.skill).filter(Boolean).join(', ')
+                    return (
+                      <tr key={item.id}>
+                        <td><strong>{item.name}</strong>{item.note ? <div style={{ fontSize: '11px', color: 'var(--mu)' }}>{item.note}</div> : null}</td>
+                        <td>{item.phone || '-'}</td>
+                        <td>{item.line_id || '-'}</td>
+                        <td style={{ maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{skills || '-'}</td>
+                        <td>{item.rating > 0 ? `${Number(item.rating).toFixed(1)} (${item.review_count})` : '-'}</td>
+                        <td><span className={badge.className}>{badge.label}</span></td>
+                        <td><div className="td-acts">
+                          <button className="btn btn-xs btn-a" onClick={() => openEditModal(item)}>แก้ไข</button>
+                          <button className="btn btn-xs btn-dg" onClick={() => handleDelete(item)}>ลบ</button>
+                        </div></td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+          <div className="mobile-only">
+            {loading ? (
+              <div className="mcard-empty">กำลังโหลด...</div>
+            ) : technicians.length === 0 ? (
+              <div className="mcard-empty">ไม่พบข้อมูล</div>
+            ) : technicians.map((item) => {
+              const badge = getStatusBadge(item.status)
+              const skills = (item.technician_services || []).map((s) => s.skill).filter(Boolean).join(', ')
+              return (
+                <div key={item.id} className="mcard">
+                  <div className="mcard-top">
+                    <div>
+                      <div className="mcard-title">{item.name}</div>
+                      {(item.phone || item.line_id) && <div className="mcard-sub">{[item.phone, item.line_id].filter(Boolean).join(' · ')}</div>}
+                    </div>
+                    <span className={`${badge.className} mcard-badge`}>{badge.label}</span>
+                  </div>
+                  <div className="mcard-meta">
+                    {skills && <span><span className="mcard-label">ความเชี่ยวชาญ</span> {skills}</span>}
+                    <span><span className="mcard-label">คะแนน</span> {item.rating > 0 ? `${Number(item.rating).toFixed(1)} (${item.review_count})` : '-'}</span>
+                  </div>
+                  <div className="mcard-actions">
+                    <button className="btn btn-xs btn-a" onClick={() => openEditModal(item)}>แก้ไข</button>
+                    <button className="btn btn-xs btn-dg" onClick={() => handleDelete(item)}>ลบ</button>
+                  </div>
+                </div>
+              )
+            })}
           </div>
         </div>
       </div>

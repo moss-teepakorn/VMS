@@ -484,7 +484,7 @@ const AdminVehicles = () => {
   }
 
   return (
-    <div className="pane on" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+    <div className="pane on page-compact" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
       <div className="ph">
         <div className="ph-in">
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -494,98 +494,121 @@ const AdminVehicles = () => {
               <div className="ph-sub">จัดการยานพาหนะของลูกบ้านและพื้นที่จอดรถ</div>
             </div>
           </div>
-          <div className="ph-acts">
-            <button className="btn btn-p btn-sm" onClick={openAddModal}>+ ลงทะเบียนรถใหม่</button>
-            <button className="btn btn-g btn-sm" onClick={() => loadVehicles({ status: statusFilter, search: searchTerm, soi: soiFilter, vehicleType: vehicleTypeFilter })}>🔄 รีเฟรช</button>
-          </div>
         </div>
-      </div>
-
-      <div className="card">
-        <div className="ch"><div className="ct">ค้นหาและกรองข้อมูลรถ</div></div>
-        <div className="cb filter-row">
+        <div className="page-filter-row">
           <input
+            className="page-filter-input"
             type="text"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             placeholder="ค้นหา ทะเบียน / บ้าน / เจ้าของ / ยี่ห้อ / สี"
           />
-          <select
-            value={soiFilter}
-            onChange={(e) => setSoiFilter(e.target.value)}
-          >
+          <select className="page-filter-select" value={soiFilter} onChange={(e) => setSoiFilter(e.target.value)}>
             <option value="all">ทุกซอย</option>
             {soiOptions.map((soi) => <option key={soi} value={soi}>{`ซอย ${soi}`}</option>)}
           </select>
-          <select
-            value={vehicleTypeFilter}
-            onChange={(e) => setVehicleTypeFilter(e.target.value)}
-          >
+          <select className="page-filter-select" value={vehicleTypeFilter} onChange={(e) => setVehicleTypeFilter(e.target.value)}>
             <option value="all">ทุกประเภท</option>
             {VEHICLE_TYPES.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}
           </select>
-          <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-          >
+          <select className="page-filter-select" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
             <option value="all">ทั้งหมด</option>
             <option value="active">ใช้งาน</option>
             <option value="pending">รออนุมัติ</option>
             <option value="removed">ยกเลิก</option>
           </select>
-          <button className="btn btn-a btn-sm" onClick={() => loadVehicles({ status: statusFilter, search: searchTerm, soi: soiFilter, vehicleType: vehicleTypeFilter })}>ค้นหา</button>
+          <button className="btn btn-a btn-sm page-filter-btn" onClick={() => loadVehicles({ status: statusFilter, search: searchTerm, soi: soiFilter, vehicleType: vehicleTypeFilter })}>ค้นหา</button>
         </div>
       </div>
 
       <div className="card">
-        <div className="ch"><div className="ct">ยานพาหนะทั้งหมด ({vehicles.length} รายการ)</div></div>
-        <div className="cb">
-          <div style={{ overflowX: 'auto' }}>
-            <table className="tw" style={{ width: '100%', minWidth: '1120px' }}>
-              <thead><tr>
-                <th>ซอย</th>
-                <th>บ้านเลขที่ / เจ้าของบ้าน</th>
-                <th>ทะเบียนรถ</th>
-                <th>ประเภทรถ</th>
-                <th>ยี่ห้อ / รุ่น</th>
-                <th>สี</th>
-                <th>ที่จอด</th>
-                <th>ค่าจอด</th>
-                <th>สถานะ</th>
-                <th></th>
-              </tr></thead>
-              <tbody>
-                {loading ? (
-                  <tr><td colSpan="10" style={{ textAlign: 'center', color: 'var(--mu)', padding: '20px' }}>กำลังโหลดข้อมูล...</td></tr>
-                ) : vehicles.length === 0 ? (
-                  <tr><td colSpan="10" style={{ textAlign: 'center', color: 'var(--mu)', padding: '20px' }}>ไม่พบข้อมูลรถ</td></tr>
-                ) : (
-                  vehicles.map((vehicle) => {
-                    const badge = getStatusBadge(vehicle.status)
-                    return (
-                      <tr key={vehicle.id}>
-                        <td>{vehicle.houses?.soi ? `ซอย ${vehicle.houses.soi}` : '-'}</td>
-                        <td>
-                          <div><strong>{vehicle.houses?.house_no || '-'}</strong> {vehicle.houses?.owner_name ? `- ${vehicle.houses.owner_name}` : ''}</div>
-                          <div style={{ fontSize: '11px', color: 'var(--mu)' }}>{vehicle.province ? `(${vehicle.province})` : '-'}</div>
-                        </td>
-                        <td><strong>{vehicle.license_plate || '-'}</strong></td>
-                        <td>{vehicle.vehicle_type || '-'}</td>
-                        <td>{vehicle.brand || '-'} {vehicle.model || ''}</td>
-                        <td>{vehicle.color || '-'}</td>
-                        <td>{vehicle.parking_location || '-'}{vehicle.parking_lock_no ? ` (${vehicle.parking_lock_no})` : ''}</td>
-                        <td>{formatDecimal(vehicle.parking_fee)}</td>
-                        <td><span className={badge.className}>{badge.label}</span></td>
-                        <td><div className="td-acts">
-                          <button className="btn btn-xs btn-a" onClick={() => openEditModal(vehicle)}>แก้ไข</button>
-                          <button className="btn btn-xs btn-dg" onClick={() => handleDeleteVehicle(vehicle)}>ลบ</button>
-                        </div></td>
-                      </tr>
-                    )
-                  })
-                )}
-              </tbody>
-            </table>
+        <div className="ch page-list-head">
+          <div className="ct">ยานพาหนะทั้งหมด ({vehicles.length} รายการ)</div>
+          <div className="page-list-actions">
+            <button className="btn btn-p btn-sm" onClick={openAddModal}>+ ลงทะเบียนรถใหม่</button>
+            <button className="btn btn-g btn-sm" onClick={() => loadVehicles({ status: statusFilter, search: searchTerm, soi: soiFilter, vehicleType: vehicleTypeFilter })}>🔄 รีเฟรช</button>
+          </div>
+        </div>
+        <div className="cb page-table-body">
+          <div className="desktop-only">
+            <div style={{ overflowX: 'auto' }}>
+              <table className="tw" style={{ width: '100%', minWidth: '1120px' }}>
+                <thead><tr>
+                  <th>ซอย</th>
+                  <th>บ้านเลขที่ / เจ้าของบ้าน</th>
+                  <th>ทะเบียนรถ</th>
+                  <th>ประเภทรถ</th>
+                  <th>ยี่ห้อ / รุ่น</th>
+                  <th>สี</th>
+                  <th>ที่จอด</th>
+                  <th>ค่าจอด</th>
+                  <th>สถานะ</th>
+                  <th></th>
+                </tr></thead>
+                <tbody>
+                  {loading ? (
+                    <tr><td colSpan="10" style={{ textAlign: 'center', color: 'var(--mu)', padding: '20px' }}>กำลังโหลดข้อมูล...</td></tr>
+                  ) : vehicles.length === 0 ? (
+                    <tr><td colSpan="10" style={{ textAlign: 'center', color: 'var(--mu)', padding: '20px' }}>ไม่พบข้อมูลรถ</td></tr>
+                  ) : (
+                    vehicles.map((vehicle) => {
+                      const badge = getStatusBadge(vehicle.status)
+                      return (
+                        <tr key={vehicle.id}>
+                          <td>{vehicle.houses?.soi ? `ซอย ${vehicle.houses.soi}` : '-'}</td>
+                          <td>
+                            <div><strong>{vehicle.houses?.house_no || '-'}</strong> {vehicle.houses?.owner_name ? `- ${vehicle.houses.owner_name}` : ''}</div>
+                            <div style={{ fontSize: '11px', color: 'var(--mu)' }}>{vehicle.province ? `(${vehicle.province})` : '-'}</div>
+                          </td>
+                          <td><strong>{vehicle.license_plate || '-'}</strong></td>
+                          <td>{vehicle.vehicle_type || '-'}</td>
+                          <td>{vehicle.brand || '-'} {vehicle.model || ''}</td>
+                          <td>{vehicle.color || '-'}</td>
+                          <td>{vehicle.parking_location || '-'}{vehicle.parking_lock_no ? ` (${vehicle.parking_lock_no})` : ''}</td>
+                          <td>{formatDecimal(vehicle.parking_fee)}</td>
+                          <td><span className={badge.className}>{badge.label}</span></td>
+                          <td><div className="td-acts">
+                            <button className="btn btn-xs btn-a" onClick={() => openEditModal(vehicle)}>แก้ไข</button>
+                            <button className="btn btn-xs btn-dg" onClick={() => handleDeleteVehicle(vehicle)}>ลบ</button>
+                          </div></td>
+                        </tr>
+                      )
+                    })
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+          <div className="mobile-only">
+            {loading ? (
+              <div className="mcard-empty">กำลังโหลดข้อมูล...</div>
+            ) : vehicles.length === 0 ? (
+              <div className="mcard-empty">ไม่พบข้อมูลรถ</div>
+            ) : vehicles.map((vehicle) => {
+              const badge = getStatusBadge(vehicle.status)
+              return (
+                <div key={vehicle.id} className="mcard">
+                  <div className="mcard-top">
+                    <div>
+                      <div className="mcard-title">{vehicle.license_plate || '-'}</div>
+                      <div className="mcard-sub">{vehicle.houses?.soi ? `ซอย ${vehicle.houses.soi} · ` : ''}{vehicle.houses?.house_no || '-'}{vehicle.houses?.owner_name ? ` · ${vehicle.houses.owner_name}` : ''}</div>
+                    </div>
+                    <span className={`${badge.className} mcard-badge`}>{badge.label}</span>
+                  </div>
+                  <div className="mcard-meta">
+                    <span><span className="mcard-label">ประเภท</span> {vehicle.vehicle_type || '-'}</span>
+                    <span><span className="mcard-label">ยี่ห้อ/รุ่น</span> {[vehicle.brand, vehicle.model].filter(Boolean).join(' ') || '-'}</span>
+                    {vehicle.color && <span><span className="mcard-label">สี</span> {vehicle.color}</span>}
+                    {vehicle.parking_location && <span><span className="mcard-label">ที่จอด</span> {vehicle.parking_location}{vehicle.parking_lock_no ? ` (${vehicle.parking_lock_no})` : ''}</span>}
+                    <span><span className="mcard-label">ค่าจอด</span> {formatDecimal(vehicle.parking_fee)}</span>
+                  </div>
+                  <div className="mcard-actions">
+                    <button className="btn btn-xs btn-a" onClick={() => openEditModal(vehicle)}>แก้ไข</button>
+                    <button className="btn btn-xs btn-dg" onClick={() => handleDeleteVehicle(vehicle)}>ลบ</button>
+                  </div>
+                </div>
+              )
+            })}
           </div>
         </div>
       </div>

@@ -285,7 +285,7 @@ const AdminIssues = () => {
   }
 
   return (
-    <div className="pane on" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+    <div className="pane on page-compact" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
       <div className="ph">
         <div className="ph-in">
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -295,74 +295,103 @@ const AdminIssues = () => {
               <div className="ph-sub">ติดตามและแก้ไขปัญหาในหมู่บ้าน</div>
             </div>
           </div>
-          <div className="ph-acts">
-            <button className="btn btn-p btn-sm" onClick={openAddModal}>+ เพิ่มรายการปัญหา</button>
-            <button className="btn btn-g btn-sm" onClick={() => loadData({ status: statusFilter, category: categoryFilter, search: searchTerm })}>🔄 รีเฟรช</button>
-          </div>
         </div>
-      </div>
-
-      <div className="card">
-        <div className="ch"><div className="ct">ค้นหาและกรองข้อมูล</div></div>
-        <div className="cb filter-row">
+        <div className="page-filter-row">
           <input
+            className="page-filter-input"
             type="text"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             placeholder="ค้นหา หัวข้อ / รายละเอียด / บ้าน"
           />
-          <select value={categoryFilter} onChange={(e) => setCategoryFilter(e.target.value)}>
+          <select className="page-filter-select" value={categoryFilter} onChange={(e) => setCategoryFilter(e.target.value)}>
             <option value="all">ทุกหมวด</option>
             {ISSUE_CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
           </select>
-          <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
+          <select className="page-filter-select" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
             <option value="all">ทุกสถานะ</option>
             {ISSUE_STATUSES.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
           </select>
-          <button className="btn btn-a btn-sm" onClick={() => loadData({ status: statusFilter, category: categoryFilter, search: searchTerm })}>ค้นหา</button>
+          <button className="btn btn-a btn-sm page-filter-btn" onClick={() => loadData({ status: statusFilter, category: categoryFilter, search: searchTerm })}>ค้นหา</button>
         </div>
       </div>
 
       <div className="card">
-        <div className="ch"><div className="ct">รายการปัญหาทั้งหมด ({issues.length} รายการ)</div></div>
-        <div className="cb">
-          <div style={{ overflowX: 'auto' }}>
-            <table className="tw" style={{ width: '100%', minWidth: '900px' }}>
-              <thead><tr>
-                <th>ซอย</th>
-                <th>บ้าน / เจ้าของ</th>
-                <th>หัวข้อปัญหา</th>
-                <th>หมวด</th>
-                <th>สถานะ</th>
-                <th>วันที่แจ้ง</th>
-                <th>คะแนน</th>
-                <th></th>
-              </tr></thead>
-              <tbody>
-                {loading ? (
-                  <tr><td colSpan="8" style={{ textAlign: 'center', color: 'var(--mu)', padding: '20px' }}>กำลังโหลด...</td></tr>
-                ) : issues.length === 0 ? (
-                  <tr><td colSpan="8" style={{ textAlign: 'center', color: 'var(--mu)', padding: '20px' }}>ไม่พบข้อมูล</td></tr>
-                ) : issues.map((item) => {
-                  const badge = getStatusBadge(item.status)
-                  return (
-                    <tr key={item.id}>
-                      <td>{item.houses?.soi ? `ซอย ${item.houses.soi}` : '-'}</td>
-                      <td><strong>{item.houses?.house_no || '-'}</strong> {item.houses?.owner_name ? `- ${item.houses.owner_name}` : ''}</td>
-                      <td style={{ maxWidth: '220px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.title}</td>
-                      <td>{item.category || '-'}</td>
-                      <td><span className={badge.className}>{badge.label}</span></td>
-                      <td>{formatDate(item.created_at)}</td>
-                      <td>{item.rating != null ? `${item.rating}/5` : '-'}</td>
-                      <td><div className="td-acts">
-                        <button className="btn btn-xs btn-a" onClick={() => openEditModal(item)}>แก้ไข</button>
-                        <button className="btn btn-xs btn-dg" onClick={() => handleDelete(item)}>ลบ</button>
-                      </div></td>
-                    </tr>
-                  )
-                })}
-              </tbody>
-            </table>
+        <div className="ch page-list-head">
+          <div className="ct">รายการปัญหาทั้งหมด ({issues.length} รายการ)</div>
+          <div className="page-list-actions">
+            <button className="btn btn-p btn-sm" onClick={openAddModal}>+ เพิ่มรายการปัญหา</button>
+            <button className="btn btn-g btn-sm" onClick={() => loadData({ status: statusFilter, category: categoryFilter, search: searchTerm })}>🔄 รีเฟรช</button>
+          </div>
+        </div>
+        <div className="cb page-table-body">
+          <div className="desktop-only">
+            <div style={{ overflowX: 'auto' }}>
+              <table className="tw" style={{ width: '100%', minWidth: '900px' }}>
+                <thead><tr>
+                  <th>ซอย</th>
+                  <th>บ้าน / เจ้าของ</th>
+                  <th>หัวข้อปัญหา</th>
+                  <th>หมวด</th>
+                  <th>สถานะ</th>
+                  <th>วันที่แจ้ง</th>
+                  <th>คะแนน</th>
+                  <th></th>
+                </tr></thead>
+                <tbody>
+                  {loading ? (
+                    <tr><td colSpan="8" style={{ textAlign: 'center', color: 'var(--mu)', padding: '20px' }}>กำลังโหลด...</td></tr>
+                  ) : issues.length === 0 ? (
+                    <tr><td colSpan="8" style={{ textAlign: 'center', color: 'var(--mu)', padding: '20px' }}>ไม่พบข้อมูล</td></tr>
+                  ) : issues.map((item) => {
+                    const badge = getStatusBadge(item.status)
+                    return (
+                      <tr key={item.id}>
+                        <td>{item.houses?.soi ? `ซอย ${item.houses.soi}` : '-'}</td>
+                        <td><strong>{item.houses?.house_no || '-'}</strong> {item.houses?.owner_name ? `- ${item.houses.owner_name}` : ''}</td>
+                        <td style={{ maxWidth: '220px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.title}</td>
+                        <td>{item.category || '-'}</td>
+                        <td><span className={badge.className}>{badge.label}</span></td>
+                        <td>{formatDate(item.created_at)}</td>
+                        <td>{item.rating != null ? `${item.rating}/5` : '-'}</td>
+                        <td><div className="td-acts">
+                          <button className="btn btn-xs btn-a" onClick={() => openEditModal(item)}>แก้ไข</button>
+                          <button className="btn btn-xs btn-dg" onClick={() => handleDelete(item)}>ลบ</button>
+                        </div></td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+          <div className="mobile-only">
+            {loading ? (
+              <div className="mcard-empty">กำลังโหลด...</div>
+            ) : issues.length === 0 ? (
+              <div className="mcard-empty">ไม่พบข้อมูล</div>
+            ) : issues.map((item) => {
+              const badge = getStatusBadge(item.status)
+              return (
+                <div key={item.id} className="mcard">
+                  <div className="mcard-top">
+                    <div className="mcard-title">{item.houses?.house_no || '-'}</div>
+                    <div className="mcard-sub">{item.houses?.soi ? `ซอย ${item.houses.soi}` : '-'}</div>
+                    <span className={`${badge.className} mcard-badge`}>{badge.label}</span>
+                  </div>
+                  <div className="mcard-body">{item.title}</div>
+                  <div className="mcard-meta">
+                    <span><span className="mcard-label">หมวด</span> {item.category || '-'}</span>
+                    <span><span className="mcard-label">วันที่</span> {formatDate(item.created_at)}</span>
+                    {item.rating != null && <span><span className="mcard-label">คะแนน</span> {item.rating}/5</span>}
+                  </div>
+                  <div className="mcard-actions">
+                    <button className="btn btn-xs btn-a" onClick={() => openEditModal(item)}>แก้ไข</button>
+                    <button className="btn btn-xs btn-dg" onClick={() => handleDelete(item)}>ลบ</button>
+                  </div>
+                </div>
+              )
+            })}
           </div>
         </div>
       </div>

@@ -157,7 +157,7 @@ const AdminFees = () => {
   }
 
   return (
-    <div className="pane on" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+    <div className="pane on page-compact" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
       <div className="ph">
         <div className="ph-in">
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -167,114 +167,162 @@ const AdminFees = () => {
               <div className="ph-sub">จัดสรรและเก็บค่าส่วนกลาง</div>
             </div>
           </div>
-          <div className="ph-acts">
-            <button className="btn btn-p btn-sm" onClick={handleAddFee}>+ สร้างใบแจ้งหนี้</button>
-            <button className="btn btn-g btn-sm" onClick={() => loadFeeData()}>🔄 รีเฟรช</button>
-          </div>
         </div>
-      </div>
-
-      <div className="card">
-        <div className="ch"><div className="ct">กรองใบแจ้งหนี้</div></div>
-        <div className="cb filter-row">
-          <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
+        <div className="page-filter-row">
+          <select className="page-filter-select" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
             <option value="all">ทุกสถานะ</option>
             <option value="unpaid">ยังไม่ชำระ</option>
             <option value="pending">รอตรวจสอบ</option>
             <option value="paid">ชำระแล้ว</option>
             <option value="overdue">ค้างชำระ</option>
           </select>
-          <select value={yearFilter} onChange={(e) => setYearFilter(e.target.value)}>
+          <select className="page-filter-select" value={yearFilter} onChange={(e) => setYearFilter(e.target.value)}>
             <option value="all">ทุกปี</option>
             {yearOptions.map((year) => <option key={year} value={year}>{year}</option>)}
           </select>
-          <button className="btn btn-a btn-sm" onClick={() => loadFeeData()}>ค้นหา</button>
+          <button className="btn btn-a btn-sm page-filter-btn" onClick={() => loadFeeData()}>ค้นหา</button>
         </div>
       </div>
 
-  <div className="stats">
+      <div className="stats">
         <div className="sc"><div className="sc-ico a">💵</div><div><div className="sc-v">฿{summary.totalCollected.toLocaleString('th-TH')}</div><div className="sc-l">รวมเก็บแล้ว</div></div></div>
         <div className="sc"><div className="sc-ico d">⏳</div><div><div className="sc-v">฿{summary.totalOutstanding.toLocaleString('th-TH')}</div><div className="sc-l">ค้างชำระ</div></div></div>
         <div className="sc"><div className="sc-ico p">🧾</div><div><div className="sc-v">฿{summary.totalInvoiced.toLocaleString('th-TH')}</div><div className="sc-l">ยอดออกใบแจ้งหนี้</div></div></div>
       </div>
 
       <div className="card">
-        <div className="ch"><div className="ct">ใบแจ้งหนี้ล่าสุด</div></div>
-        <div className="cb">
-          <div style={{ overflowX: 'auto' }}>
-            <table className="tw" style={{ width: '100%', minWidth: '860px' }}>
-              <thead>
-                <tr>
-                  <th>บ้าน</th>
-                  <th>ปี</th>
-                  <th>งวด</th>
-                  <th>ครบกำหนด</th>
-                  <th>ยอดรวม</th>
-                  <th>สถานะ</th>
-                  <th></th>
-                </tr>
-              </thead>
-              <tbody>
-                {loading ? (
-                  <tr><td colSpan="7" style={{ textAlign: 'center', color: 'var(--mu)', padding: '20px' }}>กำลังโหลดข้อมูล...</td></tr>
-                ) : fees.length === 0 ? (
-                  <tr><td colSpan="7" style={{ textAlign: 'center', color: 'var(--mu)', padding: '20px' }}>ยังไม่มีใบแจ้งหนี้</td></tr>
-                ) : (
-                  fees.map((fee) => {
-                    const badge = getFeeStatusBadge(fee.status)
-                    return (
-                      <tr key={fee.id}>
-                        <td>{fee.houses?.house_no || '-'}<div style={{ fontSize: '11px', color: 'var(--mu)' }}>{fee.houses?.owner_name || '-'}</div></td>
-                        <td>{fee.year}</td>
-                        <td>{fee.period}</td>
-                        <td>{fee.due_date ? new Date(fee.due_date).toLocaleDateString('th-TH') : '-'}</td>
-                        <td><strong>฿{Number(fee.total_amount || 0).toLocaleString('th-TH')}</strong></td>
-                        <td><span className={badge.className}>{badge.label}</span></td>
-                        <td><div className="td-acts">
-                          <button className="btn btn-xs btn-a" onClick={() => handleEditFee(fee)}>แก้ไข</button>
-                          {fee.status !== 'paid' && <button className="btn btn-xs btn-p" onClick={() => handleAddPayment(fee)}>รับชำระ</button>}
-                          <button className="btn btn-xs btn-dg" onClick={() => handleDeleteFee(fee)}>ลบ</button>
-                        </div></td>
-                      </tr>
-                    )
-                  })
-                )}
-              </tbody>
-            </table>
+        <div className="ch page-list-head">
+          <div className="ct">ใบแจ้งหนี้ล่าสุด</div>
+          <div className="page-list-actions">
+            <button className="btn btn-p btn-sm" onClick={handleAddFee}>+ สร้างใบแจ้งหนี้</button>
+            <button className="btn btn-g btn-sm" onClick={() => loadFeeData()}>🔄 รีเฟรช</button>
+          </div>
+        </div>
+        <div className="cb page-table-body">
+          <div className="desktop-only">
+            <div style={{ overflowX: 'auto' }}>
+              <table className="tw" style={{ width: '100%', minWidth: '860px' }}>
+                <thead>
+                  <tr>
+                    <th>บ้าน</th>
+                    <th>ปี</th>
+                    <th>งวด</th>
+                    <th>ครบกำหนด</th>
+                    <th>ยอดรวม</th>
+                    <th>สถานะ</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {loading ? (
+                    <tr><td colSpan="7" style={{ textAlign: 'center', color: 'var(--mu)', padding: '20px' }}>กำลังโหลดข้อมูล...</td></tr>
+                  ) : fees.length === 0 ? (
+                    <tr><td colSpan="7" style={{ textAlign: 'center', color: 'var(--mu)', padding: '20px' }}>ยังไม่มีใบแจ้งหนี้</td></tr>
+                  ) : (
+                    fees.map((fee) => {
+                      const badge = getFeeStatusBadge(fee.status)
+                      return (
+                        <tr key={fee.id}>
+                          <td>{fee.houses?.house_no || '-'}<div style={{ fontSize: '11px', color: 'var(--mu)' }}>{fee.houses?.owner_name || '-'}</div></td>
+                          <td>{fee.year}</td>
+                          <td>{fee.period}</td>
+                          <td>{fee.due_date ? new Date(fee.due_date).toLocaleDateString('th-TH') : '-'}</td>
+                          <td><strong>฿{Number(fee.total_amount || 0).toLocaleString('th-TH')}</strong></td>
+                          <td><span className={badge.className}>{badge.label}</span></td>
+                          <td><div className="td-acts">
+                            <button className="btn btn-xs btn-a" onClick={() => handleEditFee(fee)}>แก้ไข</button>
+                            {fee.status !== 'paid' && <button className="btn btn-xs btn-p" onClick={() => handleAddPayment(fee)}>รับชำระ</button>}
+                            <button className="btn btn-xs btn-dg" onClick={() => handleDeleteFee(fee)}>ลบ</button>
+                          </div></td>
+                        </tr>
+                      )
+                    })
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+          <div className="mobile-only">
+            {loading ? (
+              <div className="mcard-empty">กำลังโหลดข้อมูล...</div>
+            ) : fees.length === 0 ? (
+              <div className="mcard-empty">ยังไม่มีใบแจ้งหนี้</div>
+            ) : fees.map((fee) => {
+              const badge = getFeeStatusBadge(fee.status)
+              return (
+                <div key={fee.id} className="mcard">
+                  <div className="mcard-top">
+                    <div className="mcard-title">{fee.houses?.house_no || '-'}</div>
+                    <div className="mcard-sub">{fee.year} · {fee.period}</div>
+                    <span className={`${badge.className} mcard-badge`}>{badge.label}</span>
+                  </div>
+                  <div className="mcard-body">{fee.houses?.owner_name || '-'}</div>
+                  <div className="mcard-meta">
+                    <span><span className="mcard-label">ครบกำหนด</span> {fee.due_date ? new Date(fee.due_date).toLocaleDateString('th-TH') : '-'}</span>
+                    <span><span className="mcard-label">ยอดรวม</span> ฿{Number(fee.total_amount || 0).toLocaleString('th-TH')}</span>
+                  </div>
+                  <div className="mcard-actions">
+                    <button className="btn btn-xs btn-a" onClick={() => handleEditFee(fee)}>แก้ไข</button>
+                    {fee.status !== 'paid' && <button className="btn btn-xs btn-p" onClick={() => handleAddPayment(fee)}>รับชำระ</button>}
+                    <button className="btn btn-xs btn-dg" onClick={() => handleDeleteFee(fee)}>ลบ</button>
+                  </div>
+                </div>
+              )
+            })}
           </div>
         </div>
       </div>
 
       <div className="card">
         <div className="ch"><div className="ct">การชำระเงินล่าสุด</div></div>
-        <div className="cb">
-          <div style={{ overflowX: 'auto' }}>
-            <table className="tw" style={{ width: '100%', minWidth: '720px' }}>
-              <thead>
-                <tr>
-                  <th>บ้าน</th>
-                  <th>งวด</th>
-                  <th>จำนวนเงิน</th>
-                  <th>วิธีชำระ</th>
-                  <th>วันที่</th>
-                </tr>
-              </thead>
-              <tbody>
-                {payments.length === 0 ? (
-                  <tr><td colSpan="5" style={{ textAlign: 'center', color: 'var(--mu)', padding: '20px' }}>ยังไม่มีรายการชำระเงิน</td></tr>
-                ) : (
-                  payments.map((payment) => (
-                    <tr key={payment.id}>
-                      <td>{payment.houses?.house_no || '-'}<div style={{ fontSize: '11px', color: 'var(--mu)' }}>{payment.houses?.owner_name || '-'}</div></td>
-                      <td>{payment.fees ? `${payment.fees.period} ${payment.fees.year}` : '-'}</td>
-                      <td>฿{Number(payment.amount || 0).toLocaleString('th-TH')}</td>
-                      <td>{payment.payment_method}</td>
-                      <td>{payment.paid_at ? new Date(payment.paid_at).toLocaleString('th-TH') : '-'}</td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
+        <div className="cb page-table-body">
+          <div className="desktop-only">
+            <div style={{ overflowX: 'auto' }}>
+              <table className="tw" style={{ width: '100%', minWidth: '720px' }}>
+                <thead>
+                  <tr>
+                    <th>บ้าน</th>
+                    <th>งวด</th>
+                    <th>จำนวนเงิน</th>
+                    <th>วิธีชำระ</th>
+                    <th>วันที่</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {payments.length === 0 ? (
+                    <tr><td colSpan="5" style={{ textAlign: 'center', color: 'var(--mu)', padding: '20px' }}>ยังไม่มีรายการชำระเงิน</td></tr>
+                  ) : (
+                    payments.map((payment) => (
+                      <tr key={payment.id}>
+                        <td>{payment.houses?.house_no || '-'}<div style={{ fontSize: '11px', color: 'var(--mu)' }}>{payment.houses?.owner_name || '-'}</div></td>
+                        <td>{payment.fees ? `${payment.fees.period} ${payment.fees.year}` : '-'}</td>
+                        <td>฿{Number(payment.amount || 0).toLocaleString('th-TH')}</td>
+                        <td>{payment.payment_method}</td>
+                        <td>{payment.paid_at ? new Date(payment.paid_at).toLocaleString('th-TH') : '-'}</td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+          <div className="mobile-only">
+            {payments.length === 0 ? (
+              <div className="mcard-empty">ยังไม่มีรายการชำระเงิน</div>
+            ) : payments.map((payment) => (
+              <div key={payment.id} className="mcard">
+                <div className="mcard-top">
+                  <div className="mcard-title">{payment.houses?.house_no || '-'}</div>
+                  <div className="mcard-sub">{payment.fees ? `${payment.fees.period} ${payment.fees.year}` : '-'}</div>
+                </div>
+                <div className="mcard-body">{payment.houses?.owner_name || '-'}</div>
+                <div className="mcard-meta">
+                  <span><span className="mcard-label">จำนวน</span> ฿{Number(payment.amount || 0).toLocaleString('th-TH')}</span>
+                  <span><span className="mcard-label">วิธีชำระ</span> {payment.payment_method}</span>
+                  <span><span className="mcard-label">วันที่</span> {payment.paid_at ? new Date(payment.paid_at).toLocaleDateString('th-TH') : '-'}</span>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       </div>

@@ -34,7 +34,7 @@ const AdminLogs = () => {
     }, null)
   }
   return (
-    <div className="pane on" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+    <div className="pane on page-compact" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
       <div className="ph">
         <div className="ph-in">
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -48,20 +48,22 @@ const AdminLogs = () => {
       </div>
 
       <div className="card">
-        <div className="ch"><div className="ct">ข้อมูล Log ล่าสุด ({logs.length})</div></div>
-        <div className="cb">
-          {loading ? (
-            <div style={{ padding: '20px', textAlign: 'center', color: '#999' }}>กำลังโหลด...</div>
-          ) : logs.length === 0 ? (
-            <div style={{ padding: '20px', textAlign: 'center', color: '#999' }}>ไม่มีข้อมูล Log</div>
-          ) : (
+        <div className="ch page-list-head">
+          <div className="ct">ข้อมูล Log ล่าสุด ({logs.length})</div>
+        </div>
+        <div className="cb page-table-body">
+          <div className="desktop-only">
             <div style={{ overflowX: 'auto' }}>
               <table className="tw" style={{ width: '100%', minWidth: '700px', fontSize: '12px' }}>
                 <thead><tr>
                   <th>เวลา</th><th>ผู้ใช้</th><th>การดำเนินการ</th><th>ตาราข้อมูล</th><th/>
                 </tr></thead>
                 <tbody>
-                  {logs.map((log) => {
+                  {loading ? (
+                    <tr><td colSpan="5" style={{ textAlign: 'center', color: 'var(--mu)', padding: '20px' }}>กำลังโหลด...</td></tr>
+                  ) : logs.length === 0 ? (
+                    <tr><td colSpan="5" style={{ textAlign: 'center', color: 'var(--mu)', padding: '20px' }}>ไม่มีข้อมูล Log</td></tr>
+                  ) : logs.map((log) => {
                     const actionBg = log.action === 'INSERT' ? 'b-pr' : log.action === 'UPDATE' ? 'b-a' : 'b-mu'
                     const time = new Date(log.acted_at).toLocaleString('th-TH', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
                     return (
@@ -77,7 +79,32 @@ const AdminLogs = () => {
                 </tbody>
               </table>
             </div>
-          )}
+          </div>
+          <div className="mobile-only">
+            {loading ? (
+              <div className="mcard-empty">กำลังโหลด...</div>
+            ) : logs.length === 0 ? (
+              <div className="mcard-empty">ไม่มีข้อมูล Log</div>
+            ) : logs.map((log) => {
+              const actionBg = log.action === 'INSERT' ? 'b-pr' : log.action === 'UPDATE' ? 'b-a' : 'b-mu'
+              const time = new Date(log.acted_at).toLocaleString('th-TH', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+              return (
+                <div key={log.id} className="mcard">
+                  <div className="mcard-top">
+                    <div className="mcard-title">{log.table_name}</div>
+                    <span className={`bd ${actionBg} mcard-badge`}>{log.action}</span>
+                  </div>
+                  <div className="mcard-meta">
+                    <span><span className="mcard-label">เวลา</span> {time}</span>
+                    <span><span className="mcard-label">ผู้ใช้</span> {log.profiles?.name || 'System'}</span>
+                  </div>
+                  <div className="mcard-actions">
+                    <button className="btn btn-xs btn-o" onClick={() => handleViewLog(log)}>ดู</button>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
         </div>
       </div>
     </div>

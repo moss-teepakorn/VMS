@@ -200,7 +200,7 @@ const AdminMarketplace = () => {
   }
 
   return (
-    <div className="pane on" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+    <div className="pane on page-compact" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
       <div className="ph">
         <div className="ph-in">
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -210,80 +210,112 @@ const AdminMarketplace = () => {
               <div className="ph-sub">สิ่งของและบริการของสมาชิกในหมู่บ้าน</div>
             </div>
           </div>
-          <div className="ph-acts">
-            <button className="btn btn-p btn-sm" onClick={openAddModal}>+ โพสต์ใหม่</button>
-            <button className="btn btn-g btn-sm" onClick={() => loadData({ status: statusFilter, listing_type: typeFilter, search: searchTerm })}>🔄 รีเฟรช</button>
-          </div>
         </div>
-      </div>
-
-      <div className="card">
-        <div className="ch"><div className="ct">ค้นหาและกรองข้อมูล</div></div>
-        <div className="cb filter-row">
+        <div className="page-filter-row">
           <input
+            className="page-filter-input"
             type="text"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             placeholder="ค้นหา ชื่อ / หมวด / บ้าน"
           />
-          <select value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)}>
+          <select className="page-filter-select" value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)}>
             <option value="all">ทุกประเภทลิสต์</option>
             {LISTING_TYPES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
           </select>
-          <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
+          <select className="page-filter-select" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
             <option value="all">ทุกสถานะ</option>
             {STATUS_OPTIONS.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
           </select>
-          <button className="btn btn-a btn-sm" onClick={() => loadData({ status: statusFilter, listing_type: typeFilter, search: searchTerm })}>ค้นหา</button>
+          <button className="btn btn-a btn-sm page-filter-btn" onClick={() => loadData({ status: statusFilter, listing_type: typeFilter, search: searchTerm })}>ค้นหา</button>
         </div>
       </div>
 
       <div className="card">
-        <div className="ch"><div className="ct">รายการทั้งหมด ({items.length} รายการ)</div></div>
-        <div className="cb">
-          <div style={{ overflowX: 'auto' }}>
-            <table className="tw" style={{ width: '100%', minWidth: '900px' }}>
-              <thead><tr>
-                <th>บ้าน / เจ้าของ</th>
-                <th>ชื่อสินค้า/บริการ</th>
-                <th>หมวด</th>
-                <th>ประเภท</th>
-                <th>ราคา</th>
-                <th>ติดต่อ</th>
-                <th>สถานะ</th>
-                <th>วันที่</th>
-                <th></th>
-              </tr></thead>
-              <tbody>
-                {loading ? (
-                  <tr><td colSpan="9" style={{ textAlign: 'center', color: 'var(--mu)', padding: '20px' }}>กำลังโหลด...</td></tr>
-                ) : items.length === 0 ? (
-                  <tr><td colSpan="9" style={{ textAlign: 'center', color: 'var(--mu)', padding: '20px' }}>ไม่พบข้อมูล</td></tr>
-                ) : items.map((item) => {
-                  const lBadge = getListingBadge(item.listing_type)
-                  const sBadge = getStatusBadge(item.status)
-                  return (
-                    <tr key={item.id}>
-                      <td><strong>{item.houses?.house_no || '-'}</strong>{item.houses?.owner_name ? <div style={{ fontSize: '11px', color: 'var(--mu)' }}>{item.houses.owner_name}</div> : null}</td>
-                      <td style={{ maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}><strong>{item.title}</strong></td>
-                      <td>{item.category || '-'}</td>
-                      <td><span className={lBadge.className}>{lBadge.label}</span></td>
-                      <td>{item.listing_type === 'free' ? 'ฟรี' : item.listing_type === 'wanted' ? '-' : formatPrice(item.price)}</td>
-                      <td>{item.contact || '-'}</td>
-                      <td><span className={sBadge.className}>{sBadge.label}</span></td>
-                      <td>{formatDate(item.created_at)}</td>
-                      <td><div className="td-acts">
-                        {item.status === 'pending' && (
-                          <button className="btn btn-xs btn-ok" onClick={() => handleApprove(item)}>อนุมัติ</button>
-                        )}
-                        <button className="btn btn-xs btn-a" onClick={() => openEditModal(item)}>แก้ไข</button>
-                        <button className="btn btn-xs btn-dg" onClick={() => handleDelete(item)}>ลบ</button>
-                      </div></td>
-                    </tr>
-                  )
-                })}
-              </tbody>
-            </table>
+        <div className="ch page-list-head">
+          <div className="ct">รายการทั้งหมด ({items.length} รายการ)</div>
+          <div className="page-list-actions">
+            <button className="btn btn-p btn-sm" onClick={openAddModal}>+ โพสต์ใหม่</button>
+            <button className="btn btn-g btn-sm" onClick={() => loadData({ status: statusFilter, listing_type: typeFilter, search: searchTerm })}>🔄 รีเฟรช</button>
+          </div>
+        </div>
+        <div className="cb page-table-body">
+          <div className="desktop-only">
+            <div style={{ overflowX: 'auto' }}>
+              <table className="tw" style={{ width: '100%', minWidth: '900px' }}>
+                <thead><tr>
+                  <th>บ้าน / เจ้าของ</th>
+                  <th>ชื่อสินค้า/บริการ</th>
+                  <th>หมวด</th>
+                  <th>ประเภท</th>
+                  <th>ราคา</th>
+                  <th>ติดต่อ</th>
+                  <th>สถานะ</th>
+                  <th>วันที่</th>
+                  <th></th>
+                </tr></thead>
+                <tbody>
+                  {loading ? (
+                    <tr><td colSpan="9" style={{ textAlign: 'center', color: 'var(--mu)', padding: '20px' }}>กำลังโหลด...</td></tr>
+                  ) : items.length === 0 ? (
+                    <tr><td colSpan="9" style={{ textAlign: 'center', color: 'var(--mu)', padding: '20px' }}>ไม่พบข้อมูล</td></tr>
+                  ) : items.map((item) => {
+                    const lBadge = getListingBadge(item.listing_type)
+                    const sBadge = getStatusBadge(item.status)
+                    return (
+                      <tr key={item.id}>
+                        <td><strong>{item.houses?.house_no || '-'}</strong>{item.houses?.owner_name ? <div style={{ fontSize: '11px', color: 'var(--mu)' }}>{item.houses.owner_name}</div> : null}</td>
+                        <td style={{ maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}><strong>{item.title}</strong></td>
+                        <td>{item.category || '-'}</td>
+                        <td><span className={lBadge.className}>{lBadge.label}</span></td>
+                        <td>{item.listing_type === 'free' ? 'ฟรี' : item.listing_type === 'wanted' ? '-' : formatPrice(item.price)}</td>
+                        <td>{item.contact || '-'}</td>
+                        <td><span className={sBadge.className}>{sBadge.label}</span></td>
+                        <td>{formatDate(item.created_at)}</td>
+                        <td><div className="td-acts">
+                          {item.status === 'pending' && (
+                            <button className="btn btn-xs btn-ok" onClick={() => handleApprove(item)}>อนุมัติ</button>
+                          )}
+                          <button className="btn btn-xs btn-a" onClick={() => openEditModal(item)}>แก้ไข</button>
+                          <button className="btn btn-xs btn-dg" onClick={() => handleDelete(item)}>ลบ</button>
+                        </div></td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+          <div className="mobile-only">
+            {loading ? (
+              <div className="mcard-empty">กำลังโหลด...</div>
+            ) : items.length === 0 ? (
+              <div className="mcard-empty">ไม่พบข้อมูล</div>
+            ) : items.map((item) => {
+              const lBadge = getListingBadge(item.listing_type)
+              const sBadge = getStatusBadge(item.status)
+              return (
+                <div key={item.id} className="mcard">
+                  <div className="mcard-top">
+                    <div className="mcard-title">{item.title}</div>
+                    <span className={`${sBadge.className} mcard-badge`}>{sBadge.label}</span>
+                  </div>
+                  <div className="mcard-body">{item.houses?.house_no || '-'}{item.houses?.owner_name ? ` · ${item.houses.owner_name}` : ''}</div>
+                  <div className="mcard-meta">
+                    <span><span className="mcard-label">ประเภท</span> <span className={lBadge.className}>{lBadge.label}</span></span>
+                    <span><span className="mcard-label">ราคา</span> {item.listing_type === 'free' ? 'ฟรี' : item.listing_type === 'wanted' ? '-' : formatPrice(item.price)}</span>
+                    {item.category && <span><span className="mcard-label">หมวด</span> {item.category}</span>}
+                    {item.contact && <span><span className="mcard-label">ติดต่อ</span> {item.contact}</span>}
+                    <span><span className="mcard-label">วันที่</span> {formatDate(item.created_at)}</span>
+                  </div>
+                  <div className="mcard-actions">
+                    {item.status === 'pending' && <button className="btn btn-xs btn-ok" onClick={() => handleApprove(item)}>อนุมัติ</button>}
+                    <button className="btn btn-xs btn-a" onClick={() => openEditModal(item)}>แก้ไข</button>
+                    <button className="btn btn-xs btn-dg" onClick={() => handleDelete(item)}>ลบ</button>
+                  </div>
+                </div>
+              )
+            })}
           </div>
         </div>
       </div>
