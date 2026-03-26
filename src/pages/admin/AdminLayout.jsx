@@ -211,12 +211,33 @@ const AdminLayout = () => {
                   {Object.entries(modalFields).map(([key, value]) => (
                     <div key={key} style={{ marginBottom: '12px' }}>
                       <label className="fl">{value.label}</label>
-                      <input 
-                        type={value.type || 'text'} 
-                        placeholder={value.placeholder || ''}
-                        onChange={(e) => setModalFields({...modalFields, [key]: {...value, value: e.target.value}})}
-                        style={{ width: '100%', padding: '8px 12px', border: '1px solid var(--bo)', borderRadius: '6px' }}
-                      />
+                      {value.type === 'select' ? (
+                        <select
+                          value={value.value ?? ''}
+                          onChange={(e) => setModalFields({ ...modalFields, [key]: { ...value, value: e.target.value } })}
+                          style={{ width: '100%', padding: '8px 12px', border: '1px solid var(--bo)', borderRadius: '6px' }}
+                        >
+                          {(value.options || []).map((option) => (
+                            <option key={option.value} value={option.value}>{option.label}</option>
+                          ))}
+                        </select>
+                      ) : value.type === 'textarea' ? (
+                        <textarea
+                          placeholder={value.placeholder || ''}
+                          value={value.value ?? ''}
+                          rows={value.rows || 3}
+                          onChange={(e) => setModalFields({ ...modalFields, [key]: { ...value, value: e.target.value } })}
+                          style={{ width: '100%', padding: '8px 12px', border: '1px solid var(--bo)', borderRadius: '6px', resize: 'vertical' }}
+                        />
+                      ) : (
+                        <input
+                          type={value.type || 'text'}
+                          placeholder={value.placeholder || ''}
+                          value={value.value ?? ''}
+                          onChange={(e) => setModalFields({ ...modalFields, [key]: { ...value, value: e.target.value } })}
+                          style={{ width: '100%', padding: '8px 12px', border: '1px solid var(--bo)', borderRadius: '6px' }}
+                        />
+                      )}
                     </div>
                   ))}
                 </div>

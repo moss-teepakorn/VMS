@@ -1,0 +1,138 @@
+import { supabase } from './supabase'
+
+export async function listFees({ status = 'all', year = 'all', search = '' } = {}) {
+  let query = supabase
+    .from('fees')
+    .select('id, house_id, year, period, invoice_date, due_date, status, fee_common, fee_parking, fee_waste, fee_overdue_common, fee_overdue_fine, fee_overdue_notice, fee_fine, fee_notice, fee_violation, fee_other, total_amount, note, created_at, houses(id, house_no, owner_name)')
+    .order('created_at', { ascending: false })
+
+  if (status && status !== 'all') {
+    query = query.eq('status', status)
+  }
+
+  if (year && year !== 'all') {
+    query = query.eq('year', Number(year))
+  }
+
+  if (search && search.trim()) {
+    const keyword = search.trim()
+    query = query.or(`period.ilike.%${keyword}%,note.ilike.%${keyword}%`)
+  }
+
+  const { data, error } = await query
+  if (error) throw error
+  return data ?? []
+}
+
+export async function createFee(payload) {
+  const fee = {
+    house_id: payload.house_id || null,
+    year: Number(payload.year),
+    period: payload.period || 'full_year',
+    invoice_date: payload.invoice_date || null,
+    due_date: payload.due_date || null,
+    status: payload.status || 'unpaid',
+    fee_common: Number(payload.fee_common || 0),
+    fee_parking: Number(payload.fee_parking || 0),
+    fee_waste: Number(payload.fee_waste || 0),
+    fee_overdue_common: Number(payload.fee_overdue_common || 0),
+    fee_overdue_fine: Number(payload.fee_overdue_fine || 0),
+    fee_overdue_notice: Number(payload.fee_overdue_notice || 0),
+    fee_fine: Number(payload.fee_fine || 0),
+    fee_notice: Number(payload.fee_notice || 0),
+    fee_violation: Number(payload.fee_violation || 0),
+    fee_other: Number(payload.fee_other || 0),
+    note: payload.note?.trim() || null,
+  }
+
+  const { data, error } = await supabase
+    .from('fees')
+    .insert([fee])
+    .select('id, house_id, year, period, invoice_date, due_date, status, fee_common, fee_parking, fee_waste, fee_overdue_common, fee_overdue_fine, fee_overdue_notice, fee_fine, fee_notice, fee_violation, fee_other, total_amount, note, created_at, houses(id, house_no, owner_name)')
+    .single()
+
+  if (error) throw error
+  return data
+}
+
+export async function updateFee(id, updates) {
+  const { data, error } = await supabase
+    .from('fees')
+    .update(updates)
+    .eq('id', id)
+    .select('id, house_id, year, period, invoice_date, due_date, status, fee_common, fee_parking, fee_waste, fee_overdue_common, fee_overdue_fine, fee_overdue_notice, fee_fine, fee_notice, fee_violation, fee_other, total_amount, note, created_at, houses(id, house_no, owner_name)')
+    .single()
+
+  if (error) throw error
+  return data
+}
+
+export async function deleteFee(id) {
+  const { error } = await supabase
+    .from('fees')
+    .delete()
+    .eq('id', id)
+
+  if (error) throw error
+  return true
+}
+
+export async function listPayments({ limit } = {}) {
+  let query = supabase
+    .from('payments')
+    .select('id, fee_id, house_id, amount, payment_method, slip_url, paid_at, verified_by, verified_at, note, fees(id, year, period, status, total_amount), houses(id, house_no, owner_name)')
+    .order('paid_at', { ascending: false })
+
+  if (limit) {
+    query = query.limit(limit)
+  }
+
+  const { data, error } = await query
+  if (error) throw error
+  return data ?? []
+}
+
+export async function createPayment(payload) {
+  const payment = {
+    fee_id: payload.fee_id || null,
+    house_id: payload.house_id || null,
+    amount: Number(payload.amount || 0),
+    payment_method: payload.payment_method || 'transfer',
+    slip_url: payload.slip_url?.trim() || null,
+    note: payload.note?.trim() || null,
+    paid_at: payload.paid_at || new Date().toISOString(),
+  }
+
+  const { data, error } = await supabase
+    .from('payments')
+    .insert([payment])
+    .select('id, fee_id, house_id, amount, payment_method, slip_url, paid_at, verified_by, verified_at, note, fees(id, year, period, status, total_amount), houses(id, house_no, owner_name)')
+    .single()
+
+  if (error) throw error
+
+  if (payload.fee_id) {
+    const { error: feeError } = await supabase
+      .from('fees')
+      .update({ status: 'paid' })
+      .eq('id', payload.fee_id)
+
+    if (feeError) throw feeError
+  }
+
+  return data
+}
+
+export function summarizeFees(fees, payments) {
+  const totalInvoiced = fees.reduce((sum, fee) => sum + Number(fee.total_amount || 0), 0)
+  const totalCollected = payments.reduce((sum, payment) => sum + Number(payment.amount || 0), 0)
+  const totalOutstanding = fees
+    .filter((fee) => fee.status !== 'paid')
+    .reduce((sum, fee) => sum + Number(fee.total_amount || 0), 0)
+
+  return {
+    totalInvoiced,
+    totalCollected,
+    totalOutstanding,
+  }
+}

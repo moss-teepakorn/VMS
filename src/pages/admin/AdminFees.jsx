@@ -1,18 +1,161 @@
-import React, { useContext } from 'react'
+import React, { useContext, useEffect, useMemo, useState } from 'react'
 import { ModalContext } from './AdminLayout'
+import { listHouses } from '../../lib/houses'
+import { createFee, createPayment, deleteFee, listFees, listPayments, summarizeFees, updateFee } from '../../lib/fees'
 
 const AdminFees = () => {
   const { openModal } = useContext(ModalContext)
+  const [fees, setFees] = useState([])
+  const [payments, setPayments] = useState([])
+  const [houses, setHouses] = useState([])
+  const [statusFilter, setStatusFilter] = useState('all')
+  const [yearFilter, setYearFilter] = useState('all')
+  const [loading, setLoading] = useState(false)
+
+  const houseOptions = useMemo(() => ([
+    { value: '', label: 'เลือกบ้าน' },
+    ...houses.map((house) => ({ value: house.id, label: `${house.house_no}${house.owner_name ? ` - ${house.owner_name}` : ''}` })),
+  ]), [houses])
+
+  const yearOptions = useMemo(() => {
+    const years = [...new Set(fees.map((fee) => fee.year).filter(Boolean))].sort((a, b) => b - a)
+    return years
+  }, [fees])
+
+  const loadFeeData = async (override = {}) => {
+    try {
+      setLoading(true)
+      const [feeData, paymentData, houseData] = await Promise.all([
+        listFees({ status: override.status ?? statusFilter, year: override.year ?? yearFilter }),
+        listPayments({ limit: 10 }),
+        houses.length === 0 ? listHouses() : Promise.resolve(houses),
+      ])
+      setFees(feeData)
+      setPayments(paymentData)
+      setHouses(houseData)
+    } catch (error) {
+      console.error('Error loading fees:', error)
+      alert(`ไม่สามารถโหลดข้อมูลค่าส่วนกลางได้: ${error.message}`)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    loadFeeData()
+  }, [])
+
+  const summary = useMemo(() => summarizeFees(fees, payments), [fees, payments])
+
+  const getFeeStatusBadge = (status) => {
+    if (status === 'paid') return { className: 'bd b-ok', label: 'ชำระแล้ว' }
+    if (status === 'pending') return { className: 'bd b-pr', label: 'รอตรวจสอบ' }
+    if (status === 'overdue') return { className: 'bd b-dg', label: 'ค้างชำระ' }
+    return { className: 'bd b-wn', label: 'ยังไม่ชำระ' }
+  }
 
   const handleAddFee = () => {
     openModal('สร้างใบแจ้งหนี้', {
-      month: { label: 'เดือน', type: 'text', placeholder: 'มกราคม' },
-      year: { label: 'ปี', type: 'number', placeholder: '2567' },
-      amount: { label: 'จำนวนเงิน (บาท)', type: 'number', placeholder: '2750' },
-    }, (data) => {
-      console.log('Add fee:', data)
+      house_id: { label: 'บ้าน', type: 'select', options: houseOptions, value: '' },
+      year: { label: 'ปี', type: 'number', value: String(new Date().getFullYear()) },
+      period: { label: 'งวด', type: 'select', options: [{ value: 'first_half', label: 'ครึ่งปีแรก' }, { value: 'second_half', label: 'ครึ่งปีหลัง' }, { value: 'full_year', label: 'เต็มปี' }], value: 'full_year' },
+      invoice_date: { label: 'วันที่ออกใบแจ้งหนี้', type: 'date', value: new Date().toISOString().slice(0, 10) },
+      due_date: { label: 'วันที่ครบกำหนด', type: 'date', value: new Date().toISOString().slice(0, 10) },
+      fee_common: { label: 'ค่าส่วนกลาง', type: 'number', value: '0' },
+      fee_parking: { label: 'ค่าจอดรถ', type: 'number', value: '0' },
+      fee_waste: { label: 'ค่าขยะ', type: 'number', value: '0' },
+      fee_other: { label: 'ค่าอื่นๆ', type: 'number', value: '0' },
+      note: { label: 'หมายเหตุ', type: 'textarea', value: '' },
+    }, async (data) => {
+      try {
+        if (!data.house_id?.value || !data.year?.value) {
+          alert('กรุณาเลือกบ้านและระบุปี')
+          return
+        }
+
+        await createFee({
+          house_id: data.house_id?.value,
+          year: data.year?.value,
+          period: data.period?.value,
+          invoice_date: data.invoice_date?.value,
+          due_date: data.due_date?.value,
+          fee_common: data.fee_common?.value,
+          fee_parking: data.fee_parking?.value,
+          fee_waste: data.fee_waste?.value,
+          fee_other: data.fee_other?.value,
+          note: data.note?.value,
+        })
+        await loadFeeData()
+      } catch (error) {
+        console.error('Error creating fee:', error)
+        alert(`ไม่สามารถสร้างใบแจ้งหนี้ได้: ${error.message}`)
+      }
     })
   }
+
+  const handleEditFee = (fee) => {
+    openModal('แก้ไขใบแจ้งหนี้', {
+      status: { label: 'สถานะ', type: 'select', options: [{ value: 'unpaid', label: 'ยังไม่ชำระ' }, { value: 'pending', label: 'รอตรวจสอบ' }, { value: 'paid', label: 'ชำระแล้ว' }, { value: 'overdue', label: 'ค้างชำระ' }], value: fee.status || 'unpaid' },
+      due_date: { label: 'วันที่ครบกำหนด', type: 'date', value: fee.due_date || '' },
+      fee_common: { label: 'ค่าส่วนกลาง', type: 'number', value: String(fee.fee_common || 0) },
+      fee_parking: { label: 'ค่าจอดรถ', type: 'number', value: String(fee.fee_parking || 0) },
+      fee_waste: { label: 'ค่าขยะ', type: 'number', value: String(fee.fee_waste || 0) },
+      fee_other: { label: 'ค่าอื่นๆ', type: 'number', value: String(fee.fee_other || 0) },
+      note: { label: 'หมายเหตุ', type: 'textarea', value: fee.note || '' },
+    }, async (data) => {
+      try {
+        await updateFee(fee.id, {
+          status: data.status?.value || 'unpaid',
+          due_date: data.due_date?.value || null,
+          fee_common: Number(data.fee_common?.value || 0),
+          fee_parking: Number(data.fee_parking?.value || 0),
+          fee_waste: Number(data.fee_waste?.value || 0),
+          fee_other: Number(data.fee_other?.value || 0),
+          note: data.note?.value || null,
+        })
+        await loadFeeData()
+      } catch (error) {
+        console.error('Error updating fee:', error)
+        alert(`ไม่สามารถแก้ไขใบแจ้งหนี้ได้: ${error.message}`)
+      }
+    })
+  }
+
+  const handleDeleteFee = async (fee) => {
+    if (!window.confirm(`ยืนยันลบใบแจ้งหนี้ ${fee.houses?.house_no || ''} ${fee.period} ${fee.year}?`)) return
+    try {
+      await deleteFee(fee.id)
+      await loadFeeData()
+    } catch (error) {
+      console.error('Error deleting fee:', error)
+      alert(`ไม่สามารถลบใบแจ้งหนี้ได้: ${error.message}`)
+    }
+  }
+
+  const handleAddPayment = (fee) => {
+    openModal('บันทึกการชำระเงิน', {
+      amount: { label: 'จำนวนเงิน', type: 'number', value: String(fee.total_amount || 0) },
+      payment_method: { label: 'วิธีชำระ', type: 'select', options: [{ value: 'transfer', label: 'โอนเงิน' }, { value: 'cash', label: 'เงินสด' }, { value: 'qr', label: 'QR' }], value: 'transfer' },
+      paid_at: { label: 'วันเวลา', type: 'datetime-local', value: new Date().toISOString().slice(0, 16) },
+      note: { label: 'หมายเหตุ', type: 'textarea', value: '' },
+    }, async (data) => {
+      try {
+        await createPayment({
+          fee_id: fee.id,
+          house_id: fee.house_id,
+          amount: data.amount?.value,
+          payment_method: data.payment_method?.value,
+          paid_at: data.paid_at?.value,
+          note: data.note?.value,
+        })
+        await loadFeeData()
+      } catch (error) {
+        console.error('Error creating payment:', error)
+        alert(`ไม่สามารถบันทึกการชำระเงินได้: ${error.message}`)
+      }
+    })
+  }
+
   return (
     <div className="pane on">
       <div className="ph">
@@ -26,79 +169,110 @@ const AdminFees = () => {
           </div>
           <div className="ph-acts">
             <button className="btn btn-p btn-sm" onClick={handleAddFee}>+ สร้างใบแจ้งหนี้</button>
+            <button className="btn btn-o btn-sm" onClick={() => loadFeeData()}>🔄 รีเฟรช</button>
           </div>
         </div>
       </div>
 
+      <div className="card" style={{ marginTop: '16px' }}>
+        <div className="ch"><div className="ct">กรองใบแจ้งหนี้</div></div>
+        <div className="cb" style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+          <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} style={{ padding: '8px 12px', border: '1px solid var(--bo)', borderRadius: '6px' }}>
+            <option value="all">ทุกสถานะ</option>
+            <option value="unpaid">ยังไม่ชำระ</option>
+            <option value="pending">รอตรวจสอบ</option>
+            <option value="paid">ชำระแล้ว</option>
+            <option value="overdue">ค้างชำระ</option>
+          </select>
+          <select value={yearFilter} onChange={(e) => setYearFilter(e.target.value)} style={{ padding: '8px 12px', border: '1px solid var(--bo)', borderRadius: '6px' }}>
+            <option value="all">ทุกปี</option>
+            {yearOptions.map((year) => <option key={year} value={year}>{year}</option>)}
+          </select>
+          <button className="btn btn-a btn-sm" onClick={() => loadFeeData()}>ค้นหา</button>
+        </div>
+      </div>
+
       <div className="stats" style={{ marginTop: '16px' }}>
-        <div className="sc"><div className="sc-ico a">💵</div><div><div className="sc-v">฿456,800</div><div className="sc-l">รวมเก็บแล้ว</div></div></div>
-        <div className="sc"><div className="sc-ico d">⏳</div><div><div className="sc-v">฿48,600</div><div className="sc-l">ค้างชำระ</div></div></div>
+        <div className="sc"><div className="sc-ico a">💵</div><div><div className="sc-v">฿{summary.totalCollected.toLocaleString('th-TH')}</div><div className="sc-l">รวมเก็บแล้ว</div></div></div>
+        <div className="sc"><div className="sc-ico d">⏳</div><div><div className="sc-v">฿{summary.totalOutstanding.toLocaleString('th-TH')}</div><div className="sc-l">ค้างชำระ</div></div></div>
+        <div className="sc"><div className="sc-ico p">🧾</div><div><div className="sc-v">฿{summary.totalInvoiced.toLocaleString('th-TH')}</div><div className="sc-l">ยอดออกใบแจ้งหนี้</div></div></div>
       </div>
 
       <div className="card" style={{ marginTop: '16px' }}>
-        <div className="ch"><div className="ct">ประวัติการเก็บ</div></div>
+        <div className="ch"><div className="ct">ใบแจ้งหนี้ล่าสุด</div></div>
         <div className="cb">
           <div style={{ overflowX: 'auto' }}>
-            <table className="tw" style={{ width: '100%', minWidth: '500px' }}>
+            <table className="tw" style={{ width: '100%', minWidth: '860px' }}>
               <thead>
                 <tr>
-                  <th>เดือน</th>
+                  <th>บ้าน</th>
                   <th>ปี</th>
-                  <th>จำนวนบ้าน</th>
-                  <th>จำนวนเก็บ</th>
-                  <th>จำนวนค้าง</th>
+                  <th>งวด</th>
+                  <th>ครบกำหนด</th>
                   <th>ยอดรวม</th>
+                  <th>สถานะ</th>
+                  <th></th>
                 </tr>
               </thead>
               <tbody>
+                {loading ? (
+                  <tr><td colSpan="7" style={{ textAlign: 'center', color: 'var(--mu)', padding: '20px' }}>กำลังโหลดข้อมูล...</td></tr>
+                ) : fees.length === 0 ? (
+                  <tr><td colSpan="7" style={{ textAlign: 'center', color: 'var(--mu)', padding: '20px' }}>ยังไม่มีใบแจ้งหนี้</td></tr>
+                ) : (
+                  fees.map((fee) => {
+                    const badge = getFeeStatusBadge(fee.status)
+                    return (
+                      <tr key={fee.id}>
+                        <td>{fee.houses?.house_no || '-'}<div style={{ fontSize: '11px', color: 'var(--mu)' }}>{fee.houses?.owner_name || '-'}</div></td>
+                        <td>{fee.year}</td>
+                        <td>{fee.period}</td>
+                        <td>{fee.due_date ? new Date(fee.due_date).toLocaleDateString('th-TH') : '-'}</td>
+                        <td><strong>฿{Number(fee.total_amount || 0).toLocaleString('th-TH')}</strong></td>
+                        <td><span className={badge.className}>{badge.label}</span></td>
+                        <td style={{ whiteSpace: 'nowrap' }}>
+                          <button className="btn btn-xs btn-a" style={{ marginRight: '4px' }} onClick={() => handleEditFee(fee)}>แก้ไข</button>
+                          {fee.status !== 'paid' && <button className="btn btn-xs btn-p" style={{ marginRight: '4px' }} onClick={() => handleAddPayment(fee)}>รับชำระ</button>}
+                          <button className="btn btn-xs btn-dg" onClick={() => handleDeleteFee(fee)}>ลบ</button>
+                        </td>
+                      </tr>
+                    )
+                  })
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div className="card" style={{ marginTop: '16px' }}>
+        <div className="ch"><div className="ct">การชำระเงินล่าสุด</div></div>
+        <div className="cb">
+          <div style={{ overflowX: 'auto' }}>
+            <table className="tw" style={{ width: '100%', minWidth: '720px' }}>
+              <thead>
                 <tr>
-                  <td>มีนาคม</td>
-                  <td>2568</td>
-                  <td>104</td>
-                  <td><span className="bd b-ok">฿286,000</span></td>
-                  <td><span className="bd b-dg">฿48,600</span></td>
-                  <td><strong>฿352,000</strong></td>
+                  <th>บ้าน</th>
+                  <th>งวด</th>
+                  <th>จำนวนเงิน</th>
+                  <th>วิธีชำระ</th>
+                  <th>วันที่</th>
                 </tr>
-                <tr>
-                  <td>กุมภาพันธ์</td>
-                  <td>2568</td>
-                  <td>104</td>
-                  <td><span className="bd b-ok">฿286,000</span></td>
-                  <td><span className="bd b-dg">฿0</span></td>
-                  <td><strong>฿286,000</strong></td>
-                </tr>
-                <tr>
-                  <td>มกราคม</td>
-                  <td>2568</td>
-                  <td>102</td>
-                  <td><span className="bd b-ok">฿280,500</span></td>
-                  <td><span className="bd b-dg">฿0</span></td>
-                  <td><strong>฿280,500</strong></td>
-                </tr>
-                <tr>
-                  <td>ธันวาคม</td>
-                  <td>2567</td>
-                  <td>100</td>
-                  <td><span className="bd b-ok">฿275,000</span></td>
-                  <td><span className="bd b-dg">฿0</span></td>
-                  <td><strong>฿275,000</strong></td>
-                </tr>
-                <tr>
-                  <td>พฤศจิกายน</td>
-                  <td>2567</td>
-                  <td>100</td>
-                  <td><span className="bd b-ok">฿275,000</span></td>
-                  <td><span className="bd b-dg">฿0</span></td>
-                  <td><strong>฿275,000</strong></td>
-                </tr>
-                <tr>
-                  <td>ตุลาคม</td>
-                  <td>2567</td>
-                  <td>99</td>
-                  <td><span className="bd b-ok">฿272,250</span></td>
-                  <td><span className="bd b-dg">฿0</span></td>
-                  <td><strong>฿272,250</strong></td>
-                </tr>
+              </thead>
+              <tbody>
+                {payments.length === 0 ? (
+                  <tr><td colSpan="5" style={{ textAlign: 'center', color: 'var(--mu)', padding: '20px' }}>ยังไม่มีรายการชำระเงิน</td></tr>
+                ) : (
+                  payments.map((payment) => (
+                    <tr key={payment.id}>
+                      <td>{payment.houses?.house_no || '-'}<div style={{ fontSize: '11px', color: 'var(--mu)' }}>{payment.houses?.owner_name || '-'}</div></td>
+                      <td>{payment.fees ? `${payment.fees.period} ${payment.fees.year}` : '-'}</td>
+                      <td>฿{Number(payment.amount || 0).toLocaleString('th-TH')}</td>
+                      <td>{payment.payment_method}</td>
+                      <td>{payment.paid_at ? new Date(payment.paid_at).toLocaleString('th-TH') : '-'}</td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           </div>
