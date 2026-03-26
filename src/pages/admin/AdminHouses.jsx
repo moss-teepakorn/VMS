@@ -269,6 +269,7 @@ const AdminHouses = () => {
               <div className="ph-sub">จัดการข้อมูลหลัง 128 หลัง</div>
             </div>
           </div>
+          <button className="btn btn-a btn-sm" onClick={() => loadHouses({ status: filterType, soi: soiFilter, search: searchTerm })}>ค้นหา</button>
         </div>
 
         <div className="houses-filter-row">
@@ -308,7 +309,6 @@ const AdminHouses = () => {
           <div className="houses-list-actions">
             <button className="btn btn-p btn-sm" onClick={openAddModal}>+ เพิ่มบ้าน</button>
             <button className="btn btn-a btn-sm" onClick={handleBulkUpdateAnnualFee}>⏳ อัปเดตค่าส่วนกลาง</button>
-            <button className="btn btn-a btn-sm" onClick={() => loadHouses({ status: filterType, soi: soiFilter, search: searchTerm })}>ค้นหา</button>
             <button className="btn btn-g btn-sm" onClick={() => loadHouses()}>🔄 รีเฟรช</button>
           </div>
         </div>
