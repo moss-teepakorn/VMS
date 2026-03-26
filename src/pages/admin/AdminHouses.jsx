@@ -1,13 +1,55 @@
-import React, { useState, useContext, useEffect } from 'react'
-import { ModalContext } from './AdminLayout'
-import { listHouses, createHouse, updateHouse, deleteHouse } from '../../lib/houses'
+import React, { useEffect, useMemo, useState } from 'react'
+import Swal from 'sweetalert2'
+import { createHouse, deleteHouse, getHouseSetup, listHouses, updateHouse } from '../../lib/houses'
+
+const SOI_OPTIONS = Array.from({ length: 25 }, (_, index) => ({
+  value: String(index + 1),
+  label: `ซอย ${index + 1}`,
+}))
+
+const HOUSE_TYPE_OPTIONS = [
+  { value: 'อยู่เอง', label: 'อยู่เอง' },
+  { value: 'ให้เช่า', label: 'ให้เช่า' },
+  { value: 'ว่าง', label: 'ว่าง' },
+]
+
+const HOUSE_STATUS_OPTIONS = [
+  { value: 'normal', label: 'ปกติ' },
+  { value: 'overdue', label: 'ค้างชำระ' },
+  { value: 'suspended', label: 'ระงับกรมที่ดิน' },
+  { value: 'lawsuit', label: 'ฟ้องร้อง' },
+]
+
+const EMPTY_FORM = {
+  house_no: '',
+  soi: '1',
+  address: '',
+  owner_name: '',
+  resident_name: '',
+  contact_name: '',
+  phone: '',
+  line_id: '',
+  email: '',
+  area_sqw: '',
+  house_type: 'อยู่เอง',
+  status: 'normal',
+  note: '',
+}
+
+function formatCurrency(value) {
+  return Number(value || 0).toLocaleString('th-TH')
+}
 
 const AdminHouses = () => {
-  const { openModal } = useContext(ModalContext)
   const [filterType, setFilterType] = useState('all')
   const [searchTerm, setSearchTerm] = useState('')
   const [houses, setHouses] = useState([])
   const [loading, setLoading] = useState(false)
+  const [showModal, setShowModal] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [editingHouse, setEditingHouse] = useState(null)
+  const [form, setForm] = useState(EMPTY_FORM)
+  const [setup, setSetup] = useState({ feeRatePerSqw: 85, villageName: 'The Greenfield' })
 
   const loadHouses = async (override = {}) => {
     try {
@@ -19,101 +61,151 @@ const AdminHouses = () => {
       setHouses(data)
     } catch (error) {
       console.error('Error loading houses:', error)
-      alert(`ไม่สามารถโหลดข้อมูลบ้านได้: ${error.message}`)
+      await Swal.fire({ icon: 'error', title: 'โหลดข้อมูลไม่สำเร็จ', text: error.message })
     } finally {
       setLoading(false)
     }
   }
 
   useEffect(() => {
-    loadHouses()
+    const loadInitialData = async () => {
+      try {
+        setLoading(true)
+        const [houseData, houseSetup] = await Promise.all([
+          listHouses({ status: filterType, search: searchTerm }),
+          getHouseSetup(),
+        ])
+        setHouses(houseData)
+        setSetup(houseSetup)
+      } catch (error) {
+        console.error('Error loading houses:', error)
+        await Swal.fire({ icon: 'error', title: 'โหลดข้อมูลไม่สำเร็จ', text: error.message })
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    loadInitialData()
   }, [])
+
+  const annualFee = useMemo(() => {
+    const area = Number(form.area_sqw || 0)
+    return area * 12 * Number(setup.feeRatePerSqw || 0)
+  }, [form.area_sqw, setup.feeRatePerSqw])
 
   const getStatusBadge = (status) => {
     if (status === 'normal')   return { className: 'bd b-ok', label: 'ปกติ' }
     if (status === 'overdue')  return { className: 'bd b-wn', label: 'ค้างชำระ' }
-    if (status === 'suspended') return { className: 'bd b-dg', label: 'ระงับสิทธิ์' }
+    if (status === 'suspended') return { className: 'bd b-dg', label: 'ระงับกรมที่ดิน' }
     if (status === 'lawsuit')  return { className: 'bd b-pr', label: 'ฟ้องร้อง' }
     return { className: 'bd b-mu', label: status }
   }
 
-  const handleAddHouse = () => {
-    openModal('เพิ่มบ้านใหม่', {
-      house_no:      { label: 'เลขที่บ้าน *', type: 'text', placeholder: 'เช่น 10/1' },
-      soi:           { label: 'ซอย', type: 'text', placeholder: 'เช่น A, B, 1' },
-      owner_name:    { label: 'ชื่อเจ้าของ', type: 'text', placeholder: 'นายสมชาติ ใจดี' },
-      resident_name: { label: 'ชื่อผู้อยู่อาศัย', type: 'text', placeholder: 'ถ้าต่างจากเจ้าของ' },
-      phone:         { label: 'เบอร์โทร', type: 'tel', placeholder: '098-xxx-xxxx' },
-      area_sqw:      { label: 'พื้นที่ (ตร.ว.)', type: 'number', placeholder: '54' },
-      fee_rate:      { label: 'อัตราค่าส่วนกลาง (บาท/ตร.ว./ปี)', type: 'number', placeholder: '85' },
-      house_type:    { label: 'ประเภทการใช้', type: 'text', placeholder: 'อยู่เอง / เช่า / ว่าง' },
-    }, async (data) => {
-      try {
-        const house_no = data.house_no?.value?.trim()
-        if (!house_no) {
-          alert('กรุณากรอกเลขที่บ้าน')
-          return
-        }
-
-        await createHouse({
-          house_no,
-          soi:          data.soi?.value?.trim() || null,
-          owner_name:   data.owner_name?.value?.trim() || null,
-          resident_name: data.resident_name?.value?.trim() || null,
-          phone:        data.phone?.value?.trim() || null,
-          area_sqw:     data.area_sqw?.value || 0,
-          fee_rate:     data.fee_rate?.value || 10,
-          house_type:   data.house_type?.value?.trim() || 'อยู่เอง',
-          status:       'normal',
-        })
-
-        await loadHouses()
-      } catch (error) {
-        console.error('Error creating house:', error)
-        alert(`ไม่สามารถเพิ่มข้อมูลบ้านได้: ${error.message}`)
-      }
-    })
+  const openAddModal = () => {
+    setEditingHouse(null)
+    setForm(EMPTY_FORM)
+    setShowModal(true)
   }
 
-  const handleEditHouse = (house) => {
-    openModal('แก้ไขข้อมูลบ้าน ' + house.house_no, {
-      house_no:      { label: 'เลขที่บ้าน *', type: 'text', value: house.house_no },
-      soi:           { label: 'ซอย', type: 'text', value: house.soi || '' },
-      owner_name:    { label: 'ชื่อเจ้าของ', type: 'text', value: house.owner_name || '' },
-      resident_name: { label: 'ชื่อผู้อยู่อาศัย', type: 'text', value: house.resident_name || '' },
-      phone:         { label: 'เบอร์โทร', type: 'tel', value: house.phone || '' },
-      area_sqw:      { label: 'พื้นที่ (ตร.ว.)', type: 'number', value: house.area_sqw || 0 },
-      fee_rate:      { label: 'อัตราค่าส่วนกลาง (บาท/ตร.ว./ปี)', type: 'number', value: house.fee_rate || 10 },
-      house_type:    { label: 'ประเภทการใช้', type: 'text', value: house.house_type || 'อยู่เอง' },
-      status:        { label: 'สถานะ', type: 'text', value: house.status || 'normal' },
-      note:          { label: 'หมายเหตุ', type: 'text', value: house.note || '' },
-    }, async (data) => {
-      try {
-        await updateHouse(house.id, {
-          house_no:      data.house_no?.value?.trim(),
-          soi:           data.soi?.value?.trim() || null,
-          owner_name:    data.owner_name?.value?.trim() || null,
-          resident_name: data.resident_name?.value?.trim() || null,
-          phone:         data.phone?.value?.trim() || null,
-          area_sqw:      Number(data.area_sqw?.value) || 0,
-          fee_rate:      Number(data.fee_rate?.value) || 10,
-          house_type:    data.house_type?.value?.trim() || 'อยู่เอง',
-          status:        data.status?.value?.trim() || 'normal',
-          note:          data.note?.value?.trim() || null,
-        })
-        await loadHouses()
-      } catch (error) {
-        console.error('Error updating house:', error)
-        alert(`ไม่สามารถแก้ไขข้อมูลบ้านได้: ${error.message}`)
-      }
+  const openEditModal = (house) => {
+    setEditingHouse(house)
+    setForm({
+      house_no: house.house_no || '',
+      soi: house.soi || '1',
+      address: house.address || '',
+      owner_name: house.owner_name || '',
+      resident_name: house.resident_name || '',
+      contact_name: house.contact_name || '',
+      phone: house.phone || '',
+      line_id: house.line_id || '',
+      email: house.email || '',
+      area_sqw: String(house.area_sqw || ''),
+      house_type: house.house_type || 'อยู่เอง',
+      status: house.status || 'normal',
+      note: house.note || '',
     })
+    setShowModal(true)
   }
 
-  const handleDeleteHouse = (house) => {
-    if (!confirm(`ยืนยันลบบ้านเลขที่ ${house.house_no}?\nการลบจะไม่สามารถกู้คืนได้`)) return
-    deleteHouse(house.id)
-      .then(() => loadHouses())
-      .catch((error) => alert(`ไม่สามารถลบข้อมูลบ้านได้: ${error.message}`))
+  const closeModal = (force = false) => {
+    if (saving && !force) return
+    setShowModal(false)
+    setEditingHouse(null)
+    setForm(EMPTY_FORM)
+  }
+
+  const handleChange = (event) => {
+    const { name, value } = event.target
+    setForm((current) => ({ ...current, [name]: value }))
+  }
+
+  const handleSubmit = async (event) => {
+    event.preventDefault()
+
+    if (!form.house_no.trim()) {
+      await Swal.fire({ icon: 'warning', title: 'ข้อมูลไม่ครบ', text: 'กรุณากรอกเลขที่บ้าน' })
+      return
+    }
+
+    try {
+      setSaving(true)
+
+      const payload = {
+        house_no: form.house_no,
+        soi: form.soi,
+        address: form.address,
+        owner_name: form.owner_name,
+        resident_name: form.resident_name,
+        contact_name: form.contact_name,
+        phone: form.phone,
+        line_id: form.line_id,
+        email: form.email,
+        area_sqw: Number(form.area_sqw || 0),
+        fee_rate: Number(setup.feeRatePerSqw || 0),
+        house_type: form.house_type,
+        status: form.status,
+        note: form.note,
+      }
+
+      if (editingHouse) {
+        await updateHouse(editingHouse.id, payload)
+        await Swal.fire({ icon: 'success', title: 'บันทึกสำเร็จ', text: `อัปเดตบ้าน ${form.house_no} แล้ว`, timer: 1500, showConfirmButton: false })
+      } else {
+        await createHouse(payload)
+        await Swal.fire({ icon: 'success', title: 'เพิ่มข้อมูลสำเร็จ', text: `เพิ่มบ้าน ${form.house_no} แล้ว`, timer: 1500, showConfirmButton: false })
+      }
+
+      closeModal(true)
+      await loadHouses()
+    } catch (error) {
+      console.error('Error saving house:', error)
+      await Swal.fire({ icon: 'error', title: 'บันทึกไม่สำเร็จ', text: error.message })
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const handleDeleteHouse = async (house) => {
+    const result = await Swal.fire({
+      icon: 'warning',
+      title: 'ยืนยันการลบ',
+      text: `ต้องการลบบ้านเลขที่ ${house.house_no} ใช่หรือไม่?`,
+      showCancelButton: true,
+      confirmButtonText: 'ลบข้อมูล',
+      cancelButtonText: 'ยกเลิก',
+      confirmButtonColor: '#c0392b',
+    })
+
+    if (!result.isConfirmed) return
+
+    try {
+      await deleteHouse(house.id)
+      await Swal.fire({ icon: 'success', title: 'ลบสำเร็จ', timer: 1400, showConfirmButton: false })
+      await loadHouses()
+    } catch (error) {
+      console.error('Error deleting house:', error)
+      await Swal.fire({ icon: 'error', title: 'ลบไม่สำเร็จ', text: error.message })
+    }
   }
 
   return (
@@ -129,8 +221,8 @@ const AdminHouses = () => {
             </div>
           </div>
           <div className="ph-acts">
-            <button className="btn btn-p btn-sm" onClick={handleAddHouse}>+ เพิ่มบ้าน</button>
-            <button className="btn btn-o btn-sm" onClick={() => loadHouses()}>🔄 รีฟรช</button>
+            <button className="btn btn-p btn-sm" onClick={openAddModal}>+ เพิ่มบ้าน</button>
+            <button className="btn btn-o btn-sm" onClick={() => loadHouses()}>🔄 รีเฟรช</button>
           </div>
         </div>
       </div>
@@ -145,7 +237,7 @@ const AdminHouses = () => {
             type="text"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            placeholder="ค้นหาเลขที่บ้าน/เจ้าของ..."
+            placeholder="ค้นหาเลขที่บ้าน / เจ้าของ / ผู้ติดต่อ..."
             style={{ flex: 1, minWidth: '200px', padding: '8px 12px', border: '1px solid var(--bo)', borderRadius: '6px' }}
           />
           <select
@@ -156,7 +248,7 @@ const AdminHouses = () => {
             <option value="all">ทั้งหมด</option>
             <option value="normal">ปกติ</option>
             <option value="overdue">ค้างชำระ</option>
-            <option value="suspended">ระงับสิทธิ์</option>
+            <option value="suspended">ระงับกรมที่ดิน</option>
             <option value="lawsuit">ฟ้องร้อง</option>
           </select>
           <button className="btn btn-a btn-sm" onClick={() => loadHouses()}>ค้นหา</button>
@@ -170,10 +262,11 @@ const AdminHouses = () => {
         </div>
         <div className="cb">
           <div style={{ overflowX: 'auto' }}>
-            <table className="tw" style={{ width: '100%', minWidth: '600px' }}>
+            <table className="tw" style={{ width: '100%', minWidth: '760px' }}>
               <thead>
                 <tr>
                   <th>เลขที่</th>
+                  <th>ซอย</th>
                   <th>เจ้าของ / ผู้อยู่อาศัย</th>
                   <th>ประเภท</th>
                   <th>พื้นที่ (ตร.ว.)</th>
@@ -185,29 +278,31 @@ const AdminHouses = () => {
               <tbody>
                 {loading ? (
                   <tr>
-                    <td colSpan="7" style={{ textAlign: 'center', color: 'var(--mu)', padding: '20px' }}>
+                    <td colSpan="8" style={{ textAlign: 'center', color: 'var(--mu)', padding: '20px' }}>
                       กำลังโหลดข้อมูล...
                     </td>
                   </tr>
                 ) : houses.length === 0 ? (
                   <tr>
-                    <td colSpan="7" style={{ textAlign: 'center', color: 'var(--mu)', padding: '20px' }}>
+                    <td colSpan="8" style={{ textAlign: 'center', color: 'var(--mu)', padding: '20px' }}>
                       ไม่พบข้อมูลบ้าน
                     </td>
                   </tr>
                 ) : (
                   houses.map((house) => {
                     const badge = getStatusBadge(house.status)
-                    const annualFee = Number(house.annual_fee ?? 0).toLocaleString('th-TH')
-                    const soi = house.soi ? ` ซอย ${house.soi}` : ''
+                    const annualFee = formatCurrency(house.annual_fee)
 
                     return (
                       <tr key={house.id}>
-                        <td><strong>{house.house_no}{soi}</strong></td>
+                        <td><strong>{house.house_no}</strong></td>
+                        <td>{house.soi ? `ซอย ${house.soi}` : '-'}</td>
                         <td>
                           <div>{house.owner_name || '-'}</div>
-                          {house.resident_name && house.resident_name !== house.owner_name && (
-                            <div style={{ fontSize: '11px', color: 'var(--mu)' }}>{house.resident_name}</div>
+                          {(house.resident_name || house.contact_name) && (
+                            <div style={{ fontSize: '11px', color: 'var(--mu)' }}>
+                              {[house.resident_name, house.contact_name].filter(Boolean).join(' · ')}
+                            </div>
                           )}
                         </td>
                         <td>{house.house_type || '-'}</td>
@@ -215,7 +310,7 @@ const AdminHouses = () => {
                         <td>฿{annualFee}</td>
                         <td><span className={badge.className}>{badge.label}</span></td>
                         <td style={{ whiteSpace: 'nowrap' }}>
-                          <button className="btn btn-xs btn-a" style={{ marginRight: '4px' }} onClick={() => handleEditHouse(house)}>แก้ไข</button>
+                          <button className="btn btn-xs btn-a" style={{ marginRight: '4px' }} onClick={() => openEditModal(house)}>แก้ไข</button>
                           <button className="btn btn-xs btn-dg" onClick={() => handleDeleteHouse(house)}>ลบ</button>
                         </td>
                       </tr>
@@ -227,6 +322,113 @@ const AdminHouses = () => {
           </div>
         </div>
       </div>
+
+      {showModal && (
+        <div className="house-mo" onClick={closeModal}>
+          <div className="house-md" onClick={(event) => event.stopPropagation()}>
+            <div className="house-md-head">
+              <div>
+                <div className="house-md-title">🏠 {editingHouse ? 'แก้ไขข้อมูลบ้าน' : 'เพิ่มข้อมูลบ้าน'}</div>
+                <div className="house-md-sub">{form.house_no || '-'} {form.owner_name ? `— ${form.owner_name}` : `— ${setup.villageName}`}</div>
+              </div>
+              <button className="house-md-close" type="button" onClick={closeModal}>✕</button>
+            </div>
+
+            <form onSubmit={handleSubmit}>
+              <div className="house-md-body">
+                <section className="house-sec">
+                  <div className="house-sec-title">ที่อยู่</div>
+                  <div className="house-grid house-grid-3">
+                    <label className="house-field">
+                      <span>บ้านเลขที่</span>
+                      <input name="house_no" value={form.house_no} onChange={handleChange} placeholder="10/1" />
+                    </label>
+                    <label className="house-field">
+                      <span>ซอย</span>
+                      <select name="soi" value={form.soi} onChange={handleChange}>
+                        {SOI_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+                      </select>
+                    </label>
+                    <label className="house-field house-field-span-1">
+                      <span>ถนน / ที่อยู่</span>
+                      <input name="address" value={form.address} onChange={handleChange} placeholder="ถนนใหญ่ 1" />
+                    </label>
+                  </div>
+                </section>
+
+                <section className="house-sec">
+                  <div className="house-sec-title">เจ้าของ / ผู้อาศัย</div>
+                  <div className="house-grid house-grid-2">
+                    <label className="house-field">
+                      <span>เจ้าของกรรมสิทธิ์</span>
+                      <input name="owner_name" value={form.owner_name} onChange={handleChange} placeholder="สมชาย ใจดี" />
+                    </label>
+                    <label className="house-field">
+                      <span>ผู้เช่า / ผู้อาศัย</span>
+                      <input name="resident_name" value={form.resident_name} onChange={handleChange} placeholder="ไม่มี" />
+                    </label>
+                    <label className="house-field">
+                      <span>ผู้ติดต่อ</span>
+                      <input name="contact_name" value={form.contact_name} onChange={handleChange} placeholder="สมชาย ใจดี" />
+                    </label>
+                    <label className="house-field">
+                      <span>เบอร์โทร</span>
+                      <input name="phone" value={form.phone} onChange={handleChange} placeholder="081-234-5678" />
+                    </label>
+                    <label className="house-field">
+                      <span>Line ID</span>
+                      <input name="line_id" value={form.line_id} onChange={handleChange} placeholder="somchai.id" />
+                    </label>
+                    <label className="house-field">
+                      <span>EMAIL</span>
+                      <input name="email" value={form.email} onChange={handleChange} placeholder="somchai@email.com" />
+                    </label>
+                  </div>
+                </section>
+
+                <section className="house-sec">
+                  <div className="house-sec-title">การเงิน</div>
+                  <div className="house-grid house-grid-3">
+                    <label className="house-field">
+                      <span>ขนาด ตร.ว.</span>
+                      <input name="area_sqw" type="number" min="0" step="0.01" value={form.area_sqw} onChange={handleChange} placeholder="52" />
+                    </label>
+                    <label className="house-field">
+                      <span>อัตราค่าส่วนกลางจาก setup</span>
+                      <input value={`฿${formatCurrency(setup.feeRatePerSqw)} / ตร.ว. / ปี`} readOnly className="house-readonly" />
+                    </label>
+                    <label className="house-field">
+                      <span>ค่าส่วนกลาง/ปี ฿</span>
+                      <input value={formatCurrency(annualFee)} readOnly className="house-readonly" />
+                    </label>
+                    <label className="house-field">
+                      <span>ประเภท</span>
+                      <select name="house_type" value={form.house_type} onChange={handleChange}>
+                        {HOUSE_TYPE_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+                      </select>
+                    </label>
+                    <label className="house-field house-field-span-2">
+                      <span>สถานะบ้าน</span>
+                      <select name="status" value={form.status} onChange={handleChange}>
+                        {HOUSE_STATUS_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+                      </select>
+                    </label>
+                    <label className="house-field house-field-span-3">
+                      <span>หมายเหตุ</span>
+                      <textarea name="note" value={form.note} onChange={handleChange} rows="3" placeholder="รายละเอียดเพิ่มเติม" />
+                    </label>
+                  </div>
+                </section>
+              </div>
+
+              <div className="house-md-foot">
+                <button className="btn btn-g" type="button" onClick={closeModal}>ยกเลิก</button>
+                <button className="btn btn-p" type="submit" disabled={saving}>{saving ? 'กำลังบันทึก...' : 'บันทึก'}</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

@@ -1,10 +1,24 @@
 import { supabase } from './supabase'
 
+const houseSorter = new Intl.Collator('th-TH', { numeric: true, sensitivity: 'base' })
+
+function normalizeSoiValue(soi) {
+  const numeric = Number.parseInt(String(soi || '').replace(/[^0-9]/g, ''), 10)
+  return Number.isNaN(numeric) ? Number.MAX_SAFE_INTEGER : numeric
+}
+
+function sortHouses(items) {
+  return [...items].sort((left, right) => {
+    const soiCompare = normalizeSoiValue(left.soi) - normalizeSoiValue(right.soi)
+    if (soiCompare !== 0) return soiCompare
+    return houseSorter.compare(left.house_no || '', right.house_no || '')
+  })
+}
+
 export async function listHouses({ status = 'all', search = '' } = {}) {
   let query = supabase
     .from('houses')
     .select('*')
-    .order('house_no', { ascending: true })
 
   if (status && status !== 'all') {
     query = query.eq('status', status)
@@ -12,21 +26,38 @@ export async function listHouses({ status = 'all', search = '' } = {}) {
 
   if (search && search.trim()) {
     const keyword = search.trim()
-    query = query.or(`house_no.ilike.%${keyword}%,owner_name.ilike.%${keyword}%,resident_name.ilike.%${keyword}%`)
+    query = query.or(`house_no.ilike.%${keyword}%,owner_name.ilike.%${keyword}%,resident_name.ilike.%${keyword}%,contact_name.ilike.%${keyword}%,phone.ilike.%${keyword}%`)
   }
 
   const { data, error } = await query
 
   if (error) throw error
-  return data ?? []
+  return sortHouses(data ?? [])
+}
+
+export async function getHouseSetup() {
+  const { data, error } = await supabase
+    .from('system_config')
+    .select('fee_rate_per_sqw, village_name')
+    .limit(1)
+    .maybeSingle()
+
+  if (error) throw error
+
+  return {
+    feeRatePerSqw: Number(data?.fee_rate_per_sqw ?? 85),
+    villageName: data?.village_name || 'The Greenfield',
+  }
 }
 
 export async function createHouse(payload) {
   const house = {
     house_no:       payload.house_no?.trim() || null,
     soi:            payload.soi?.trim() || null,
+    address:        payload.address?.trim() || null,
     owner_name:     payload.owner_name?.trim() || null,
     resident_name:  payload.resident_name?.trim() || null,
+    contact_name:   payload.contact_name?.trim() || null,
     phone:          payload.phone?.trim() || null,
     line_id:        payload.line_id?.trim() || null,
     email:          payload.email?.trim() || null,
@@ -48,9 +79,16 @@ export async function createHouse(payload) {
 }
 
 export async function updateHouse(id, updates) {
+  const payload = {
+    ...updates,
+    address: updates.address?.trim() || null,
+    contact_name: updates.contact_name?.trim() || null,
+    line_id: updates.line_id?.trim() || null,
+  }
+
   const { data, error } = await supabase
     .from('houses')
-    .update(updates)
+    .update(payload)
     .eq('id', id)
     .select('*')
     .single()
