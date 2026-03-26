@@ -1201,7 +1201,7 @@ button, input, select, textarea {
 }
 
 .house-field textarea {
-  min-height: 52px;
+  min-height: 40px;
   resize: none;
 }
 

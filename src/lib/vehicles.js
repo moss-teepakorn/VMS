@@ -1,23 +1,55 @@
 import { supabase } from './supabase'
 
-export async function listVehicles({ status = 'all', search = '' } = {}) {
-  let query = supabase
+const houseSorter = new Intl.Collator('th-TH', { numeric: true, sensitivity: 'base' })
+
+function normalizeSoiValue(soi) {
+  const numeric = Number.parseInt(String(soi || '').replace(/[^0-9]/g, ''), 10)
+  return Number.isNaN(numeric) ? Number.MAX_SAFE_INTEGER : numeric
+}
+
+function sortVehicles(items) {
+  return [...items].sort((left, right) => {
+    const soiCompare = normalizeSoiValue(left.houses?.soi) - normalizeSoiValue(right.houses?.soi)
+    if (soiCompare !== 0) return soiCompare
+    const houseCompare = houseSorter.compare(left.houses?.house_no || '', right.houses?.house_no || '')
+    if (houseCompare !== 0) return houseCompare
+    return houseSorter.compare(left.license_plate || '', right.license_plate || '')
+  })
+}
+
+export async function listVehicles({ status = 'all', search = '', soi = 'all', vehicleType = 'all' } = {}) {
+  const query = supabase
     .from('vehicles')
-    .select('id, house_id, license_plate, province, brand, model, color, vehicle_type, parking_location, parking_lock_no, parking_fee, status, note, created_at, houses(id, house_no, owner_name)')
+    .select('id, house_id, license_plate, province, brand, model, color, vehicle_type, parking_location, parking_lock_no, parking_fee, status, note, created_at, houses(id, house_no, soi, owner_name)')
     .order('created_at', { ascending: false })
-
-  if (status && status !== 'all') {
-    query = query.eq('status', status)
-  }
-
-  if (search && search.trim()) {
-    const keyword = search.trim()
-    query = query.or(`license_plate.ilike.%${keyword}%,brand.ilike.%${keyword}%,model.ilike.%${keyword}%,province.ilike.%${keyword}%`)
-  }
 
   const { data, error } = await query
   if (error) throw error
-  return data ?? []
+
+  const keyword = search.trim().toLowerCase()
+  const filtered = (data ?? []).filter((item) => {
+    if (status !== 'all' && item.status !== status) return false
+    if (soi !== 'all' && String(item.houses?.soi || '') !== String(soi)) return false
+    if (vehicleType !== 'all' && item.vehicle_type !== vehicleType) return false
+    if (!keyword) return true
+
+    const searchable = [
+      item.license_plate,
+      item.brand,
+      item.model,
+      item.color,
+      item.houses?.house_no,
+      item.houses?.owner_name,
+      item.houses?.soi,
+    ]
+      .filter(Boolean)
+      .join(' ')
+      .toLowerCase()
+
+    return searchable.includes(keyword)
+  })
+
+  return sortVehicles(filtered)
 }
 
 export async function createVehicle(payload) {
@@ -39,7 +71,7 @@ export async function createVehicle(payload) {
   const { data, error } = await supabase
     .from('vehicles')
     .insert([vehicle])
-    .select('id, house_id, license_plate, province, brand, model, color, vehicle_type, parking_location, parking_lock_no, parking_fee, status, note, created_at, houses(id, house_no, owner_name)')
+    .select('id, house_id, license_plate, province, brand, model, color, vehicle_type, parking_location, parking_lock_no, parking_fee, status, note, created_at, houses(id, house_no, soi, owner_name)')
     .single()
 
   if (error) throw error
@@ -51,7 +83,7 @@ export async function updateVehicle(id, updates) {
     .from('vehicles')
     .update(updates)
     .eq('id', id)
-    .select('id, house_id, license_plate, province, brand, model, color, vehicle_type, parking_location, parking_lock_no, parking_fee, status, note, created_at, houses(id, house_no, owner_name)')
+    .select('id, house_id, license_plate, province, brand, model, color, vehicle_type, parking_location, parking_lock_no, parking_fee, status, note, created_at, houses(id, house_no, soi, owner_name)')
     .single()
 
   if (error) throw error
