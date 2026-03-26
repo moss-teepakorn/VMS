@@ -176,7 +176,7 @@ const AdminHouses = () => {
       }
 
       closeModal(true)
-      await loadHouses()
+  await loadHouses({ status: filterType, search: searchTerm })
     } catch (error) {
       console.error('Error saving house:', error)
       await Swal.fire({ icon: 'error', title: 'บันทึกไม่สำเร็จ', text: error.message })
@@ -324,14 +324,13 @@ const AdminHouses = () => {
       </div>
 
       {showModal && (
-        <div className="house-mo" onClick={closeModal}>
-          <div className="house-md" onClick={(event) => event.stopPropagation()}>
+        <div className="house-mo">
+          <div className="house-md">
             <div className="house-md-head">
               <div>
                 <div className="house-md-title">🏠 {editingHouse ? 'แก้ไขข้อมูลบ้าน' : 'เพิ่มข้อมูลบ้าน'}</div>
                 <div className="house-md-sub">{form.house_no || '-'} {form.owner_name ? `— ${form.owner_name}` : `— ${setup.villageName}`}</div>
               </div>
-              <button className="house-md-close" type="button" onClick={closeModal}>✕</button>
             </div>
 
             <form onSubmit={handleSubmit}>

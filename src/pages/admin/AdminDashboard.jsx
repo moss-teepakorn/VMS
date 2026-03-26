@@ -67,7 +67,6 @@ const AdminDashboard = () => {
             </div>
           </div>
           <div className="ph-acts">
-            <button className="btn btn-w btn-sm" onClick={() => navigate('/admin/houses')}>+ เพิ่มบ้านใหม่</button>
             <div style={{ display: 'flex', gap: '14px' }}>
               <div style={{ textAlign: 'center' }}>
                 <div style={{ fontSize: '18px', fontWeight: 800, color: '#fff' }}>{data.header.totalHouses}</div>
@@ -82,7 +81,6 @@ const AdminDashboard = () => {
                 <div style={{ fontSize: '9.5px', color: 'rgba(255,255,255,.75)' }}>ค้างชำระรวม</div>
               </div>
             </div>
-            <button className="btn btn-w btn-sm" onClick={() => navigate('/admin/reports')}>📄 ออกรายงาน</button>
           </div>
         </div>
       </div>

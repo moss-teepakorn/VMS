@@ -1107,6 +1107,13 @@ button, input, select, textarea {
   flex-direction: column;
 }
 
+.house-md form {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+
 .house-md-head {
   display: flex;
   align-items: flex-start;
@@ -1130,17 +1137,9 @@ button, input, select, textarea {
   font-weight: 600;
 }
 
-.house-md-close {
-  width: 40px;
-  height: 40px;
-  border-radius: 12px;
-  border: 1px solid rgba(255,255,255,.22);
-  background: rgba(255,255,255,.12);
-  color: #fff;
-  cursor: pointer;
-}
-
 .house-md-body {
+  flex: 1;
+  min-height: 0;
   padding: 18px 18px 14px;
   overflow: auto;
   background: #f8fafc;

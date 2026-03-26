@@ -199,11 +199,10 @@ const AdminLayout = () => {
         </div>
 
         {/* Modal */}
-        <div className={`mo ${modalOpen ? 'show' : ''}`} onClick={closeModal}>
-          <div className="md" onClick={(e) => e.stopPropagation()}>
+        <div className={`mo ${modalOpen ? 'show' : ''}`}>
+          <div className="md">
             <div className="md-hd">
               <h2>{modalTitle}</h2>
-              <button className="md-close" onClick={closeModal}>✕</button>
             </div>
             <div className="md-bd">
               {Object.entries(modalFields).length > 0 ? (
