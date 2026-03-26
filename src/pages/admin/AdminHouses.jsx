@@ -269,11 +269,6 @@ const AdminHouses = () => {
               <div className="ph-sub">จัดการข้อมูลหลัง 128 หลัง</div>
             </div>
           </div>
-          <div className="ph-acts">
-            <button className="btn btn-p btn-sm" onClick={openAddModal}>+ เพิ่มบ้าน</button>
-            <button className="btn btn-a btn-sm" onClick={handleBulkUpdateAnnualFee}>⏳ อัปเดตค่าส่วนกลาง</button>
-            <button className="btn btn-o btn-sm" onClick={() => loadHouses()}>🔄 รีเฟรช</button>
-          </div>
         </div>
 
         <div className="houses-filter-row">
@@ -309,8 +304,13 @@ const AdminHouses = () => {
 
       {/* Houses Table */}
       <div className="card">
-        <div className="ch">
+        <div className="ch houses-list-head">
           <div className="ct">รายการบ้านทั้งหมด ({houses.length} หลัง)</div>
+          <div className="houses-list-actions">
+            <button className="btn btn-p btn-sm" onClick={openAddModal}>+ เพิ่มบ้าน</button>
+            <button className="btn btn-a btn-sm" onClick={handleBulkUpdateAnnualFee}>⏳ อัปเดตค่าส่วนกลาง</button>
+            <button className="btn btn-o btn-sm" onClick={() => loadHouses()}>🔄 รีเฟรช</button>
+          </div>
         </div>
         <div className="cb houses-table-card-body">
           <div className="houses-table-wrap">
