@@ -76,7 +76,7 @@ const EMPTY_FORM = {
 }
 
 const MAX_ATTACHMENTS = 5
-const MAX_IMAGE_SIZE_BYTES = 150 * 1024
+const MAX_IMAGE_SIZE_BYTES = 100 * 1024
 
 function formatDecimal(value) {
   return Number(value || 0).toLocaleString('en-US', {
@@ -270,7 +270,7 @@ const AdminVehicles = () => {
     }
 
     if (!blob || blob.size > MAX_IMAGE_SIZE_BYTES) {
-      throw new Error(`ไม่สามารถย่อรูป ${file.name} ให้ต่ำกว่า 150KB ได้`)
+      throw new Error(`ไม่สามารถย่อรูป ${file.name} ให้ต่ำกว่า 100KB ได้`)
     }
 
     const fileName = formatFileName(sequence)
