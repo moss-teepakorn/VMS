@@ -591,15 +591,23 @@
 }
 
 .houses-list-head {
-  justify-content: space-between;
+  display: grid;
+  grid-template-columns: auto auto 1fr auto auto auto auto auto;
   gap: 12px;
-  flex-wrap: wrap;
+  align-items: center;
+  padding-bottom: 8px;
+}
+
+.ct {
+  grid-column: 1 / 4;
 }
 
 .houses-list-actions {
-  display: inline-flex;
+  grid-column: 4 / -1;
+  display: flex;
   align-items: center;
   gap: 7px;
+  justify-content: flex-end;
   flex-wrap: wrap;
 }
 
