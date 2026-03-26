@@ -117,6 +117,7 @@ const AdminLayout = () => {
           <div>
             <div className="sb-logo-name">The Greenfield</div>
             <div className="sb-logo-sub">Village Management v12.3</div>
+            <div style={{ fontSize: '9px', color: 'rgba(255,255,255,.4)', marginTop: '2px', fontFamily: 'monospace' }}>build 48f6cbf · 26/03/2026</div>
           </div>
         </div>
 
