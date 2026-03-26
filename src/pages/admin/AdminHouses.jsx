@@ -36,8 +36,11 @@ const EMPTY_FORM = {
   note: '',
 }
 
-function formatCurrency(value) {
-  return Number(value || 0).toLocaleString('th-TH')
+function formatDecimal(value) {
+  return Number(value || 0).toLocaleString('en-US', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  })
 }
 
 const AdminHouses = () => {
@@ -291,7 +294,7 @@ const AdminHouses = () => {
                 ) : (
                   houses.map((house) => {
                     const badge = getStatusBadge(house.status)
-                    const annualFee = formatCurrency(house.annual_fee)
+                    const annualFee = formatDecimal(house.annual_fee)
 
                     return (
                       <tr key={house.id}>
@@ -306,8 +309,8 @@ const AdminHouses = () => {
                           )}
                         </td>
                         <td>{house.house_type || '-'}</td>
-                        <td>{house.area_sqw ? Number(house.area_sqw).toLocaleString('th-TH') : '-'}</td>
-                        <td>฿{annualFee}</td>
+                        <td>{house.area_sqw ? formatDecimal(house.area_sqw) : '-'}</td>
+                        <td>{annualFee}</td>
                         <td><span className={badge.className}>{badge.label}</span></td>
                         <td style={{ whiteSpace: 'nowrap' }}>
                           <button className="btn btn-xs btn-a" style={{ marginRight: '4px' }} onClick={() => openEditModal(house)}>แก้ไข</button>
@@ -394,11 +397,11 @@ const AdminHouses = () => {
                     </label>
                     <label className="house-field">
                       <span>อัตราค่าส่วนกลางจาก setup</span>
-                      <input value={`฿${formatCurrency(setup.feeRatePerSqw)} / ตร.ว. / ปี`} readOnly className="house-readonly" />
+                      <input value={formatDecimal(setup.feeRatePerSqw)} readOnly className="house-readonly" />
                     </label>
                     <label className="house-field">
-                      <span>ค่าส่วนกลาง/ปี ฿</span>
-                      <input value={formatCurrency(annualFee)} readOnly className="house-readonly" />
+                      <span>ค่าส่วนกลาง/ปี</span>
+                      <input value={formatDecimal(annualFee)} readOnly className="house-readonly" />
                     </label>
                     <label className="house-field">
                       <span>ประเภท</span>
