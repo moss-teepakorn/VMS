@@ -1,11 +1,9 @@
 import React, { useState, useContext, useEffect } from 'react'
 import { ModalContext } from './AdminLayout'
-import { useAuth } from '../../contexts/AuthContext'
-import { listHouses, createHouse } from '../../lib/houses'
+import { listHouses, createHouse, updateHouse, deleteHouse } from '../../lib/houses'
 
 const AdminHouses = () => {
   const { openModal } = useContext(ModalContext)
-  const { user } = useAuth()
   const [filterType, setFilterType] = useState('all')
   const [searchTerm, setSearchTerm] = useState('')
   const [houses, setHouses] = useState([])
@@ -32,36 +30,42 @@ const AdminHouses = () => {
   }, [])
 
   const getStatusBadge = (status) => {
-    if (status === 'occupied') return { className: 'bd b-ok', label: 'อยู่อาศัย' }
-    if (status === 'vacant') return { className: 'bd b-wn', label: 'ว่าง' }
-    return { className: 'bd b-pr', label: 'รอตรวจสอบ' }
+    if (status === 'normal')   return { className: 'bd b-ok', label: 'ปกติ' }
+    if (status === 'overdue')  return { className: 'bd b-wn', label: 'ค้างชำระ' }
+    if (status === 'suspended') return { className: 'bd b-dg', label: 'ระงับสิทธิ์' }
+    if (status === 'lawsuit')  return { className: 'bd b-pr', label: 'ฟ้องร้อง' }
+    return { className: 'bd b-mu', label: status }
   }
 
   const handleAddHouse = () => {
     openModal('เพิ่มบ้านใหม่', {
-      number: { label: 'เลขที่บ้าน', type: 'text', placeholder: 'เช่น 10/1' },
-      owner: { label: 'ชื่อเจ้าของ', type: 'text', placeholder: 'นายสมชาติ ใจดี' },
-      phone: { label: 'เบอร์โทร', type: 'tel', placeholder: '098-xxx-xxxx' },
-      area: { label: 'พื้นที่ (ตร.ม.)', type: 'number', placeholder: '150' },
+      house_no:      { label: 'เลขที่บ้าน *', type: 'text', placeholder: 'เช่น 10/1' },
+      soi:           { label: 'ซอย', type: 'text', placeholder: 'เช่น A, B, 1' },
+      owner_name:    { label: 'ชื่อเจ้าของ', type: 'text', placeholder: 'นายสมชาติ ใจดี' },
+      resident_name: { label: 'ชื่อผู้อยู่อาศัย', type: 'text', placeholder: 'ถ้าต่างจากเจ้าของ' },
+      phone:         { label: 'เบอร์โทร', type: 'tel', placeholder: '098-xxx-xxxx' },
+      area_sqw:      { label: 'พื้นที่ (ตร.ว.)', type: 'number', placeholder: '54' },
+      fee_rate:      { label: 'อัตราค่าส่วนกลาง (บาท/ตร.ว./ปี)', type: 'number', placeholder: '85' },
+      house_type:    { label: 'ประเภทการใช้', type: 'text', placeholder: 'อยู่เอง / เช่า / ว่าง' },
     }, async (data) => {
       try {
-        const houseNumber = data.number?.value?.trim()
-        const ownerName = data.owner?.value?.trim()
-
-        if (!houseNumber || !ownerName) {
-          alert('กรุณากรอกเลขที่บ้านและชื่อเจ้าของ')
+        const house_no = data.house_no?.value?.trim()
+        if (!house_no) {
+          alert('กรุณากรอกเลขที่บ้าน')
           return
         }
 
         await createHouse({
-          house_number: houseNumber,
-          owner_name: ownerName,
-          phone: data.phone?.value?.trim() || null,
-          area_sqm: data.area?.value || null,
-          status: 'pending',
-          monthly_fee: 2750,
-          outstanding_amount: 0,
-        }, user?.id || null)
+          house_no,
+          soi:          data.soi?.value?.trim() || null,
+          owner_name:   data.owner_name?.value?.trim() || null,
+          resident_name: data.resident_name?.value?.trim() || null,
+          phone:        data.phone?.value?.trim() || null,
+          area_sqw:     data.area_sqw?.value || 0,
+          fee_rate:     data.fee_rate?.value || 10,
+          house_type:   data.house_type?.value?.trim() || 'อยู่เอง',
+          status:       'normal',
+        })
 
         await loadHouses()
       } catch (error) {
@@ -69,6 +73,47 @@ const AdminHouses = () => {
         alert(`ไม่สามารถเพิ่มข้อมูลบ้านได้: ${error.message}`)
       }
     })
+  }
+
+  const handleEditHouse = (house) => {
+    openModal('แก้ไขข้อมูลบ้าน ' + house.house_no, {
+      house_no:      { label: 'เลขที่บ้าน *', type: 'text', value: house.house_no },
+      soi:           { label: 'ซอย', type: 'text', value: house.soi || '' },
+      owner_name:    { label: 'ชื่อเจ้าของ', type: 'text', value: house.owner_name || '' },
+      resident_name: { label: 'ชื่อผู้อยู่อาศัย', type: 'text', value: house.resident_name || '' },
+      phone:         { label: 'เบอร์โทร', type: 'tel', value: house.phone || '' },
+      area_sqw:      { label: 'พื้นที่ (ตร.ว.)', type: 'number', value: house.area_sqw || 0 },
+      fee_rate:      { label: 'อัตราค่าส่วนกลาง (บาท/ตร.ว./ปี)', type: 'number', value: house.fee_rate || 10 },
+      house_type:    { label: 'ประเภทการใช้', type: 'text', value: house.house_type || 'อยู่เอง' },
+      status:        { label: 'สถานะ', type: 'text', value: house.status || 'normal' },
+      note:          { label: 'หมายเหตุ', type: 'text', value: house.note || '' },
+    }, async (data) => {
+      try {
+        await updateHouse(house.id, {
+          house_no:      data.house_no?.value?.trim(),
+          soi:           data.soi?.value?.trim() || null,
+          owner_name:    data.owner_name?.value?.trim() || null,
+          resident_name: data.resident_name?.value?.trim() || null,
+          phone:         data.phone?.value?.trim() || null,
+          area_sqw:      Number(data.area_sqw?.value) || 0,
+          fee_rate:      Number(data.fee_rate?.value) || 10,
+          house_type:    data.house_type?.value?.trim() || 'อยู่เอง',
+          status:        data.status?.value?.trim() || 'normal',
+          note:          data.note?.value?.trim() || null,
+        })
+        await loadHouses()
+      } catch (error) {
+        console.error('Error updating house:', error)
+        alert(`ไม่สามารถแก้ไขข้อมูลบ้านได้: ${error.message}`)
+      }
+    })
+  }
+
+  const handleDeleteHouse = (house) => {
+    if (!confirm(`ยืนยันลบบ้านเลขที่ ${house.house_no}?\nการลบจะไม่สามารถกู้คืนได้`)) return
+    deleteHouse(house.id)
+      .then(() => loadHouses())
+      .catch((error) => alert(`ไม่สามารถลบข้อมูลบ้านได้: ${error.message}`))
   }
 
   return (
@@ -109,9 +154,10 @@ const AdminHouses = () => {
             style={{ padding: '8px 12px', border: '1px solid var(--bo)', borderRadius: '6px' }}
           >
             <option value="all">ทั้งหมด</option>
-            <option value="vacant">ว่าง</option>
-            <option value="occupied">อยู่อาศัย</option>
-            <option value="pending">รอการอนุมัติ</option>
+            <option value="normal">ปกติ</option>
+            <option value="overdue">ค้างชำระ</option>
+            <option value="suspended">ระงับสิทธิ์</option>
+            <option value="lawsuit">ฟ้องร้อง</option>
           </select>
           <button className="btn btn-a btn-sm" onClick={() => loadHouses()}>ค้นหา</button>
         </div>
@@ -128,40 +174,50 @@ const AdminHouses = () => {
               <thead>
                 <tr>
                   <th>เลขที่</th>
-                  <th>เจ้าของ</th>
+                  <th>เจ้าของ / ผู้อยู่อาศัย</th>
+                  <th>ประเภท</th>
+                  <th>พื้นที่ (ตร.ว.)</th>
+                  <th>ค่าส่วนกลาง/ปี</th>
                   <th>สถานะ</th>
-                  <th>ค่าส่วนกลาง</th>
-                  <th>ค้าง</th>
                   <th></th>
                 </tr>
               </thead>
               <tbody>
                 {loading ? (
                   <tr>
-                    <td colSpan="6" style={{ textAlign: 'center', color: 'var(--mu)', padding: '20px' }}>
+                    <td colSpan="7" style={{ textAlign: 'center', color: 'var(--mu)', padding: '20px' }}>
                       กำลังโหลดข้อมูล...
                     </td>
                   </tr>
                 ) : houses.length === 0 ? (
                   <tr>
-                    <td colSpan="6" style={{ textAlign: 'center', color: 'var(--mu)', padding: '20px' }}>
+                    <td colSpan="7" style={{ textAlign: 'center', color: 'var(--mu)', padding: '20px' }}>
                       ไม่พบข้อมูลบ้าน
                     </td>
                   </tr>
                 ) : (
                   houses.map((house) => {
-                    const status = getStatusBadge(house.status)
-                    const monthlyFee = Number(house.monthly_fee ?? 0).toLocaleString('th-TH')
-                    const outstanding = Number(house.outstanding_amount ?? 0)
+                    const badge = getStatusBadge(house.status)
+                    const annualFee = Number(house.annual_fee ?? 0).toLocaleString('th-TH')
+                    const soi = house.soi ? ` ซอย ${house.soi}` : ''
 
                     return (
                       <tr key={house.id}>
-                        <td><strong>{house.house_number}</strong></td>
-                        <td>{house.owner_name}</td>
-                        <td><span className={status.className}>{status.label}</span></td>
-                        <td>฿{monthlyFee}</td>
-                        <td>{outstanding > 0 ? `฿${outstanding.toLocaleString('th-TH')}` : '-'}</td>
-                        <td><button className="btn btn-xs btn-o">ดู</button></td>
+                        <td><strong>{house.house_no}{soi}</strong></td>
+                        <td>
+                          <div>{house.owner_name || '-'}</div>
+                          {house.resident_name && house.resident_name !== house.owner_name && (
+                            <div style={{ fontSize: '11px', color: 'var(--mu)' }}>{house.resident_name}</div>
+                          )}
+                        </td>
+                        <td>{house.house_type || '-'}</td>
+                        <td>{house.area_sqw ? Number(house.area_sqw).toLocaleString('th-TH') : '-'}</td>
+                        <td>฿{annualFee}</td>
+                        <td><span className={badge.className}>{badge.label}</span></td>
+                        <td style={{ whiteSpace: 'nowrap' }}>
+                          <button className="btn btn-xs btn-a" style={{ marginRight: '4px' }} onClick={() => handleEditHouse(house)}>แก้ไข</button>
+                          <button className="btn btn-xs btn-dg" onClick={() => handleDeleteHouse(house)}>ลบ</button>
+                        </td>
                       </tr>
                     )
                   })
