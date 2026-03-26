@@ -5,6 +5,7 @@ import {
   createViolation,
   deleteViolation,
   deleteViolationImagesByPaths,
+  generateNextViolationReportNo,
   listViolationImages,
   listViolations,
   updateViolation,
@@ -94,9 +95,16 @@ const AdminViolations = () => {
     return { className: 'bd b-mu', label: status }
   }
 
-  const openAddModal = () => {
+  const openAddModal = async () => {
     setEditingItem(null)
-    setForm(EMPTY_FORM)
+    const today = new Date().toISOString().slice(0, 10)
+    let reportNo = ''
+    try {
+      reportNo = await generateNextViolationReportNo(today)
+    } catch {
+      reportNo = ''
+    }
+    setForm({ ...EMPTY_FORM, report_date: today, report_no: reportNo })
     setAttachments([])
     setRemovedImagePaths([])
     setShowModal(true)
@@ -122,8 +130,16 @@ const AdminViolations = () => {
     })
     try {
       const imgs = await listViolationImages(item.id)
-      setAttachments(imgs.map((img) => ({ ...img, source: 'existing' })))
+      const mapped = imgs.map((img) => ({ ...img, source: 'existing' }))
+      if (mapped.length > 0) {
+        setAttachments(mapped)
+      } else if (item.image_url) {
+        setAttachments([{ source: 'existing', name: 'legacy-image', path: null, url: item.image_url }])
+      } else {
+        setAttachments([])
+      }
     } catch (err) {
+      await showSwal({ icon: 'warning', title: 'โหลดรูปแนบไม่สำเร็จ', text: err.message || 'ไม่สามารถโหลดรูปจาก Storage ได้' })
       setAttachments([])
     }
     setRemovedImagePaths([])
@@ -198,12 +214,14 @@ const AdminViolations = () => {
     const files = Array.from(e.target.files || [])
     e.target.value = ''
     if (!files.length) return
-    const remaining = MAX_ATTACHMENTS - attachments.length
+    const existingCount = attachments.filter((item) => item.source === 'existing').length
+    const newCount = attachments.filter((item) => item.source === 'new').length
+    const remaining = MAX_ATTACHMENTS - (existingCount + newCount)
     if (remaining <= 0) { await showSwal({ icon: 'warning', title: 'แนบรูปได้สูงสุด 5 รูป' }); return }
     const toProcess = files.slice(0, remaining)
     if (files.length > remaining) await showSwal({ icon: 'info', title: `รับได้แค่ ${remaining} รูป`, text: 'ระบบจะใช้เฉพาะรูปชุดแรก' })
     try {
-      const start = attachments.length + 1
+      const start = existingCount + newCount + 1
       const prepared = []
       for (let i = 0; i < toProcess.length; i++) {
         const resized = await resizeImageToLimit(toProcess[i], start + i)
@@ -254,7 +272,7 @@ const AdminViolations = () => {
         status: form.status,
         due_date: form.due_date || null,
         report_no: form.report_no || null,
-        report_date: form.report_date || null,
+        report_date: form.report_date || new Date().toISOString().slice(0, 10),
         warning_count: warningCount,
         fine_amount: fineAmount,
         admin_note: form.admin_note,
@@ -298,6 +316,69 @@ const AdminViolations = () => {
       await loadData({ status: statusFilter, search: searchTerm })
     } catch (err) {
       await showSwal({ icon: 'error', title: 'ลบไม่สำเร็จ', text: err.message })
+    }
+  }
+
+  const buildReportHtml = (item, images) => {
+    const imageBlocks = images.length === 0
+      ? '<div style="padding:8px 0;color:#6b7280">ไม่มีรูปแนบ</div>'
+      : images.map((image) => `
+          <div style="display:inline-block;margin:6px;vertical-align:top">
+            <img src="${image.url}" alt="${image.name}" style="width:220px;height:150px;object-fit:cover;border:1px solid #e5e7eb;border-radius:8px" />
+          </div>
+        `).join('')
+
+    return `
+      <html>
+        <head>
+          <meta charset="utf-8" />
+          <title>รายงานการกระทำผิด ${item.report_no || ''}</title>
+        </head>
+        <body style="font-family:Arial,Helvetica,sans-serif;margin:24px;color:#111827">
+          <div style="border:1px solid #d1d5db;border-radius:12px;padding:20px">
+            <h2 style="margin:0 0 6px 0">รายงานการกระทำผิด</h2>
+            <div style="font-size:13px;color:#4b5563;margin-bottom:16px">เลขที่รายงาน: ${item.report_no || '-'} • วันที่รายงาน: ${formatDate(item.report_date)}</div>
+
+            <table style="width:100%;border-collapse:collapse;font-size:14px">
+              <tbody>
+                <tr><td style="padding:6px 0;width:180px"><strong>บ้าน/เจ้าของ</strong></td><td style="padding:6px 0">${item.houses?.house_no || '-'} ${item.houses?.owner_name ? `- ${item.houses.owner_name}` : ''}</td></tr>
+                <tr><td style="padding:6px 0"><strong>ประเภทการกระทำผิด</strong></td><td style="padding:6px 0">${item.type || '-'}</td></tr>
+                <tr><td style="padding:6px 0"><strong>วันเกิดเหตุ</strong></td><td style="padding:6px 0">${formatDate(item.occurred_at)}</td></tr>
+                <tr><td style="padding:6px 0"><strong>วันครบกำหนดแก้ไข</strong></td><td style="padding:6px 0">${formatDate(item.due_date)}</td></tr>
+                <tr><td style="padding:6px 0"><strong>ครั้งที่เตือน</strong></td><td style="padding:6px 0">${item.warning_count ?? 0}</td></tr>
+                <tr><td style="padding:6px 0"><strong>ค่าปรับ</strong></td><td style="padding:6px 0">${Number(item.fine_amount || 0).toLocaleString('th-TH')} บาท</td></tr>
+                <tr><td style="padding:6px 0;vertical-align:top"><strong>รายละเอียด</strong></td><td style="padding:6px 0">${item.detail || '-'}</td></tr>
+                <tr><td style="padding:6px 0;vertical-align:top"><strong>หมายเหตุจากนิติ</strong></td><td style="padding:6px 0">${item.admin_note || '-'}</td></tr>
+                <tr><td style="padding:6px 0;vertical-align:top"><strong>อัปเดตจากลูกบ้าน</strong></td><td style="padding:6px 0">${item.resident_note || '-'}</td></tr>
+              </tbody>
+            </table>
+
+            <div style="margin-top:16px">
+              <strong>รูปภาพหลักฐาน</strong>
+              <div style="margin-top:8px">${imageBlocks}</div>
+            </div>
+          </div>
+        </body>
+      </html>
+    `
+  }
+
+  const handlePrintReport = async (item) => {
+    try {
+      const images = await listViolationImages(item.id)
+      const html = buildReportHtml(item, images)
+      const printWindow = window.open('', '_blank', 'width=1024,height=768')
+      if (!printWindow) {
+        await showSwal({ icon: 'warning', title: 'ไม่สามารถเปิดหน้าพิมพ์ได้', text: 'กรุณาอนุญาต Pop-up แล้วลองใหม่' })
+        return
+      }
+      printWindow.document.open()
+      printWindow.document.write(html)
+      printWindow.document.close()
+      printWindow.focus()
+      printWindow.print()
+    } catch (error) {
+      await showSwal({ icon: 'error', title: 'พิมพ์รายงานไม่สำเร็จ', text: error.message })
     }
   }
 
@@ -388,6 +469,7 @@ const AdminViolations = () => {
                       <td>{formatDate(item.due_date)}</td>
                       <td><span className={badge.className}>{badge.label}</span></td>
                       <td style={{ whiteSpace: 'nowrap' }}>
+                        <button className="btn btn-xs btn-o" style={{ marginRight: '4px' }} onClick={() => handlePrintReport(item)}>พิมพ์</button>
                         <button className="btn btn-xs btn-a" style={{ marginRight: '4px' }} onClick={() => openEditModal(item)}>แก้ไข</button>
                         <button className="btn btn-xs btn-dg" onClick={() => handleDelete(item)}>ลบ</button>
                       </td>
@@ -454,7 +536,7 @@ const AdminViolations = () => {
                     </label>
                     <label className="house-field">
                       <span>เลขที่รายงาน</span>
-                      <input name="report_no" value={form.report_no} onChange={handleChange} placeholder="เช่น VIO-2026-001" />
+                      <input name="report_no" value={form.report_no} onChange={handleChange} placeholder="Auto Run" readOnly />
                     </label>
                     <label className="house-field">
                       <span>วันที่ออกรายงาน</span>
