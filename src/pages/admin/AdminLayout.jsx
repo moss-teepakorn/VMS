@@ -233,6 +233,7 @@ const AdminLayout = () => {
             Dashboard — <span className="hl">ภาพรวม</span>
           </div>
           <div className="tb-right">
+            <span style={{ fontSize: '13px', fontWeight: 500, whiteSpace: 'nowrap', marginRight: '4px' }}>สวัสดี คุณ{profile?.full_name || profile?.username || ''}</span>
             <div className="setup-wrap">
               <div className="tb-ico" onClick={() => setSetupOpen((prev) => !prev)}>⚙️</div>
 
