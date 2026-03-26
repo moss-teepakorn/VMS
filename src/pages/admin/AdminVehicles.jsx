@@ -507,7 +507,7 @@ const AdminVehicles = () => {
                     </label>
                     <label className="house-field house-field-span-3">
                       <span>หมายเหตุ</span>
-                      <textarea name="note" value={form.note} onChange={handleChange} rows="2" placeholder="รายละเอียดเพิ่มเติม" />
+                      <textarea name="note" value={form.note} onChange={handleChange} rows="1" placeholder="รายละเอียดเพิ่มเติม" />
                     </label>
                   </div>
                 </section>

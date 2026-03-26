@@ -1097,7 +1097,7 @@ button, input, select, textarea {
 
 .house-md {
   width: min(930px, 100%);
-  max-height: 96vh;
+  height: min(96vh, 900px);
   background: #f8fafc;
   border: 1px solid rgba(210, 218, 230, .95);
   border-radius: 24px;
@@ -1112,7 +1112,7 @@ button, input, select, textarea {
 }
 
 .house-md-vehicle {
-  height: min(96vh, 770px);
+  height: min(96vh, 900px);
 }
 
 .house-md form {
@@ -1127,20 +1127,20 @@ button, input, select, textarea {
   align-items: flex-start;
   justify-content: space-between;
   gap: 16px;
-  padding: 20px 24px 16px;
+  padding: 16px 20px 12px;
   color: #fff;
   background: linear-gradient(135deg, #1e6b73 0%, #2bb673 100%);
 }
 
 .house-md-title {
-  font-size: 28px;
+  font-size: 24px;
   font-weight: 800;
   line-height: 1.1;
 }
 
 .house-md-sub {
   margin-top: 4px;
-  font-size: 15px;
+  font-size: 13px;
   opacity: .86;
   font-weight: 600;
 }
@@ -1148,13 +1148,13 @@ button, input, select, textarea {
 .house-md-body {
   flex: 1;
   min-height: 0;
-  padding: 18px 18px 14px;
-  overflow: auto;
+  padding: 12px 14px 10px;
+  overflow: hidden;
   background: #f8fafc;
 }
 
 .house-sec {
-  padding: 10px 0 14px;
+  padding: 8px 0 10px;
   border-bottom: 1px solid #dbe3ed;
 }
 
@@ -1163,15 +1163,15 @@ button, input, select, textarea {
 }
 
 .house-sec-title {
-  margin-bottom: 12px;
+  margin-bottom: 8px;
   color: #214d72;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 800;
 }
 
 .house-grid {
   display: grid;
-  gap: 12px 14px;
+  gap: 8px 10px;
 }
 
 .house-grid-2 {
@@ -1185,12 +1185,12 @@ button, input, select, textarea {
 .house-field {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 4px;
 }
 
 .house-field span {
   color: #233143;
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 800;
 }
 
@@ -1198,19 +1198,19 @@ button, input, select, textarea {
 .house-field select,
 .house-field textarea {
   width: 100%;
-  min-height: 42px;
-  padding: 10px 12px;
+  min-height: 36px;
+  padding: 8px 10px;
   border: 1px solid #d5deea;
-  border-radius: 12px;
+  border-radius: 10px;
   background: #fff;
   color: #213142;
-  font-size: 15px;
+  font-size: 14px;
   box-shadow: inset 0 1px 0 rgba(255,255,255,.65);
 }
 
 .house-field textarea {
-  min-height: 72px;
-  resize: vertical;
+  min-height: 48px;
+  resize: none;
 }
 
 .house-field input:focus,
@@ -1239,7 +1239,7 @@ button, input, select, textarea {
   display: flex;
   justify-content: flex-end;
   gap: 10px;
-  padding: 14px 18px 18px;
+  padding: 10px 14px 12px;
   border-top: 1px solid #dbe3ed;
   background: #f3f6fb;
 }
