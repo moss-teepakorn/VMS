@@ -992,6 +992,7 @@ button, input, select, textarea {
   justify-content: center;
   z-index: 2000;
   padding: 16px;
+  overflow-y: auto;
   animation: fadeIn .2s;
 }
 
@@ -1010,7 +1011,7 @@ button, input, select, textarea {
   border-radius: var(--r);
   border: 1px solid var(--bo);
   box-shadow: 0 10px 40px rgba(0,0,0,.3);
-  max-height: 90vh;
+  max-height: calc(100dvh - 32px);
   overflow-y: auto;
   width: 100%;
   max-width: 500px;
@@ -1091,6 +1092,7 @@ button, input, select, textarea {
   align-items: center;
   justify-content: center;
   padding: 20px;
+  overflow-y: auto;
   background: rgba(25, 33, 52, .42);
   backdrop-filter: blur(8px);
 }
@@ -1098,6 +1100,7 @@ button, input, select, textarea {
 .house-md {
   width: min(930px, 100%);
   height: min(96vh, 900px);
+  max-height: calc(100dvh - 40px);
   background: #f8fafc;
   border: 1px solid rgba(210, 218, 230, .95);
   border-radius: 24px;
@@ -1149,7 +1152,8 @@ button, input, select, textarea {
   flex: 1;
   min-height: 0;
   padding: 12px 14px 10px;
-  overflow: hidden;
+  overflow-y: auto;
+  overflow-x: hidden;
   background: #f8fafc;
 }
 
@@ -1269,9 +1273,21 @@ button, input, select, textarea {
 }
 
 @media (max-width: 900px) {
+  .mo,
+  .house-mo {
+    align-items: flex-start;
+    padding: 10px;
+  }
+
+  .md {
+    max-height: calc(100dvh - 20px);
+  }
+
   .house-md-home,
   .house-md-vehicle {
-    height: 95vh;
+    height: auto;
+    min-height: calc(100dvh - 20px);
+    max-height: calc(100dvh - 20px);
   }
 
   .house-grid-2,
