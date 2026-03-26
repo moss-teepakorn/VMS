@@ -172,6 +172,11 @@ export default function LoginPage() {
             </div>
           </div>
         </div>
+
+        {/* Footer */}
+        <footer className="fixed bottom-0 right-0 left-0 bg-black/80 border-t border-slate-700 px-6 py-3 text-center text-xs text-slate-400">
+          <p>{setup.villageName} · v{setup.version}</p>
+        </footer>
       </div>
     </div>
   )
