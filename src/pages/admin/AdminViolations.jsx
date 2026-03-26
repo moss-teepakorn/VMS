@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import Swal from 'sweetalert2'
+import { jsPDF } from 'jspdf'
 import { listHouses } from '../../lib/houses'
 import {
   createViolation,
@@ -45,6 +46,15 @@ function blurActiveElement() {
 function showSwal(options) {
   blurActiveElement()
   return Swal.fire({ returnFocus: false, ...options })
+}
+
+function escapeHtml(value) {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
 }
 
 const AdminViolations = () => {
@@ -319,66 +329,208 @@ const AdminViolations = () => {
     }
   }
 
-  const buildReportHtml = (item, images) => {
-    const imageBlocks = images.length === 0
-      ? '<div style="padding:8px 0;color:#6b7280">ไม่มีรูปแนบ</div>'
-      : images.map((image) => `
-          <div style="display:inline-block;margin:6px;vertical-align:top">
-            <img src="${image.url}" alt="${image.name}" style="width:220px;height:150px;object-fit:cover;border:1px solid #e5e7eb;border-radius:8px" />
-          </div>
-        `).join('')
+  const buildReportPreviewHtml = (item, images) => {
+    const detailRows = `
+      <tr><td class="k">บ้าน/เจ้าของ</td><td class="v">${escapeHtml(item.houses?.house_no || '-')} ${escapeHtml(item.houses?.owner_name ? `- ${item.houses.owner_name}` : '')}</td></tr>
+      <tr><td class="k">ประเภทการกระทำผิด</td><td class="v">${escapeHtml(item.type || '-')}</td></tr>
+      <tr><td class="k">วันเกิดเหตุ</td><td class="v">${escapeHtml(formatDate(item.occurred_at))}</td></tr>
+      <tr><td class="k">วันครบกำหนดแก้ไข</td><td class="v">${escapeHtml(formatDate(item.due_date))}</td></tr>
+      <tr><td class="k">ครั้งที่เตือน</td><td class="v">${escapeHtml(item.warning_count ?? 0)}</td></tr>
+      <tr><td class="k">ค่าปรับ</td><td class="v">${escapeHtml(Number(item.fine_amount || 0).toLocaleString('th-TH'))} บาท</td></tr>
+      <tr><td class="k">รายละเอียด</td><td class="v">${escapeHtml(item.detail || '-')}</td></tr>
+      <tr><td class="k">หมายเหตุจากนิติ</td><td class="v">${escapeHtml(item.admin_note || '-')}</td></tr>
+      <tr><td class="k">อัปเดตจากลูกบ้าน</td><td class="v">${escapeHtml(item.resident_note || '-')}</td></tr>
+    `
+
+    const firstImage = images[0]?.url
+      ? `<img src="${images[0].url}" alt="หลักฐาน" class="evd" />`
+      : '<div class="noimg">ไม่มีรูปแนบ</div>'
+
+    const extraPages = images.slice(1).map((img, index) => `
+      <section class="a4 page-break">
+        <div class="page-title">หลักฐานเพิ่มเติม ${index + 2}</div>
+        <div class="img-wrap full">
+          <img src="${img.url}" alt="หลักฐานเพิ่มเติม ${index + 2}" class="evd" />
+        </div>
+      </section>
+    `).join('')
 
     return `
       <html>
         <head>
           <meta charset="utf-8" />
-          <title>รายงานการกระทำผิด ${item.report_no || ''}</title>
+          <title>รายงานการกระทำผิด ${escapeHtml(item.report_no || '')}</title>
+          <style>
+            * { box-sizing: border-box; }
+            body { margin: 0; background: #f3f4f6; font-family: Arial, Helvetica, sans-serif; color: #111827; }
+            .toolbar { position: sticky; top: 0; z-index: 20; background: #111827; color: #fff; padding: 10px 14px; display: flex; justify-content: space-between; align-items: center; }
+            .toolbar .actions { display: flex; gap: 8px; }
+            .toolbar button { border: none; border-radius: 8px; padding: 8px 12px; cursor: pointer; font-size: 13px; }
+            .btn-print { background: #2563eb; color: #fff; }
+            .btn-close { background: #e5e7eb; color: #111827; }
+            .canvas { padding: 16px 0 30px; }
+            .a4 { width: 210mm; min-height: 297mm; margin: 0 auto 16px; background: #fff; border: 1px solid #d1d5db; padding: 10mm 12mm; display: flex; flex-direction: column; }
+            .head h1 { margin: 0 0 3mm; font-size: 21px; }
+            .meta { font-size: 13px; color: #4b5563; margin-bottom: 4mm; }
+            table { width: 100%; border-collapse: collapse; font-size: 13px; }
+            td { padding: 1.8mm 0; vertical-align: top; }
+            td.k { width: 42mm; font-weight: 700; }
+            td.v { word-break: break-word; }
+            .img-title { margin-top: auto; font-weight: 700; font-size: 14px; }
+            .img-wrap { margin-top: 2mm; border: 1px solid #d1d5db; border-radius: 8px; overflow: hidden; min-height: 102mm; display: flex; align-items: center; justify-content: center; }
+            .img-wrap.full { min-height: 250mm; }
+            .evd { width: 100%; height: 100%; object-fit: contain; background: #fff; }
+            .noimg { color: #6b7280; font-size: 14px; }
+            .page-title { margin-bottom: 4mm; font-size: 16px; font-weight: 700; }
+            @media print {
+              body { background: #fff; }
+              .toolbar { display: none !important; }
+              .canvas { padding: 0; }
+              .a4 { margin: 0; border: none; page-break-after: always; }
+              .a4:last-child { page-break-after: auto; }
+            }
+          </style>
         </head>
-        <body style="font-family:Arial,Helvetica,sans-serif;margin:24px;color:#111827">
-          <div style="border:1px solid #d1d5db;border-radius:12px;padding:20px">
-            <h2 style="margin:0 0 6px 0">รายงานการกระทำผิด</h2>
-            <div style="font-size:13px;color:#4b5563;margin-bottom:16px">เลขที่รายงาน: ${item.report_no || '-'} • วันที่รายงาน: ${formatDate(item.report_date)}</div>
-
-            <table style="width:100%;border-collapse:collapse;font-size:14px">
-              <tbody>
-                <tr><td style="padding:6px 0;width:180px"><strong>บ้าน/เจ้าของ</strong></td><td style="padding:6px 0">${item.houses?.house_no || '-'} ${item.houses?.owner_name ? `- ${item.houses.owner_name}` : ''}</td></tr>
-                <tr><td style="padding:6px 0"><strong>ประเภทการกระทำผิด</strong></td><td style="padding:6px 0">${item.type || '-'}</td></tr>
-                <tr><td style="padding:6px 0"><strong>วันเกิดเหตุ</strong></td><td style="padding:6px 0">${formatDate(item.occurred_at)}</td></tr>
-                <tr><td style="padding:6px 0"><strong>วันครบกำหนดแก้ไข</strong></td><td style="padding:6px 0">${formatDate(item.due_date)}</td></tr>
-                <tr><td style="padding:6px 0"><strong>ครั้งที่เตือน</strong></td><td style="padding:6px 0">${item.warning_count ?? 0}</td></tr>
-                <tr><td style="padding:6px 0"><strong>ค่าปรับ</strong></td><td style="padding:6px 0">${Number(item.fine_amount || 0).toLocaleString('th-TH')} บาท</td></tr>
-                <tr><td style="padding:6px 0;vertical-align:top"><strong>รายละเอียด</strong></td><td style="padding:6px 0">${item.detail || '-'}</td></tr>
-                <tr><td style="padding:6px 0;vertical-align:top"><strong>หมายเหตุจากนิติ</strong></td><td style="padding:6px 0">${item.admin_note || '-'}</td></tr>
-                <tr><td style="padding:6px 0;vertical-align:top"><strong>อัปเดตจากลูกบ้าน</strong></td><td style="padding:6px 0">${item.resident_note || '-'}</td></tr>
-              </tbody>
-            </table>
-
-            <div style="margin-top:16px">
-              <strong>รูปภาพหลักฐาน</strong>
-              <div style="margin-top:8px">${imageBlocks}</div>
+        <body>
+          <div class="toolbar">
+            <div>ตัวอย่างรายงาน A4 • ${escapeHtml(item.report_no || '-')}</div>
+            <div class="actions">
+              <button class="btn-print" onclick="window.print()">Print</button>
+              <button class="btn-close" onclick="window.close()">ปิด</button>
             </div>
+          </div>
+          <div class="canvas">
+            <section class="a4">
+              <div class="head">
+                <h1>รายงานการกระทำผิด</h1>
+                <div class="meta">เลขที่รายงาน: ${escapeHtml(item.report_no || '-')} • วันที่รายงาน: ${escapeHtml(formatDate(item.report_date))}</div>
+              </div>
+              <table><tbody>${detailRows}</tbody></table>
+              <div class="img-title">รูปภาพหลักฐาน</div>
+              <div class="img-wrap">${firstImage}</div>
+            </section>
+            ${extraPages}
           </div>
         </body>
       </html>
     `
   }
 
-  const handlePrintReport = async (item) => {
+  const toDataUrl = async (imageUrl) => {
+    const response = await fetch(imageUrl)
+    if (!response.ok) throw new Error('โหลดรูปสำหรับ PDF ไม่สำเร็จ')
+    const blob = await response.blob()
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader()
+      reader.onloadend = () => resolve(reader.result)
+      reader.onerror = reject
+      reader.readAsDataURL(blob)
+    })
+  }
+
+  const addImageToPdfPage = async (pdf, imageUrl, pageWidth, pageHeight) => {
+    const dataUrl = await toDataUrl(imageUrl)
+    const img = await new Promise((resolve, reject) => {
+      const image = new Image()
+      image.onload = () => resolve(image)
+      image.onerror = reject
+      image.src = dataUrl
+    })
+
+    const margin = 12
+    const drawWidth = pageWidth - margin * 2
+    const availableHeight = 115
+    const ratio = img.height / img.width
+    let drawHeight = drawWidth * ratio
+    if (drawHeight > availableHeight) {
+      drawHeight = availableHeight
+    }
+    const yBase = pageHeight - margin - availableHeight
+    const y = yBase + ((availableHeight - drawHeight) / 2)
+    pdf.addImage(dataUrl, 'JPEG', margin, y, drawWidth, drawHeight)
+  }
+
+  const downloadViolationReportPdf = async (item) => {
+    const images = await listViolationImages(item.id)
+    const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' })
+    const pageWidth = 210
+    const pageHeight = 297
+    const margin = 12
+    const contentWidth = pageWidth - margin * 2
+
+    pdf.setFont('helvetica', 'bold')
+    pdf.setFontSize(18)
+    pdf.text('รายงานการกระทำผิด', margin, 18)
+
+    pdf.setFont('helvetica', 'normal')
+    pdf.setFontSize(11)
+    pdf.text(`เลขที่รายงาน: ${item.report_no || '-'}`, margin, 25)
+    pdf.text(`วันที่รายงาน: ${formatDate(item.report_date)}`, margin + 90, 25)
+
+    const detailLines = [
+      `บ้าน/เจ้าของ: ${(item.houses?.house_no || '-')} ${(item.houses?.owner_name ? `- ${item.houses.owner_name}` : '')}`,
+      `ประเภทการกระทำผิด: ${item.type || '-'}`,
+      `วันเกิดเหตุ: ${formatDate(item.occurred_at)}`,
+      `วันครบกำหนดแก้ไข: ${formatDate(item.due_date)}`,
+      `ครั้งที่เตือน: ${item.warning_count ?? 0}`,
+      `ค่าปรับ: ${Number(item.fine_amount || 0).toLocaleString('th-TH')} บาท`,
+      `รายละเอียด: ${item.detail || '-'}`,
+      `หมายเหตุจากนิติ: ${item.admin_note || '-'}`,
+      `อัปเดตจากลูกบ้าน: ${item.resident_note || '-'}`,
+    ]
+
+    let cursorY = 33
+    detailLines.forEach((line) => {
+      const wrapped = pdf.splitTextToSize(line, contentWidth)
+      pdf.text(wrapped, margin, cursorY)
+      cursorY += wrapped.length * 5
+    })
+
+    pdf.setFont('helvetica', 'bold')
+    pdf.text('รูปภาพหลักฐาน', margin, pageHeight - 130)
+    pdf.setFont('helvetica', 'normal')
+
+    if (images.length > 0) {
+      await addImageToPdfPage(pdf, images[0].url, pageWidth, pageHeight)
+      for (let index = 1; index < images.length; index += 1) {
+        pdf.addPage('a4', 'portrait')
+        pdf.setFont('helvetica', 'bold')
+        pdf.setFontSize(14)
+        pdf.text(`หลักฐานเพิ่มเติม ${index + 1}`, margin, 20)
+        pdf.setFont('helvetica', 'normal')
+        await addImageToPdfPage(pdf, images[index].url, pageWidth, pageHeight)
+      }
+    } else {
+      pdf.text('ไม่มีรูปแนบ', margin, pageHeight - 120)
+    }
+
+    pdf.save(`${item.report_no || `violation-${item.id}`}.pdf`)
+  }
+
+  const handleOpenPrintPreview = async (item) => {
     try {
       const images = await listViolationImages(item.id)
-      const html = buildReportHtml(item, images)
-      const printWindow = window.open('', '_blank', 'width=1024,height=768')
-      if (!printWindow) {
-        await showSwal({ icon: 'warning', title: 'ไม่สามารถเปิดหน้าพิมพ์ได้', text: 'กรุณาอนุญาต Pop-up แล้วลองใหม่' })
+      const html = buildReportPreviewHtml(item, images)
+      const previewWindow = window.open('', '_blank', 'width=1100,height=840')
+      if (!previewWindow) {
+        await showSwal({ icon: 'warning', title: 'ไม่สามารถเปิดหน้าพรีวิวได้', text: 'กรุณาอนุญาต Pop-up แล้วลองใหม่' })
         return
       }
-      printWindow.document.open()
-      printWindow.document.write(html)
-      printWindow.document.close()
-      printWindow.focus()
-      printWindow.print()
+      previewWindow.document.open()
+      previewWindow.document.write(html)
+      previewWindow.document.close()
+      previewWindow.focus()
     } catch (error) {
-      await showSwal({ icon: 'error', title: 'พิมพ์รายงานไม่สำเร็จ', text: error.message })
+      await showSwal({ icon: 'error', title: 'เปิดพรีวิวไม่สำเร็จ', text: error.message })
+    }
+  }
+
+  const handleDownloadPdf = async (item) => {
+    try {
+      await downloadViolationReportPdf(item)
+      await showSwal({ icon: 'success', title: 'ดาวน์โหลด PDF สำเร็จ', timer: 1000, showConfirmButton: false })
+    } catch (error) {
+      await showSwal({ icon: 'error', title: 'ดาวน์โหลด PDF ไม่สำเร็จ', text: error.message })
     }
   }
 
@@ -469,7 +621,8 @@ const AdminViolations = () => {
                       <td>{formatDate(item.due_date)}</td>
                       <td><span className={badge.className}>{badge.label}</span></td>
                       <td style={{ whiteSpace: 'nowrap' }}>
-                        <button className="btn btn-xs btn-o" style={{ marginRight: '4px' }} onClick={() => handlePrintReport(item)}>พิมพ์</button>
+                        <button className="btn btn-xs btn-o" style={{ marginRight: '4px' }} onClick={() => handleOpenPrintPreview(item)}>พิมพ์</button>
+                        <button className="btn btn-xs btn-p" style={{ marginRight: '4px' }} onClick={() => handleDownloadPdf(item)}>PDF</button>
                         <button className="btn btn-xs btn-a" style={{ marginRight: '4px' }} onClick={() => openEditModal(item)}>แก้ไข</button>
                         <button className="btn btn-xs btn-dg" onClick={() => handleDelete(item)}>ลบ</button>
                       </td>
