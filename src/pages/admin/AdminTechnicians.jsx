@@ -1,18 +1,162 @@
-import React, { useContext } from 'react'
-import { ModalContext } from './AdminLayout'
+import React, { useEffect, useState } from 'react'
+import Swal from 'sweetalert2'
+import {
+  createTechnician,
+  deleteTechnician,
+  listTechnicians,
+  updateTechnician,
+} from '../../lib/technicians'
+
+const EMPTY_FORM = {
+  name: '',
+  phone: '',
+  line_id: '',
+  status: 'pending',
+  note: '',
+}
+
+const EMPTY_SERVICE = { skill: '', price_min: '', price_max: '', price_note: '' }
+
+function blurActiveElement() {
+  const el = document.activeElement
+  if (el instanceof HTMLElement) el.blur()
+}
+
+function showSwal(options) {
+  blurActiveElement()
+  return Swal.fire({ returnFocus: false, ...options })
+}
 
 const AdminTechnicians = () => {
-  const { openModal } = useContext(ModalContext)
+  const [technicians, setTechnicians] = useState([])
+  const [statusFilter, setStatusFilter] = useState('all')
+  const [searchTerm, setSearchTerm] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [showModal, setShowModal] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [editingItem, setEditingItem] = useState(null)
+  const [form, setForm] = useState(EMPTY_FORM)
+  const [services, setServices] = useState([{ ...EMPTY_SERVICE }])
 
-  const handleAddTechnician = () => {
-    openModal('เพิ่มช่างซ่อมใหม่', {
-      name: { label: 'ชื่อ-นามสกุล', type: 'text', placeholder: 'นายสมชาติ' },
-      phone: { label: 'เบอร์โทร', type: 'tel', placeholder: '098-xxx-xxxx' },
-      specialty: { label: 'ความเชี่ยวชาญ', type: 'text', placeholder: 'ไฟฟ้า' },
-    }, (data) => {
-      console.log('Add technician:', data)
+  const loadData = async (override = {}) => {
+    try {
+      setLoading(true)
+      const data = await listTechnicians({ status: override.status ?? statusFilter, search: override.search ?? searchTerm })
+      setTechnicians(data)
+    } catch (err) {
+      await showSwal({ icon: 'error', title: 'โหลดข้อมูลไม่สำเร็จ', text: err.message })
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => { loadData() }, [])
+
+  const getStatusBadge = (status) => {
+    if (status === 'approved') return { className: 'bd b-ok', label: 'อนุมัติแล้ว' }
+    if (status === 'pending') return { className: 'bd b-wn', label: 'รออนุมัติ' }
+    if (status === 'suspended') return { className: 'bd b-dg', label: 'ระงับ' }
+    return { className: 'bd b-mu', label: status }
+  }
+
+  const openAddModal = () => {
+    setEditingItem(null)
+    setForm(EMPTY_FORM)
+    setServices([{ ...EMPTY_SERVICE }])
+    setShowModal(true)
+  }
+
+  const openEditModal = (item) => {
+    setEditingItem(item)
+    setForm({
+      name: item.name || '',
+      phone: item.phone || '',
+      line_id: item.line_id || '',
+      status: item.status || 'pending',
+      note: item.note || '',
+    })
+    const existingServices = (item.technician_services || []).map((s) => ({
+      skill: s.skill || '',
+      price_min: s.price_min != null ? String(s.price_min) : '',
+      price_max: s.price_max != null ? String(s.price_max) : '',
+      price_note: s.price_note || '',
+    }))
+    setServices(existingServices.length > 0 ? existingServices : [{ ...EMPTY_SERVICE }])
+    setShowModal(true)
+  }
+
+  const closeModal = (force = false) => {
+    if (saving && !force) return
+    setShowModal(false)
+    setEditingItem(null)
+    setForm(EMPTY_FORM)
+    setServices([{ ...EMPTY_SERVICE }])
+  }
+
+  const handleChange = (e) => {
+    const { name, value } = e.target
+    setForm((cur) => ({ ...cur, [name]: value }))
+  }
+
+  const handleServiceChange = (index, field, value) => {
+    setServices((cur) => {
+      const next = [...cur]
+      next[index] = { ...next[index], [field]: value }
+      return next
     })
   }
+
+  const addServiceRow = () => setServices((cur) => [...cur, { ...EMPTY_SERVICE }])
+
+  const removeServiceRow = (index) => {
+    setServices((cur) => {
+      if (cur.length <= 1) return [{ ...EMPTY_SERVICE }]
+      return cur.filter((_, i) => i !== index)
+    })
+  }
+
+  const handleSubmit = async (e) => {
+    e.preventDefault()
+    if (!form.name.trim()) { await showSwal({ icon: 'warning', title: 'ข้อมูลไม่ครบ', text: 'กรุณากรอกชื่อช่าง' }); return }
+    const validServices = services.filter((s) => s.skill.trim())
+    try {
+      setSaving(true)
+      if (editingItem) {
+        await updateTechnician(editingItem.id, form, validServices)
+        await showSwal({ icon: 'success', title: 'บันทึกสำเร็จ', timer: 1400, showConfirmButton: false })
+      } else {
+        await createTechnician(form, validServices)
+        await showSwal({ icon: 'success', title: 'เพิ่มช่างสำเร็จ', timer: 1400, showConfirmButton: false })
+      }
+      closeModal(true)
+      await loadData({ status: statusFilter, search: searchTerm })
+    } catch (err) {
+      await showSwal({ icon: 'error', title: 'บันทึกไม่สำเร็จ', text: err.message })
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const handleDelete = async (item) => {
+    const result = await showSwal({
+      icon: 'warning',
+      title: 'ยืนยันการลบ',
+      text: `ลบช่าง "${item.name}" ใช่หรือไม่?`,
+      showCancelButton: true,
+      confirmButtonText: 'ลบ',
+      cancelButtonText: 'ยกเลิก',
+      confirmButtonColor: '#c0392b',
+    })
+    if (!result.isConfirmed) return
+    try {
+      await deleteTechnician(item.id)
+      await showSwal({ icon: 'success', title: 'ลบสำเร็จ', timer: 1200, showConfirmButton: false })
+      await loadData({ status: statusFilter, search: searchTerm })
+    } catch (err) {
+      await showSwal({ icon: 'error', title: 'ลบไม่สำเร็จ', text: err.message })
+    }
+  }
+
   return (
     <div className="pane on">
       <div className="ph">
@@ -25,26 +169,154 @@ const AdminTechnicians = () => {
             </div>
           </div>
           <div className="ph-acts">
-            <button className="btn btn-p btn-sm">+ เพิ่มช่างใหม่</button>
+            <button className="btn btn-p btn-sm" onClick={openAddModal}>+ เพิ่มช่างใหม่</button>
+            <button className="btn btn-o btn-sm" onClick={() => loadData({ status: statusFilter, search: searchTerm })}>🔄 รีเฟรช</button>
           </div>
         </div>
       </div>
 
-      <div className="card" style={{ marginTop: '16px' }}>
-        <div className="ch"><div className="ct">รายชื่อช่างซ่อมแซม</div></div>
+      <div className="card" style={{ marginTop: '16px', marginBottom: '16px' }}>
+        <div className="ch"><div className="ct">ค้นหาและกรองข้อมูล</div></div>
+        <div className="cb" style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+          <input
+            type="text"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            placeholder="ค้นหา ชื่อ / เบอร์โทร / Line ID / ความเชี่ยวชาญ"
+            style={{ flex: 1, minWidth: '240px', padding: '8px 12px', border: '1px solid var(--bo)', borderRadius: '6px' }}
+          />
+          <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} style={{ padding: '8px 12px', border: '1px solid var(--bo)', borderRadius: '6px' }}>
+            <option value="all">ทุกสถานะ</option>
+            <option value="pending">รออนุมัติ</option>
+            <option value="approved">อนุมัติแล้ว</option>
+            <option value="suspended">ระงับ</option>
+          </select>
+          <button className="btn btn-a btn-sm" onClick={() => loadData({ status: statusFilter, search: searchTerm })}>ค้นหา</button>
+        </div>
+      </div>
+
+      <div className="card">
+        <div className="ch"><div className="ct">รายชื่อช่างทั้งหมด ({technicians.length} คน)</div></div>
         <div className="cb">
           <div style={{ overflowX: 'auto' }}>
-            <table className="tw" style={{ width: '100%', minWidth: '600px' }}>
+            <table className="tw" style={{ width: '100%', minWidth: '800px' }}>
               <thead><tr>
-                <th>ชื่อ</th><th>สาขา</th><th>โทร</th><th>สถานะ</th><th/>
+                <th>ชื่อ-นามสกุล</th>
+                <th>เบอร์โทร</th>
+                <th>Line ID</th>
+                <th>ความเชี่ยวชาญ</th>
+                <th>คะแนน</th>
+                <th>สถานะ</th>
+                <th></th>
               </tr></thead>
               <tbody>
-                <tr><td>นายสมชาติ สุขใจ</td><td>ไฟฟ้า</td><td>089-123-4567</td><td><span className="bd b-ok">พร้อมใช้</span></td><td><button className="btn btn-xs btn-o">ดู</button></td></tr>
+                {loading ? (
+                  <tr><td colSpan="7" style={{ textAlign: 'center', color: 'var(--mu)', padding: '20px' }}>กำลังโหลด...</td></tr>
+                ) : technicians.length === 0 ? (
+                  <tr><td colSpan="7" style={{ textAlign: 'center', color: 'var(--mu)', padding: '20px' }}>ไม่พบข้อมูล</td></tr>
+                ) : technicians.map((item) => {
+                  const badge = getStatusBadge(item.status)
+                  const skills = (item.technician_services || []).map((s) => s.skill).filter(Boolean).join(', ')
+                  return (
+                    <tr key={item.id}>
+                      <td><strong>{item.name}</strong>{item.note ? <div style={{ fontSize: '11px', color: 'var(--mu)' }}>{item.note}</div> : null}</td>
+                      <td>{item.phone || '-'}</td>
+                      <td>{item.line_id || '-'}</td>
+                      <td style={{ maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{skills || '-'}</td>
+                      <td>{item.rating > 0 ? `${Number(item.rating).toFixed(1)} (${item.review_count})` : '-'}</td>
+                      <td><span className={badge.className}>{badge.label}</span></td>
+                      <td style={{ whiteSpace: 'nowrap' }}>
+                        <button className="btn btn-xs btn-a" style={{ marginRight: '4px' }} onClick={() => openEditModal(item)}>แก้ไข</button>
+                        <button className="btn btn-xs btn-dg" onClick={() => handleDelete(item)}>ลบ</button>
+                      </td>
+                    </tr>
+                  )
+                })}
               </tbody>
             </table>
           </div>
         </div>
       </div>
+
+      {showModal && (
+        <div className="house-mo">
+          <div className="house-md house-md-vehicle">
+            <div className="house-md-head">
+              <div>
+                <div className="house-md-title">🔨 {editingItem ? 'แก้ไขข้อมูลช่าง' : 'เพิ่มช่างใหม่'}</div>
+                <div className="house-md-sub">{form.name || 'ชื่อช่าง'}</div>
+              </div>
+            </div>
+            <form onSubmit={handleSubmit}>
+              <div className="house-md-body">
+                <section className="house-sec">
+                  <div className="house-sec-title">ข้อมูลช่าง</div>
+                  <div className="house-grid house-grid-3">
+                    <label className="house-field">
+                      <span>ชื่อ-นามสกุล *</span>
+                      <input name="name" value={form.name} onChange={handleChange} placeholder="เช่น สมชาติ สุขใจ" />
+                    </label>
+                    <label className="house-field">
+                      <span>เบอร์โทร</span>
+                      <input name="phone" value={form.phone} onChange={handleChange} placeholder="089-xxx-xxxx" />
+                    </label>
+                    <label className="house-field">
+                      <span>Line ID</span>
+                      <input name="line_id" value={form.line_id} onChange={handleChange} placeholder="@line_id" />
+                    </label>
+                    <label className="house-field">
+                      <span>สถานะ</span>
+                      <select name="status" value={form.status} onChange={handleChange}>
+                        <option value="pending">รออนุมัติ</option>
+                        <option value="approved">อนุมัติแล้ว</option>
+                        <option value="suspended">ระงับ</option>
+                      </select>
+                    </label>
+                    <label className="house-field house-field-span-2">
+                      <span>หมายเหตุ</span>
+                      <input name="note" value={form.note} onChange={handleChange} placeholder="บันทึกเพิ่มเติม" />
+                    </label>
+                  </div>
+                </section>
+
+                <section className="house-sec">
+                  <div className="house-sec-title" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span>ความเชี่ยวชาญและราคา</span>
+                    <button type="button" className="btn btn-xs btn-o" onClick={addServiceRow}>+ เพิ่มบริการ</button>
+                  </div>
+                  {services.map((svc, idx) => (
+                    <div key={idx} style={{ display: 'flex', gap: '8px', marginTop: '8px', flexWrap: 'wrap', alignItems: 'flex-end' }}>
+                      <label className="house-field" style={{ flex: '2', minWidth: '140px' }}>
+                        {idx === 0 && <span>ความเชี่ยวชาญ</span>}
+                        <input value={svc.skill} onChange={(e) => handleServiceChange(idx, 'skill', e.target.value)} placeholder="เช่น ไฟฟ้า, ประปา" />
+                      </label>
+                      <label className="house-field" style={{ flex: '1', minWidth: '80px' }}>
+                        {idx === 0 && <span>ราคาต่ำสุด</span>}
+                        <input type="number" value={svc.price_min} onChange={(e) => handleServiceChange(idx, 'price_min', e.target.value)} placeholder="0" />
+                      </label>
+                      <label className="house-field" style={{ flex: '1', minWidth: '80px' }}>
+                        {idx === 0 && <span>ราคาสูงสุด</span>}
+                        <input type="number" value={svc.price_max} onChange={(e) => handleServiceChange(idx, 'price_max', e.target.value)} placeholder="0" />
+                      </label>
+                      <label className="house-field" style={{ flex: '2', minWidth: '120px' }}>
+                        {idx === 0 && <span>หมายเหตุราคา</span>}
+                        <input value={svc.price_note} onChange={(e) => handleServiceChange(idx, 'price_note', e.target.value)} placeholder="เช่น รวมค่าแรง" />
+                      </label>
+                      <div style={{ paddingBottom: '2px' }}>
+                        <button type="button" className="btn btn-xs btn-dg" onClick={() => removeServiceRow(idx)}>ลบ</button>
+                      </div>
+                    </div>
+                  ))}
+                </section>
+              </div>
+              <div className="house-md-foot">
+                <button className="btn btn-g" type="button" onClick={() => closeModal()}>ยกเลิก</button>
+                <button className="btn btn-p" type="submit" disabled={saving}>{saving ? 'กำลังบันทึก...' : 'บันทึก'}</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
