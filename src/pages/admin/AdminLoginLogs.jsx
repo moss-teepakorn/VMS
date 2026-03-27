@@ -128,27 +128,30 @@ export default function AdminLoginLogs() {
             </div>
           </div>
         </div>
-        <div className="houses-filter-row" style={{ gridTemplateColumns: 'minmax(180px,1fr) 140px auto', gap: '8px' }}>
+        <div style={{ marginTop: '10px', display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
           <input
             type="text"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             placeholder="ค้นหา username / ชื่อ-นามสกุล..."
             className="houses-filter-input"
+            style={{ flex: '1 1 180px', minWidth: 0 }}
           />
           <select
             value={roleFilter}
             onChange={(e) => setRoleFilter(e.target.value)}
             className="houses-filter-select"
+            style={{ flex: '0 0 auto' }}
           >
             <option value="all">ทุกบทบาท</option>
             <option value="admin">ผู้ดูแลระบบ</option>
             <option value="resident">ลูกบ้าน</option>
           </select>
           <button
-            className="btn btn-a btn-sm houses-filter-btn"
+            className="btn btn-a btn-sm"
             onClick={loadLogs}
             disabled={loading}
+            style={{ flex: '0 0 auto' }}
           >
             ค้นหา
           </button>
