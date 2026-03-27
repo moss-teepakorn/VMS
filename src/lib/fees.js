@@ -10,6 +10,51 @@ function stripRejectMarker(note) {
   return lines.join('\n').trim()
 }
 
+function toGregorianYear(yearValue) {
+  const year = Number(yearValue)
+  if (!Number.isFinite(year) || year <= 0) return null
+  return year > 2400 ? year - 543 : year
+}
+
+function toAmount(value) {
+  const n = Number(value || 0)
+  return Number.isFinite(n) ? n : 0
+}
+
+function round2(value) {
+  return Math.round(toAmount(value) * 100) / 100
+}
+
+function halfYearDates(yearCE, period) {
+  if (period === 'first_half') {
+    return {
+      invoice_date: `${yearCE}-01-01`,
+      due_date: `${yearCE}-07-31`,
+    }
+  }
+  return {
+    invoice_date: `${yearCE}-07-01`,
+    due_date: `${yearCE + 1}-01-31`,
+  }
+}
+
+async function getParkingMonthlyByHouse() {
+  const { data, error } = await supabase
+    .from('vehicles')
+    .select('house_id, parking_fee, status')
+
+  if (error) throw error
+
+  const byHouse = new Map()
+  for (const row of data || []) {
+    if (!row?.house_id) continue
+    if (row.status === 'removed') continue
+    const monthly = toAmount(row.parking_fee)
+    byHouse.set(row.house_id, toAmount(byHouse.get(row.house_id)) + monthly)
+  }
+  return byHouse
+}
+
 async function refreshFeeStatusFromPayments(feeId) {
   if (!feeId) return
 
@@ -112,6 +157,180 @@ export async function createFee(payload) {
   const { data, error } = await supabase
     .from('fees')
     .insert([fee])
+    .select('id, house_id, year, period, invoice_date, due_date, status, fee_common, fee_parking, fee_waste, fee_overdue_common, fee_overdue_fine, fee_overdue_notice, fee_fine, fee_notice, fee_violation, fee_other, total_amount, note, created_at, houses(id, house_no, owner_name)')
+    .single()
+
+  if (error) throw error
+  return data
+}
+
+export async function processHalfYearFeesAllHouses({ yearBE, period, setup }) {
+  const yearCE = toGregorianYear(yearBE)
+  if (!yearCE) throw new Error('ปีไม่ถูกต้อง')
+  if (!['first_half', 'second_half'].includes(period)) {
+    throw new Error('งวดไม่ถูกต้อง')
+  }
+
+  const ratePerSqw = toAmount(setup?.fee_rate_per_sqw)
+  const wastePerPeriod = toAmount(setup?.waste_fee_per_period)
+  const dates = halfYearDates(yearCE, period)
+
+  const [housesResp, existingResp, parkingByHouse] = await Promise.all([
+    supabase.from('houses').select('id, area_sqw'),
+    supabase.from('fees').select('id, house_id, status').eq('year', yearCE).eq('period', period),
+    getParkingMonthlyByHouse(),
+  ])
+
+  if (housesResp.error) throw housesResp.error
+  if (existingResp.error) throw existingResp.error
+
+  const existingByHouse = new Map((existingResp.data || []).map((row) => [row.house_id, row]))
+  const houses = housesResp.data || []
+
+  let created = 0
+  let updated = 0
+  let skippedPaid = 0
+
+  for (const house of houses) {
+    const area = toAmount(house.area_sqw)
+    const parkingMonthly = toAmount(parkingByHouse.get(house.id))
+    const payload = {
+      year: yearCE,
+      period,
+      invoice_date: dates.invoice_date,
+      due_date: dates.due_date,
+      status: 'unpaid',
+      fee_common: round2(area * 6 * ratePerSqw),
+      fee_parking: round2(parkingMonthly * 6),
+      fee_waste: round2(wastePerPeriod),
+      fee_other: 0,
+      note: null,
+    }
+
+    const existing = existingByHouse.get(house.id)
+    if (!existing) {
+      const { error } = await supabase.from('fees').insert([{ house_id: house.id, ...payload }])
+      if (error) throw error
+      created += 1
+      continue
+    }
+
+    if (existing.status === 'paid') {
+      skippedPaid += 1
+      continue
+    }
+
+    const { error } = await supabase
+      .from('fees')
+      .update(payload)
+      .eq('id', existing.id)
+    if (error) throw error
+    updated += 1
+  }
+
+  return {
+    created,
+    updated,
+    skippedPaid,
+    totalHouses: houses.length,
+    yearCE,
+    period,
+  }
+}
+
+export async function calculateFullYearFeeByHouse({ houseId, year, setup }) {
+  const yearCE = toGregorianYear(year)
+  if (!houseId) throw new Error('ไม่พบบ้าน')
+  if (!yearCE) throw new Error('ปีไม่ถูกต้อง')
+
+  const ratePerSqw = toAmount(setup?.fee_rate_per_sqw)
+  const wastePerPeriod = toAmount(setup?.waste_fee_per_period)
+  const discountPct = toAmount(setup?.early_pay_discount_pct)
+
+  const [houseResp, parkingByHouseResp, existingResp] = await Promise.all([
+    supabase.from('houses').select('id, area_sqw').eq('id', houseId).single(),
+    getParkingMonthlyByHouse(),
+    supabase.from('fees').select('id').eq('house_id', houseId).eq('year', yearCE).eq('period', 'full_year').maybeSingle(),
+  ])
+
+  if (houseResp.error) throw houseResp.error
+  if (existingResp.error) throw existingResp.error
+
+  const area = toAmount(houseResp.data?.area_sqw)
+  const parkingMonthly = toAmount(parkingByHouseResp.get(houseId))
+  const commonBeforeDiscount = round2(area * 12 * ratePerSqw)
+  const discountAmount = round2(commonBeforeDiscount * (discountPct / 100))
+  const feeCommon = round2(commonBeforeDiscount - discountAmount)
+  const feeParking = round2(parkingMonthly * 12)
+  const feeWaste = round2(wastePerPeriod * 2)
+
+  const payload = {
+    house_id: houseId,
+    year: yearCE,
+    period: 'full_year',
+    invoice_date: `${yearCE}-01-01`,
+    due_date: `${yearCE + 1}-01-31`,
+    status: 'unpaid',
+    fee_common: feeCommon,
+    fee_parking: feeParking,
+    fee_waste: feeWaste,
+    note: `คำนวณทั้งปี ลดค่าส่วนกลาง ${discountPct}% (ลด ${discountAmount.toLocaleString('th-TH')} บาท)`,
+  }
+
+  if (existingResp.data?.id) {
+    const { data, error } = await supabase
+      .from('fees')
+      .update(payload)
+      .eq('id', existingResp.data.id)
+      .select('id, house_id, year, period, invoice_date, due_date, status, fee_common, fee_parking, fee_waste, fee_overdue_common, fee_overdue_fine, fee_overdue_notice, fee_fine, fee_notice, fee_violation, fee_other, total_amount, note, created_at, houses(id, house_no, owner_name)')
+      .single()
+    if (error) throw error
+    return data
+  }
+
+  const { data, error } = await supabase
+    .from('fees')
+    .insert([payload])
+    .select('id, house_id, year, period, invoice_date, due_date, status, fee_common, fee_parking, fee_waste, fee_overdue_common, fee_overdue_fine, fee_overdue_notice, fee_fine, fee_notice, fee_violation, fee_other, total_amount, note, created_at, houses(id, house_no, owner_name)')
+    .single()
+  if (error) throw error
+  return data
+}
+
+export async function calculateOverdueFeeCharges(feeId, setup) {
+  const finePct = toAmount(setup?.overdue_fine_pct)
+  const noticeFee = toAmount(setup?.notice_fee)
+
+  const { data: fee, error: feeError } = await supabase
+    .from('fees')
+    .select('id, status, due_date, fee_common')
+    .eq('id', feeId)
+    .single()
+
+  if (feeError) throw feeError
+  if (!fee?.due_date) {
+    throw new Error('ใบแจ้งหนี้นี้ยังไม่มีวันครบกำหนด')
+  }
+
+  if (fee.status === 'paid') {
+    throw new Error('ใบแจ้งหนี้ชำระแล้ว ไม่สามารถคำนวณค่าปรับได้')
+  }
+
+  const dueDate = new Date(`${fee.due_date}T23:59:59`)
+  const now = new Date()
+  if (now <= dueDate) {
+    throw new Error('ยังไม่เกินกำหนดชำระ')
+  }
+
+  const feeFine = round2(toAmount(fee.fee_common) * (finePct / 100))
+  const { data, error } = await supabase
+    .from('fees')
+    .update({
+      status: 'overdue',
+      fee_fine: feeFine,
+      fee_notice: round2(noticeFee),
+    })
+    .eq('id', feeId)
     .select('id, house_id, year, period, invoice_date, due_date, status, fee_common, fee_parking, fee_waste, fee_overdue_common, fee_overdue_fine, fee_overdue_notice, fee_fine, fee_notice, fee_violation, fee_other, total_amount, note, created_at, houses(id, house_no, owner_name)')
     .single()
 
