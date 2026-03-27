@@ -91,9 +91,11 @@ async function resizeImageToLimit(file, sequence) {
   throw new Error(`ไม่สามารถย่อรูป ${file.name} ให้ต่ำกว่า 50KB ได้`)
 }
 
-const AdminWorkReportForm = ({ modalMode = false, forceCreate = false, onSaved = null, onCancel = null }) => {
+const AdminWorkReportForm = ({ modalMode = false, forceCreate = false, reportId = null, onSaved = null, onCancel = null }) => {
   const navigate = useNavigate()
-  const { id } = useParams()
+  const { id: routeId } = useParams()
+  // In modal edit mode, use reportId prop; on the standalone edit page, use route param
+  const id = reportId ?? routeId
   const isEdit = forceCreate ? false : Boolean(id)
 
   const [loading, setLoading] = useState(isEdit)
@@ -314,7 +316,7 @@ const AdminWorkReportForm = ({ modalMode = false, forceCreate = false, onSaved =
           </label>
           <label className="house-field">
             <span>รายละเอียด</span>
-            <textarea name="detail" value={form.detail} onChange={handleFormChange} rows={4} placeholder="รายละเอียดงานเพิ่มเติม" />
+            <textarea name="detail" value={form.detail} onChange={handleFormChange} rows={7} placeholder="รายละเอียดงานเพิ่มเติม" />
           </label>
           <label className="house-field" style={{ flexDirection: 'row', alignItems: 'center', gap: '8px', paddingTop: '2px' }}>
             <input type="checkbox" name="is_published" checked={form.is_published} onChange={handleFormChange} style={{ width: 'auto', minHeight: 'auto', flex: 'none' }} />

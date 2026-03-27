@@ -39,6 +39,7 @@ const AdminWorkReportsList = () => {
   const [loading, setLoading] = useState(false)
   const [setup, setSetup] = useState({ villageName: 'The Greenfield' })
   const [showCreateModal, setShowCreateModal] = useState(false)
+  const [editingReportId, setEditingReportId] = useState(null)
 
   const [searchTerm, setSearchTerm] = useState('')
   const [filterMonth, setFilterMonth] = useState('')
@@ -296,7 +297,7 @@ const AdminWorkReportsList = () => {
                     </td>
                     <td>
                       <div style={{ display: 'flex', gap: '6px' }}>
-                        <button className="btn btn-xs btn-a" onClick={() => navigate('/admin/work-reports/' + report.id + '/edit')}>แก้ไข</button>
+                        <button className="btn btn-xs btn-a" onClick={() => setEditingReportId(report.id)}>แก้ไข</button>
                         <button className="btn btn-xs btn-o" title="ส่งออก PNG" onClick={() => handleExportImage(report)}>
                           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ display: 'block' }}>
                             <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
@@ -336,7 +337,7 @@ const AdminWorkReportsList = () => {
                   </div>
                 )}
                 <div className="houses-mcard-actions">
-                  <button className="btn btn-xs btn-a" style={{ flex: 1 }} onClick={() => navigate('/admin/work-reports/' + report.id + '/edit')}>แก้ไข</button>
+                  <button className="btn btn-xs btn-a" style={{ flex: 1 }} onClick={() => setEditingReportId(report.id)}>แก้ไข</button>
                   <button className="btn btn-xs btn-o" title="ส่งออก PNG" onClick={() => handleExportImage(report)}>
                     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ display: 'block' }}>
                       <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
@@ -367,6 +368,29 @@ const AdminWorkReportsList = () => {
               onCancel={() => setShowCreateModal(false)}
               onSaved={async () => {
                 setShowCreateModal(false)
+                await loadReports()
+              }}
+            />
+          </div>
+        </div>
+      )}
+
+      {editingReportId && (
+        <div className="house-mo">
+          <div className="house-md house-md-home">
+            <div className="house-md-head">
+              <div>
+                <div className="house-md-title">✏️ แก้ไขผลงานนิติ</div>
+                <div className="house-md-sub">แก้ไขผลงาน พร้อมเพิ่ม/ลบรูปแนบ</div>
+              </div>
+            </div>
+            <AdminWorkReportForm
+              key={editingReportId}
+              modalMode
+              reportId={editingReportId}
+              onCancel={() => setEditingReportId(null)}
+              onSaved={async () => {
+                setEditingReportId(null)
                 await loadReports()
               }}
             />
