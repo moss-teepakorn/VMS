@@ -1,3 +1,4 @@
+import { lazy, Suspense } from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider, useAuth } from './contexts/AuthContext'
 import LoginPage from './pages/LoginPage'
@@ -11,7 +12,6 @@ import AdminIssues from './pages/admin/AdminIssues'
 import AdminViolations from './pages/admin/AdminViolations'
 import AdminAnnouncements from './pages/admin/AdminAnnouncements'
 import AdminReports from './pages/admin/AdminReports'
-import AdminWorkReports from './pages/admin/AdminWorkReports'
 import AdminTechnicians from './pages/admin/AdminTechnicians'
 import AdminMarketplace from './pages/admin/AdminMarketplace'
 import AdminConfig from './pages/admin/AdminConfig'
@@ -23,6 +23,8 @@ import AdminPayments from './pages/admin/AdminPayments'
 import AdminMaintenance from './pages/admin/AdminMaintenance'
 import AdminSettings from './pages/admin/AdminSettings'
 import ResidentLayout from './pages/resident/ResidentLayout'
+
+const AdminWorkReports = lazy(() => import('./pages/admin/AdminWorkReports'))
 
 // Guard: ถ้ายังไม่ login → ไป /login
 function RequireAuth({ children }) {
@@ -87,7 +89,7 @@ function AppRoutes() {
         <Route path="violations" element={<AdminViolations />} />
         <Route path="announcements" element={<AdminAnnouncements />} />
         <Route path="reports" element={<AdminReports />} />
-        <Route path="work-reports" element={<AdminWorkReports />} />
+        <Route path="work-reports" element={<Suspense fallback={<PageLoader />}><AdminWorkReports /></Suspense>} />
         <Route path="technicians" element={<AdminTechnicians />} />
         <Route path="marketplace" element={<AdminMarketplace />} />
         <Route path="config" element={<AdminConfig />} />

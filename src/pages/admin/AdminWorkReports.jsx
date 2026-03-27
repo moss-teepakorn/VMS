@@ -23,8 +23,15 @@ const EMPTY_FORM = {
 }
 
 const MAX_ATTACHMENTS = 10
-const MAX_IMAGE_SIZE_BYTES = 100 * 1024
 const MAX_IMAGE_TARGET_BYTES = 50 * 1024
+
+function revokeBlobUrls(items) {
+  for (const item of items || []) {
+    if (item?.url && String(item.url).startsWith('blob:')) {
+      URL.revokeObjectURL(item.url)
+    }
+  }
+}
 
 async function resizeImageToLimit(file, sequence) {
   if (file.size <= MAX_IMAGE_TARGET_BYTES) {
@@ -97,6 +104,7 @@ const AdminWorkReports = () => {
   const [editingId, setEditingId] = useState(null)
   const [form, setForm] = useState({ ...EMPTY_FORM })
   const [attachments, setAttachments] = useState([])
+  const [originalImagePaths, setOriginalImagePaths] = useState([])
   const [saving, setSaving] = useState(false)
   const [setup, setSetup] = useState({ villageName: 'The Greenfield' })
 
@@ -121,21 +129,22 @@ const AdminWorkReports = () => {
     loadData()
   }, [])
 
-  const loadReports = async () => {
+  useEffect(() => () => revokeBlobUrls(attachments), [attachments])
+
+  const loadReports = async (overrides = {}) => {
     try {
+      const month = overrides.month !== undefined ? overrides.month : filterMonth
+      const year = overrides.year !== undefined ? overrides.year : filterYear
+      const category = overrides.category !== undefined ? overrides.category : filterCategory
       const data = await listWorkReports({
-        month: filterMonth ? Number(filterMonth) : null,
-        year: filterYear ? Number(filterYear) : null,
-        category: filterCategory,
+        month: month ? Number(month) : null,
+        year: year ? Number(year) : null,
+        category,
       })
       setReports(data)
     } catch (error) {
       await showSwal({ icon: 'error', title: 'โหลดข้อมูลไม่สำเร็จ', text: error.message })
     }
-  }
-
-  const handleChangeFilter = () => {
-    loadReports()
   }
 
   const handleFormChange = (e) => {
@@ -186,13 +195,16 @@ const AdminWorkReports = () => {
   }
 
   const handleNew = () => {
+    revokeBlobUrls(attachments)
     setEditingId(null)
     setForm({ ...EMPTY_FORM })
     setAttachments([])
+    setOriginalImagePaths([])
   }
 
   const handleEdit = async (report) => {
     try {
+      revokeBlobUrls(attachments)
       const images = await listWorkReportImages(report.id)
       setEditingId(report.id)
       setForm({
@@ -204,6 +216,7 @@ const AdminWorkReports = () => {
         is_published: report.is_published || false,
       })
       setAttachments(images.map(img => ({ source: 'existing', ...img })))
+      setOriginalImagePaths(images.map(img => img.path).filter(Boolean))
     } catch (error) {
       await showSwal({ icon: 'error', title: 'โหลดข้อมูลไม่สำเร็จ', text: error.message })
     }
@@ -218,7 +231,7 @@ const AdminWorkReports = () => {
     try {
       setSaving(true)
 
-      const existingPaths = attachments
+      const keptExistingPaths = attachments
         .filter(a => a.source === 'existing' && a.path)
         .map(a => a.path)
 
@@ -226,27 +239,12 @@ const AdminWorkReports = () => {
         .filter(a => a.source === 'new' && a.file)
         .map(a => a.file)
 
-      let imageUrls = []
-      let imageCount = 0
-
       if (editingId) {
-        const deletePaths = existingPaths
-          .filter(path => !attachments.find(a => a.path === path))
+        const deletePaths = originalImagePaths
+          .filter(path => !keptExistingPaths.includes(path))
         if (deletePaths.length > 0) {
           await deleteWorkReportImagesByPaths(deletePaths)
         }
-        imageCount = existingPaths.length
-      }
-
-      if (newFiles.length > 0) {
-        const reportId = editingId || `temp-${Date.now()}`
-        const uploaded = await uploadWorkReportImages(reportId, newFiles)
-        imageUrls = uploaded.map(u => u.url)
-        imageCount += newFiles.length
-      } else {
-        imageUrls = attachments
-          .filter(a => a.source === 'existing' && a.url)
-          .map(a => a.url)
       }
 
       const payload = {
@@ -256,7 +254,7 @@ const AdminWorkReports = () => {
         summary: form.summary.trim(),
         detail: form.detail.trim(),
         is_published: form.is_published,
-        image_urls: imageUrls,
+        image_urls: [],
       }
 
       let saved
@@ -264,20 +262,23 @@ const AdminWorkReports = () => {
         saved = await updateWorkReport(editingId, payload)
       } else {
         saved = await createWorkReport(payload)
-        // Re-upload images with correct folder
-        if (newFiles.length > 0) {
-          const uploaded = await uploadWorkReportImages(saved.id, newFiles)
-          const allUrls = [...existingPaths.length > 0 ? await listWorkReportImages(saved.id) : [], ...uploaded]
-          await updateWorkReport(saved.id, {
-            image_urls: allUrls.map(u => u.url || u),
-          })
-        }
       }
 
+      if (newFiles.length > 0) {
+        await uploadWorkReportImages(saved.id, newFiles)
+      }
+
+      const currentImages = await listWorkReportImages(saved.id)
+      await updateWorkReport(saved.id, {
+        image_urls: currentImages.map(img => img.url).filter(Boolean),
+      })
+
       await showSwal({ icon: 'success', title: 'บันทึกสำเร็จ', timer: 1200, showConfirmButton: false })
+      revokeBlobUrls(attachments)
       setEditingId(null)
       setForm({ ...EMPTY_FORM })
       setAttachments([])
+      setOriginalImagePaths([])
       await loadReports()
     } catch (error) {
       await showSwal({ icon: 'error', title: 'บันทึกไม่สำเร็จ', text: error.message })
@@ -302,6 +303,11 @@ const AdminWorkReports = () => {
     if (!result.isConfirmed) return
 
     try {
+      const images = await listWorkReportImages(report.id)
+      const paths = images.map(img => img.path).filter(Boolean)
+      if (paths.length > 0) {
+        await deleteWorkReportImagesByPaths(paths)
+      }
       await deleteWorkReport(report.id)
       await showSwal({ icon: 'success', title: 'ลบสำเร็จ', timer: 1200, showConfirmButton: false })
       await loadReports()
@@ -340,7 +346,7 @@ const AdminWorkReports = () => {
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px' }}>
             <label style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
               <span style={{ fontSize: '13px', fontWeight: '600' }}>เดือน</span>
-              <select value={filterMonth} onChange={(e) => { setFilterMonth(e.target.value); loadReports() }} style={{ padding: '8px', border: '1px solid var(--bo)', borderRadius: 'var(--r)', fontSize: '14px' }}>
+                <select value={filterMonth} onChange={(e) => { const value = e.target.value; setFilterMonth(value); loadReports({ month: value }) }} style={{ padding: '8px', border: '1px solid var(--bo)', borderRadius: 'var(--r)', fontSize: '14px' }}>
                 <option value="">ทั้งหมด</option>
                 {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map(m => (
                   <option key={m} value={m}>{new Date(2024, m - 1).toLocaleDateString('th-TH', { month: 'long' })}</option>
@@ -349,7 +355,7 @@ const AdminWorkReports = () => {
             </label>
             <label style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
               <span style={{ fontSize: '13px', fontWeight: '600' }}>ปี</span>
-              <select value={filterYear} onChange={e => { setFilterYear(e.target.value); loadReports() }} style={{ padding: '8px', border: '1px solid var(--bo)', borderRadius: 'var(--r)', fontSize: '14px' }}>
+                <select value={filterYear} onChange={e => { const value = e.target.value; setFilterYear(value); loadReports({ year: value }) }} style={{ padding: '8px', border: '1px solid var(--bo)', borderRadius: 'var(--r)', fontSize: '14px' }}>
                 {[2024, 2025, 2026, 2027].map(y => (
                   <option key={y} value={y}>{y + 543}</option>
                 ))}
@@ -357,7 +363,7 @@ const AdminWorkReports = () => {
             </label>
             <label style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
               <span style={{ fontSize: '13px', fontWeight: '600' }}>หมวดหมู่</span>
-              <select value={filterCategory} onChange={e => { setFilterCategory(e.target.value); loadReports() }} style={{ padding: '8px', border: '1px solid var(--bo)', borderRadius: 'var(--r)', fontSize: '14px' }}>
+                <select value={filterCategory} onChange={e => { const value = e.target.value; setFilterCategory(value); loadReports({ category: value }) }} style={{ padding: '8px', border: '1px solid var(--bo)', borderRadius: 'var(--r)', fontSize: '14px' }}>
                 <option value="all">ทั้งหมด</option>
                 {CATEGORIES.map(cat => (
                   <option key={cat.value} value={cat.value}>{cat.label}</option>
