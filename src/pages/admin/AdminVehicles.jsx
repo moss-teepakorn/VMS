@@ -484,7 +484,7 @@ const AdminVehicles = () => {
   }
 
   return (
-    <div className="pane on page-compact" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+    <div className="pane on page-compact vehicles-page" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
       <div className="ph">
         <div className="ph-in">
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -521,7 +521,7 @@ const AdminVehicles = () => {
         </div>
       </div>
 
-      <div className="card">
+      <div className="card vehicles-list-card">
         <div className="ch page-list-head">
           <div className="ct">ยานพาหนะทั้งหมด ({vehicles.length} รายการ)</div>
           <div className="page-list-actions">
