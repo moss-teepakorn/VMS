@@ -72,12 +72,32 @@ export async function updateSystemConfig(configId, updates) {
     updated_by: authData?.user?.id || null,
   }
 
-  const { data, error } = await supabase
+  let { data, error } = await supabase
     .from('system_config')
     .update(payload)
     .eq('id', configId)
     .select('*')
     .single()
+
+  const errorMessage = String(error?.message || '')
+  const missingVillageLogoColumn = errorMessage.includes("Could not find the 'village_logo_path' column")
+    || errorMessage.includes("Could not find the 'village_logo_url' column")
+
+  if (missingVillageLogoColumn) {
+    const fallbackPayload = { ...payload }
+    delete fallbackPayload.village_logo_url
+    delete fallbackPayload.village_logo_path
+
+    const fallback = await supabase
+      .from('system_config')
+      .update(fallbackPayload)
+      .eq('id', configId)
+      .select('*')
+      .single()
+
+    data = fallback.data
+    error = fallback.error
+  }
 
   if (error) throw error
   return normalizeConfigRow(data)

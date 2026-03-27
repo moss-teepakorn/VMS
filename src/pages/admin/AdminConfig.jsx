@@ -24,6 +24,63 @@ const NUMBER_FIELDS = [
   'common_parking_slots',
 ]
 
+const MAX_LOGIN_LOGO_BYTES = 50 * 1024
+
+async function readImageFromFile(file) {
+  const dataUrl = await new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => resolve(reader.result)
+    reader.onerror = reject
+    reader.readAsDataURL(file)
+  })
+
+  return new Promise((resolve, reject) => {
+    const image = new Image()
+    image.onload = () => resolve(image)
+    image.onerror = reject
+    image.src = dataUrl
+  })
+}
+
+async function compressImageToMaxBytes(file, maxBytes) {
+  if (!file || file.size <= maxBytes) return file
+  const image = await readImageFromFile(file)
+
+  let width = image.width
+  let height = image.height
+  let quality = 0.9
+  let blob = null
+
+  const canvas = document.createElement('canvas')
+  const ctx = canvas.getContext('2d')
+  if (!ctx) return file
+
+  for (let attempt = 0; attempt < 14; attempt += 1) {
+    canvas.width = Math.max(120, Math.round(width))
+    canvas.height = Math.max(120, Math.round(height))
+    ctx.clearRect(0, 0, canvas.width, canvas.height)
+    ctx.drawImage(image, 0, 0, canvas.width, canvas.height)
+
+    blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/jpeg', quality))
+    if (!blob) break
+    if (blob.size <= maxBytes) {
+      return new File([blob], `login-logo-${Date.now()}.jpg`, { type: 'image/jpeg' })
+    }
+
+    if (quality > 0.45) {
+      quality -= 0.08
+    } else {
+      width *= 0.88
+      height *= 0.88
+    }
+  }
+
+  if (blob) {
+    return new File([blob], `login-logo-${Date.now()}.jpg`, { type: 'image/jpeg' })
+  }
+  return file
+}
+
 const AdminConfig = () => {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -94,7 +151,7 @@ const AdminConfig = () => {
     setSignaturePreviewUrl(URL.createObjectURL(file))
   }
 
-  const handleLogoFile = (event) => {
+  const handleLogoFile = async (event) => {
     const file = event.target.files?.[0]
     event.target.value = ''
     if (!file) return
@@ -109,9 +166,15 @@ const AdminConfig = () => {
       URL.revokeObjectURL(logoPreviewUrl)
     }
 
-    setLogoFile(file)
+    const compressedFile = await compressImageToMaxBytes(file, MAX_LOGIN_LOGO_BYTES)
+    if (compressedFile.size > MAX_LOGIN_LOGO_BYTES) {
+      await Swal.fire({ icon: 'warning', title: 'ไฟล์ยังใหญ่เกินไป', text: 'กรุณาใช้รูปที่เล็กลงให้ไม่เกิน 50KB' })
+      return
+    }
+
+    setLogoFile(compressedFile)
     setRemoveLogo(false)
-    setLogoPreviewUrl(URL.createObjectURL(file))
+    setLogoPreviewUrl(URL.createObjectURL(compressedFile))
   }
 
   const handleRemoveSignature = () => {
@@ -183,8 +246,8 @@ const AdminConfig = () => {
           payload.village_logo_url = uploadedLogo?.url || null
           payload.village_logo_path = uploadedLogo?.path || null
         }
-        localStorage.setItem('vms-login-circle-logo-url', payload.village_logo_url || '')
-        localStorage.setItem('vms-login-circle-logo-path', payload.village_logo_path || '')
+        localStorage.setItem('vms-login-circle-logo-url', uploadedLogo?.url || '')
+        localStorage.setItem('vms-login-circle-logo-path', uploadedLogo?.path || '')
         if (!hasLogoColumns) {
           localStorage.setItem('vms-login-circle-logo-url', uploadedLogo?.url || '')
           localStorage.setItem('vms-login-circle-logo-path', uploadedLogo?.path || '')
@@ -267,7 +330,7 @@ const AdminConfig = () => {
                     <input name="juristic_email" value={form.juristic_email || ''} onChange={handleChange} />
                   </label>
                   <div className="house-field house-field-span-3">
-                    <span>โลโก้สำหรับหน้า Login (PNG/JPG)</span>
+                    <span>โลโก้สำหรับหน้า Login (PNG/JPG ไม่เกิน 50KB)</span>
                     <input type="file" accept="image/png,image/jpeg,image/webp" onChange={handleLogoFile} />
                     <div style={{ marginTop: '8px', display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
                       {logoPreviewUrl ? (
