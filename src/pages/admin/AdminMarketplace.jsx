@@ -3,6 +3,7 @@ import Swal from 'sweetalert2'
 import { listHouses } from '../../lib/houses'
 import {
   createMarketplaceItem,
+  deleteMarketplaceImageFolder,
   deleteMarketplaceImagesByPaths,
   deleteMarketplaceItem,
   listMarketplaceImages,
@@ -162,6 +163,10 @@ const AdminMarketplace = () => {
   const [attachments, setAttachments] = useState([])
   const [originalImagePaths, setOriginalImagePaths] = useState([])
   const [removedExistingPaths, setRemovedExistingPaths] = useState([])
+  const [showDetailModal, setShowDetailModal] = useState(false)
+  const [detailItem, setDetailItem] = useState(null)
+  const [detailImages, setDetailImages] = useState([])
+  const [loadingDetailImages, setLoadingDetailImages] = useState(false)
 
   useEffect(() => () => revokeBlobUrls(attachments), [attachments])
 
@@ -257,6 +262,31 @@ const AdminMarketplace = () => {
     setAttachments([])
     setOriginalImagePaths([])
     setRemovedExistingPaths([])
+  }
+
+  const openDetailModal = async (item) => {
+    setDetailItem(item)
+    setDetailImages(item.image_url ? [{ url: item.image_url, name: 'IMG_1' }] : [])
+    setShowDetailModal(true)
+
+    try {
+      setLoadingDetailImages(true)
+      const images = await listMarketplaceImages(item.id)
+      if (images.length > 0) {
+        setDetailImages(images.slice(0, MAX_ATTACHMENTS))
+      }
+    } catch {
+      // Keep fallback image_url if storage listing fails.
+    } finally {
+      setLoadingDetailImages(false)
+    }
+  }
+
+  const closeDetailModal = () => {
+    setShowDetailModal(false)
+    setDetailItem(null)
+    setDetailImages([])
+    setLoadingDetailImages(false)
   }
 
   const handleChange = (e) => {
@@ -398,11 +428,7 @@ const AdminMarketplace = () => {
     })
     if (!result.isConfirmed) return
     try {
-      const images = await listMarketplaceImages(item.id)
-      const paths = images.map((img) => img.path).filter(Boolean)
-      if (paths.length > 0) {
-        await deleteMarketplaceImagesByPaths(paths)
-      }
+      await deleteMarketplaceImageFolder(item.id)
       await deleteMarketplaceItem(item.id)
       await showSwal({ icon: 'success', title: 'ลบสำเร็จ', timer: 1200, showConfirmButton: false })
       await loadData({ status: statusFilter, listing_type: typeFilter, search: searchTerm })
@@ -500,6 +526,7 @@ const AdminMarketplace = () => {
                         <td><span className={sBadge.className}>{sBadge.label}</span></td>
                         <td>{formatDate(item.created_at)}</td>
                         <td><div className="td-acts">
+                          <button className="btn btn-xs btn-o" onClick={() => openDetailModal(item)}>ดู</button>
                           {item.status === 'pending' && (
                             <button className="btn btn-xs btn-ok" onClick={() => handleApprove(item)}>อนุมัติ</button>
                           )}
@@ -536,6 +563,7 @@ const AdminMarketplace = () => {
                     <span><span className="mcard-label">วันที่</span> {formatDate(item.created_at)}</span>
                   </div>
                   <div className="mcard-actions">
+                    <button className="btn btn-xs btn-o" onClick={() => openDetailModal(item)}>ดู</button>
                     {item.status === 'pending' && <button className="btn btn-xs btn-ok" onClick={() => handleApprove(item)}>อนุมัติ</button>}
                     <button className="btn btn-xs btn-a" onClick={() => openEditModal(item)}>แก้ไข</button>
                     <button className="btn btn-xs btn-dg" onClick={() => handleDelete(item)}>ลบ</button>
@@ -640,6 +668,61 @@ const AdminMarketplace = () => {
                 <button className="btn btn-p" type="submit" disabled={saving}>{saving ? 'กำลังบันทึก...' : 'บันทึก'}</button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {showDetailModal && detailItem && (
+        <div className="house-mo">
+          <div className="house-md house-md-home">
+            <div className="house-md-head">
+              <div>
+                <div className="house-md-title">🔍 รายละเอียดรายการ</div>
+                <div className="house-md-sub">{detailItem.title || '-'}</div>
+              </div>
+            </div>
+
+            <div className="house-md-body">
+              <section className="house-sec">
+                <div className="house-sec-title">ข้อมูลทั่วไป</div>
+                <div className="house-grid house-grid-2">
+                  <label className="house-field"><span>บ้าน</span><input readOnly value={detailItem.houses?.house_no || '-'} /></label>
+                  <label className="house-field"><span>เจ้าของ</span><input readOnly value={detailItem.houses?.owner_name || '-'} /></label>
+                  <label className="house-field"><span>หมวดหมู่</span><input readOnly value={detailItem.category || '-'} /></label>
+                  <label className="house-field"><span>ประเภท</span><input readOnly value={getListingBadge(detailItem.listing_type).label} /></label>
+                  <label className="house-field"><span>ราคา</span><input readOnly value={detailItem.listing_type === 'free' ? 'ฟรี' : detailItem.listing_type === 'wanted' ? '-' : formatPrice(detailItem.price)} /></label>
+                  <label className="house-field"><span>ติดต่อ</span><input readOnly value={detailItem.contact || '-'} /></label>
+                </div>
+              </section>
+
+              <section className="house-sec">
+                <div className="house-sec-title">รายละเอียด</div>
+                <label className="house-field">
+                  <textarea readOnly rows="6" value={detailItem.detail || '-'} />
+                </label>
+              </section>
+
+              <section className="house-sec" style={{ borderBottom: 0 }}>
+                <div className="house-sec-title">รูปภาพแนบ ({detailImages.length} รูป)</div>
+                {loadingDetailImages ? (
+                  <div style={{ color: 'var(--mu)', fontSize: '13px' }}>กำลังโหลดรูป...</div>
+                ) : detailImages.length === 0 ? (
+                  <div style={{ color: 'var(--mu)', fontSize: '13px' }}>ไม่มีรูปแนบ</div>
+                ) : (
+                  <div style={{ display: 'grid', gridTemplateColumns: detailImages.length === 1 ? '1fr' : 'repeat(2, minmax(0, 1fr))', gap: '8px' }}>
+                    {detailImages.map((img, idx) => (
+                      <div key={img.path || img.url || idx} style={{ border: '1px solid #dbe3ed', borderRadius: '8px', overflow: 'hidden', background: '#fff' }}>
+                        <img src={img.url} alt={img.name || `image-${idx + 1}`} style={{ width: '100%', height: '180px', objectFit: 'cover', display: 'block' }} />
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </section>
+            </div>
+
+            <div className="house-md-foot">
+              <button className="btn btn-g" type="button" onClick={closeDetailModal}>ปิด</button>
+            </div>
           </div>
         </div>
       )}

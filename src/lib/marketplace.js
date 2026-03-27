@@ -138,7 +138,7 @@ export async function listMarketplaceImages(itemId) {
 
   const { data, error } = await supabase.storage
     .from(MARKETPLACE_IMAGE_BUCKET)
-    .list(folder)
+    .list(folder, { limit: 100, offset: 0 })
 
   if (error) return []
 
@@ -155,4 +155,16 @@ export async function listMarketplaceImages(itemId) {
         url: publicUrlData?.publicUrl || '',
       }
     })
+}
+
+export async function deleteMarketplaceImageFolder(itemId, extraPaths = []) {
+  const images = await listMarketplaceImages(itemId)
+  const storagePaths = images.map((img) => img.path).filter(Boolean)
+  const allPaths = Array.from(new Set([...
+    storagePaths,
+    ...(Array.isArray(extraPaths) ? extraPaths.filter(Boolean) : []),
+  ]))
+
+  if (allPaths.length === 0) return true
+  return deleteMarketplaceImagesByPaths(allPaths)
 }
