@@ -326,6 +326,57 @@ const AdminFees = () => {
     return paymentForm.selectedItems.reduce((sum, key) => sum + Number(payingFee[key] || 0), 0)
   }, [payingFee, paymentForm.selectedItems])
 
+  const payableFeeItems = useMemo(() => {
+    if (!payingFee) return []
+    return feeItemDefs
+      .map((item) => ({ ...item, amount: Number(payingFee[item.key] || 0) }))
+      .filter((item) => item.amount > 0)
+  }, [payingFee])
+
+  const paymentInvoiceTotal = useMemo(() => {
+    if (!payingFee) return 0
+    return payableFeeItems.reduce((sum, item) => sum + item.amount, 0)
+  }, [payingFee, payableFeeItems])
+
+  const paymentRemaining = Math.max(0, paymentInvoiceTotal - paymentSelectedAmount)
+  const paymentCoveragePct = paymentInvoiceTotal > 0
+    ? Math.min(100, Math.round((paymentSelectedAmount / paymentInvoiceTotal) * 100))
+    : 0
+
+  const togglePaymentItem = (itemKey, checked) => {
+    setPaymentForm((prev) => {
+      const exists = prev.selectedItems.includes(itemKey)
+      if (checked && !exists) {
+        return { ...prev, selectedItems: [...prev.selectedItems, itemKey] }
+      }
+      if (!checked && exists) {
+        return { ...prev, selectedItems: prev.selectedItems.filter((key) => key !== itemKey) }
+      }
+      return prev
+    })
+  }
+
+  const selectAllPaymentItems = () => {
+    setPaymentForm((prev) => ({
+      ...prev,
+      selectedItems: payableFeeItems.map((item) => item.key),
+    }))
+  }
+
+  const clearPaymentItems = () => {
+    setPaymentForm((prev) => ({ ...prev, selectedItems: [] }))
+  }
+
+  const selectBasePaymentItems = () => {
+    const baseKeys = ['fee_common', 'fee_parking', 'fee_waste']
+    setPaymentForm((prev) => ({
+      ...prev,
+      selectedItems: payableFeeItems
+        .map((item) => item.key)
+        .filter((key) => baseKeys.includes(key)),
+    }))
+  }
+
   const handleSubmitPayment = async (event) => {
     event.preventDefault()
     if (!payingFee) return
@@ -607,11 +658,16 @@ const AdminFees = () => {
 
       {showPaymentModal && payingFee && (
         <div className="house-mo">
-          <div className="house-md house-md-home">
+          <div className="house-md house-md-home" style={{ maxWidth: '860px' }}>
             <div className="house-md-head">
               <div>
                 <div className="house-md-title">💳 บันทึกรับชำระ</div>
                 <div className="house-md-sub">{payingFee.houses?.house_no || '-'} · {periodLabel(payingFee.period)} · ปี {toBE(payingFee.year)}</div>
+              </div>
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                <span className="bd b-pr">ยอดแจ้งหนี้ ฿{paymentInvoiceTotal.toLocaleString('th-TH')}</span>
+                <span className="bd b-ok">เลือกแล้ว ฿{paymentSelectedAmount.toLocaleString('th-TH')}</span>
+                <span className="bd b-wn">คงเหลือ ฿{paymentRemaining.toLocaleString('th-TH')}</span>
               </div>
             </div>
 
@@ -619,30 +675,68 @@ const AdminFees = () => {
               <div className="house-md-body">
                 <section className="house-sec">
                   <div className="house-sec-title">เลือกรายการที่ชำระ</div>
+                  <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 12 }}>
+                    <button type="button" className="btn btn-xs btn-a" onClick={selectAllPaymentItems}>เลือกทั้งหมด</button>
+                    <button type="button" className="btn btn-xs btn-o" onClick={selectBasePaymentItems}>เลือกพื้นฐาน</button>
+                    <button type="button" className="btn btn-xs btn-g" onClick={clearPaymentItems}>ล้างการเลือก</button>
+                  </div>
+
+                  <div
+                    style={{
+                      height: 10,
+                      borderRadius: 99,
+                      background: '#e5e7eb',
+                      overflow: 'hidden',
+                      marginBottom: 12,
+                    }}
+                  >
+                    <div
+                      style={{
+                        width: `${paymentCoveragePct}%`,
+                        height: '100%',
+                        background: paymentRemaining === 0 ? '#16a34a' : '#0ea5e9',
+                        transition: 'width .2s ease',
+                      }}
+                    />
+                  </div>
+                  <div style={{ fontSize: 12, color: 'var(--mu)', marginBottom: 10 }}>
+                    ครอบคลุมยอดชำระ {paymentCoveragePct}% {paymentRemaining > 0 ? `· คงเหลือ ฿${paymentRemaining.toLocaleString('th-TH')}` : '· ครบยอดแล้ว'}
+                  </div>
+
                   <div className="house-grid house-grid-2">
-                    {feeItemDefs.map((item) => {
-                      const amount = Number(payingFee[item.key] || 0)
+                    {payableFeeItems.map((item) => {
+                      const checked = paymentForm.selectedItems.includes(item.key)
                       return (
-                        <label key={item.key} className="house-field" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                        <label
+                          key={item.key}
+                          className="house-field"
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 10,
+                            border: checked ? '1px solid #16a34a' : '1px solid var(--bo)',
+                            background: checked ? '#f0fdf4' : '#fff',
+                            borderRadius: 10,
+                            cursor: 'pointer',
+                          }}
+                        >
                           <input
                             type="checkbox"
-                            checked={paymentForm.selectedItems.includes(item.key)}
-                            onChange={(e) => {
-                              setPaymentForm((prev) => {
-                                const has = prev.selectedItems.includes(item.key)
-                                const nextSelected = e.target.checked
-                                  ? [...prev.selectedItems, item.key]
-                                  : prev.selectedItems.filter((key) => key !== item.key)
-                                return has === e.target.checked ? prev : { ...prev, selectedItems: nextSelected }
-                              })
-                            }}
+                            checked={checked}
+                            onChange={(e) => togglePaymentItem(item.key, e.target.checked)}
                             style={{ width: 16, height: 16 }}
                           />
-                          <span style={{ flex: 1 }}>{item.label}</span>
-                          <strong>{amount.toLocaleString('th-TH')}</strong>
+                          <div style={{ flex: 1 }}>
+                            <div style={{ fontWeight: 600 }}>{item.label}</div>
+                            <div style={{ fontSize: 12, color: 'var(--mu)' }}>{checked ? 'เลือกชำระแล้ว' : 'ยังไม่เลือก'}</div>
+                          </div>
+                          <strong style={{ color: checked ? '#166534' : 'inherit' }}>{item.amount.toLocaleString('th-TH')}</strong>
                         </label>
                       )
                     })}
+                    {payableFeeItems.length === 0 && (
+                      <div style={{ color: 'var(--mu)', fontSize: 13 }}>ไม่พบรายการที่มียอดมากกว่า 0</div>
+                    )}
                   </div>
                 </section>
 
@@ -673,7 +767,7 @@ const AdminFees = () => {
               </div>
               <div className="house-md-foot">
                 <button className="btn btn-g" type="button" onClick={() => { if (!savingPayment) { setShowPaymentModal(false); setPayingFee(null) } }}>ยกเลิก</button>
-                <button className="btn btn-p" type="submit" disabled={savingPayment}>{savingPayment ? 'กำลังบันทึก...' : 'บันทึกรับชำระ'}</button>
+                <button className="btn btn-p" type="submit" disabled={savingPayment || paymentForm.selectedItems.length === 0}>{savingPayment ? 'กำลังบันทึก...' : 'บันทึกรับชำระ'}</button>
               </div>
             </form>
           </div>
