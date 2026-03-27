@@ -167,6 +167,7 @@ const AdminMarketplace = () => {
   const [detailItem, setDetailItem] = useState(null)
   const [detailImages, setDetailImages] = useState([])
   const [loadingDetailImages, setLoadingDetailImages] = useState(false)
+  const [detailImageIndex, setDetailImageIndex] = useState(0)
 
   useEffect(() => () => revokeBlobUrls(attachments), [attachments])
 
@@ -267,6 +268,7 @@ const AdminMarketplace = () => {
   const openDetailModal = async (item) => {
     setDetailItem(item)
     setDetailImages(item.image_url ? [{ url: item.image_url, name: 'IMG_1' }] : [])
+    setDetailImageIndex(0)
     setShowDetailModal(true)
 
     try {
@@ -274,6 +276,7 @@ const AdminMarketplace = () => {
       const images = await listMarketplaceImages(item.id)
       if (images.length > 0) {
         setDetailImages(images.slice(0, MAX_ATTACHMENTS))
+        setDetailImageIndex(0)
       }
     } catch {
       // Keep fallback image_url if storage listing fails.
@@ -287,6 +290,7 @@ const AdminMarketplace = () => {
     setDetailItem(null)
     setDetailImages([])
     setLoadingDetailImages(false)
+    setDetailImageIndex(0)
   }
 
   const handleChange = (e) => {
@@ -495,10 +499,11 @@ const AdminMarketplace = () => {
         <div className="cb page-table-body">
           <div className="desktop-only">
             <div style={{ overflowX: 'auto' }}>
-              <table className="tw" style={{ width: '100%', minWidth: '900px' }}>
+              <table className="tw" style={{ width: '100%', minWidth: '980px' }}>
                 <thead><tr>
                   <th>บ้าน / เจ้าของ</th>
                   <th>ชื่อสินค้า/บริการ</th>
+                  <th>รูป</th>
                   <th>หมวด</th>
                   <th>ประเภท</th>
                   <th>ราคา</th>
@@ -509,9 +514,9 @@ const AdminMarketplace = () => {
                 </tr></thead>
                 <tbody>
                   {loading ? (
-                    <tr><td colSpan="9" style={{ textAlign: 'center', color: 'var(--mu)', padding: '20px' }}>กำลังโหลด...</td></tr>
+                    <tr><td colSpan="10" style={{ textAlign: 'center', color: 'var(--mu)', padding: '20px' }}>กำลังโหลด...</td></tr>
                   ) : items.length === 0 ? (
-                    <tr><td colSpan="9" style={{ textAlign: 'center', color: 'var(--mu)', padding: '20px' }}>ไม่พบข้อมูล</td></tr>
+                    <tr><td colSpan="10" style={{ textAlign: 'center', color: 'var(--mu)', padding: '20px' }}>ไม่พบข้อมูล</td></tr>
                   ) : items.map((item) => {
                     const lBadge = getListingBadge(item.listing_type)
                     const sBadge = getStatusBadge(item.status)
@@ -519,6 +524,17 @@ const AdminMarketplace = () => {
                       <tr key={item.id}>
                         <td><strong>{item.houses?.house_no || '-'}</strong>{item.houses?.owner_name ? <div style={{ fontSize: '11px', color: 'var(--mu)' }}>{item.houses.owner_name}</div> : null}</td>
                         <td style={{ maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}><strong>{item.title}</strong></td>
+                        <td>
+                          {item.image_url ? (
+                            <img
+                              src={item.image_url}
+                              alt={item.title || 'thumb'}
+                              style={{ width: '54px', height: '54px', borderRadius: '8px', objectFit: 'cover', border: '1px solid #dbe3ed', background: '#fff', display: 'block' }}
+                            />
+                          ) : (
+                            <span style={{ color: 'var(--mu)', fontSize: '12px' }}>-</span>
+                          )}
+                        </td>
                         <td>{item.category || '-'}</td>
                         <td><span className={lBadge.className}>{lBadge.label}</span></td>
                         <td>{item.listing_type === 'free' ? 'ฟรี' : item.listing_type === 'wanted' ? '-' : formatPrice(item.price)}</td>
@@ -709,12 +725,60 @@ const AdminMarketplace = () => {
                 ) : detailImages.length === 0 ? (
                   <div style={{ color: 'var(--mu)', fontSize: '13px' }}>ไม่มีรูปแนบ</div>
                 ) : (
-                  <div style={{ display: 'grid', gridTemplateColumns: detailImages.length === 1 ? '1fr' : 'repeat(2, minmax(0, 1fr))', gap: '8px' }}>
-                    {detailImages.map((img, idx) => (
-                      <div key={img.path || img.url || idx} style={{ border: '1px solid #dbe3ed', borderRadius: '8px', overflow: 'hidden', background: '#fff' }}>
-                        <img src={img.url} alt={img.name || `image-${idx + 1}`} style={{ width: '100%', height: '180px', objectFit: 'cover', display: 'block' }} />
+                  <div>
+                    <div style={{ border: '1px solid #dbe3ed', borderRadius: '10px', overflow: 'hidden', background: '#fff' }}>
+                      <img
+                        src={detailImages[Math.min(detailImageIndex, detailImages.length - 1)]?.url}
+                        alt={detailImages[Math.min(detailImageIndex, detailImages.length - 1)]?.name || `image-${detailImageIndex + 1}`}
+                        style={{ width: '100%', height: '280px', objectFit: 'contain', background: '#f8fafc', display: 'block' }}
+                      />
+                    </div>
+
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '10px', gap: '8px' }}>
+                      <button
+                        type="button"
+                        className="btn btn-xs btn-o"
+                        onClick={() => setDetailImageIndex((cur) => Math.max(0, cur - 1))}
+                        disabled={detailImageIndex <= 0}
+                      >
+                        ← ก่อนหน้า
+                      </button>
+                      <div style={{ fontSize: '12px', color: 'var(--mu)' }}>
+                        รูป {Math.min(detailImageIndex + 1, detailImages.length)} / {detailImages.length}
                       </div>
-                    ))}
+                      <button
+                        type="button"
+                        className="btn btn-xs btn-o"
+                        onClick={() => setDetailImageIndex((cur) => Math.min(detailImages.length - 1, cur + 1))}
+                        disabled={detailImageIndex >= detailImages.length - 1}
+                      >
+                        ถัดไป →
+                      </button>
+                    </div>
+
+                    {detailImages.length > 1 && (
+                      <div style={{ display: 'flex', gap: '8px', marginTop: '10px', flexWrap: 'wrap' }}>
+                        {detailImages.map((img, idx) => (
+                          <button
+                            key={img.path || img.url || idx}
+                            type="button"
+                            onClick={() => setDetailImageIndex(idx)}
+                            style={{
+                              padding: 0,
+                              border: idx === detailImageIndex ? '2px solid #1e6b73' : '1px solid #dbe3ed',
+                              borderRadius: '8px',
+                              overflow: 'hidden',
+                              width: '70px',
+                              height: '70px',
+                              background: '#fff',
+                              cursor: 'pointer',
+                            }}
+                          >
+                            <img src={img.url} alt={img.name || `thumb-${idx + 1}`} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+                          </button>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 )}
               </section>
