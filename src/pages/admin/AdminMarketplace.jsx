@@ -3,8 +3,11 @@ import Swal from 'sweetalert2'
 import { listHouses } from '../../lib/houses'
 import {
   createMarketplaceItem,
+  deleteMarketplaceImagesByPaths,
   deleteMarketplaceItem,
+  listMarketplaceImages,
   listMarketplace,
+  uploadMarketplaceImages,
   updateMarketplaceItem,
 } from '../../lib/marketplace'
 
@@ -22,6 +25,34 @@ const STATUS_OPTIONS = [
   { value: 'cancelled', label: 'ยกเลิก', badge: 'bd b-dg' },
 ]
 
+const CATEGORY_OPTIONS = [
+  'อาหารและเครื่องดื่ม',
+  'ผักผลไม้',
+  'ของใช้ในบ้าน',
+  'เครื่องใช้ไฟฟ้า',
+  'อิเล็กทรอนิกส์',
+  'มือถือและอุปกรณ์',
+  'คอมพิวเตอร์และไอที',
+  'เฟอร์นิเจอร์',
+  'เสื้อผ้าแฟชั่น',
+  'รองเท้าและกระเป๋า',
+  'เครื่องสำอางความงาม',
+  'สุขภาพและยา',
+  'แม่และเด็ก',
+  'สัตว์เลี้ยง',
+  'หนังสือและเครื่องเขียน',
+  'กีฬาและฟิตเนส',
+  'ยานยนต์และอะไหล่',
+  'งานซ่อมและบริการ',
+  'อสังหาฯ/เช่า',
+  'มือสองทั่วไป',
+  'งานฝีมือ',
+  'อื่นๆ',
+]
+
+const MAX_ATTACHMENTS = 2
+const MAX_IMAGE_TARGET_BYTES = 100 * 1024
+
 const EMPTY_FORM = {
   house_id: '',
   title: '',
@@ -30,8 +61,75 @@ const EMPTY_FORM = {
   listing_type: 'sell',
   price: '',
   contact: '',
-  image_url: '',
   status: 'pending',
+}
+
+function revokeBlobUrls(items) {
+  for (const item of items || []) {
+    if (item?.url && String(item.url).startsWith('blob:')) {
+      URL.revokeObjectURL(item.url)
+    }
+  }
+}
+
+async function resizeImageToLimit(file, sequence) {
+  const fileName = `MKT_${Date.now()}_${String(sequence).padStart(3, '0')}.jpg`
+  if (file.size <= MAX_IMAGE_TARGET_BYTES) {
+    return new File([file], fileName, { type: file.type || 'image/jpeg' })
+  }
+
+  const dataUrl = await new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => resolve(reader.result)
+    reader.onerror = reject
+    reader.readAsDataURL(file)
+  })
+
+  const image = await new Promise((resolve, reject) => {
+    const img = new Image()
+    img.onload = () => resolve(img)
+    img.onerror = reject
+    img.src = dataUrl
+  })
+
+  let scale = 1
+  let quality = 0.86
+  let bestBlob = null
+  const canvas = document.createElement('canvas')
+  const ctx = canvas.getContext('2d')
+  if (!ctx) throw new Error('ไม่สามารถประมวลผลรูปภาพได้')
+
+  for (let attempt = 0; attempt < 28; attempt += 1) {
+    const width = Math.max(1, Math.round(image.width * scale))
+    const height = Math.max(1, Math.round(image.height * scale))
+
+    canvas.width = width
+    canvas.height = height
+    ctx.clearRect(0, 0, width, height)
+    ctx.drawImage(image, 0, 0, width, height)
+
+    const blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/jpeg', quality))
+    if (!blob) break
+    if (!bestBlob || blob.size < bestBlob.size) bestBlob = blob
+
+    if (blob.size <= MAX_IMAGE_TARGET_BYTES) {
+      return new File([blob], fileName, { type: 'image/jpeg' })
+    }
+
+    if (quality > 0.45) quality -= 0.08
+    else {
+      scale *= 0.9
+      quality = 0.72
+    }
+
+    if (width <= 120 || height <= 120) break
+  }
+
+  if (bestBlob && bestBlob.size <= MAX_IMAGE_TARGET_BYTES) {
+    return new File([bestBlob], fileName, { type: 'image/jpeg' })
+  }
+
+  throw new Error(`ไม่สามารถย่อรูป ${file.name} ให้ต่ำกว่า 100KB ได้`)
 }
 
 function blurActiveElement() {
@@ -61,6 +159,11 @@ const AdminMarketplace = () => {
   const [saving, setSaving] = useState(false)
   const [editingItem, setEditingItem] = useState(null)
   const [form, setForm] = useState(EMPTY_FORM)
+  const [attachments, setAttachments] = useState([])
+  const [originalImagePaths, setOriginalImagePaths] = useState([])
+  const [removedExistingPaths, setRemovedExistingPaths] = useState([])
+
+  useEffect(() => () => revokeBlobUrls(attachments), [attachments])
 
   const houseOptions = useMemo(() => ([
     { value: '', label: 'เลือกบ้าน (ถ้ามี)' },
@@ -101,35 +204,112 @@ const AdminMarketplace = () => {
   const openAddModal = () => {
     setEditingItem(null)
     setForm(EMPTY_FORM)
+    setAttachments([])
+    setOriginalImagePaths([])
+    setRemovedExistingPaths([])
     setShowModal(true)
   }
 
-  const openEditModal = (item) => {
+  const openEditModal = async (item) => {
     setEditingItem(item)
-    setForm({
-      house_id: item.house_id || '',
-      title: item.title || '',
-      detail: item.detail || '',
-      category: item.category || '',
-      listing_type: item.listing_type || 'sell',
-      price: item.price != null ? String(item.price) : '',
-      contact: item.contact || '',
-      image_url: item.image_url || '',
-      status: item.status || 'pending',
-    })
-    setShowModal(true)
+    try {
+      setLoading(true)
+      const images = await listMarketplaceImages(item.id)
+      const existingByStorage = images.map((img) => ({ source: 'existing', ...img }))
+
+      const existingFromRow = item.image_url
+        ? [{ source: 'existing', url: item.image_url, path: null, name: 'IMG_1' }]
+        : []
+
+      const merged = [...existingByStorage]
+      for (const img of existingFromRow) {
+        if (!merged.find((m) => m.url === img.url)) merged.push(img)
+      }
+      const limitedMerged = merged.slice(0, MAX_ATTACHMENTS)
+
+      setForm({
+        house_id: item.house_id || '',
+        title: item.title || '',
+        detail: item.detail || '',
+        category: item.category || '',
+        listing_type: item.listing_type || 'sell',
+        price: item.price != null ? String(item.price) : '',
+        contact: item.contact || '',
+        status: item.status || 'pending',
+      })
+      setAttachments(limitedMerged)
+      setOriginalImagePaths(limitedMerged.map((img) => img.path).filter(Boolean))
+      setRemovedExistingPaths([])
+      setShowModal(true)
+    } catch (err) {
+      await showSwal({ icon: 'error', title: 'โหลดข้อมูลรูปไม่สำเร็จ', text: err.message })
+    } finally {
+      setLoading(false)
+    }
   }
 
   const closeModal = (force = false) => {
     if (saving && !force) return
+    revokeBlobUrls(attachments)
     setShowModal(false)
     setEditingItem(null)
     setForm(EMPTY_FORM)
+    setAttachments([])
+    setOriginalImagePaths([])
+    setRemovedExistingPaths([])
   }
 
   const handleChange = (e) => {
     const { name, value } = e.target
     setForm((cur) => ({ ...cur, [name]: value }))
+  }
+
+  const handleAttachFiles = async (e) => {
+    const files = Array.from(e.target.files || [])
+    e.target.value = ''
+    if (files.length === 0) return
+
+    const remain = MAX_ATTACHMENTS - attachments.length
+    if (remain <= 0) {
+      await showSwal({ icon: 'warning', title: 'แนบรูปได้สูงสุด 2 รูป' })
+      return
+    }
+
+    const accepted = files.slice(0, remain)
+    if (files.length > remain) {
+      await showSwal({ icon: 'info', title: `รับได้แค่ ${remain} รูป`, text: 'ระบบจะใช้เฉพาะรูปชุดแรก' })
+    }
+
+    try {
+      const prepared = []
+      for (let index = 0; index < accepted.length; index += 1) {
+        const resized = await resizeImageToLimit(accepted[index], attachments.length + index + 1)
+        prepared.push({
+          source: 'new',
+          file: resized,
+          name: resized.name,
+          url: URL.createObjectURL(resized),
+        })
+      }
+      setAttachments((prev) => [...prev, ...prepared])
+    } catch (err) {
+      await showSwal({ icon: 'error', title: 'ประมวลผลรูปไม่สำเร็จ', text: err.message })
+    }
+  }
+
+  const handleRemoveAttachment = (index) => {
+    setAttachments((prev) => {
+      const next = [...prev]
+      const item = next[index]
+      if (item?.source === 'existing' && item.path) {
+        setRemovedExistingPaths((paths) => (paths.includes(item.path) ? paths : [...paths, item.path]))
+      }
+      if (item?.url && String(item.url).startsWith('blob:')) {
+        URL.revokeObjectURL(item.url)
+      }
+      next.splice(index, 1)
+      return next
+    })
   }
 
   const handleSubmit = async (e) => {
@@ -145,16 +325,58 @@ const AdminMarketplace = () => {
         listing_type: form.listing_type,
         price: Number(String(form.price).replace(/,/g, '')) || 0,
         contact: form.contact,
-        image_url: form.image_url || null,
+        image_url: null,
         status: form.status,
       }
+      const keptExistingPaths = attachments
+        .filter((item) => item.source === 'existing' && item.path)
+        .map((item) => item.path)
+      const existingUrls = attachments
+        .filter((item) => item.source === 'existing' && item.url)
+        .map((item) => item.url)
+      const newFiles = attachments
+        .filter((item) => item.source === 'new' && item.file)
+        .map((item) => item.file)
+
+      let saved
       if (editingItem) {
-        await updateMarketplaceItem(editingItem.id, payload)
-        await showSwal({ icon: 'success', title: 'บันทึกสำเร็จ', timer: 1400, showConfirmButton: false })
+        const deletePaths = Array.from(new Set([
+          ...removedExistingPaths,
+          ...originalImagePaths.filter((path) => !keptExistingPaths.includes(path)),
+        ]))
+        if (deletePaths.length > 0) {
+          await deleteMarketplaceImagesByPaths(deletePaths)
+        }
+        saved = await updateMarketplaceItem(editingItem.id, payload)
       } else {
-        await createMarketplaceItem(payload)
-        await showSwal({ icon: 'success', title: 'เพิ่มรายการสำเร็จ', timer: 1400, showConfirmButton: false })
+        saved = await createMarketplaceItem(payload)
       }
+
+      let uploaded = []
+      if (newFiles.length > 0) {
+        try {
+          uploaded = await uploadMarketplaceImages(saved.id, newFiles)
+        } catch (uploadError) {
+          await showSwal({
+            icon: 'warning',
+            title: 'บันทึกแล้ว แต่แนบรูปไม่ได้',
+            text: String(uploadError?.message || 'อัปโหลดรูปไม่สำเร็จ กรุณาลองใหม่อีกครั้ง'),
+          })
+        }
+      }
+
+      const finalUrls = [...existingUrls, ...uploaded.map((img) => img.url).filter(Boolean)].slice(0, MAX_ATTACHMENTS)
+      await updateMarketplaceItem(saved.id, {
+        image_url: finalUrls[0] || null,
+      })
+
+      await showSwal({
+        icon: 'success',
+        title: editingItem ? 'บันทึกสำเร็จ' : 'เพิ่มรายการสำเร็จ',
+        timer: 1400,
+        showConfirmButton: false,
+      })
+
       closeModal(true)
       await loadData({ status: statusFilter, listing_type: typeFilter, search: searchTerm })
     } catch (err) {
@@ -176,6 +398,11 @@ const AdminMarketplace = () => {
     })
     if (!result.isConfirmed) return
     try {
+      const images = await listMarketplaceImages(item.id)
+      const paths = images.map((img) => img.path).filter(Boolean)
+      if (paths.length > 0) {
+        await deleteMarketplaceImagesByPaths(paths)
+      }
       await deleteMarketplaceItem(item.id)
       await showSwal({ icon: 'success', title: 'ลบสำเร็จ', timer: 1200, showConfirmButton: false })
       await loadData({ status: statusFilter, listing_type: typeFilter, search: searchTerm })
@@ -358,7 +585,10 @@ const AdminMarketplace = () => {
                     </label>
                     <label className="house-field">
                       <span>หมวดหมู่</span>
-                      <input name="category" value={form.category} onChange={handleChange} placeholder="เช่น อิเล็กทรอนิกส์" />
+                      <select name="category" value={form.category} onChange={handleChange}>
+                        <option value="">เลือกหมวดหมู่</option>
+                        {CATEGORY_OPTIONS.map((cat) => <option key={cat} value={cat}>{cat}</option>)}
+                      </select>
                     </label>
                   </div>
                 </section>
@@ -368,7 +598,7 @@ const AdminMarketplace = () => {
                   <div className="house-grid house-grid-2">
                     <label className="house-field">
                       <span>รายละเอียด</span>
-                      <textarea name="detail" value={form.detail} onChange={handleChange} rows="3" placeholder="พิมพ์รายละเอียดสินค้าหรือบริการ" />
+                      <textarea name="detail" value={form.detail} onChange={handleChange} rows="6" placeholder="พิมพ์รายละเอียดสินค้าหรือบริการ" />
                     </label>
                     <div>
                       <label className="house-field">
@@ -379,10 +609,28 @@ const AdminMarketplace = () => {
                         <span>ติดต่อ</span>
                         <input name="contact" value={form.contact} onChange={handleChange} placeholder="เบอร์โทรหรือ Line" />
                       </label>
-                      <label className="house-field" style={{ marginTop: '8px' }}>
-                        <span>URL รูปภาพ (ถ้ามี)</span>
-                        <input name="image_url" value={form.image_url} onChange={handleChange} placeholder="https://..." />
-                      </label>
+                      <div className="house-field" style={{ marginTop: '8px' }}>
+                        <span>แนบรูปภาพ (สูงสุด 2 รูป, รูปละไม่เกิน 100KB)</span>
+                        <label className="btn btn-o btn-sm" style={{ cursor: 'pointer', display: 'inline-block', width: 'fit-content' }}>
+                          <input type="file" accept="image/*" multiple onChange={handleAttachFiles} style={{ display: 'none' }} disabled={attachments.length >= MAX_ATTACHMENTS} />
+                          แนบไฟล์
+                        </label>
+                        <div style={{ marginTop: '6px', color: 'var(--mu)', fontSize: '12px' }}>แนบแล้ว {attachments.length}/{MAX_ATTACHMENTS} รูป</div>
+                        {attachments.length > 0 && (
+                          <div style={{ display: 'flex', gap: '8px', marginTop: '10px', flexWrap: 'wrap' }}>
+                            {attachments.map((img, index) => (
+                              <div key={img.path || img.name || index} style={{ position: 'relative', width: '84px' }}>
+                                <img src={img.url} alt={img.name || `img-${index + 1}`} style={{ width: '84px', height: '84px', objectFit: 'cover', borderRadius: '6px', border: '1px solid #dbe3ed' }} />
+                                <button
+                                  type="button"
+                                  onClick={() => handleRemoveAttachment(index)}
+                                  style={{ position: 'absolute', top: '2px', right: '2px', width: '20px', height: '20px', border: 'none', borderRadius: '50%', background: 'rgba(0,0,0,.65)', color: '#fff', cursor: 'pointer', fontSize: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                                >✕</button>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </section>

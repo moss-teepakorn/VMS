@@ -1,5 +1,9 @@
 import { supabase } from './supabase'
 
+const MARKETPLACE_IMAGE_BUCKET = 'marketplace-images'
+const MAX_MARKETPLACE_IMAGE_BYTES = 100 * 1024
+const MAX_MARKETPLACE_IMAGES = 2
+
 export async function listMarketplace({ status = 'all', listing_type = 'all', search = '' } = {}) {
   const { data, error } = await supabase
     .from('marketplace')
@@ -71,4 +75,84 @@ export async function deleteMarketplaceItem(id) {
 
   if (error) throw error
   return true
+}
+
+export async function uploadMarketplaceImages(itemId, files) {
+  const folder = String(itemId || '').trim()
+  if (!folder || !Array.isArray(files) || files.length === 0) return []
+
+  if (files.length > MAX_MARKETPLACE_IMAGES) {
+    throw new Error(`แนบได้สูงสุด ${MAX_MARKETPLACE_IMAGES} รูป`)
+  }
+
+  const uploaded = []
+  for (let i = 0; i < files.length; i += 1) {
+    const file = files[i]
+    if (file.size > MAX_MARKETPLACE_IMAGE_BYTES) {
+      throw new Error(`ไฟล์ ${file.name} มีขนาดเกิน 100KB`)
+    }
+
+    const timestamp = Date.now()
+    const sequence = String(i + 1).padStart(3, '0')
+    const ext = String(file.name || 'jpg').split('.').pop().toLowerCase()
+    const safeExt = ['jpg', 'jpeg', 'png', 'webp'].includes(ext) ? ext : 'jpg'
+    const fileName = `MKT_${timestamp}_${sequence}.${safeExt}`
+    const path = `${folder}/${fileName}`
+
+    const { error } = await supabase.storage
+      .from(MARKETPLACE_IMAGE_BUCKET)
+      .upload(path, file, { upsert: true, contentType: file.type || 'image/jpeg' })
+
+    if (error) {
+      const message = String(error.message || '').toLowerCase()
+      if (message.includes('bucket') && message.includes('not found')) {
+        throw new Error('ไม่พบบัคเก็ต marketplace-images ใน Supabase Storage กรุณาสร้าง bucket นี้ก่อนอัปโหลดรูป')
+      }
+      throw error
+    }
+
+    const { data: publicUrlData } = supabase.storage
+      .from(MARKETPLACE_IMAGE_BUCKET)
+      .getPublicUrl(path)
+
+    uploaded.push({ name: fileName, path, url: publicUrlData?.publicUrl || '' })
+  }
+
+  return uploaded
+}
+
+export async function deleteMarketplaceImagesByPaths(paths) {
+  if (!Array.isArray(paths) || paths.length === 0) return true
+
+  const { error } = await supabase.storage
+    .from(MARKETPLACE_IMAGE_BUCKET)
+    .remove(paths)
+
+  if (error) throw error
+  return true
+}
+
+export async function listMarketplaceImages(itemId) {
+  const folder = String(itemId || '').trim()
+  if (!folder) return []
+
+  const { data, error } = await supabase.storage
+    .from(MARKETPLACE_IMAGE_BUCKET)
+    .list(folder)
+
+  if (error) return []
+
+  return (data ?? [])
+    .filter((item) => !item.isdir && item.name)
+    .map((item) => {
+      const path = `${folder}/${item.name}`
+      const { data: publicUrlData } = supabase.storage
+        .from(MARKETPLACE_IMAGE_BUCKET)
+        .getPublicUrl(path)
+      return {
+        name: item.name,
+        path,
+        url: publicUrlData?.publicUrl || '',
+      }
+    })
 }
