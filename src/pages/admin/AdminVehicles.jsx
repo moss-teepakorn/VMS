@@ -529,7 +529,7 @@ const AdminVehicles = () => {
             <button className="btn btn-g btn-sm" onClick={() => loadVehicles({ status: statusFilter, search: searchTerm, soi: soiFilter, vehicleType: vehicleTypeFilter })}>🔄 รีเฟรช</button>
           </div>
         </div>
-        <div className="cb page-table-body">
+        <div className="cb page-table-body vehicles-page-table-body">
           <div className="desktop-only">
             <div style={{ overflowX: 'auto' }}>
               <table className="tw" style={{ width: '100%', minWidth: '1120px' }}>
@@ -579,7 +579,7 @@ const AdminVehicles = () => {
               </table>
             </div>
           </div>
-          <div className="mobile-only">
+          <div className="mobile-only vehicles-mobile-list">
             {loading ? (
               <div className="mcard-empty">กำลังโหลดข้อมูล...</div>
             ) : vehicles.length === 0 ? (
@@ -587,7 +587,7 @@ const AdminVehicles = () => {
             ) : vehicles.map((vehicle) => {
               const badge = getStatusBadge(vehicle.status)
               return (
-                <div key={vehicle.id} className="mcard">
+                <div key={vehicle.id} className="mcard vehicles-mcard">
                   <div className="mcard-top">
                     <div>
                       <div className="mcard-title">{vehicle.license_plate || '-'}</div>

@@ -1422,6 +1422,24 @@ canvas {
   font-size: 13px;
 }
 
+/* Vehicles page: wider mobile cards */
+@media (max-width: 700px) {
+  .vehicles-page-table-body {
+    padding-left: 4px;
+    padding-right: 4px;
+  }
+
+  .vehicles-mobile-list {
+    gap: 12px;
+    padding: 2px 0;
+  }
+
+  .vehicles-mcard {
+    padding: 14px 16px;
+    border-radius: 12px;
+  }
+}
+
 /* ═════════════════════════════════════════════════
    RESPONSIVE
 ═════════════════════════════════════════════════ */
