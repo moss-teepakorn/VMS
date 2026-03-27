@@ -92,6 +92,7 @@ const AdminConfig = () => {
   const [logoFile, setLogoFile] = useState(null)
   const [logoPreviewUrl, setLogoPreviewUrl] = useState('')
   const [removeLogo, setRemoveLogo] = useState(false)
+  const [autoCleanedJuristicLogo, setAutoCleanedJuristicLogo] = useState(false)
 
   useEffect(() => {
     const loadConfig = async () => {
@@ -99,13 +100,42 @@ const AdminConfig = () => {
         setLoading(true)
         const config = await getSystemConfig()
         setConfigId(config.id)
-        setForm(config)
         setSignatureFile(null)
         setLogoFile(null)
         setRemoveSignature(false)
         setRemoveLogo(false)
         setSignaturePreviewUrl(config.juristic_signature_url || '')
-        setLogoPreviewUrl(config.village_logo_url || localStorage.getItem('vms-login-circle-logo-url') || '')
+        
+        // Check if village_logo_url contains juristic path and auto-clean
+        const logoUrl = config.village_logo_url || ''
+        const logoPath = config.village_logo_path || extractSystemAssetPath(logoUrl)
+        const isJuristicLogo = logoPath.includes('juristic/')
+        
+        if (isJuristicLogo && logoPath) {
+          // Auto-delete old juristic file
+          try {
+            await deleteSystemAssetByPath(logoPath)
+          } catch (deleteError) {
+            console.warn('Could not delete old juristic logo:', deleteError)
+          }
+          
+          // Clear the fields
+          const cleanedConfig = { ...config, village_logo_url: null, village_logo_path: null }
+          setForm(cleanedConfig)
+          setLogoPreviewUrl('')
+          setAutoCleanedJuristicLogo(true)
+          
+          // Auto-save cleanup
+          try {
+            await updateSystemConfig(config.id, { village_logo_url: null, village_logo_path: null })
+          } catch (updateError) {
+            console.warn('Could not update config to clear juristic logo:', updateError)
+          }
+        } else {
+          setForm(config)
+          setLogoPreviewUrl(logoUrl || localStorage.getItem('vms-login-circle-logo-url') || '')
+          setAutoCleanedJuristicLogo(false)
+        }
       } catch (error) {
         await Swal.fire({ icon: 'error', title: 'โหลดค่าระบบไม่สำเร็จ', text: error.message })
       } finally {
@@ -224,8 +254,12 @@ const AdminConfig = () => {
       }
 
       const previousLogoPath = form.village_logo_path || extractSystemAssetPath(form.village_logo_url)
+      const isJuristicPath = previousLogoPath.includes('juristic/')
 
-      if (removeLogo) {
+      // Auto-clean if logo path is from juristic
+      const shouldRemoveLogo = removeLogo || isJuristicPath
+
+      if (shouldRemoveLogo) {
         if (previousLogoPath) {
           await deleteSystemAssetByPath(previousLogoPath)
         }
