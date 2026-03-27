@@ -137,6 +137,28 @@ function drawImageContain(ctx, image, x, y, width, height) {
   ctx.drawImage(image, drawX, drawY, drawWidth, drawHeight)
 }
 
+function drawImageContainWithInsetCrop(ctx, image, x, y, width, height, insetRatio = 0.08) {
+  if (!image) return
+  const srcInsetX = Math.floor(image.width * insetRatio)
+  const srcInsetY = Math.floor(image.height * insetRatio)
+  const srcWidth = Math.max(1, image.width - (srcInsetX * 2))
+  const srcHeight = Math.max(1, image.height - (srcInsetY * 2))
+
+  const srcRatio = srcWidth / srcHeight
+  const boxRatio = width / height
+  let drawWidth = width
+  let drawHeight = height
+  if (srcRatio > boxRatio) {
+    drawHeight = width / srcRatio
+  } else {
+    drawWidth = height * srcRatio
+  }
+
+  const drawX = x + ((width - drawWidth) / 2)
+  const drawY = y + ((height - drawHeight) / 2)
+  ctx.drawImage(image, srcInsetX, srcInsetY, srcWidth, srcHeight, drawX, drawY, drawWidth, drawHeight)
+}
+
 function prepareSignatureImageForPdf(image) {
   if (!image) return null
   const canvas = document.createElement('canvas')
@@ -525,7 +547,8 @@ const AdminViolations = () => {
             .page-title { margin-bottom: 4mm; font-size: 16px; font-weight: 700; }
             .signature { margin-top: 4mm; display: flex; justify-content: flex-end; page-break-inside: avoid; break-inside: avoid; }
             .signature-box { width: 58mm; text-align: center; }
-            .signature-img { width: 100%; max-height: 20mm; object-fit: contain; }
+            .signature-crop { width: 100%; max-height: 20mm; overflow: hidden; display: flex; align-items: center; justify-content: center; }
+            .signature-img { width: 118%; max-height: 22mm; object-fit: cover; }
             .signature-line { border-top: 1px solid #111827; margin-top: 2mm; padding-top: 2mm; font-size: 11px; }
             .page-break { page-break-before: always; break-before: page; }
             @media print {
@@ -567,7 +590,7 @@ const AdminViolations = () => {
               <div class="signature">
                 <div class="signature-box">
                   ${signatureImageAllowed
-      ? `<img src="${signatureSource}" class="signature-img" alt="signature" />`
+      ? `<div class="signature-crop"><img src="${signatureSource}" class="signature-img" alt="signature" /></div>`
       : ''}
                   <div class="signature-line">(${escapeHtml(reportIdentity.juristic_name || DEFAULT_REPORT_IDENTITY.juristic_name)})</div>
                 </div>
@@ -712,7 +735,7 @@ const AdminViolations = () => {
         const signBoxX = marginX + contentWidth - signBoxWidth
         const signBaseY = cursorY + 8
         if (signatureImage) {
-          drawImageContain(ctx, signatureImage, signBoxX, signBaseY, signBoxWidth, 72)
+          drawImageContainWithInsetCrop(ctx, signatureImage, signBoxX, signBaseY, signBoxWidth, 72, 0.08)
         }
 
         ctx.strokeStyle = '#111827'
