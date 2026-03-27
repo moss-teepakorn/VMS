@@ -47,7 +47,7 @@ const AdminLogs = () => {
       (r) =>
         (r.action || '').toLowerCase().includes(kw) ||
         (r.table_name || '').toLowerCase().includes(kw) ||
-        (r.profiles?.name || '').toLowerCase().includes(kw),
+        (r.profiles?.full_name || '').toLowerCase().includes(kw),
     )
   }, [logs, search])
 
@@ -118,7 +118,7 @@ const AdminLogs = () => {
   const handleViewLog = (log) => {
     openModal('รายละเอียด Log: ' + log.action, {
       timestamp: { label: 'เวลา', type: 'text', value: fmtDatetime(log.acted_at), disabled: true },
-      user: { label: 'ผู้ใช้', type: 'text', value: log.profiles?.name || 'System', disabled: true },
+      user: { label: 'ผู้ใช้', type: 'text', value: log.profiles?.full_name || 'System', disabled: true },
       action: { label: 'การดำเนินการ', type: 'text', value: log.action, disabled: true },
       table: { label: 'ตารางข้อมูล', type: 'text', value: log.table_name, disabled: true },
     }, null)
@@ -218,7 +218,7 @@ const AdminLogs = () => {
                         </td>
                         <td style={{ color: 'var(--mu)', textAlign: 'center' }}>{idx + 1}</td>
                         <td style={{ whiteSpace: 'nowrap' }}>{fmtDatetime(log.acted_at)}</td>
-                        <td>{log.profiles?.name || 'System'}</td>
+                        <td>{log.profiles?.full_name || 'System'}</td>
                         <td><span className={`bd ${actionBg}`}>{log.action}</span></td>
                         <td>{log.table_name}</td>
                         <td onClick={(e) => e.stopPropagation()}>
@@ -266,7 +266,7 @@ const AdminLogs = () => {
                       </div>
                       <div className="mcard-meta">
                         <span><span className="mcard-label">เวลา</span> {fmtDatetime(log.acted_at)}</span>
-                        <span><span className="mcard-label">ผู้ใช้</span> {log.profiles?.name || 'System'}</span>
+                        <span><span className="mcard-label">ผู้ใช้</span> {log.profiles?.full_name || 'System'}</span>
                       </div>
                       <div className="mcard-actions" onClick={(e) => e.stopPropagation()}>
                         <button className="btn btn-xs btn-o" onClick={() => handleViewLog(log)}>ดู</button>

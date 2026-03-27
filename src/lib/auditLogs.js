@@ -4,7 +4,7 @@ export async function getAuditLogs(limit = 100) {
   try {
     const { data, error } = await supabase
       .from('audit_logs')
-      .select('id, user_id, action, table_name, record_id, new_values, acted_at, profiles:user_id(name, email)')
+      .select('id, user_id, action, table_name, record_id, new_values, acted_at, profiles:user_id(full_name, email)')
       .order('acted_at', { ascending: false })
       .limit(limit)
 
@@ -45,7 +45,7 @@ export async function getAuditLogsByTable(tableName, limit = 50) {
   try {
     const { data, error } = await supabase
       .from('audit_logs')
-      .select('id, user_id, action, table_name, record_id, new_values, acted_at, profiles:user_id(name)')
+      .select('id, user_id, action, table_name, record_id, new_values, acted_at, profiles:user_id(full_name)')
       .eq('table_name', tableName)
       .order('acted_at', { ascending: false })
       .limit(limit)
@@ -66,7 +66,7 @@ export async function getAuditLogDetail(logId) {
   try {
     const { data, error } = await supabase
       .from('audit_logs')
-      .select('id, user_id, action, table_name, record_id, new_values, acted_at, profiles:user_id(name, email)')
+      .select('id, user_id, action, table_name, record_id, new_values, acted_at, profiles:user_id(full_name, email)')
       .eq('id', logId)
       .single()
 
