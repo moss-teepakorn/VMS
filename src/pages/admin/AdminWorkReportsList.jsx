@@ -109,44 +109,99 @@ const AdminWorkReportsList = () => {
       const images = await listWorkReportImages(report.id)
       const monthYear = formatMonthYear(report.month, report.year)
       const cat = categoryLabel(report.category)
+      const printDate = new Date().toLocaleDateString('th-TH', { dateStyle: 'long' })
+      const statusColor = report.is_published ? '#15803d' : '#b45309'
+      const statusBg   = report.is_published ? '#dcfce7' : '#fef3c7'
+      const statusText = report.is_published ? 'เผยแพร่แล้ว' : 'ฉบับร่าง'
 
-      let imageBlocks = ''
+      let imageGridHtml = ''
       if (images.length > 0) {
-        imageBlocks = images.slice(0, 4).map((img) => (
-          '<img src="' + img.url + '" style="width:100%;height:300px;object-fit:cover;border-radius:8px;" />'
-        )).join('')
-        imageBlocks = '<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:15px;">' + imageBlocks + '</div>'
+        const imgSlice = images.slice(0, 6)
+        const cols = imgSlice.length === 1 ? 1 : 2
+        const imgTags = imgSlice.map((img) =>
+          `<img src="${img.url}" crossorigin="anonymous" style="width:100%;height:180px;object-fit:cover;border-radius:6px;display:block;" />`
+        ).join('')
+        imageGridHtml = `
+          <div style="margin-bottom:16px;">
+            <div style="font-size:10px;color:#9ca3af;letter-spacing:1px;text-transform:uppercase;margin-bottom:8px;">ภาพประกอบ (${imgSlice.length} รูป)</div>
+            <div style="display:grid;grid-template-columns:repeat(${cols},1fr);gap:10px;">${imgTags}</div>
+          </div>`
       }
 
-      const detailBlock = report.detail
-        ? '<div style="margin-top:16px;"><div style="font-size:14px;opacity:.9;">รายละเอียด</div><div style="font-size:16px;line-height:1.6;">' + String(report.detail).replace(/\n/g, '<br/>') + '</div></div>'
+      const detailHtml = report.detail
+        ? `<div style="margin-bottom:24px;">
+            <div style="font-size:10px;color:#9ca3af;letter-spacing:1px;text-transform:uppercase;margin-bottom:6px;">รายละเอียด</div>
+            <div style="font-size:13px;line-height:1.7;color:#374151;">${String(report.detail).replace(/\n/g, '<br/>')}</div>
+          </div>`
         : ''
 
-      const html =
-        '<div style="width:1080px;padding:40px;background:linear-gradient(135deg,#1B4F72,#1E40AF);color:#fff;font-family:Sarabun,Arial,sans-serif;">' +
-          '<div style="text-align:center;margin-bottom:28px;">' +
-            '<div style="font-size:36px;font-weight:800;">รายงานผลงานนิติ</div>' +
-            '<div style="font-size:24px;opacity:.9;">' + setup.villageName + '</div>' +
-          '</div>' +
-          '<div style="background:rgba(255,255,255,.12);padding:24px;border-radius:12px;margin-bottom:20px;">' +
-            '<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;">' +
-              '<div><div style="font-size:13px;opacity:.85;">เดือน</div><div style="font-size:20px;font-weight:700;">' + monthYear + '</div></div>' +
-              '<div><div style="font-size:13px;opacity:.85;">หมวดหมู่</div><div style="font-size:20px;font-weight:700;">' + cat + '</div></div>' +
-            '</div>' +
-            '<div><div style="font-size:13px;opacity:.85;">สรุป</div><div style="font-size:22px;font-weight:700;line-height:1.4;">' + report.summary + '</div></div>' +
-            detailBlock +
-          '</div>' +
-          imageBlocks +
-        '</div>'
+      const html = `
+        <div style="width:794px;min-height:1123px;background:#fff;color:#1f2937;font-family:Sarabun,Arial,sans-serif;box-sizing:border-box;position:relative;padding-bottom:56px;">
+          <div style="background:linear-gradient(135deg,#1B4F72 0%,#1E40AF 100%);padding:32px 48px 28px;color:#fff;">
+            <div style="display:flex;align-items:center;gap:16px;margin-bottom:4px;">
+              <div style="font-size:40px;line-height:1;">🏆</div>
+              <div>
+                <div style="font-size:10px;letter-spacing:3px;opacity:.7;text-transform:uppercase;margin-bottom:2px;">WORK REPORT</div>
+                <div style="font-size:26px;font-weight:800;letter-spacing:.3px;">รายงานผลงานนิติ</div>
+              </div>
+            </div>
+            <div style="font-size:15px;opacity:.85;margin-top:6px;">${setup.villageName}</div>
+          </div>
+          <div style="padding:32px 48px 0;">
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;border:1.5px solid #e5e7eb;border-radius:8px;overflow:hidden;margin-bottom:24px;">
+              <div style="padding:14px 20px;border-right:1.5px solid #e5e7eb;">
+                <div style="font-size:10px;color:#9ca3af;letter-spacing:1px;text-transform:uppercase;margin-bottom:4px;">ประจำเดือน</div>
+                <div style="font-size:17px;font-weight:700;color:#1B4F72;">${monthYear}</div>
+              </div>
+              <div style="padding:14px 20px;border-right:1.5px solid #e5e7eb;">
+                <div style="font-size:10px;color:#9ca3af;letter-spacing:1px;text-transform:uppercase;margin-bottom:4px;">หมวดหมู่</div>
+                <div style="font-size:17px;font-weight:700;color:#1B4F72;">${cat}</div>
+              </div>
+              <div style="padding:14px 20px;">
+                <div style="font-size:10px;color:#9ca3af;letter-spacing:1px;text-transform:uppercase;margin-bottom:4px;">สถานะ</div>
+                <div style="display:inline-block;padding:3px 10px;border-radius:20px;background:${statusBg};color:${statusColor};font-size:12px;font-weight:700;">${statusText}</div>
+              </div>
+            </div>
+            <div style="margin-bottom:22px;">
+              <div style="font-size:10px;color:#9ca3af;letter-spacing:1px;text-transform:uppercase;margin-bottom:6px;">สรุปผลงาน</div>
+              <div style="font-size:19px;font-weight:700;line-height:1.4;color:#111827;">${report.summary}</div>
+            </div>
+            ${detailHtml}
+            ${imageGridHtml}
+          </div>
+          <div style="position:absolute;bottom:0;left:0;right:0;padding:14px 48px;background:#f9fafb;border-top:1.5px solid #e5e7eb;display:flex;justify-content:space-between;align-items:center;">
+            <div style="font-size:11px;color:#9ca3af;">${setup.villageName} · ผลงานนิติ</div>
+            <div style="font-size:11px;color:#9ca3af;">พิมพ์เมื่อ ${printDate}</div>
+          </div>
+        </div>`
 
       const temp = document.createElement('div')
-      temp.innerHTML = html
-      temp.style.position = 'fixed'
-      temp.style.left = '-9999px'
-      document.body.appendChild(temp)
+      temp.innerHTML = html.trim()
+      const el = temp.firstChild
+      el.style.position = 'fixed'
+      el.style.left = '-9999px'
+      el.style.top = '0'
+      document.body.appendChild(el)
 
-      const canvas = await html2canvas(temp.firstChild, { scale: 1, backgroundColor: '#ffffff', logging: false })
-      document.body.removeChild(temp)
+      // wait for images to load before capturing
+      const imgEls = el.querySelectorAll('img')
+      await Promise.all(Array.from(imgEls).map((img) =>
+        new Promise((resolve) => {
+          if (img.complete) { resolve(); return }
+          img.onload = resolve
+          img.onerror = resolve
+        })
+      ))
+
+      const canvas = await html2canvas(el, {
+        scale: 2,
+        useCORS: true,
+        allowTaint: false,
+        backgroundColor: '#ffffff',
+        logging: false,
+        width: 794,
+      })
+      document.body.removeChild(el)
 
       canvas.toBlob((blob) => {
         if (!blob) return
@@ -154,6 +209,7 @@ const AdminWorkReportsList = () => {
         link.href = URL.createObjectURL(blob)
         link.download = 'work-report-' + report.month + '-' + report.year + '.png'
         link.click()
+        setTimeout(() => URL.revokeObjectURL(link.href), 5000)
       }, 'image/png')
 
       await Swal.fire({ icon: 'success', title: 'ดาวน์โหลดสำเร็จ', timer: 1000, showConfirmButton: false })
@@ -175,7 +231,7 @@ const AdminWorkReportsList = () => {
           </div>
         </div>
 
-        <div className="houses-filter-row">
+        <div className="houses-filter-row" style={{ gridTemplateColumns: 'minmax(150px,1fr) 118px 100px 130px auto' }}>
           <input
             type="text"
             value={searchTerm}
@@ -240,7 +296,13 @@ const AdminWorkReportsList = () => {
                     <td>
                       <div style={{ display: 'flex', gap: '6px' }}>
                         <button className="btn btn-xs btn-a" onClick={() => navigate('/admin/work-reports/' + report.id + '/edit')}>แก้ไข</button>
-                        <button className="btn btn-xs btn-o" onClick={() => handleExportImage(report)}>ส่ง</button>
+                        <button className="btn btn-xs btn-o" title="ส่งออก PNG" onClick={() => handleExportImage(report)}>
+                          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ display: 'block' }}>
+                            <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                            <circle cx="8.5" cy="8.5" r="1.5" />
+                            <polyline points="21 15 16 10 5 21" />
+                          </svg>
+                        </button>
                         <button className="btn btn-xs btn-dg" onClick={() => handleDelete(report)}>ลบ</button>
                       </div>
                     </td>
@@ -248,6 +310,43 @@ const AdminWorkReportsList = () => {
                 ))}
               </tbody>
             </table>
+          </div>
+
+          <div className="houses-mobile-only">
+            {loading ? (
+              <div className="houses-card-empty">กำลังโหลด...</div>
+            ) : reports.length === 0 ? (
+              <div className="houses-card-empty">ไม่มีข้อมูล</div>
+            ) : reports.map((report) => (
+              <div key={report.id} className="houses-mcard">
+                <div className="houses-mcard-top">
+                  <div className="houses-mcard-no">{formatMonthYear(report.month, report.year)}</div>
+                  <span className={`bd ${report.is_published ? 'b-ok' : 'b-mu'} houses-mcard-badge`}>
+                    {report.is_published ? 'เผยแพร่' : 'ร่าง'}
+                  </span>
+                </div>
+                <div className="houses-mcard-owner">{categoryLabel(report.category)}</div>
+                <div style={{ fontSize: '13px', color: 'var(--tx)', marginTop: '2px', lineHeight: '1.4' }}>
+                  {report.summary}
+                </div>
+                {(report.image_urls?.length > 0) && (
+                  <div style={{ fontSize: '12px', color: 'var(--mu)', marginTop: '4px' }}>
+                    📷 {report.image_urls.length} รูป
+                  </div>
+                )}
+                <div className="houses-mcard-actions">
+                  <button className="btn btn-xs btn-a" style={{ flex: 1 }} onClick={() => navigate('/admin/work-reports/' + report.id + '/edit')}>แก้ไข</button>
+                  <button className="btn btn-xs btn-o" title="ส่งออก PNG" onClick={() => handleExportImage(report)}>
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ display: 'block' }}>
+                      <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                      <circle cx="8.5" cy="8.5" r="1.5" />
+                      <polyline points="21 15 16 10 5 21" />
+                    </svg>
+                  </button>
+                  <button className="btn btn-xs btn-dg" style={{ flex: 1 }} onClick={() => handleDelete(report)}>ลบ</button>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       </div>
