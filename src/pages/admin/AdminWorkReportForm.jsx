@@ -235,16 +235,12 @@ const AdminWorkReportForm = ({ modalMode = false, forceCreate = false, reportId 
         try {
           await uploadWorkReportImages(saved.id, newFiles)
         } catch (uploadError) {
-          const message = String(uploadError?.message || '').toLowerCase()
-          if (message.includes('bucket') && message.includes('not found')) {
-            await Swal.fire({
-              icon: 'warning',
-              title: 'บันทึกแล้ว แต่แนบรูปไม่ได้',
-              text: 'ไม่พบบัคเก็ต work-report-images ใน Supabase Storage จึงยังอัปโหลดรูปไม่ได้',
-            })
-          } else {
-            throw uploadError
-          }
+          // Record is already saved — show a warning but do not block completion
+          await Swal.fire({
+            icon: 'warning',
+            title: 'บันทึกแล้ว แต่แนบรูปไม่ได้',
+            text: String(uploadError?.message || 'อัปโหลดรูปไม่สำเร็จ กรุณาลองใหม่อีกครั้ง'),
+          })
         }
       }
 
