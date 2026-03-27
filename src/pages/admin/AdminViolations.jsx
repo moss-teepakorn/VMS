@@ -774,15 +774,15 @@ const AdminViolations = () => {
     const images = await listViolationImages(item.id)
     const pages = await buildViolationReportPages(item, images)
     const baseName = item.report_no || `violation-${item.id}`
+    const firstPage = pages[0]
+    if (!firstPage) throw new Error('ไม่พบข้อมูลหน้าเอกสารสำหรับสร้างรูปภาพ')
 
-    pages.forEach((entry, index) => {
-      const link = document.createElement('a')
-      link.href = entry.canvas.toDataURL('image/jpeg', 0.95)
-      link.download = pages.length === 1
-        ? `${baseName}.jpg`
-        : `${baseName}-p${String(index + 1).padStart(2, '0')}.jpg`
-      link.click()
-    })
+    const link = document.createElement('a')
+    link.href = firstPage.canvas.toDataURL('image/jpeg', 0.95)
+    link.download = `${baseName}.jpg`
+    document.body.appendChild(link)
+    link.click()
+    link.remove()
   }
 
   const handleOpenPrintPreview = async (item) => {
