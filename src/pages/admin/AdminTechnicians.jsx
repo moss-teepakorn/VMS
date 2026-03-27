@@ -137,6 +137,11 @@ const AdminTechnicians = () => {
     e.preventDefault()
     if (!form.name.trim()) { await showSwal({ icon: 'warning', title: 'ข้อมูลไม่ครบ', text: 'กรุณากรอกชื่อช่าง' }); return }
     const validServices = services.filter((s) => s.skill.trim())
+    const normalizedSkills = validServices.map((s) => s.skill.trim())
+    if (new Set(normalizedSkills).size !== normalizedSkills.length) {
+      await showSwal({ icon: 'warning', title: 'ความเชี่ยวชาญซ้ำ', text: 'กรุณาเลือกความเชี่ยวชาญแต่ละแถวไม่ให้ซ้ำกัน' })
+      return
+    }
     try {
       setSaving(true)
       if (editingItem) {
@@ -338,32 +343,40 @@ const AdminTechnicians = () => {
                     <span>ความเชี่ยวชาญและราคา</span>
                     <button type="button" className="btn btn-xs btn-o" onClick={addServiceRow}>+ เพิ่มบริการ</button>
                   </div>
-                  {services.map((svc, idx) => (
-                    <div key={idx} style={{ display: 'flex', gap: '8px', marginTop: '8px', flexWrap: 'wrap', alignItems: 'flex-end' }}>
-                      <label className="house-field" style={{ flex: '2', minWidth: '140px' }}>
-                        {idx === 0 && <span>ความเชี่ยวชาญ</span>}
-                        <select value={svc.skill} onChange={(e) => handleServiceChange(idx, 'skill', e.target.value)}>
-                          <option value="">เลือกความเชี่ยวชาญ</option>
-                          {TECHNICIAN_SKILLS.map((skill) => <option key={skill} value={skill}>{skill}</option>)}
-                        </select>
-                      </label>
-                      <label className="house-field" style={{ flex: '1', minWidth: '80px' }}>
-                        {idx === 0 && <span>ราคาต่ำสุด</span>}
-                        <input type="number" value={svc.price_min} onChange={(e) => handleServiceChange(idx, 'price_min', e.target.value)} placeholder="0" />
-                      </label>
-                      <label className="house-field" style={{ flex: '1', minWidth: '80px' }}>
-                        {idx === 0 && <span>ราคาสูงสุด</span>}
-                        <input type="number" value={svc.price_max} onChange={(e) => handleServiceChange(idx, 'price_max', e.target.value)} placeholder="0" />
-                      </label>
-                      <label className="house-field" style={{ flex: '2', minWidth: '120px' }}>
-                        {idx === 0 && <span>หมายเหตุราคา</span>}
-                        <input value={svc.price_note} onChange={(e) => handleServiceChange(idx, 'price_note', e.target.value)} placeholder="เช่น รวมค่าแรง" />
-                      </label>
-                      <div style={{ paddingBottom: '2px' }}>
-                        <button type="button" className="btn btn-xs btn-dg" onClick={() => removeServiceRow(idx)}>ลบ</button>
+                  {(() => {
+                    const selectedSkills = services.map((s) => String(s.skill || '').trim()).filter(Boolean)
+                    return services.map((svc, idx) => (
+                      <div key={idx} style={{ display: 'flex', gap: '8px', marginTop: '8px', flexWrap: 'wrap', alignItems: 'flex-end' }}>
+                        <label className="house-field" style={{ flex: '2', minWidth: '140px' }}>
+                          {idx === 0 && <span>ความเชี่ยวชาญ</span>}
+                          <select value={svc.skill} onChange={(e) => handleServiceChange(idx, 'skill', e.target.value)}>
+                            <option value="">เลือกความเชี่ยวชาญ</option>
+                            {TECHNICIAN_SKILLS.map((skill) => {
+                              const isDuplicateFromOtherRow = selectedSkills.includes(skill) && svc.skill !== skill
+                              return (
+                                <option key={skill} value={skill} disabled={isDuplicateFromOtherRow}>{skill}</option>
+                              )
+                            })}
+                          </select>
+                        </label>
+                        <label className="house-field" style={{ flex: '1', minWidth: '80px' }}>
+                          {idx === 0 && <span>ราคาต่ำสุด</span>}
+                          <input type="number" value={svc.price_min} onChange={(e) => handleServiceChange(idx, 'price_min', e.target.value)} placeholder="0" />
+                        </label>
+                        <label className="house-field" style={{ flex: '1', minWidth: '80px' }}>
+                          {idx === 0 && <span>ราคาสูงสุด</span>}
+                          <input type="number" value={svc.price_max} onChange={(e) => handleServiceChange(idx, 'price_max', e.target.value)} placeholder="0" />
+                        </label>
+                        <label className="house-field" style={{ flex: '2', minWidth: '120px' }}>
+                          {idx === 0 && <span>หมายเหตุราคา</span>}
+                          <input value={svc.price_note} onChange={(e) => handleServiceChange(idx, 'price_note', e.target.value)} placeholder="เช่น รวมค่าแรง" />
+                        </label>
+                        <div style={{ paddingBottom: '2px' }}>
+                          <button type="button" className="btn btn-xs btn-dg" onClick={() => removeServiceRow(idx)}>ลบ</button>
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    ))
+                  })()}
                 </section>
               </div>
               <div className="house-md-foot">
