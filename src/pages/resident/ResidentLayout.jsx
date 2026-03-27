@@ -593,7 +593,7 @@ export default function ResidentLayout() {
 
       {showPaymentModal && (
         <div className="house-mo">
-          <div className="house-md" style={{ maxWidth: '520px' }}>
+          <div className="house-md house-md--sm">
             <div className="house-md-head">
               <div>
                 <div className="house-md-title">💳 ส่งหลักฐานการชำระ</div>
@@ -657,7 +657,7 @@ export default function ResidentLayout() {
 
       {showModal && (
         <div className="house-mo">
-          <div className="house-md house-md-vehicle">
+          <div className="house-md house-md--md">
             <div className="house-md-head">
               <div>
                 <div className="house-md-title">📝 อัปเดตข้อมูลจากลูกบ้าน</div>

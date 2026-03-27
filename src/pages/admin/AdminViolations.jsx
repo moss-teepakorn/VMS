@@ -1046,7 +1046,7 @@ const AdminViolations = () => {
 
       {showModal && (
         <div className="house-mo">
-          <div className="house-md house-md-vehicle">
+          <div className="house-md house-md--md">
             <div className="house-md-head">
               <div>
                 <div className="house-md-title">⚠️ {editingItem ? 'แก้ไขรายการกระทำผิด' : 'แจ้งกระทำผิดใหม่'}</div>

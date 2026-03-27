@@ -357,7 +357,7 @@ const AdminWorkReportsList = () => {
 
       {showCreateModal && (
         <div className="house-mo">
-          <div className="house-md house-md-home">
+          <div className="house-md house-md--lg">
             <div className="house-md-head">
               <div>
                 <div className="house-md-title">🏆 เพิ่มผลงานนิติ</div>
@@ -379,7 +379,7 @@ const AdminWorkReportsList = () => {
 
       {editingReportId && (
         <div className="house-mo">
-          <div className="house-md house-md-home">
+          <div className="house-md house-md--lg">
             <div className="house-md-head">
               <div>
                 <div className="house-md-title">✏️ แก้ไขผลงานนิติ</div>

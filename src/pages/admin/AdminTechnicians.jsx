@@ -290,7 +290,7 @@ const AdminTechnicians = () => {
 
       {showModal && (
         <div className="house-mo">
-          <div className="house-md house-md-vehicle">
+          <div className="house-md house-md--md">
             <div className="house-md-head">
               <div>
                 <div className="house-md-title">🔨 {editingItem ? 'แก้ไขข้อมูลช่าง' : 'เพิ่มช่างใหม่'}</div>

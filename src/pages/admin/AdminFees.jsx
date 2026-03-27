@@ -697,7 +697,7 @@ const AdminFees = () => {
 
       {showEditModal && editingFee && (
         <div className="house-mo">
-          <div className="house-md house-md-home">
+          <div className="house-md house-md--lg">
             <div className="house-md-head">
               <div>
                 <div className="house-md-title">🧾 แก้ไขใบแจ้งหนี้</div>
@@ -764,7 +764,7 @@ const AdminFees = () => {
 
       {showPaymentModal && payingFee && (
         <div className="house-mo">
-          <div className="house-md house-md-home" style={{ maxWidth: '980px' }}>
+          <div className="house-md house-md--xl">
             <div className="house-md-head">
               <div>
                 <div className="house-md-title">💳 บันทึกรับชำระ</div>
@@ -933,7 +933,7 @@ const AdminFees = () => {
 
       {showProcessModal && (
         <div className="house-mo">
-          <div className="house-md" style={{ maxWidth: '560px' }}>
+          <div className="house-md house-md--sm">
             <div className="house-md-head">
               <div>
                 <div className="house-md-title">🧾 สร้างใบแจ้งหนี้ทุกหลัง</div>

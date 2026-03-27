@@ -1317,8 +1317,10 @@ button, input, select, textarea {
 }
 
 .house-md {
-  width: min(930px, 100%);
-  height: min(96vh, 900px);
+  --house-md-max-w: 930px;
+  --house-md-max-h: 900px;
+  width: min(var(--house-md-max-w), 100%);
+  height: min(96vh, var(--house-md-max-h));
   max-height: calc(100dvh - 40px);
   background: #f8fafc;
   border: 1px solid rgba(210, 218, 230, .95);
@@ -1329,12 +1331,53 @@ button, input, select, textarea {
   flex-direction: column;
 }
 
-.house-md-home {
-  height: min(96vh, 900px);
+.house-md--xs {
+  --house-md-max-w: 420px;
+  --house-md-max-h: 560px;
 }
 
-.house-md-vehicle {
-  height: min(92vh, 840px);
+.house-md--sm {
+  --house-md-max-w: 560px;
+  --house-md-max-h: 700px;
+}
+
+.house-md--md {
+  --house-md-max-w: 760px;
+  --house-md-max-h: 840px;
+}
+
+.house-md--lg {
+  --house-md-max-w: 930px;
+  --house-md-max-h: 900px;
+}
+
+.house-md--xl {
+  --house-md-max-w: 1060px;
+  --house-md-max-h: 920px;
+}
+
+@media (max-width: 1024px) {
+  .house-mo {
+    padding: 14px;
+  }
+
+  .house-md {
+    border-radius: 20px;
+    max-height: calc(100dvh - 28px);
+  }
+}
+
+@media (max-width: 768px) {
+  .house-mo {
+    padding: 10px;
+    align-items: flex-end;
+  }
+
+  .house-md {
+    width: 100%;
+    max-height: calc(100dvh - 12px);
+    border-radius: 16px 16px 0 0;
+  }
 }
 
 .house-md form {
@@ -1471,37 +1514,6 @@ button, input, select, textarea {
   padding-right: 8px;
 }
 
-.house-md-vehicle .house-md-body {
-  padding: 8px 10px 8px;
-  overflow-y: hidden;
-  scrollbar-width: none;
-}
-
-.house-md-vehicle .house-md-body::-webkit-scrollbar {
-  width: 0;
-  height: 0;
-}
-
-.house-md-vehicle .house-sec {
-  padding: 6px 0 8px;
-}
-
-.house-md-vehicle .house-sec-title {
-  margin-bottom: 6px;
-  font-size: 12.5px;
-}
-
-.house-md-vehicle .house-grid {
-  gap: 6px 8px;
-}
-
-.house-md-vehicle .house-field input,
-.house-md-vehicle .house-field select,
-.house-md-vehicle .house-field textarea {
-  min-height: 34px;
-  padding: 6px 8px;
-}
-
 .swal2-container {
   z-index: 5000 !important;
 }
@@ -1577,8 +1589,7 @@ button, input, select, textarea {
     max-height: calc(100dvh - 20px);
   }
 
-  .house-md-home,
-  .house-md-vehicle {
+  .house-md {
     height: auto;
     min-height: calc(100dvh - 20px);
     max-height: calc(100dvh - 20px);

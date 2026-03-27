@@ -593,7 +593,7 @@ const AdminMarketplace = () => {
 
       {showModal && (
         <div className="house-mo">
-          <div className="house-md house-md-vehicle">
+          <div className="house-md house-md--md">
             <div className="house-md-head">
               <div>
                 <div className="house-md-title">🛒 {editingItem ? 'แก้ไขรายการ' : 'โพสต์รายการใหม่'}</div>
@@ -690,7 +690,7 @@ const AdminMarketplace = () => {
 
       {showDetailModal && detailItem && (
         <div className="house-mo">
-          <div className="house-md house-md-home">
+          <div className="house-md house-md--lg">
             <div className="house-md-head">
               <div>
                 <div className="house-md-title">🔍 รายละเอียดรายการ</div>
