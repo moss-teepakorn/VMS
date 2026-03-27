@@ -125,8 +125,8 @@ const AdminLogs = () => {
   }
 
   return (
-    <div className="pane on page-compact" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-      <div className="ph">
+    <div className="pane on houses-compact">
+      <div className="ph houses-ph">
         <div className="ph-in">
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
             <div className="ph-ico">
@@ -138,101 +138,108 @@ const AdminLogs = () => {
             </div>
           </div>
         </div>
+        <div style={{ marginTop: '10px', display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+          <input
+            type="text"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="ค้นหา action / ตาราง / ผู้ใช้..."
+            className="houses-filter-input"
+            style={{ flex: '1 1 180px', minWidth: 0 }}
+          />
+          <button
+            className="btn btn-a btn-sm"
+            onClick={loadLogs}
+            disabled={loading}
+            style={{ flex: '0 0 auto', height: '34px' }}
+          >
+            ค้นหา
+          </button>
+        </div>
       </div>
 
       <div className="card">
-        {/* Toolbar */}
-        <div className="ch page-list-head" style={{ flexWrap: 'wrap', gap: '8px' }}>
+        <div className="ch houses-list-head">
           <div className="ct">
             รายการทั้งหมด {logs.length} รายการ
             {selected.size > 0 && (
               <span style={{ marginLeft: 8, color: 'var(--pr)', fontWeight: 600 }}>
-                (เลือก {selected.size})
+                · เลือก {selected.size}
               </span>
             )}
           </div>
-          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-            <input
-              className="page-filter-input"
-              type="text"
-              placeholder="ค้นหา action / ตาราง / ผู้ใช้..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              style={{ minWidth: 220 }}
-            />
-            <button className="btn btn-sm btn-o" onClick={loadLogs} disabled={loading}>
-              ↻ โหลดใหม่
-            </button>
+          <div className="houses-list-actions">
             <button
-              className="btn btn-sm btn-mu"
+              className="btn btn-dg btn-sm"
               onClick={handleDeleteSelected}
               disabled={selected.size === 0}
             >
-              ลบที่เลือก ({selected.size})
+              🗑 ลบที่เลือก ({selected.size})
             </button>
             <button
-              className="btn btn-sm btn-mu"
+              className="btn btn-dg btn-sm"
               onClick={handleDeleteAll}
               disabled={logs.length === 0}
             >
-              ลบทั้งหมด
+              🗑 ลบทั้งหมด
+            </button>
+            <button className="btn btn-g btn-sm" onClick={loadLogs} disabled={loading}>
+              🔄 รีเฟรช
             </button>
           </div>
         </div>
 
-        <div className="cb page-table-body">
-          <div className="desktop-only">
-            <div style={{ overflowX: 'auto' }}>
-              <table className="tw" style={{ width: '100%', minWidth: '720px', fontSize: '12px' }}>
-                <thead><tr>
-                  <th style={{ width: 36 }}>
-                    <input
-                      type="checkbox"
-                      checked={allChecked}
-                      ref={(el) => { if (el) el.indeterminate = someChecked }}
-                      onChange={toggleAll}
-                    />
-                  </th>
-                  <th style={{ width: 40 }}>#</th>
-                  <th>วันที่ / เวลา</th>
-                  <th>ผู้ใช้</th>
-                  <th>การดำเนินการ</th>
-                  <th>ตารางข้อมูล</th>
-                  <th/>
-                </tr></thead>
-                <tbody>
-                  {loading ? (
-                    <tr><td colSpan="7" style={{ textAlign: 'center', color: 'var(--mu)', padding: '24px' }}>กำลังโหลด...</td></tr>
-                  ) : filtered.length === 0 ? (
-                    <tr><td colSpan="7" style={{ textAlign: 'center', color: 'var(--mu)', padding: '24px' }}>ไม่มีข้อมูล Log</td></tr>
-                  ) : filtered.map((log, idx) => {
-                    const actionBg = log.action === 'INSERT' ? 'b-pr' : log.action === 'UPDATE' ? 'b-a' : 'b-mu'
-                    return (
-                      <tr
-                        key={log.id}
-                        style={{ background: selected.has(log.id) ? 'var(--pr-bg, #f0f7ff)' : undefined, cursor: 'pointer' }}
-                        onClick={() => toggleRow(log.id)}
-                      >
-                        <td onClick={(e) => e.stopPropagation()}>
-                          <input type="checkbox" checked={selected.has(log.id)} onChange={() => toggleRow(log.id)} />
-                        </td>
-                        <td style={{ color: 'var(--mu)', textAlign: 'center' }}>{idx + 1}</td>
-                        <td style={{ whiteSpace: 'nowrap' }}>{fmtDatetime(log.acted_at)}</td>
-                        <td>{log.profiles?.full_name || 'System'}</td>
-                        <td><span className={`bd ${actionBg}`}>{log.action}</span></td>
-                        <td>{log.table_name}</td>
-                        <td onClick={(e) => e.stopPropagation()}>
-                          <button className="btn btn-xs btn-o" onClick={() => handleViewLog(log)}>ดู</button>
-                        </td>
-                      </tr>
-                    )
-                  })}
-                </tbody>
-              </table>
-            </div>
+        <div className="cb houses-table-card-body">
+          <div className="houses-table-wrap houses-desktop-only">
+            <table className="tw houses-table" style={{ width: '100%', minWidth: '720px' }}>
+              <thead><tr>
+                <th style={{ width: 36 }}>
+                  <input
+                    type="checkbox"
+                    checked={allChecked}
+                    ref={(el) => { if (el) el.indeterminate = someChecked }}
+                    onChange={toggleAll}
+                  />
+                </th>
+                <th style={{ width: 40 }}>#</th>
+                <th>วันที่ / เวลา</th>
+                <th>ผู้ใช้</th>
+                <th>การดำเนินการ</th>
+                <th>ตารางข้อมูล</th>
+                <th/>
+              </tr></thead>
+              <tbody>
+                {loading ? (
+                  <tr><td colSpan="7" style={{ textAlign: 'center', color: 'var(--mu)', padding: '24px' }}>กำลังโหลด...</td></tr>
+                ) : filtered.length === 0 ? (
+                  <tr><td colSpan="7" style={{ textAlign: 'center', color: 'var(--mu)', padding: '24px' }}>ไม่มีข้อมูล Log</td></tr>
+                ) : filtered.map((log, idx) => {
+                  const actionBg = log.action === 'INSERT' ? 'b-pr' : log.action === 'UPDATE' ? 'b-a' : 'b-mu'
+                  return (
+                    <tr
+                      key={log.id}
+                      style={{ background: selected.has(log.id) ? 'var(--pr-bg, #f0f7ff)' : undefined, cursor: 'pointer' }}
+                      onClick={() => toggleRow(log.id)}
+                    >
+                      <td onClick={(e) => e.stopPropagation()}>
+                        <input type="checkbox" checked={selected.has(log.id)} onChange={() => toggleRow(log.id)} />
+                      </td>
+                      <td style={{ color: 'var(--mu)', textAlign: 'center' }}>{idx + 1}</td>
+                      <td style={{ whiteSpace: 'nowrap' }}>{fmtDatetime(log.acted_at)}</td>
+                      <td>{log.profiles?.full_name || 'System'}</td>
+                      <td><span className={`bd ${actionBg}`}>{log.action}</span></td>
+                      <td>{log.table_name}</td>
+                      <td onClick={(e) => e.stopPropagation()}>
+                        <button className="btn btn-xs btn-o" onClick={() => handleViewLog(log)}>ดู</button>
+                      </td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
           </div>
 
-          <div className="mobile-only">
+          <div className="houses-mobile-only" style={{ gap: 10, padding: '4px 0' }}>
             {loading ? (
               <div className="mcard-empty">กำลังโหลด...</div>
             ) : filtered.length === 0 ? (
@@ -241,18 +248,18 @@ const AdminLogs = () => {
               <>
                 <div style={{ padding: '8px 12px', display: 'flex', gap: 8, alignItems: 'center' }}>
                   <input type="checkbox" checked={allChecked} ref={(el) => { if (el) el.indeterminate = someChecked }} onChange={toggleAll} />
-                  <span style={{ fontSize: 13, color: 'var(--mu)' }}>เลือกทั้งหมด</span>
+                  <span style={{ fontSize: 12, color: 'var(--mu)' }}>เลือกทั้งหมด</span>
                 </div>
                 {filtered.map((log) => {
                   const actionBg = log.action === 'INSERT' ? 'b-pr' : log.action === 'UPDATE' ? 'b-a' : 'b-mu'
                   return (
                     <div
                       key={log.id}
-                      className="mcard"
+                      className="houses-mcard"
                       style={{ background: selected.has(log.id) ? 'var(--pr-bg, #f0f7ff)' : undefined }}
                       onClick={() => toggleRow(log.id)}
                     >
-                      <div className="mcard-top">
+                      <div className="houses-mcard-top">
                         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                           <input
                             type="checkbox"
@@ -260,11 +267,11 @@ const AdminLogs = () => {
                             onChange={() => toggleRow(log.id)}
                             onClick={(e) => e.stopPropagation()}
                           />
-                          <div className="mcard-title">{log.table_name}</div>
+                          <div className="houses-mcard-no">{log.table_name}</div>
                         </div>
-                        <span className={`bd ${actionBg} mcard-badge`}>{log.action}</span>
+                        <span className={`bd ${actionBg} houses-mcard-badge`}>{log.action}</span>
                       </div>
-                      <div className="mcard-meta">
+                      <div className="mcard-meta" style={{ marginTop: 4 }}>
                         <span><span className="mcard-label">เวลา</span> {fmtDatetime(log.acted_at)}</span>
                         <span><span className="mcard-label">ผู้ใช้</span> {log.profiles?.full_name || 'System'}</span>
                       </div>
