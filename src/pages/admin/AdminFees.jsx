@@ -5,7 +5,7 @@ import { listHouses } from '../../lib/houses'
 import { getSystemConfig } from '../../lib/systemConfig'
 import {
   calculateFullYearFeeByHouse,
-  calculateOverdueFeesBulk,
+  calculateOverdueFeesByIds,
   calculateOverdueFeeCharges,
   createPayment,
   deleteFee,
@@ -49,6 +49,7 @@ const AdminFees = () => {
   const [processForm, setProcessForm] = useState({
     yearBE: String(new Date().getFullYear() + 543),
     period: 'first_half',
+    overwritePending: false,
   })
 
   const yearOptions = useMemo(() => {
@@ -93,6 +94,7 @@ const AdminFees = () => {
     setProcessForm({
       yearBE: String(new Date().getFullYear() + 543),
       period: 'first_half',
+      overwritePending: false,
     })
     setShowProcessModal(true)
   }
@@ -105,12 +107,13 @@ const AdminFees = () => {
         yearBE: Number(processForm.yearBE),
         period: processForm.period,
         setup,
+        overwritePending: processForm.overwritePending,
       })
 
       await Swal.fire({
         icon: 'success',
         title: 'Process สำเร็จ',
-        html: `สร้างใหม่ ${result.created} หลัง<br/>อัปเดต ${result.updated} หลัง<br/>ข้าม (ชำระแล้ว) ${result.skippedPaid} หลัง<br/>ข้าม (รอตรวจสอบ) ${result.skippedPending} หลัง`,
+        html: `สร้างใหม่ ${result.created} หลัง<br/>อัปเดต ${result.updated} หลัง<br/>ข้าม (ชำระแล้ว) ${result.skippedPaid} หลัง<br/>ข้าม (รอตรวจสอบ) ${result.skippedPending} หลัง${processForm.overwritePending ? '<br/><span style="color:#0f766e">* เลือกทับรายการรอตรวจสอบแล้ว</span>' : ''}`,
       })
       setShowProcessModal(false)
       await loadFeeData({ status: statusFilter, year: yearFilter })
@@ -229,12 +232,15 @@ const AdminFees = () => {
   }
 
   const handleBulkOverdue = async () => {
+    if (fees.length === 0) {
+      await Swal.fire({ icon: 'info', title: 'ไม่มีรายการให้คำนวณ', text: 'กรองข้อมูลก่อนหรือสร้างใบแจ้งหนี้ก่อน' })
+      return
+    }
+
     const result = await Swal.fire({
       icon: 'question',
-      title: 'คำนวณค่าปรับทั้งหมด?',
-      text: yearFilter === 'all'
-        ? 'จะคำนวณทุกรายการที่เกินกำหนดทุกปี'
-        : `จะคำนวณเฉพาะปี ${toBE(yearFilter)}`,
+      title: 'คำนวณค่าปรับจากรายการที่แสดง?',
+      text: `จะคำนวณจากรายการที่แสดงอยู่ตอนนี้ ${fees.length} รายการ`,
       showCancelButton: true,
       confirmButtonText: 'คำนวณ',
       cancelButtonText: 'ยกเลิก',
@@ -243,8 +249,8 @@ const AdminFees = () => {
     if (!result.isConfirmed) return
 
     try {
-      const summaryResult = await calculateOverdueFeesBulk({
-        year: yearFilter,
+      const summaryResult = await calculateOverdueFeesByIds({
+        feeIds: fees.map((item) => item.id),
         setup,
       })
       await Swal.fire({
@@ -500,6 +506,15 @@ const AdminFees = () => {
                         <option value="first_half">ครึ่งปีแรก (1/1 - 30/6)</option>
                         <option value="second_half">ครึ่งปีหลัง (1/7 - 31/12)</option>
                       </select>
+                    </label>
+                    <label className="house-field" style={{ gridColumn: '1 / -1', display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <input
+                        type="checkbox"
+                        checked={processForm.overwritePending}
+                        onChange={(e) => setProcessForm((prev) => ({ ...prev, overwritePending: e.target.checked }))}
+                        style={{ width: 16, height: 16 }}
+                      />
+                      <span>ทับใบที่อยู่สถานะรอตรวจสอบ (pending)</span>
                     </label>
                   </div>
                 </section>

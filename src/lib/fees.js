@@ -164,7 +164,7 @@ export async function createFee(payload) {
   return data
 }
 
-export async function processHalfYearFeesAllHouses({ yearBE, period, setup }) {
+export async function processHalfYearFeesAllHouses({ yearBE, period, setup, overwritePending = false }) {
   const yearCE = toGregorianYear(yearBE)
   if (!yearCE) throw new Error('ปีไม่ถูกต้อง')
   if (!['first_half', 'second_half'].includes(period)) {
@@ -221,7 +221,7 @@ export async function processHalfYearFeesAllHouses({ yearBE, period, setup }) {
       continue
     }
 
-    if (existing.status === 'pending') {
+    if (existing.status === 'pending' && !overwritePending) {
       skippedPending += 1
       continue
     }
@@ -358,6 +358,66 @@ export async function calculateOverdueFeesBulk({ year, setup } = {}) {
   }
 
   const { data, error } = await query
+  if (error) throw error
+
+  const now = new Date()
+  let updated = 0
+  let skippedPaid = 0
+  let skippedNotDue = 0
+
+  for (const fee of data || []) {
+    if (fee.status === 'paid') {
+      skippedPaid += 1
+      continue
+    }
+
+    if (!fee.due_date) {
+      skippedNotDue += 1
+      continue
+    }
+
+    const dueDate = new Date(`${fee.due_date}T23:59:59`)
+    if (now <= dueDate) {
+      skippedNotDue += 1
+      continue
+    }
+
+    const feeFine = round2(toAmount(fee.fee_common) * (finePct / 100))
+    const { error: updateError } = await supabase
+      .from('fees')
+      .update({
+        status: 'overdue',
+        fee_fine: feeFine,
+        fee_notice: round2(noticeFee),
+      })
+      .eq('id', fee.id)
+
+    if (updateError) throw updateError
+    updated += 1
+  }
+
+  return {
+    updated,
+    skippedPaid,
+    skippedNotDue,
+    total: (data || []).length,
+  }
+}
+
+export async function calculateOverdueFeesByIds({ feeIds, setup } = {}) {
+  const ids = Array.isArray(feeIds) ? feeIds.filter(Boolean) : []
+  if (ids.length === 0) {
+    return { updated: 0, skippedPaid: 0, skippedNotDue: 0, total: 0 }
+  }
+
+  const finePct = toAmount(setup?.overdue_fine_pct)
+  const noticeFee = toAmount(setup?.notice_fee)
+
+  const { data, error } = await supabase
+    .from('fees')
+    .select('id, status, due_date, fee_common')
+    .in('id', ids)
+
   if (error) throw error
 
   const now = new Date()
