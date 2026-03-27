@@ -46,7 +46,7 @@ const AdminLogs = () => {
     return logs.filter(
       (r) =>
         (r.action || '').toLowerCase().includes(kw) ||
-        (r.table_name || '').toLowerCase().includes(kw) ||
+        (r.target_table || '').toLowerCase().includes(kw) ||
         (r.profiles?.full_name || '').toLowerCase().includes(kw),
     )
   }, [logs, search])
@@ -120,7 +120,7 @@ const AdminLogs = () => {
       timestamp: { label: 'เวลา', type: 'text', value: fmtDatetime(log.acted_at), disabled: true },
       user: { label: 'ผู้ใช้', type: 'text', value: log.profiles?.full_name || 'System', disabled: true },
       action: { label: 'การดำเนินการ', type: 'text', value: log.action, disabled: true },
-      table: { label: 'ตารางข้อมูล', type: 'text', value: log.table_name, disabled: true },
+      table: { label: 'ตารางข้อมูล', type: 'text', value: log.target_table, disabled: true },
     }, null)
   }
 
@@ -228,7 +228,7 @@ const AdminLogs = () => {
                       <td style={{ whiteSpace: 'nowrap' }}>{fmtDatetime(log.acted_at)}</td>
                       <td>{log.profiles?.full_name || 'System'}</td>
                       <td><span className={`bd ${actionBg}`}>{log.action}</span></td>
-                      <td>{log.table_name}</td>
+                      <td>{log.target_table}</td>
                       <td onClick={(e) => e.stopPropagation()}>
                         <button className="btn btn-xs btn-o" onClick={() => handleViewLog(log)}>ดู</button>
                       </td>
@@ -267,7 +267,7 @@ const AdminLogs = () => {
                             onChange={() => toggleRow(log.id)}
                             onClick={(e) => e.stopPropagation()}
                           />
-                          <div className="houses-mcard-no">{log.table_name}</div>
+                          <div className="houses-mcard-no">{log.target_table}</div>
                         </div>
                         <span className={`bd ${actionBg} houses-mcard-badge`}>{log.action}</span>
                       </div>
