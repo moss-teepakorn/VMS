@@ -108,6 +108,7 @@ const AdminWorkReportForm = ({ modalMode = false, forceCreate = false, reportId 
   const [form, setForm] = useState({ ...EMPTY_FORM })
   const [attachments, setAttachments] = useState([])
   const [originalImagePaths, setOriginalImagePaths] = useState([])
+  const [removedExistingPaths, setRemovedExistingPaths] = useState([])
 
   useEffect(() => () => revokeBlobUrls(attachments), [attachments])
 
@@ -130,6 +131,7 @@ const AdminWorkReportForm = ({ modalMode = false, forceCreate = false, reportId 
 
         setAttachments(images.map((img) => ({ source: 'existing', ...img })))
         setOriginalImagePaths(images.map((img) => img.path).filter(Boolean))
+        setRemovedExistingPaths([])
       } catch (error) {
         await Swal.fire({ icon: 'error', title: 'โหลดข้อมูลไม่สำเร็จ', text: error.message })
         navigate('/admin/work-reports')
@@ -188,6 +190,9 @@ const AdminWorkReportForm = ({ modalMode = false, forceCreate = false, reportId 
     setAttachments((prev) => {
       const next = [...prev]
       const item = next[index]
+      if (item?.source === 'existing' && item.path) {
+        setRemovedExistingPaths((paths) => (paths.includes(item.path) ? paths : [...paths, item.path]))
+      }
       if (item?.url && String(item.url).startsWith('blob:')) {
         URL.revokeObjectURL(item.url)
       }
@@ -227,7 +232,10 @@ const AdminWorkReportForm = ({ modalMode = false, forceCreate = false, reportId 
 
       let saved
       if (isEdit) {
-        const deletePaths = originalImagePaths.filter((path) => !keptExistingPaths.includes(path))
+        const deletePaths = Array.from(new Set([
+          ...removedExistingPaths,
+          ...originalImagePaths.filter((path) => !keptExistingPaths.includes(path)),
+        ]))
         if (deletePaths.length > 0) {
           await deleteWorkReportImagesByPaths(deletePaths)
         }
