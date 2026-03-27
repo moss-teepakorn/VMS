@@ -57,26 +57,23 @@ export default function LoginPage() {
         <div className="grid grid-cols-1 md:grid-cols-[42%_58%] min-h-[600px]">
           <div className="hidden md:flex relative overflow-hidden bg-gradient-to-br from-[#0f4570] via-[#0f6a7d] to-[#0d968f] text-white">
             <div className="absolute -top-10 -right-16 w-[300px] h-[300px] rounded-full bg-white/10" />
-            <div className="absolute top-[110px] left-[160px] w-[122px] h-[122px] rounded-full border-2 border-white/28 bg-white/10" />
+            <div className="absolute top-[110px] left-[160px] w-[122px] h-[122px] rounded-full border-2 border-white/28 bg-white/10 overflow-hidden flex items-center justify-center">
+              <img
+                src={setup.loginCircleLogoUrl || villageLogo}
+                alt="setup-logo"
+                className="w-[96px] h-[96px] rounded-full object-cover"
+              />
+            </div>
             <div className="absolute -bottom-28 -left-20 w-[260px] h-[260px] rounded-full bg-white/10" />
 
             <div className="relative z-10 flex flex-col justify-between p-10 w-full">
-              <div className="inline-flex items-center gap-3 rounded-xl px-3 py-2 bg-white/15 border border-white/25 w-fit">
-                <img src={villageLogo} alt="Village Logo" className="w-10 h-10 rounded-lg object-cover" />
-                <div>
-                  <div className="text-sm font-semibold leading-tight">{setup.villageName}</div>
-                  <div className="text-[11px] text-white/80">{setup.address}</div>
-                </div>
-              </div>
+              <div />
 
               <div className="pb-4">
-                <h1 className="text-[38px] font-bold leading-[1.12]">ระบบแจ้งซ่อมออนไลน์<br />Maintenance Request</h1>
+                <h1 className="text-[40px] font-bold leading-[1.12]">Village Management System</h1>
                 <p className="mt-4 text-[16px] text-white/85 leading-relaxed max-w-[320px]">
-                  บริหารจัดการการแจ้งซ่อม<br />ภายในองค์กรอย่างมีประสิทธิภาพ
+                  ระบบบริหารจัดการหมู่บ้าน<br />คอนโดอย่างมีประสิทธิภาพ
                 </p>
-                <div className="mt-8 inline-flex items-center rounded-full border border-white/35 bg-white/15 px-5 py-2 text-[12px] font-semibold tracking-wide text-white/90">
-                  ⊙ INTERNAL SUPPORT SYSTEM
-                </div>
               </div>
             </div>
           </div>
@@ -89,9 +86,9 @@ export default function LoginPage() {
                 <p className="text-sm text-slate-500">กรุณากรอกข้อมูลเพื่อเข้าใช้งาน</p>
               </div>
 
-              <div className="hidden md:block text-center mb-8">
-                <h2 className="text-[44px] font-extrabold text-[#0f172a] leading-none">เข้าสู่ระบบ</h2>
-                <p className="mt-3 text-[15px] text-slate-500">กรุณากรอกข้อมูลเพื่อเข้าใช้งาน</p>
+              <div className="hidden md:block text-center mb-10 -mt-1">
+                <h2 className="text-[40px] font-extrabold text-[#0f172a] leading-tight">เข้าสู่ระบบ</h2>
+                <p className="mt-2 text-[15px] text-slate-500">กรุณากรอกข้อมูลเพื่อเข้าใช้งาน</p>
                 <div className="mx-auto mt-4 h-[4px] w-16 rounded-full bg-gradient-to-r from-[#0f4570] to-[#0d968f]" />
               </div>
 
