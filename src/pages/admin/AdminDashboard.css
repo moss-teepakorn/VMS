@@ -437,6 +437,17 @@
   border-color: var(--pr);
 }
 
+.btn-dg {
+  background: #fff;
+  color: var(--dg);
+  border: 1.5px solid #f3b4af;
+}
+
+.btn-dg:hover {
+  background: var(--dgl);
+  border-color: var(--dg);
+}
+
 .btn-sm {
   padding: 6px 12px;
   font-size: 12px;
