@@ -59,16 +59,19 @@ async function resizeImageToLimit(file, sequence) {
     img.src = dataUrl
   })
 
-  let width = image.width
-  let height = image.height
+  let scale = 1
   let quality = 0.85
   const canvas = document.createElement('canvas')
   const ctx = canvas.getContext('2d')
   if (!ctx) throw new Error('ไม่สามารถประมวลผลรูปภาพได้')
 
-  for (let attempt = 0; attempt < 14; attempt += 1) {
-    canvas.width = Math.max(100, Math.round(width))
-    canvas.height = Math.max(100, Math.round(height))
+  for (let attempt = 0; attempt < 20; attempt += 1) {
+    // Keep original aspect ratio by applying one shared scale factor.
+    const width = Math.max(1, Math.round(image.width * scale))
+    const height = Math.max(1, Math.round(image.height * scale))
+
+    canvas.width = width
+    canvas.height = height
     ctx.clearRect(0, 0, canvas.width, canvas.height)
     ctx.drawImage(image, 0, 0, canvas.width, canvas.height)
 
@@ -83,9 +86,11 @@ async function resizeImageToLimit(file, sequence) {
     if (quality > 0.45) {
       quality -= 0.08
     } else {
-      width *= 0.88
-      height *= 0.88
+      scale *= 0.9
+      quality = 0.72
     }
+
+    if (width <= 320 && height <= 320 && quality <= 0.45) break
   }
 
   throw new Error(`ไม่สามารถย่อรูป ${file.name} ให้ต่ำกว่า 50KB ได้`)
