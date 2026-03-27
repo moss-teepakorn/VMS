@@ -29,7 +29,7 @@ const EMPTY_FORM = {
 }
 
 const MAX_ATTACHMENTS = 10
-const MAX_IMAGE_TARGET_BYTES = 50 * 1024
+const MAX_IMAGE_TARGET_BYTES = 100 * 1024
 
 function revokeBlobUrls(items) {
   for (const item of items || []) {
@@ -64,8 +64,9 @@ async function resizeImageToLimit(file, sequence) {
   const canvas = document.createElement('canvas')
   const ctx = canvas.getContext('2d')
   if (!ctx) throw new Error('ไม่สามารถประมวลผลรูปภาพได้')
+  let bestBlob = null
 
-  for (let attempt = 0; attempt < 20; attempt += 1) {
+  for (let attempt = 0; attempt < 28; attempt += 1) {
     // Keep original aspect ratio by applying one shared scale factor.
     const width = Math.max(1, Math.round(image.width * scale))
     const height = Math.max(1, Math.round(image.height * scale))
@@ -77,6 +78,10 @@ async function resizeImageToLimit(file, sequence) {
 
     const blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/jpeg', quality))
     if (!blob) break
+
+    if (!bestBlob || blob.size < bestBlob.size) {
+      bestBlob = blob
+    }
 
     if (blob.size <= MAX_IMAGE_TARGET_BYTES) {
       const fileName = `WRK_${Date.now()}_${String(sequence).padStart(3, '0')}.jpg`
@@ -90,10 +95,15 @@ async function resizeImageToLimit(file, sequence) {
       quality = 0.72
     }
 
-    if (width <= 320 && height <= 320 && quality <= 0.45) break
+    if (width <= 120 || height <= 120) break
   }
 
-  throw new Error(`ไม่สามารถย่อรูป ${file.name} ให้ต่ำกว่า 50KB ได้`)
+  if (bestBlob && bestBlob.size <= MAX_IMAGE_TARGET_BYTES) {
+    const fileName = `WRK_${Date.now()}_${String(sequence).padStart(3, '0')}.jpg`
+    return new File([bestBlob], fileName, { type: 'image/jpeg' })
+  }
+
+  throw new Error(`ไม่สามารถย่อรูป ${file.name} ให้ต่ำกว่า 100KB ได้`)
 }
 
 const AdminWorkReportForm = ({ modalMode = false, forceCreate = false, reportId = null, onSaved = null, onCancel = null }) => {
@@ -335,7 +345,7 @@ const AdminWorkReportForm = ({ modalMode = false, forceCreate = false, reportId 
       </section>
 
       <section className="house-sec" style={{ borderBottom: 0 }}>
-        <div className="house-sec-title">รูปภาพ (ไม่เกิน 10 รูป, รูปละไม่เกิน 50KB)</div>
+        <div className="house-sec-title">รูปภาพ (ไม่เกิน 10 รูป, รูปละไม่เกิน 100KB)</div>
         <label className="btn btn-o btn-sm" style={{ cursor: 'pointer', display: 'inline-block' }}>
           <input type="file" accept="image/*" multiple onChange={handleAttachFiles} style={{ display: 'none' }} disabled={attachments.length >= MAX_ATTACHMENTS} />
           แนบไฟล์
