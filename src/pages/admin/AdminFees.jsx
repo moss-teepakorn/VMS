@@ -1,6 +1,5 @@
-import React, { useContext, useEffect, useMemo, useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import Swal from 'sweetalert2'
-import { ModalContext } from './AdminLayout'
 import { listHouses } from '../../lib/houses'
 import { getSystemConfig } from '../../lib/systemConfig'
 import {
@@ -30,7 +29,6 @@ function toBE(yearCE) {
 }
 
 const AdminFees = () => {
-  const { openModal } = useContext(ModalContext)
   const [fees, setFees] = useState([])
   const [payments, setPayments] = useState([])
   const [houses, setHouses] = useState([])
@@ -46,11 +44,52 @@ const AdminFees = () => {
   const [loading, setLoading] = useState(false)
   const [showProcessModal, setShowProcessModal] = useState(false)
   const [processing, setProcessing] = useState(false)
+  const [showEditModal, setShowEditModal] = useState(false)
+  const [savingEdit, setSavingEdit] = useState(false)
+  const [editingFee, setEditingFee] = useState(null)
+  const [editForm, setEditForm] = useState({
+    status: 'unpaid',
+    invoice_date: '',
+    due_date: '',
+    fee_common: '0',
+    fee_parking: '0',
+    fee_waste: '0',
+    fee_overdue_common: '0',
+    fee_overdue_fine: '0',
+    fee_overdue_notice: '0',
+    fee_fine: '0',
+    fee_notice: '0',
+    fee_violation: '0',
+    fee_other: '0',
+    note: '',
+  })
+  const [showPaymentModal, setShowPaymentModal] = useState(false)
+  const [savingPayment, setSavingPayment] = useState(false)
+  const [payingFee, setPayingFee] = useState(null)
+  const [paymentForm, setPaymentForm] = useState({
+    payment_method: 'transfer',
+    paid_at: new Date().toISOString().slice(0, 16),
+    selectedItems: [],
+    note: '',
+  })
   const [processForm, setProcessForm] = useState({
     yearBE: String(new Date().getFullYear() + 543),
     period: 'first_half',
     overwritePending: false,
   })
+
+  const feeItemDefs = [
+    { key: 'fee_common', label: 'ค่าส่วนกลาง' },
+    { key: 'fee_parking', label: 'ค่าจอดรถ' },
+    { key: 'fee_waste', label: 'ค่าขยะ' },
+    { key: 'fee_overdue_common', label: 'ยอดค้างยกมา' },
+    { key: 'fee_overdue_fine', label: 'ค่าปรับยอดค้าง' },
+    { key: 'fee_overdue_notice', label: 'ค่าทวงถามยอดค้าง' },
+    { key: 'fee_fine', label: 'ค่าปรับ' },
+    { key: 'fee_notice', label: 'ค่าทวงถาม' },
+    { key: 'fee_violation', label: 'ค่ากระทำผิด' },
+    { key: 'fee_other', label: 'ค่าอื่นๆ' },
+  ]
 
   const yearOptions = useMemo(() => {
     const years = [...new Set(fees.map((fee) => fee.year).filter(Boolean))].sort((a, b) => b - a)
@@ -125,54 +164,57 @@ const AdminFees = () => {
   }
 
   const handleEditFee = (fee) => {
-    openModal('แก้ไขใบแจ้งหนี้', {
-      status: {
-        label: 'สถานะ',
-        type: 'select',
-        options: [
-          { value: 'unpaid', label: 'ยังไม่ชำระ' },
-          { value: 'pending', label: 'รอตรวจสอบ' },
-          { value: 'paid', label: 'ชำระแล้ว' },
-          { value: 'overdue', label: 'ค้างชำระ' },
-        ],
-        value: fee.status || 'unpaid',
-      },
-      invoice_date: { label: 'วันที่ออกใบแจ้งหนี้', type: 'date', value: fee.invoice_date || '' },
-      due_date: { label: 'วันที่ครบกำหนด', type: 'date', value: fee.due_date || '' },
-      fee_common: { label: 'ค่าส่วนกลาง', type: 'number', value: String(fee.fee_common || 0) },
-      fee_parking: { label: 'ค่าจอดรถ', type: 'number', value: String(fee.fee_parking || 0) },
-      fee_waste: { label: 'ค่าขยะ', type: 'number', value: String(fee.fee_waste || 0) },
-      fee_overdue_common: { label: 'ยอดค้างยกมา', type: 'number', value: String(fee.fee_overdue_common || 0) },
-      fee_overdue_fine: { label: 'ค่าปรับยอดค้าง', type: 'number', value: String(fee.fee_overdue_fine || 0) },
-      fee_overdue_notice: { label: 'ค่าทวงถามยอดค้าง', type: 'number', value: String(fee.fee_overdue_notice || 0) },
-      fee_fine: { label: 'ค่าปรับ', type: 'number', value: String(fee.fee_fine || 0) },
-      fee_notice: { label: 'ค่าทวงถาม', type: 'number', value: String(fee.fee_notice || 0) },
-      fee_violation: { label: 'ค่ากระทำผิด', type: 'number', value: String(fee.fee_violation || 0) },
-      fee_other: { label: 'ค่าอื่นๆ', type: 'number', value: String(fee.fee_other || 0) },
-      note: { label: 'หมายเหตุ', type: 'textarea', value: fee.note || '' },
-    }, async (data) => {
-      try {
-        await updateFee(fee.id, {
-          status: data.status?.value || 'unpaid',
-          invoice_date: data.invoice_date?.value || null,
-          due_date: data.due_date?.value || null,
-          fee_common: Number(data.fee_common?.value || 0),
-          fee_parking: Number(data.fee_parking?.value || 0),
-          fee_waste: Number(data.fee_waste?.value || 0),
-          fee_overdue_common: Number(data.fee_overdue_common?.value || 0),
-          fee_overdue_fine: Number(data.fee_overdue_fine?.value || 0),
-          fee_overdue_notice: Number(data.fee_overdue_notice?.value || 0),
-          fee_fine: Number(data.fee_fine?.value || 0),
-          fee_notice: Number(data.fee_notice?.value || 0),
-          fee_violation: Number(data.fee_violation?.value || 0),
-          fee_other: Number(data.fee_other?.value || 0),
-          note: data.note?.value || null,
-        })
-        await loadFeeData({ status: statusFilter, year: yearFilter })
-      } catch (error) {
-        await Swal.fire({ icon: 'error', title: 'แก้ไขไม่สำเร็จ', text: error.message })
-      }
+    setEditingFee(fee)
+    setEditForm({
+      status: fee.status || 'unpaid',
+      invoice_date: fee.invoice_date || '',
+      due_date: fee.due_date || '',
+      fee_common: String(fee.fee_common || 0),
+      fee_parking: String(fee.fee_parking || 0),
+      fee_waste: String(fee.fee_waste || 0),
+      fee_overdue_common: String(fee.fee_overdue_common || 0),
+      fee_overdue_fine: String(fee.fee_overdue_fine || 0),
+      fee_overdue_notice: String(fee.fee_overdue_notice || 0),
+      fee_fine: String(fee.fee_fine || 0),
+      fee_notice: String(fee.fee_notice || 0),
+      fee_violation: String(fee.fee_violation || 0),
+      fee_other: String(fee.fee_other || 0),
+      note: fee.note || '',
     })
+    setShowEditModal(true)
+  }
+
+  const handleSubmitEdit = async (event) => {
+    event.preventDefault()
+    if (!editingFee) return
+
+    try {
+      setSavingEdit(true)
+      await updateFee(editingFee.id, {
+        status: editForm.status || 'unpaid',
+        invoice_date: editForm.invoice_date || null,
+        due_date: editForm.due_date || null,
+        fee_common: Number(editForm.fee_common || 0),
+        fee_parking: Number(editForm.fee_parking || 0),
+        fee_waste: Number(editForm.fee_waste || 0),
+        fee_overdue_common: Number(editForm.fee_overdue_common || 0),
+        fee_overdue_fine: Number(editForm.fee_overdue_fine || 0),
+        fee_overdue_notice: Number(editForm.fee_overdue_notice || 0),
+        fee_fine: Number(editForm.fee_fine || 0),
+        fee_notice: Number(editForm.fee_notice || 0),
+        fee_violation: Number(editForm.fee_violation || 0),
+        fee_other: Number(editForm.fee_other || 0),
+        note: editForm.note || null,
+      })
+      setShowEditModal(false)
+      setEditingFee(null)
+      await loadFeeData({ status: statusFilter, year: yearFilter })
+      await Swal.fire({ icon: 'success', title: 'บันทึกสำเร็จ', timer: 1200, showConfirmButton: false })
+    } catch (error) {
+      await Swal.fire({ icon: 'error', title: 'แก้ไขไม่สำเร็จ', text: error.message })
+    } finally {
+      setSavingEdit(false)
+    }
   }
 
   const handleCalculateAnnual = async (fee) => {
@@ -265,35 +307,60 @@ const AdminFees = () => {
   }
 
   const handleAddPayment = (fee) => {
-    openModal('บันทึกการชำระเงิน', {
-      amount: { label: 'จำนวนเงิน', type: 'number', value: String(fee.total_amount || 0) },
-      payment_method: {
-        label: 'วิธีชำระ',
-        type: 'select',
-        options: [
-          { value: 'transfer', label: 'โอนเงิน' },
-          { value: 'cash', label: 'เงินสด' },
-          { value: 'qr', label: 'QR' },
-        ],
-        value: 'transfer',
-      },
-      paid_at: { label: 'วันเวลา', type: 'datetime-local', value: new Date().toISOString().slice(0, 16) },
-      note: { label: 'หมายเหตุ', type: 'textarea', value: '' },
-    }, async (data) => {
-      try {
-        await createPayment({
-          fee_id: fee.id,
-          house_id: fee.house_id,
-          amount: data.amount?.value,
-          payment_method: data.payment_method?.value,
-          paid_at: data.paid_at?.value,
-          note: data.note?.value,
-        })
-        await loadFeeData({ status: statusFilter, year: yearFilter })
-      } catch (error) {
-        await Swal.fire({ icon: 'error', title: 'บันทึกการชำระไม่สำเร็จ', text: error.message })
-      }
+    const selectedItems = feeItemDefs
+      .filter((item) => Number(fee[item.key] || 0) > 0)
+      .map((item) => item.key)
+
+    setPayingFee(fee)
+    setPaymentForm({
+      payment_method: 'transfer',
+      paid_at: new Date().toISOString().slice(0, 16),
+      selectedItems,
+      note: '',
     })
+    setShowPaymentModal(true)
+  }
+
+  const paymentSelectedAmount = useMemo(() => {
+    if (!payingFee) return 0
+    return paymentForm.selectedItems.reduce((sum, key) => sum + Number(payingFee[key] || 0), 0)
+  }, [payingFee, paymentForm.selectedItems])
+
+  const handleSubmitPayment = async (event) => {
+    event.preventDefault()
+    if (!payingFee) return
+    if (paymentForm.selectedItems.length === 0) {
+      await Swal.fire({ icon: 'warning', title: 'กรุณาเลือกรายการที่ชำระอย่างน้อย 1 รายการ' })
+      return
+    }
+
+    try {
+      setSavingPayment(true)
+      const selectedLabels = feeItemDefs
+        .filter((item) => paymentForm.selectedItems.includes(item.key))
+        .map((item) => item.label)
+
+      const noteParts = [`ชำระรายการ: ${selectedLabels.join(', ')}`]
+      if (paymentForm.note.trim()) noteParts.push(paymentForm.note.trim())
+
+      await createPayment({
+        fee_id: payingFee.id,
+        house_id: payingFee.house_id,
+        amount: paymentSelectedAmount,
+        payment_method: paymentForm.payment_method,
+        paid_at: paymentForm.paid_at,
+        note: noteParts.join(' | '),
+      })
+
+      setShowPaymentModal(false)
+      setPayingFee(null)
+      await loadFeeData({ status: statusFilter, year: yearFilter })
+      await Swal.fire({ icon: 'success', title: 'บันทึกรับชำระแล้ว', timer: 1200, showConfirmButton: false })
+    } catch (error) {
+      await Swal.fire({ icon: 'error', title: 'บันทึกการชำระไม่สำเร็จ', text: error.message })
+    } finally {
+      setSavingPayment(false)
+    }
   }
 
   return (
@@ -335,7 +402,7 @@ const AdminFees = () => {
           <div className="ct">ใบแจ้งหนี้ล่าสุด</div>
           <div className="page-list-actions">
             <button className="btn btn-p btn-sm" onClick={handleOpenProcessModal}>+ สร้างใบแจ้งหนี้</button>
-            <button className="btn btn-o btn-sm" onClick={handleBulkOverdue}>⚖ คำนวณค่าปรับทั้งหมด</button>
+            <button className="btn btn-dg btn-sm" onClick={handleBulkOverdue}>⚖ คำนวณค่าปรับทั้งหมด</button>
             <button className="btn btn-g btn-sm" onClick={() => loadFeeData({ status: statusFilter, year: yearFilter })}>🔄 รีเฟรช</button>
           </div>
         </div>
@@ -375,7 +442,7 @@ const AdminFees = () => {
                               <button className="btn btn-xs btn-a" onClick={() => handleEditFee(fee)}>แก้ไข</button>
                               {fee.status !== 'paid' && <button className="btn btn-xs btn-p" onClick={() => handleAddPayment(fee)}>รับชำระ</button>}
                               {fee.status !== 'paid' && <button className="btn btn-xs btn-o" onClick={() => handleCalculateAnnual(fee)}>คำนวณทั้งปี</button>}
-                              {fee.status !== 'paid' && <button className="btn btn-xs btn-o" onClick={() => handleCalculateOverdue(fee)}>คำนวณค่าปรับ</button>}
+                              {fee.status !== 'paid' && <button className="btn btn-xs btn-dg" onClick={() => handleCalculateOverdue(fee)}>คำนวณค่าปรับ</button>}
                               <button className="btn btn-xs btn-dg" onClick={() => handleDeleteFee(fee)}>ลบ</button>
                             </div>
                           </td>
@@ -410,7 +477,7 @@ const AdminFees = () => {
                     <button className="btn btn-xs btn-a" onClick={() => handleEditFee(fee)}>แก้ไข</button>
                     {fee.status !== 'paid' && <button className="btn btn-xs btn-p" onClick={() => handleAddPayment(fee)}>รับชำระ</button>}
                     {fee.status !== 'paid' && <button className="btn btn-xs btn-o" onClick={() => handleCalculateAnnual(fee)}>ทั้งปี</button>}
-                    {fee.status !== 'paid' && <button className="btn btn-xs btn-o" onClick={() => handleCalculateOverdue(fee)}>ค่าปรับ</button>}
+                    {fee.status !== 'paid' && <button className="btn btn-xs btn-dg" onClick={() => handleCalculateOverdue(fee)}>ค่าปรับ</button>}
                     <button className="btn btn-xs btn-dg" onClick={() => handleDeleteFee(fee)}>ลบ</button>
                   </div>
                 </div>
@@ -473,6 +540,145 @@ const AdminFees = () => {
           </div>
         </div>
       </div>
+
+      {showEditModal && editingFee && (
+        <div className="house-mo">
+          <div className="house-md house-md-home">
+            <div className="house-md-head">
+              <div>
+                <div className="house-md-title">🧾 แก้ไขใบแจ้งหนี้</div>
+                <div className="house-md-sub">{editingFee.houses?.house_no || '-'} · {periodLabel(editingFee.period)} · ปี {toBE(editingFee.year)}</div>
+              </div>
+            </div>
+
+            <form onSubmit={handleSubmitEdit}>
+              <div className="house-md-body">
+                <section className="house-sec">
+                  <div className="house-sec-title">ข้อมูลใบแจ้งหนี้</div>
+                  <div className="house-grid house-grid-3">
+                    <label className="house-field">
+                      <span>สถานะ</span>
+                      <select value={editForm.status} onChange={(e) => setEditForm((prev) => ({ ...prev, status: e.target.value }))}>
+                        <option value="unpaid">ยังไม่ชำระ</option>
+                        <option value="pending">รอตรวจสอบ</option>
+                        <option value="paid">ชำระแล้ว</option>
+                        <option value="overdue">ค้างชำระ</option>
+                      </select>
+                    </label>
+                    <label className="house-field">
+                      <span>วันที่ออกใบแจ้งหนี้</span>
+                      <input type="date" value={editForm.invoice_date} onChange={(e) => setEditForm((prev) => ({ ...prev, invoice_date: e.target.value }))} />
+                    </label>
+                    <label className="house-field">
+                      <span>วันที่ครบกำหนด</span>
+                      <input type="date" value={editForm.due_date} onChange={(e) => setEditForm((prev) => ({ ...prev, due_date: e.target.value }))} />
+                    </label>
+                  </div>
+                </section>
+
+                <section className="house-sec">
+                  <div className="house-sec-title">รายการค่าใช้จ่าย</div>
+                  <div className="house-grid house-grid-3">
+                    <label className="house-field"><span>ค่าส่วนกลาง</span><input type="number" step="0.01" value={editForm.fee_common} onChange={(e) => setEditForm((prev) => ({ ...prev, fee_common: e.target.value }))} /></label>
+                    <label className="house-field"><span>ค่าจอดรถ</span><input type="number" step="0.01" value={editForm.fee_parking} onChange={(e) => setEditForm((prev) => ({ ...prev, fee_parking: e.target.value }))} /></label>
+                    <label className="house-field"><span>ค่าขยะ</span><input type="number" step="0.01" value={editForm.fee_waste} onChange={(e) => setEditForm((prev) => ({ ...prev, fee_waste: e.target.value }))} /></label>
+                    <label className="house-field"><span>ยอดค้างยกมา</span><input type="number" step="0.01" value={editForm.fee_overdue_common} onChange={(e) => setEditForm((prev) => ({ ...prev, fee_overdue_common: e.target.value }))} /></label>
+                    <label className="house-field"><span>ค่าปรับยอดค้าง</span><input type="number" step="0.01" value={editForm.fee_overdue_fine} onChange={(e) => setEditForm((prev) => ({ ...prev, fee_overdue_fine: e.target.value }))} /></label>
+                    <label className="house-field"><span>ค่าทวงถามยอดค้าง</span><input type="number" step="0.01" value={editForm.fee_overdue_notice} onChange={(e) => setEditForm((prev) => ({ ...prev, fee_overdue_notice: e.target.value }))} /></label>
+                    <label className="house-field"><span>ค่าปรับ</span><input type="number" step="0.01" value={editForm.fee_fine} onChange={(e) => setEditForm((prev) => ({ ...prev, fee_fine: e.target.value }))} /></label>
+                    <label className="house-field"><span>ค่าทวงถาม</span><input type="number" step="0.01" value={editForm.fee_notice} onChange={(e) => setEditForm((prev) => ({ ...prev, fee_notice: e.target.value }))} /></label>
+                    <label className="house-field"><span>ค่ากระทำผิด</span><input type="number" step="0.01" value={editForm.fee_violation} onChange={(e) => setEditForm((prev) => ({ ...prev, fee_violation: e.target.value }))} /></label>
+                    <label className="house-field"><span>ค่าอื่นๆ</span><input type="number" step="0.01" value={editForm.fee_other} onChange={(e) => setEditForm((prev) => ({ ...prev, fee_other: e.target.value }))} /></label>
+                    <label className="house-field house-field-span-3">
+                      <span>หมายเหตุ</span>
+                      <textarea rows="2" value={editForm.note} onChange={(e) => setEditForm((prev) => ({ ...prev, note: e.target.value }))} />
+                    </label>
+                  </div>
+                </section>
+              </div>
+              <div className="house-md-foot">
+                <button className="btn btn-g" type="button" onClick={() => { if (!savingEdit) { setShowEditModal(false); setEditingFee(null) } }}>ยกเลิก</button>
+                <button className="btn btn-p" type="submit" disabled={savingEdit}>{savingEdit ? 'กำลังบันทึก...' : 'บันทึก'}</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {showPaymentModal && payingFee && (
+        <div className="house-mo">
+          <div className="house-md house-md-home">
+            <div className="house-md-head">
+              <div>
+                <div className="house-md-title">💳 บันทึกรับชำระ</div>
+                <div className="house-md-sub">{payingFee.houses?.house_no || '-'} · {periodLabel(payingFee.period)} · ปี {toBE(payingFee.year)}</div>
+              </div>
+            </div>
+
+            <form onSubmit={handleSubmitPayment}>
+              <div className="house-md-body">
+                <section className="house-sec">
+                  <div className="house-sec-title">เลือกรายการที่ชำระ</div>
+                  <div className="house-grid house-grid-2">
+                    {feeItemDefs.map((item) => {
+                      const amount = Number(payingFee[item.key] || 0)
+                      return (
+                        <label key={item.key} className="house-field" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                          <input
+                            type="checkbox"
+                            checked={paymentForm.selectedItems.includes(item.key)}
+                            onChange={(e) => {
+                              setPaymentForm((prev) => {
+                                const has = prev.selectedItems.includes(item.key)
+                                const nextSelected = e.target.checked
+                                  ? [...prev.selectedItems, item.key]
+                                  : prev.selectedItems.filter((key) => key !== item.key)
+                                return has === e.target.checked ? prev : { ...prev, selectedItems: nextSelected }
+                              })
+                            }}
+                            style={{ width: 16, height: 16 }}
+                          />
+                          <span style={{ flex: 1 }}>{item.label}</span>
+                          <strong>{amount.toLocaleString('th-TH')}</strong>
+                        </label>
+                      )
+                    })}
+                  </div>
+                </section>
+
+                <section className="house-sec">
+                  <div className="house-grid house-grid-3">
+                    <label className="house-field">
+                      <span>ยอดรับชำระรวม</span>
+                      <input value={paymentSelectedAmount.toLocaleString('th-TH')} readOnly className="house-readonly" />
+                    </label>
+                    <label className="house-field">
+                      <span>วิธีชำระ</span>
+                      <select value={paymentForm.payment_method} onChange={(e) => setPaymentForm((prev) => ({ ...prev, payment_method: e.target.value }))}>
+                        <option value="transfer">โอนเงิน</option>
+                        <option value="cash">เงินสด</option>
+                        <option value="qr">QR</option>
+                      </select>
+                    </label>
+                    <label className="house-field">
+                      <span>วันเวลา</span>
+                      <input type="datetime-local" value={paymentForm.paid_at} onChange={(e) => setPaymentForm((prev) => ({ ...prev, paid_at: e.target.value }))} />
+                    </label>
+                    <label className="house-field house-field-span-3">
+                      <span>หมายเหตุ</span>
+                      <textarea rows="2" value={paymentForm.note} onChange={(e) => setPaymentForm((prev) => ({ ...prev, note: e.target.value }))} placeholder="รายละเอียดเพิ่มเติม" />
+                    </label>
+                  </div>
+                </section>
+              </div>
+              <div className="house-md-foot">
+                <button className="btn btn-g" type="button" onClick={() => { if (!savingPayment) { setShowPaymentModal(false); setPayingFee(null) } }}>ยกเลิก</button>
+                <button className="btn btn-p" type="submit" disabled={savingPayment}>{savingPayment ? 'กำลังบันทึก...' : 'บันทึกรับชำระ'}</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {showProcessModal && (
         <div className="house-mo">
