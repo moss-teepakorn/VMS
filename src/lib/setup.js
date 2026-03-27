@@ -7,6 +7,9 @@ const DEFAULT_SETUP = {
   version: 'v12.3',
   address: 'Gusto Suksawat 26 -1',
   loginCircleLogoUrl: '',
+  bankName: '',
+  bankAccountNo: '',
+  bankAccountName: '',
 }
 
 let setupCache = null
@@ -21,6 +24,9 @@ function toSetup(row) {
     villageName,
     address,
     loginCircleLogoUrl,
+    bankName: row?.bank_name?.trim() || DEFAULT_SETUP.bankName,
+    bankAccountNo: row?.bank_account_no?.trim() || DEFAULT_SETUP.bankAccountNo,
+    bankAccountName: row?.bank_account_name?.trim() || DEFAULT_SETUP.bankAccountName,
   }
 }
 

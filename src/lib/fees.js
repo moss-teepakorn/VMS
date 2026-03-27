@@ -1,5 +1,36 @@
 import { supabase } from './supabase'
 
+async function refreshFeeStatusFromPayments(feeId) {
+  if (!feeId) return
+
+  const { data: fee, error: feeError } = await supabase
+    .from('fees')
+    .select('id, total_amount')
+    .eq('id', feeId)
+    .maybeSingle()
+
+  if (feeError) throw feeError
+  if (!fee) return
+
+  const { data: approvedPayments, error: paymentError } = await supabase
+    .from('payments')
+    .select('amount')
+    .eq('fee_id', feeId)
+    .not('verified_at', 'is', null)
+
+  if (paymentError) throw paymentError
+
+  const approvedTotal = (approvedPayments || []).reduce((sum, item) => sum + Number(item.amount || 0), 0)
+  const nextStatus = approvedTotal >= Number(fee.total_amount || 0) ? 'paid' : 'pending'
+
+  const { error: updateError } = await supabase
+    .from('fees')
+    .update({ status: nextStatus })
+    .eq('id', feeId)
+
+  if (updateError) throw updateError
+}
+
 export async function listFees({ status = 'all', year = 'all', search = '' } = {}) {
   let query = supabase
     .from('fees')
@@ -80,7 +111,7 @@ export async function deleteFee(id) {
 export async function listPayments({ limit } = {}) {
   let query = supabase
     .from('payments')
-    .select('id, fee_id, house_id, amount, payment_method, slip_url, paid_at, verified_by, verified_at, note, fees(id, year, period, status, total_amount), houses(id, house_no, owner_name)')
+    .select('id, fee_id, house_id, amount, payment_method, slip_url, paid_at, verified_by, verified_at, note, verified_profile:verified_by(full_name), fees(id, year, period, status, total_amount, due_date, invoice_date), houses(id, house_no, owner_name)')
     .order('paid_at', { ascending: false })
 
   if (limit) {
@@ -106,7 +137,7 @@ export async function createPayment(payload) {
   const { data, error } = await supabase
     .from('payments')
     .insert([payment])
-    .select('id, fee_id, house_id, amount, payment_method, slip_url, paid_at, verified_by, verified_at, note, fees(id, year, period, status, total_amount), houses(id, house_no, owner_name)')
+    .select('id, fee_id, house_id, amount, payment_method, slip_url, paid_at, verified_by, verified_at, note, verified_profile:verified_by(full_name), fees(id, year, period, status, total_amount, due_date, invoice_date), houses(id, house_no, owner_name)')
     .single()
 
   if (error) throw error
@@ -114,8 +145,49 @@ export async function createPayment(payload) {
   if (payload.fee_id) {
     const { error: feeError } = await supabase
       .from('fees')
-      .update({ status: 'paid' })
+      .update({ status: 'pending' })
       .eq('id', payload.fee_id)
+
+    if (feeError) throw feeError
+  }
+
+  return data
+}
+
+export async function approvePayment(paymentId, approverId) {
+  const verifiedAt = new Date().toISOString()
+
+  const { data, error } = await supabase
+    .from('payments')
+    .update({ verified_by: approverId || null, verified_at: verifiedAt })
+    .eq('id', paymentId)
+    .select('id, fee_id, house_id, amount, payment_method, slip_url, paid_at, verified_by, verified_at, note, verified_profile:verified_by(full_name), fees(id, year, period, status, total_amount, due_date, invoice_date), houses(id, house_no, owner_name)')
+    .single()
+
+  if (error) throw error
+
+  if (data?.fee_id) {
+    await refreshFeeStatusFromPayments(data.fee_id)
+  }
+
+  return data
+}
+
+export async function revokePaymentApproval(paymentId) {
+  const { data, error } = await supabase
+    .from('payments')
+    .update({ verified_by: null, verified_at: null })
+    .eq('id', paymentId)
+    .select('id, fee_id, house_id, amount, payment_method, slip_url, paid_at, verified_by, verified_at, note, verified_profile:verified_by(full_name), fees(id, year, period, status, total_amount, due_date, invoice_date), houses(id, house_no, owner_name)')
+    .single()
+
+  if (error) throw error
+
+  if (data?.fee_id) {
+    const { error: feeError } = await supabase
+      .from('fees')
+      .update({ status: 'unpaid' })
+      .eq('id', data.fee_id)
 
     if (feeError) throw feeError
   }
@@ -125,7 +197,9 @@ export async function createPayment(payload) {
 
 export function summarizeFees(fees, payments) {
   const totalInvoiced = fees.reduce((sum, fee) => sum + Number(fee.total_amount || 0), 0)
-  const totalCollected = payments.reduce((sum, payment) => sum + Number(payment.amount || 0), 0)
+  const totalCollected = payments
+    .filter((payment) => payment.verified_at)
+    .reduce((sum, payment) => sum + Number(payment.amount || 0), 0)
   const totalOutstanding = fees
     .filter((fee) => fee.status !== 'paid')
     .reduce((sum, fee) => sum + Number(fee.total_amount || 0), 0)
