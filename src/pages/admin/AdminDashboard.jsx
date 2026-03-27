@@ -1,12 +1,18 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { getDashboardData } from '../../lib/dashboard'
+import { getSetupConfig } from '../../lib/setup'
+import villageLogo from '../../assets/village-logo.svg'
 import './AdminDashboard.css'
 
 const AdminDashboard = () => {
   const navigate = useNavigate()
   const [dashboard, setDashboard] = useState(null)
   const [loading, setLoading] = useState(false)
+  const [setup, setSetup] = useState({
+    villageName: 'The Greenfield',
+    loginCircleLogoUrl: '',
+  })
 
   useEffect(() => {
     const loadDashboard = async () => {
@@ -20,6 +26,16 @@ const AdminDashboard = () => {
       }
     }
 
+    const loadSetup = async () => {
+      try {
+        const next = await getSetupConfig()
+        setSetup(next)
+      } catch (error) {
+        console.error('Error loading setup config:', error)
+      }
+    }
+
+    loadSetup()
     loadDashboard()
   }, [])
 
@@ -60,10 +76,12 @@ const AdminDashboard = () => {
       <div className="ph">
         <div className="ph-in">
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <div className="ph-ico">📊</div>
+            <div className="ph-ico">
+              <img className="ph-ico-img" src={setup.loginCircleLogoUrl || villageLogo} alt="system-logo" />
+            </div>
             <div>
               <div className="ph-h1">Dashboard ภาพรวม</div>
-              <div className="ph-sub" id="dash-sub">The Greenfield · {todayLabel}</div>
+              <div className="ph-sub" id="dash-sub">{setup.villageName} · {todayLabel}</div>
             </div>
           </div>
           <div className="ph-acts">

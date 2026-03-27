@@ -64,6 +64,13 @@
   border: 1.5px solid rgba(255, 255, 255, 0.25);
 }
 
+.ph-ico-img {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  object-fit: cover;
+}
+
 .ph-h1 {
   font-size: 18px;
   font-weight: 800;

@@ -1,13 +1,29 @@
 import React, { useContext, useState, useEffect } from 'react'
 import { ModalContext } from './AdminLayout'
 import { getAuditLogs } from '../../lib/auditLogs'
+import { getSetupConfig } from '../../lib/setup'
+import villageLogo from '../../assets/village-logo.svg'
 
 const AdminLogs = () => {
   const { openModal } = useContext(ModalContext)
   const [logs, setLogs] = useState([])
   const [loading, setLoading] = useState(false)
+  const [setup, setSetup] = useState({
+    villageName: 'The Greenfield',
+    loginCircleLogoUrl: '',
+  })
 
   useEffect(() => {
+    const loadSetup = async () => {
+      try {
+        const next = await getSetupConfig()
+        setSetup(next)
+      } catch (error) {
+        console.error('Error loading setup config:', error)
+      }
+    }
+
+    loadSetup()
     loadLogs()
   }, [])
 
@@ -38,10 +54,12 @@ const AdminLogs = () => {
       <div className="ph">
         <div className="ph-in">
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <div className="ph-ico">📋</div>
+            <div className="ph-ico">
+              <img className="ph-ico-img" src={setup.loginCircleLogoUrl || villageLogo} alt="system-logo" />
+            </div>
             <div>
               <div className="ph-h1">ข้อมูล Log</div>
-              <div className="ph-sub">บันทึกกิจกรรมของระบบ</div>
+              <div className="ph-sub">บันทึกกิจกรรมของระบบ · {setup.villageName}</div>
             </div>
           </div>
         </div>
