@@ -120,8 +120,8 @@ const AdminWorkReportsList = () => {
         const imgSlice = images.slice(0, 6)
         const cols = imgSlice.length === 1 ? 1 : 2
         const imgTags = imgSlice.map((img) =>
-          `<div style="width:100%;height:220px;background:#f8fafc;border:1px solid #e5e7eb;border-radius:6px;display:flex;align-items:center;justify-content:center;overflow:hidden;">
-             <img src="${img.url}" crossorigin="anonymous" style="width:100%;height:100%;object-fit:contain;display:block;" />
+          `<div style="width:100%;height:220px;padding:6px;background:#f8fafc;border:1px solid #e5e7eb;border-radius:6px;display:flex;align-items:center;justify-content:center;overflow:hidden;box-sizing:border-box;">
+             <img src="${img.url}" crossorigin="anonymous" style="max-width:100%;max-height:100%;width:auto;height:auto;display:block;" />
            </div>`
         ).join('')
         imageGridHtml = `
