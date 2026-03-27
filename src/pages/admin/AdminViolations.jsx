@@ -199,6 +199,15 @@ function prepareSignatureImageForPdf(image) {
   return canvas
 }
 
+async function buildCleanedSignatureSource(source) {
+  if (!source || isSvgSource(source)) return source
+  const image = await loadImageElement(source)
+  if (!image) return source
+  const cleanedCanvas = prepareSignatureImageForPdf(image)
+  if (!cleanedCanvas || typeof cleanedCanvas.toDataURL !== 'function') return source
+  return cleanedCanvas.toDataURL('image/png')
+}
+
 const AdminViolations = () => {
   const [violations, setViolations] = useState([])
   const [houses, setHouses] = useState([])
@@ -488,10 +497,11 @@ const AdminViolations = () => {
     }
   }
 
-  const buildReportDocumentParts = (item, images, includeToolbar = true) => {
+  const buildReportDocumentParts = (item, images, includeToolbar = true, signatureSourceOverride = '') => {
     const isPdfMode = !includeToolbar
     const signatureSource = reportIdentity.juristic_signature_url || juristicSignature
-    const signatureImageAllowed = !isPdfMode || !isSvgSource(signatureSource)
+    const signatureRenderSource = signatureSourceOverride || signatureSource
+    const signatureImageAllowed = !isPdfMode || !isSvgSource(signatureRenderSource)
     const logoImageAllowed = !isPdfMode || !isSvgSource(villageLogo)
     const detailRows = `
       <tr><td class="k">บ้าน/เจ้าของ</td><td class="v">${escapeHtml(item.houses?.house_no || '-')} ${escapeHtml(item.houses?.owner_name ? `- ${item.houses.owner_name}` : '')}</td></tr>
@@ -590,7 +600,7 @@ const AdminViolations = () => {
               <div class="signature">
                 <div class="signature-box">
                   ${signatureImageAllowed
-      ? `<div class="signature-crop"><img src="${signatureSource}" class="signature-img" alt="signature" /></div>`
+      ? `<div class="signature-crop"><img src="${signatureRenderSource}" class="signature-img" alt="signature" /></div>`
       : ''}
                   <div class="signature-line">(${escapeHtml(reportIdentity.juristic_name || DEFAULT_REPORT_IDENTITY.juristic_name)})</div>
                 </div>
@@ -603,8 +613,10 @@ const AdminViolations = () => {
     return { styles, toolbarHtml, canvasHtml }
   }
 
-  const buildReportPreviewHtml = (item, images) => {
-    const { styles, toolbarHtml, canvasHtml } = buildReportDocumentParts(item, images, true)
+  const buildReportPreviewHtml = async (item, images) => {
+    const signatureSource = reportIdentity.juristic_signature_url || juristicSignature
+    const cleanedSignatureSource = await buildCleanedSignatureSource(signatureSource)
+    const { styles, toolbarHtml, canvasHtml } = buildReportDocumentParts(item, images, true, cleanedSignatureSource)
     return `
       <html>
         <head>
@@ -871,7 +883,7 @@ const AdminViolations = () => {
       }
 
       const images = await listViolationImages(item.id)
-      const html = buildReportPreviewHtml(item, images)
+      const html = await buildReportPreviewHtml(item, images)
       const previewWindow = window.open('', '_blank', 'width=1100,height=840')
       if (!previewWindow) {
         await showSwal({ icon: 'warning', title: 'ไม่สามารถเปิดหน้าพรีวิวได้', text: 'กรุณาอนุญาต Pop-up แล้วลองใหม่' })
