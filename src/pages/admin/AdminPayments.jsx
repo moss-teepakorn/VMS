@@ -1,9 +1,26 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import Swal from 'sweetalert2'
 import { useAuth } from '../../contexts/AuthContext'
-import { approvePayment, listPayments, revokePaymentApproval } from '../../lib/fees'
+import { approvePayment, listPayments, rejectPayment, revokePaymentApproval } from '../../lib/fees'
 import { getSetupConfig } from '../../lib/setup'
 import villageLogo from '../../assets/village-logo.svg'
+
+const REJECT_PREFIX = '[REJECT] '
+
+function getRejectedReason(note) {
+  const raw = String(note || '')
+  if (!raw.startsWith(REJECT_PREFIX)) return ''
+  const firstLine = raw.split('\n')[0]
+  return firstLine.replace(REJECT_PREFIX, '').trim()
+}
+
+function getDisplayNote(note) {
+  const raw = String(note || '')
+  if (!raw.startsWith(REJECT_PREFIX)) return raw
+  const lines = raw.split('\n')
+  lines.shift()
+  return lines.join('\n').trim()
+}
 
 function formatDateTime(value) {
   if (!value) return '-'
@@ -52,13 +69,15 @@ export default function AdminPayments() {
   const summary = useMemo(() => {
     const totalAmount = payments.reduce((sum, payment) => sum + Number(payment.amount || 0), 0)
     const approved = payments.filter((payment) => payment.verified_at)
-    const pending = payments.filter((payment) => !payment.verified_at)
+    const rejected = payments.filter((payment) => !payment.verified_at && getRejectedReason(payment.note))
+    const pending = payments.filter((payment) => !payment.verified_at && !getRejectedReason(payment.note))
     return {
       totalAmount,
       approvedAmount: approved.reduce((sum, payment) => sum + Number(payment.amount || 0), 0),
       pendingAmount: pending.reduce((sum, payment) => sum + Number(payment.amount || 0), 0),
       approvedCount: approved.length,
       pendingCount: pending.length,
+      rejectedCount: rejected.length,
     }
   }, [payments])
 
@@ -69,7 +88,7 @@ export default function AdminPayments() {
       (payment.houses?.house_no || '').toLowerCase().includes(kw)
       || (payment.payment_method || '').toLowerCase().includes(kw)
       || (payment.note || '').toLowerCase().includes(kw)
-      || (payment.verified_at ? 'อนุมัติแล้ว' : 'รอตรวจสอบ').includes(kw)
+      || (payment.verified_at ? 'อนุมัติแล้ว' : getRejectedReason(payment.note) ? 'ตีกลับ' : 'รอตรวจสอบ').includes(kw)
     ))
   }, [payments, search])
 
@@ -134,6 +153,31 @@ export default function AdminPayments() {
   const handleOpenSlip = (payment) => {
     if (!payment.slip_url) return
     window.open(payment.slip_url, '_blank', 'noopener,noreferrer')
+  }
+
+  const handleReject = async (payment) => {
+    const { value: reason } = await Swal.fire({
+      icon: 'warning',
+      title: 'ตีกลับหลักฐานการชำระ',
+      input: 'text',
+      inputLabel: 'เหตุผลการตีกลับ',
+      inputPlaceholder: 'เช่น ยอดไม่ตรงกับใบแจ้งหนี้',
+      showCancelButton: true,
+      confirmButtonText: 'ตีกลับ',
+      cancelButtonText: 'ยกเลิก',
+      confirmButtonColor: '#dc2626',
+      inputValidator: (value) => (!String(value || '').trim() ? 'กรุณาระบุเหตุผล' : undefined),
+    })
+
+    if (!reason) return
+
+    try {
+      const rejected = await rejectPayment(payment.id, reason, profile?.id)
+      setPayments((prev) => prev.map((item) => (item.id === rejected.id ? rejected : item)))
+      await Swal.fire({ icon: 'success', title: 'ตีกลับแล้ว', timer: 1200, showConfirmButton: false })
+    } catch (error) {
+      await Swal.fire({ icon: 'error', title: 'ตีกลับไม่สำเร็จ', text: error.message })
+    }
   }
 
   const handlePrintReceipt = (payment) => {
@@ -254,6 +298,7 @@ export default function AdminPayments() {
 
   const getStatusBadge = (payment) => {
     if (payment.verified_at) return { className: 'bd b-ok', label: 'อนุมัติแล้ว' }
+    if (getRejectedReason(payment.note)) return { className: 'bd b-dg', label: 'ตีกลับ' }
     return { className: 'bd b-wn', label: 'รอตรวจสอบ' }
   }
 
@@ -288,6 +333,7 @@ export default function AdminPayments() {
         <div className="sc"><div className="sc-ico a">💵</div><div><div className="sc-v">฿{formatMoney(summary.totalAmount)}</div><div className="sc-l">ยอดชำระทั้งหมด</div></div></div>
         <div className="sc"><div className="sc-ico p">✅</div><div><div className="sc-v">{summary.approvedCount}</div><div className="sc-l">อนุมัติแล้ว ฿{formatMoney(summary.approvedAmount)}</div></div></div>
         <div className="sc"><div className="sc-ico d">⏳</div><div><div className="sc-v">{summary.pendingCount}</div><div className="sc-l">รอตรวจสอบ ฿{formatMoney(summary.pendingAmount)}</div></div></div>
+        <div className="sc"><div className="sc-ico d">⛔</div><div><div className="sc-v">{summary.rejectedCount}</div><div className="sc-l">ตีกลับ</div></div></div>
       </div>
 
       <div className="card">
@@ -330,11 +376,17 @@ export default function AdminPayments() {
                         <td>{formatDateTime(payment.paid_at)}</td>
                         <td><span className={badge.className}>{badge.label}</span></td>
                         <td>{payment.verified_profile?.full_name || '-'}</td>
-                        <td>{payment.note || '-'}</td>
+                        <td>
+                          {getRejectedReason(payment.note) && (
+                            <div style={{ color: 'var(--dg)', fontSize: 12, marginBottom: 4 }}>เหตุผล: {getRejectedReason(payment.note)}</div>
+                          )}
+                          {getDisplayNote(payment.note) || '-'}
+                        </td>
                         <td>
                           <div className="td-acts">
                             {payment.slip_url && <button className="btn btn-xs btn-o" onClick={() => handleOpenSlip(payment)}>สลิป</button>}
                             {!payment.verified_at && <button className="btn btn-xs btn-ok" onClick={() => handleApprove(payment)}>อนุมัติ</button>}
+                            {!payment.verified_at && <button className="btn btn-xs btn-dg" onClick={() => handleReject(payment)}>ตีกลับ</button>}
                             {payment.verified_at && <button className="btn btn-xs btn-a" onClick={() => handlePrintReceipt(payment)}>ใบเสร็จ</button>}
                             {payment.verified_at && <button className="btn btn-xs btn-dg" onClick={() => handleRevokeApproval(payment)}>ยกเลิก</button>}
                           </div>
@@ -367,11 +419,13 @@ export default function AdminPayments() {
                   <span><span className="mcard-label">วิธีชำระ</span> {formatMethod(payment.payment_method)}</span>
                   <span><span className="mcard-label">วันที่ชำระ</span> {formatDateTime(payment.paid_at)}</span>
                   <span><span className="mcard-label">ผู้ตรวจสอบ</span> {payment.verified_profile?.full_name || '-'}</span>
-                  {payment.note && <span><span className="mcard-label">หมายเหตุ</span> {payment.note}</span>}
+                  {getRejectedReason(payment.note) && <span><span className="mcard-label">เหตุผลตีกลับ</span> {getRejectedReason(payment.note)}</span>}
+                  {getDisplayNote(payment.note) && <span><span className="mcard-label">หมายเหตุ</span> {getDisplayNote(payment.note)}</span>}
                 </div>
                 <div className="mcard-actions">
                   {payment.slip_url && <button className="btn btn-xs btn-o" onClick={() => handleOpenSlip(payment)}>สลิป</button>}
                   {!payment.verified_at && <button className="btn btn-xs btn-ok" onClick={() => handleApprove(payment)}>อนุมัติ</button>}
+                  {!payment.verified_at && <button className="btn btn-xs btn-dg" onClick={() => handleReject(payment)}>ตีกลับ</button>}
                   {payment.verified_at && <button className="btn btn-xs btn-a" onClick={() => handlePrintReceipt(payment)}>ใบเสร็จ</button>}
                   {payment.verified_at && <button className="btn btn-xs btn-dg" onClick={() => handleRevokeApproval(payment)}>ยกเลิก</button>}
                 </div>

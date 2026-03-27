@@ -12,6 +12,22 @@ import { createPayment, listHouseFees, listHousePayments } from '../../lib/fees'
 const MAX_ATTACHMENTS = 5
 const MAX_IMAGE_SIZE_BYTES = 100 * 1024
 const MAX_IMAGE_TARGET_BYTES = 95 * 1024
+const REJECT_PREFIX = '[REJECT] '
+
+function getRejectedReason(note) {
+  const raw = String(note || '')
+  if (!raw.startsWith(REJECT_PREFIX)) return ''
+  const firstLine = raw.split('\n')[0]
+  return firstLine.replace(REJECT_PREFIX, '').trim()
+}
+
+function getDisplayNote(note) {
+  const raw = String(note || '')
+  if (!raw.startsWith(REJECT_PREFIX)) return raw
+  const lines = raw.split('\n')
+  lines.shift()
+  return lines.join('\n').trim()
+}
 
 function blurActiveElement() {
   const el = document.activeElement
@@ -97,6 +113,7 @@ export default function ResidentLayout() {
 
   const getPaymentStatusBadge = (row) => {
     if (row.verified_at) return { className: 'bd b-ok', label: 'อนุมัติแล้ว' }
+    if (getRejectedReason(row.note)) return { className: 'bd b-dg', label: 'ตีกลับ' }
     return { className: 'bd b-wn', label: 'รอตรวจสอบ' }
   }
 
@@ -487,7 +504,12 @@ export default function ResidentLayout() {
                           <td>{row.slip_url ? <a href={row.slip_url} target="_blank" rel="noreferrer">ดูสลิป</a> : '-'}</td>
                           <td>{new Date(row.paid_at).toLocaleString('th-TH')}</td>
                           <td><span className={badge.className}>{badge.label}</span></td>
-                          <td>{row.note || '-'}</td>
+                          <td>
+                            {getRejectedReason(row.note) && (
+                              <div style={{ color: 'var(--dg)', fontSize: 12, marginBottom: 4 }}>เหตุผล: {getRejectedReason(row.note)}</div>
+                            )}
+                            {getDisplayNote(row.note) || '-'}
+                          </td>
                         </tr>
                       )
                     })}

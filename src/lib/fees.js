@@ -1,5 +1,15 @@
 import { supabase } from './supabase'
 
+const REJECT_PREFIX = '[REJECT] '
+
+function stripRejectMarker(note) {
+  const raw = String(note || '')
+  if (!raw.startsWith(REJECT_PREFIX)) return raw
+  const lines = raw.split('\n')
+  lines.shift()
+  return lines.join('\n').trim()
+}
+
 async function refreshFeeStatusFromPayments(feeId) {
   if (!feeId) return
 
@@ -218,6 +228,44 @@ export async function revokePaymentApproval(paymentId) {
   const { data, error } = await supabase
     .from('payments')
     .update({ verified_by: null, verified_at: null })
+    .eq('id', paymentId)
+    .select('id, fee_id, house_id, amount, payment_method, slip_url, paid_at, verified_by, verified_at, note, verified_profile:verified_by(full_name), fees(id, year, period, status, total_amount, due_date, invoice_date), houses(id, house_no, owner_name)')
+    .single()
+
+  if (error) throw error
+
+  if (data?.fee_id) {
+    const { error: feeError } = await supabase
+      .from('fees')
+      .update({ status: 'unpaid' })
+      .eq('id', data.fee_id)
+
+    if (feeError) throw feeError
+  }
+
+  return data
+}
+
+export async function rejectPayment(paymentId, reason, approverId) {
+  const normalizedReason = String(reason || '').trim()
+  if (!normalizedReason) {
+    throw new Error('กรุณาระบุเหตุผลการตีกลับ')
+  }
+
+  const { data: current, error: currentError } = await supabase
+    .from('payments')
+    .select('id, fee_id, note')
+    .eq('id', paymentId)
+    .single()
+
+  if (currentError) throw currentError
+
+  const originalNote = stripRejectMarker(current.note)
+  const rejectNote = `${REJECT_PREFIX}${normalizedReason}${originalNote ? `\n${originalNote}` : ''}`
+
+  const { data, error } = await supabase
+    .from('payments')
+    .update({ verified_by: approverId || null, verified_at: null, note: rejectNote })
     .eq('id', paymentId)
     .select('id, fee_id, house_id, amount, payment_method, slip_url, paid_at, verified_by, verified_at, note, verified_profile:verified_by(full_name), fees(id, year, period, status, total_amount, due_date, invoice_date), houses(id, house_no, owner_name)')
     .single()
