@@ -218,7 +218,7 @@ const AdminTechnicians = () => {
                     const skills = (item.technician_services || []).map((s) => s.skill).filter(Boolean).join(', ')
                     return (
                       <tr key={item.id}>
-                        <td><strong>{item.name}</strong>{item.note ? <div style={{ fontSize: '11px', color: 'var(--mu)' }}>{item.note}</div> : null}</td>
+                        <td><strong>{item.name}</strong></td>
                         <td>{item.phone || '-'}</td>
                         <td>{item.line_id || '-'}</td>
                         <td style={{ maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{skills || '-'}</td>

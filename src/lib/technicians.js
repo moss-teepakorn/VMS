@@ -4,7 +4,7 @@ export async function listTechnicians({ status = 'all', search = '' } = {}) {
   const { data, error } = await supabase
     .from('technicians')
     .select('id, name, phone, line_id, rating, review_count, status, avatar_url, note, created_at, technician_services(id, skill, price_min, price_max, price_note)')
-    .order('created_at', { ascending: false })
+    .order('id', { ascending: true })
 
   if (error) throw error
 
