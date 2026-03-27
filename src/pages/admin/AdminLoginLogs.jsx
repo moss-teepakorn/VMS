@@ -145,6 +145,13 @@ export default function AdminLoginLogs() {
             <option value="admin">ผู้ดูแลระบบ</option>
             <option value="resident">ลูกบ้าน</option>
           </select>
+          <button
+            className="btn btn-a btn-sm houses-filter-btn"
+            onClick={loadLogs}
+            disabled={loading}
+          >
+            ค้นหา
+          </button>
         </div>
       </div>
 
@@ -176,13 +183,6 @@ export default function AdminLoginLogs() {
             </button>
             <button className="btn btn-g btn-sm" onClick={loadLogs} disabled={loading}>
               🔄 รีเฟรช
-            </button>
-            <button
-              className="btn btn-a btn-sm"
-              onClick={loadLogs}
-              disabled={loading}
-            >
-              ค้นหา
             </button>
           </div>
         </div>
