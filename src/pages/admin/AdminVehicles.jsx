@@ -786,16 +786,8 @@ const AdminVehicles = () => {
                         <button
                           type="button"
                           onClick={() => handleRemoveAttachment(image)}
-                          style={{
-                            marginTop: '4px',
-                            width: '100%',
-                            fontSize: '10px',
-                            border: '1px solid var(--bo)',
-                            borderRadius: '6px',
-                            background: '#fff',
-                            cursor: 'pointer',
-                            padding: '2px 4px',
-                          }}
+                          className="btn btn-xs btn-dg"
+                          style={{ marginTop: '4px', width: '100%' }}
                         >
                           ลบ
                         </button>

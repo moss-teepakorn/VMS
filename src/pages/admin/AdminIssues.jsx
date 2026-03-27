@@ -489,7 +489,7 @@ const AdminIssues = () => {
                         <button type="button" onClick={() => handlePreviewAttachment(img)} style={{ width: '64px', height: '64px', borderRadius: '8px', border: '1px solid var(--bo)', background: '#fff', padding: 0, overflow: 'hidden', cursor: 'pointer' }}>
                           <img src={img.url} alt={img.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                         </button>
-                        <button type="button" onClick={() => handleRemoveAttachment(img)} style={{ marginTop: '4px', width: '100%', fontSize: '10px', border: '1px solid var(--bo)', borderRadius: '6px', background: '#fff', cursor: 'pointer', padding: '2px 4px' }}>ลบ</button>
+                        <button type="button" className="btn btn-xs btn-dg" onClick={() => handleRemoveAttachment(img)} style={{ marginTop: '4px', width: '100%' }}>ลบ</button>
                       </div>
                     ))}
                   </div>
