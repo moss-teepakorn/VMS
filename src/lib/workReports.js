@@ -4,10 +4,10 @@ const WORK_REPORT_IMAGE_BUCKET = 'work-report-images'
 const MAX_WORK_REPORT_IMAGE_BYTES = 100 * 1024
 const MAX_WORK_REPORT_IMAGES = 10
 
-export async function listWorkReports({ month = null, year = null, category = 'all' } = {}) {
+export async function listWorkReports({ month = null, year = null, category = 'all', search = '' } = {}) {
   let query = supabase
     .from('work_reports')
-    .select('id, month, year, category, summary, detail, image_urls, is_published, created_by, created_at, updated_at, profiles(id, name)')
+    .select('id, month, year, category, summary, detail, image_urls, is_published, created_by, created_at, updated_at')
     .order('year', { ascending: false })
     .order('month', { ascending: false })
 
@@ -22,6 +22,11 @@ export async function listWorkReports({ month = null, year = null, category = 'a
 
   if (category !== 'all' && category !== '') {
     query = query.eq('category', category)
+  }
+
+  const keyword = String(search || '').trim()
+  if (keyword) {
+    query = query.or(`summary.ilike.%${keyword}%,detail.ilike.%${keyword}%,category.ilike.%${keyword}%`)
   }
 
   const { data, error } = await query
@@ -47,6 +52,17 @@ export async function createWorkReport(payload) {
     .from('work_reports')
     .insert([newReport])
     .select('*')
+    .single()
+
+  if (error) throw error
+  return data
+}
+
+export async function getWorkReportById(id) {
+  const { data, error } = await supabase
+    .from('work_reports')
+    .select('id, month, year, category, summary, detail, image_urls, is_published, created_by, created_at, updated_at')
+    .eq('id', id)
     .single()
 
   if (error) throw error

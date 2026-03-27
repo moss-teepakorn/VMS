@@ -24,7 +24,8 @@ import AdminMaintenance from './pages/admin/AdminMaintenance'
 import AdminSettings from './pages/admin/AdminSettings'
 import ResidentLayout from './pages/resident/ResidentLayout'
 
-const AdminWorkReports = lazy(() => import('./pages/admin/AdminWorkReports'))
+const AdminWorkReports = lazy(() => import('./pages/admin/AdminWorkReportsList'))
+const AdminWorkReportForm = lazy(() => import('./pages/admin/AdminWorkReportForm'))
 
 // Guard: ถ้ายังไม่ login → ไป /login
 function RequireAuth({ children }) {
@@ -90,6 +91,8 @@ function AppRoutes() {
         <Route path="announcements" element={<AdminAnnouncements />} />
         <Route path="reports" element={<AdminReports />} />
         <Route path="work-reports" element={<Suspense fallback={<PageLoader />}><AdminWorkReports /></Suspense>} />
+        <Route path="work-reports/new" element={<Suspense fallback={<PageLoader />}><AdminWorkReportForm /></Suspense>} />
+        <Route path="work-reports/:id/edit" element={<Suspense fallback={<PageLoader />}><AdminWorkReportForm /></Suspense>} />
         <Route path="technicians" element={<AdminTechnicians />} />
         <Route path="marketplace" element={<AdminMarketplace />} />
         <Route path="config" element={<AdminConfig />} />
