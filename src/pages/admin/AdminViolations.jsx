@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import Swal from 'sweetalert2'
 import { jsPDF } from 'jspdf'
+import html2canvas from 'html2canvas'
 import villageLogo from '../../assets/village-logo.svg'
 import juristicSignature from '../../assets/juristic-signature.svg'
 import { listHouses } from '../../lib/houses'
@@ -541,7 +542,7 @@ const AdminViolations = () => {
             <div>ตัวอย่างรายงาน A4 • ${escapeHtml(item.report_no || '-')}</div>
             <div class="actions">
               <button class="btn-print" onclick="window.print()">Print</button>
-              <button class="btn-image" onclick="if (window.opener && typeof window.opener.__downloadViolationImageFromPreview === 'function') { window.opener.__downloadViolationImageFromPreview(); }">Image</button>
+              <button class="btn-image" onclick="if (window.opener && typeof window.opener.__downloadViolationImageFromPreview === 'function') { window.opener.__downloadViolationImageFromPreview(window); }">Image</button>
               <button class="btn-close" onclick="window.close()">ปิด</button>
             </div>
           </div>
@@ -772,17 +773,33 @@ const AdminViolations = () => {
     pdf.save(`${item.report_no || `violation-${item.id}`}.pdf`)
   }
 
-  const downloadViolationReportImage = async (item) => {
-    const images = await listViolationImages(item.id)
-    const pages = await buildViolationReportPages(item, images)
+  const downloadViolationReportImageFromPreview = async (previewWindow, item) => {
+    if (!previewWindow || previewWindow.closed) {
+      throw new Error('ไม่พบหน้าพรีวิวสำหรับจับภาพ')
+    }
+
+    const pageElements = Array.from(previewWindow.document.querySelectorAll('.a4'))
+    if (pageElements.length === 0) {
+      throw new Error('ไม่พบหน้าเอกสารในหน้าพรีวิว')
+    }
+
+    const pageCanvases = []
+    for (const pageEl of pageElements) {
+      const pageCanvas = await html2canvas(pageEl, {
+        backgroundColor: '#ffffff',
+        scale: 2,
+        useCORS: true,
+      })
+      pageCanvases.push(pageCanvas)
+    }
+
     const baseName = item.report_no || `violation-${item.id}`
-    const firstPage = pages[0]?.canvas
-    if (!firstPage) throw new Error('ไม่พบข้อมูลหน้าเอกสารสำหรับสร้างรูปภาพ')
+    const firstPage = pageCanvases[0]
+    if (!firstPage) throw new Error('ไม่สามารถจับภาพเอกสารได้')
 
     const pageGap = 16
-    const totalHeight = pages.reduce((sum, entry, index) => sum + entry.canvas.height + (index > 0 ? pageGap : 0), 0)
+    const totalHeight = pageCanvases.reduce((sum, entry, index) => sum + entry.height + (index > 0 ? pageGap : 0), 0)
 
-    // Guard against browser canvas limits on very long documents.
     if (totalHeight > 30000) {
       throw new Error('รูปภาพยาวเกินขีดจำกัดระบบ แนะนำใช้ PDF สำหรับเอกสารยาวมาก')
     }
@@ -797,14 +814,14 @@ const AdminViolations = () => {
     mergedCtx.fillRect(0, 0, mergedCanvas.width, mergedCanvas.height)
 
     let offsetY = 0
-    pages.forEach((entry, index) => {
+    pageCanvases.forEach((entry, index) => {
       if (index > 0) {
         mergedCtx.fillStyle = '#e5e7eb'
         mergedCtx.fillRect(0, offsetY, mergedCanvas.width, pageGap)
         offsetY += pageGap
       }
-      mergedCtx.drawImage(entry.canvas, 0, offsetY)
-      offsetY += entry.canvas.height
+      mergedCtx.drawImage(entry, 0, offsetY)
+      offsetY += entry.height
     })
 
     const link = document.createElement('a')
@@ -817,9 +834,9 @@ const AdminViolations = () => {
 
   const handleOpenPrintPreview = async (item) => {
     try {
-      window.__downloadViolationImageFromPreview = async () => {
+      window.__downloadViolationImageFromPreview = async (previewWindow) => {
         try {
-          await downloadViolationReportImage(item)
+          await downloadViolationReportImageFromPreview(previewWindow, item)
           await showSwal({ icon: 'success', title: 'ดาวน์โหลด Image สำเร็จ', timer: 1000, showConfirmButton: false })
         } catch (error) {
           await showSwal({
