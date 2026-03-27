@@ -69,10 +69,10 @@ export default function LoginPage() {
             <div className="relative z-10 flex flex-col justify-between p-10 w-full">
               <div />
 
-              <div className="pb-4">
-                <h1 className="text-[40px] font-bold leading-[1.12]">Village Management System</h1>
-                <p className="mt-4 text-[16px] text-white/85 leading-relaxed max-w-[320px]">
-                  ระบบบริหารจัดการหมู่บ้าน<br />คอนโดอย่างมีประสิทธิภาพ
+              <div className="pb-4 pt-[210px] text-center">
+                <h1 className="text-[30px] font-bold leading-tight whitespace-nowrap">Village Management System</h1>
+                <p className="mt-3 text-[13.5px] text-white/85 leading-tight whitespace-nowrap">
+                  ระบบบริหารจัดการหมู่บ้าน คอนโดอย่างมีประสิทธิภาพ
                 </p>
               </div>
             </div>

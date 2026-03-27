@@ -5,6 +5,7 @@ import {
   extractSystemAssetPath,
   getSystemConfig,
   updateSystemConfig,
+  uploadVillageLogo,
   uploadJuristicSignature,
 } from '../../lib/systemConfig'
 
@@ -31,6 +32,9 @@ const AdminConfig = () => {
   const [signatureFile, setSignatureFile] = useState(null)
   const [signaturePreviewUrl, setSignaturePreviewUrl] = useState('')
   const [removeSignature, setRemoveSignature] = useState(false)
+  const [logoFile, setLogoFile] = useState(null)
+  const [logoPreviewUrl, setLogoPreviewUrl] = useState('')
+  const [removeLogo, setRemoveLogo] = useState(false)
 
   useEffect(() => {
     const loadConfig = async () => {
@@ -40,8 +44,11 @@ const AdminConfig = () => {
         setConfigId(config.id)
         setForm(config)
         setSignatureFile(null)
+        setLogoFile(null)
         setRemoveSignature(false)
+        setRemoveLogo(false)
         setSignaturePreviewUrl(config.juristic_signature_url || '')
+        setLogoPreviewUrl(config.village_logo_url || localStorage.getItem('vms-login-circle-logo-url') || '')
       } catch (error) {
         await Swal.fire({ icon: 'error', title: 'โหลดค่าระบบไม่สำเร็จ', text: error.message })
       } finally {
@@ -87,6 +94,26 @@ const AdminConfig = () => {
     setSignaturePreviewUrl(URL.createObjectURL(file))
   }
 
+  const handleLogoFile = (event) => {
+    const file = event.target.files?.[0]
+    event.target.value = ''
+    if (!file) return
+
+    const allowed = ['image/png', 'image/jpeg', 'image/jpg', 'image/webp']
+    if (!allowed.includes(file.type)) {
+      Swal.fire({ icon: 'warning', title: 'ไฟล์ไม่รองรับ', text: 'กรุณาอัปโหลดไฟล์ PNG/JPG/WEBP' })
+      return
+    }
+
+    if (logoPreviewUrl.startsWith('blob:')) {
+      URL.revokeObjectURL(logoPreviewUrl)
+    }
+
+    setLogoFile(file)
+    setRemoveLogo(false)
+    setLogoPreviewUrl(URL.createObjectURL(file))
+  }
+
   const handleRemoveSignature = () => {
     if (signaturePreviewUrl.startsWith('blob:')) {
       URL.revokeObjectURL(signaturePreviewUrl)
@@ -94,6 +121,15 @@ const AdminConfig = () => {
     setSignatureFile(null)
     setSignaturePreviewUrl('')
     setRemoveSignature(true)
+  }
+
+  const handleRemoveLogo = () => {
+    if (logoPreviewUrl.startsWith('blob:')) {
+      URL.revokeObjectURL(logoPreviewUrl)
+    }
+    setLogoFile(null)
+    setLogoPreviewUrl('')
+    setRemoveLogo(true)
   }
 
   const handleSave = async () => {
@@ -106,6 +142,13 @@ const AdminConfig = () => {
         payload[field] = Number(payload[field] || 0)
       })
 
+      if (!Object.prototype.hasOwnProperty.call(form, 'village_logo_url')) {
+        delete payload.village_logo_url
+      }
+      if (!Object.prototype.hasOwnProperty.call(form, 'village_logo_path')) {
+        delete payload.village_logo_path
+      }
+
       const previousSignaturePath = form.juristic_signature_path || extractSystemAssetPath(form.juristic_signature_url)
 
       if (removeSignature) {
@@ -114,6 +157,29 @@ const AdminConfig = () => {
         }
         payload.juristic_signature_url = null
         payload.juristic_signature_path = null
+      }
+
+      const previousLogoPath = form.village_logo_path || extractSystemAssetPath(form.village_logo_url)
+
+      if (removeLogo) {
+        if (previousLogoPath) {
+          await deleteSystemAssetByPath(previousLogoPath)
+        }
+        payload.village_logo_url = null
+        payload.village_logo_path = null
+        localStorage.removeItem('vms-login-circle-logo-url')
+        localStorage.removeItem('vms-login-circle-logo-path')
+      }
+
+      if (logoFile) {
+        if (previousLogoPath) {
+          await deleteSystemAssetByPath(previousLogoPath)
+        }
+        const uploadedLogo = await uploadVillageLogo(logoFile)
+        payload.village_logo_url = uploadedLogo?.url || null
+        payload.village_logo_path = uploadedLogo?.path || null
+        localStorage.setItem('vms-login-circle-logo-url', payload.village_logo_url || '')
+        localStorage.setItem('vms-login-circle-logo-path', payload.village_logo_path || '')
       }
 
       if (signatureFile) {
@@ -128,11 +194,21 @@ const AdminConfig = () => {
       const updated = await updateSystemConfig(configId, payload)
       setForm(updated)
       setSignatureFile(null)
+      setLogoFile(null)
       setRemoveSignature(false)
+      setRemoveLogo(false)
       if (signaturePreviewUrl.startsWith('blob:')) {
         URL.revokeObjectURL(signaturePreviewUrl)
       }
+      if (logoPreviewUrl.startsWith('blob:')) {
+        URL.revokeObjectURL(logoPreviewUrl)
+      }
       setSignaturePreviewUrl(updated.juristic_signature_url || '')
+      const nextLogoUrl = updated.village_logo_url || payload.village_logo_url || ''
+      setLogoPreviewUrl(nextLogoUrl)
+      if (nextLogoUrl) {
+        localStorage.setItem('vms-login-circle-logo-url', nextLogoUrl)
+      }
       await Swal.fire({ icon: 'success', title: 'บันทึกสำเร็จ', timer: 1200, showConfirmButton: false })
     } catch (error) {
       await Swal.fire({ icon: 'error', title: 'บันทึกไม่สำเร็จ', text: error.message })
@@ -181,6 +257,22 @@ const AdminConfig = () => {
                     <span>อีเมลนิติบุคคล</span>
                     <input name="juristic_email" value={form.juristic_email || ''} onChange={handleChange} />
                   </label>
+                  <div className="house-field house-field-span-3">
+                    <span>โลโก้สำหรับหน้า Login (PNG/JPG)</span>
+                    <input type="file" accept="image/png,image/jpeg,image/webp" onChange={handleLogoFile} />
+                    <div style={{ marginTop: '8px', display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+                      {logoPreviewUrl ? (
+                        <>
+                          <div style={{ width: '96px', height: '96px', border: '1px solid var(--bo)', borderRadius: '50%', background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
+                            <img src={logoPreviewUrl} alt="login-logo" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                          </div>
+                          <button type="button" className="btn btn-xs btn-dg" onClick={handleRemoveLogo}>ลบโลโก้</button>
+                        </>
+                      ) : (
+                        <div style={{ fontSize: '12px', color: 'var(--mu)' }}>ยังไม่มีโลโก้สำหรับหน้า Login</div>
+                      )}
+                    </div>
+                  </div>
                   <div className="house-field house-field-span-3">
                     <span>ลายเซ็นนิติ (PNG/JPG)</span>
                     <input type="file" accept="image/png,image/jpeg,image/webp" onChange={handleSignatureFile} />

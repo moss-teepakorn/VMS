@@ -14,7 +14,8 @@ let setupCache = null
 function toSetup(row) {
   const villageName = row?.village_name?.trim() || DEFAULT_SETUP.villageName
   const address = row?.juristic_name?.trim() || DEFAULT_SETUP.address
-  const loginCircleLogoUrl = String(row?.village_logo_url || row?.juristic_signature_url || '').trim()
+  const fromLocalLogo = String(localStorage.getItem('vms-login-circle-logo-url') || '').trim()
+  const loginCircleLogoUrl = String(row?.village_logo_url || row?.juristic_signature_url || fromLocalLogo || '').trim()
   return {
     ...DEFAULT_SETUP,
     villageName,
@@ -27,20 +28,9 @@ export async function getSetupConfig({ forceRefresh = false } = {}) {
   if (!forceRefresh && setupCache) return setupCache
 
   const fromLocal = localStorage.getItem('vms-setup-village-name')
+  const fromLocalLogo = localStorage.getItem('vms-login-circle-logo-url')
 
   try {
-    const { data: publicData, error: publicError } = await supabase
-      .from('public_config')
-      .select('*')
-      .limit(1)
-      .maybeSingle()
-
-    if (!publicError && publicData) {
-      setupCache = toSetup(publicData)
-      localStorage.setItem('vms-setup-village-name', setupCache.villageName)
-      return setupCache
-    }
-
     const { data: systemData, error: systemError } = await supabase
       .from('system_config')
       .select('*')
@@ -50,6 +40,24 @@ export async function getSetupConfig({ forceRefresh = false } = {}) {
     if (!systemError && systemData) {
       setupCache = toSetup(systemData)
       localStorage.setItem('vms-setup-village-name', setupCache.villageName)
+      if (setupCache.loginCircleLogoUrl) {
+        localStorage.setItem('vms-login-circle-logo-url', setupCache.loginCircleLogoUrl)
+      }
+      return setupCache
+    }
+
+    const { data: publicData, error: publicError } = await supabase
+      .from('public_config')
+      .select('*')
+      .limit(1)
+      .maybeSingle()
+
+    if (!publicError && publicData) {
+      setupCache = toSetup(publicData)
+      localStorage.setItem('vms-setup-village-name', setupCache.villageName)
+      if (setupCache.loginCircleLogoUrl) {
+        localStorage.setItem('vms-login-circle-logo-url', setupCache.loginCircleLogoUrl)
+      }
       return setupCache
     }
   } catch (error) {
@@ -59,6 +67,7 @@ export async function getSetupConfig({ forceRefresh = false } = {}) {
   setupCache = {
     ...DEFAULT_SETUP,
     villageName: fromLocal || DEFAULT_SETUP.villageName,
+    loginCircleLogoUrl: fromLocalLogo || DEFAULT_SETUP.loginCircleLogoUrl,
   }
   return setupCache
 }

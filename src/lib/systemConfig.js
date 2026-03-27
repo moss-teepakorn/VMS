@@ -4,6 +4,8 @@ const SYSTEM_ASSET_BUCKET = 'system-assets'
 
 const DEFAULT_SYSTEM_CONFIG = {
   village_name: 'The Greenfield',
+  village_logo_url: '',
+  village_logo_path: '',
   juristic_name: 'นิติบุคคลหมู่บ้านเดอะกรีนฟิลด์',
   juristic_phone: '02-123-4567',
   juristic_email: 'niti@greenfield.co.th',
@@ -96,6 +98,29 @@ export async function uploadJuristicSignature(file) {
   const safeExt = ['png', 'jpg', 'jpeg', 'webp'].includes(extension) ? extension : 'png'
   const fileName = `signature_${Date.now()}.${safeExt}`
   const path = `juristic/${fileName}`
+
+  const { error } = await supabase.storage
+    .from(SYSTEM_ASSET_BUCKET)
+    .upload(path, file, { upsert: true, contentType: file.type || 'image/png' })
+
+  if (error) throw error
+
+  const { data: publicUrlData } = supabase.storage
+    .from(SYSTEM_ASSET_BUCKET)
+    .getPublicUrl(path)
+
+  return {
+    path,
+    url: publicUrlData?.publicUrl || '',
+  }
+}
+
+export async function uploadVillageLogo(file) {
+  if (!file) return null
+  const extension = String(file.name || 'png').split('.').pop()?.toLowerCase() || 'png'
+  const safeExt = ['png', 'jpg', 'jpeg', 'webp'].includes(extension) ? extension : 'png'
+  const fileName = `logo_${Date.now()}.${safeExt}`
+  const path = `logo/${fileName}`
 
   const { error } = await supabase.storage
     .from(SYSTEM_ASSET_BUCKET)
