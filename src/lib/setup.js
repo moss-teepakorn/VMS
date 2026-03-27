@@ -15,7 +15,7 @@ function toSetup(row) {
   const villageName = row?.village_name?.trim() || DEFAULT_SETUP.villageName
   const address = row?.juristic_name?.trim() || DEFAULT_SETUP.address
   const fromLocalLogo = String(localStorage.getItem('vms-login-circle-logo-url') || '').trim()
-  const loginCircleLogoUrl = String(row?.village_logo_url || row?.juristic_signature_url || fromLocalLogo || '').trim()
+  const loginCircleLogoUrl = String(row?.village_logo_url || fromLocalLogo || '').trim()
   return {
     ...DEFAULT_SETUP,
     villageName,
