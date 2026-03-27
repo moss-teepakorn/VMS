@@ -23,6 +23,7 @@ const AdminLayout = () => {
   const location = useLocation()
   const { profile, logout } = useAuth()
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => localStorage.getItem('vms-sidebar-collapsed') === '1')
   const [theme, setTheme] = useState(localStorage.getItem('vms-theme') || 'normal')
   const [setupOpen, setSetupOpen] = useState(false)
   const [newPassword, setNewPassword] = useState('')
@@ -48,6 +49,10 @@ const AdminLayout = () => {
     document.body.setAttribute('data-theme', theme)
     localStorage.setItem('vms-theme', theme)
   }, [theme])
+
+  useEffect(() => {
+    localStorage.setItem('vms-sidebar-collapsed', sidebarCollapsed ? '1' : '0')
+  }, [sidebarCollapsed])
 
   useEffect(() => {
     const loadSetup = async () => {
@@ -175,7 +180,7 @@ const AdminLayout = () => {
       />
 
       {/* Sidebar */}
-      <aside className={`sidebar ${sidebarOpen ? 'open' : ''}`} id="sidebar">
+      <aside className={`sidebar ${sidebarOpen ? 'open' : ''} ${sidebarCollapsed ? 'collapsed' : ''}`} id="sidebar">
         {/* Logo */}
         <div className="sb-logo">
           <div className="sb-logo-ico sb-logo-ico-img">
@@ -184,6 +189,14 @@ const AdminLayout = () => {
           <div>
             <div className="sb-logo-name">{setup.villageName}</div>
           </div>
+          <button
+            type="button"
+            className="sb-collapse-btn"
+            onClick={() => setSidebarCollapsed((prev) => !prev)}
+            title={sidebarCollapsed ? 'ขยายเมนู' : 'ย่อเมนู'}
+          >
+            {sidebarCollapsed ? '›' : '‹'}
+          </button>
         </div>
 
         {/* Navigation */}
@@ -206,7 +219,7 @@ const AdminLayout = () => {
                     onClick={() => handleNavClick(item.path)}
                   >
                     <span className="sb-ico">{item.icon}</span>
-                    <span>{item.label}</span>
+                    <span className="sb-label">{item.label}</span>
                     {item.badge && <span className="sb-badge">{item.badge}</span>}
                   </div>
                 ))}
@@ -218,7 +231,7 @@ const AdminLayout = () => {
           <div className="sb-foot">
             <div className="sb-logout" onClick={handleLogout}>
               <span style={{ fontSize: '18px' }}>🚪</span>
-              <span>ออกจากระบบ</span>
+              <span className="sb-logout-label">ออกจากระบบ</span>
             </div>
           </div>
         </div>
