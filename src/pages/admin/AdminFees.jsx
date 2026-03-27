@@ -9,6 +9,7 @@ import {
   createPayment,
   deleteFee,
   listFees,
+  listPaymentTotalsByFeeIds,
   listPayments,
   processHalfYearFeesAllHouses,
   summarizeFees,
@@ -66,10 +67,13 @@ const AdminFees = () => {
   const [showPaymentModal, setShowPaymentModal] = useState(false)
   const [savingPayment, setSavingPayment] = useState(false)
   const [payingFee, setPayingFee] = useState(null)
+  const [feeSubmittedTotals, setFeeSubmittedTotals] = useState({})
+  const [feeApprovedTotals, setFeeApprovedTotals] = useState({})
   const [paymentForm, setPaymentForm] = useState({
     payment_method: 'transfer',
     paid_at: new Date().toISOString().slice(0, 16),
     selectedItems: [],
+    itemAmounts: {},
     note: '',
   })
   const [processForm, setProcessForm] = useState({
@@ -99,12 +103,28 @@ const AdminFees = () => {
   const loadFeeData = async (override = {}) => {
     try {
       setLoading(true)
+      const effectiveStatus = override.status ?? statusFilter
+      const queryStatus = effectiveStatus === 'partial' ? 'all' : effectiveStatus
+
       const [feeData, paymentData, houseData] = await Promise.all([
-        listFees({ status: override.status ?? statusFilter, year: override.year ?? yearFilter }),
+        listFees({ status: queryStatus, year: override.year ?? yearFilter }),
         listPayments({ limit: 10 }),
         houses.length === 0 ? listHouses() : Promise.resolve(houses),
       ])
-      setFees(feeData)
+
+      const paymentTotals = await listPaymentTotalsByFeeIds(feeData.map((row) => row.id))
+      setFeeSubmittedTotals(paymentTotals.submitted || {})
+      setFeeApprovedTotals(paymentTotals.approved || {})
+
+      const filteredFees = effectiveStatus === 'partial'
+        ? feeData.filter((fee) => {
+          const submittedAmount = Number((paymentTotals.submitted || {})[fee.id] || 0)
+          const totalAmount = Number(fee.total_amount || 0)
+          return submittedAmount > 0 && submittedAmount < totalAmount
+        })
+        : feeData
+
+      setFees(filteredFees)
       setPayments(paymentData)
       setHouses(houseData)
     } catch (error) {
@@ -122,10 +142,24 @@ const AdminFees = () => {
 
   const summary = useMemo(() => summarizeFees(fees, payments), [fees, payments])
 
-  const getFeeStatusBadge = (status) => {
-    if (status === 'paid') return { className: 'bd b-ok', label: 'ชำระแล้ว' }
-    if (status === 'pending') return { className: 'bd b-pr', label: 'รอตรวจสอบ' }
-    if (status === 'overdue') return { className: 'bd b-dg', label: 'ค้างชำระ' }
+  const getApprovedAmountForFee = (fee) => Number(feeApprovedTotals[fee?.id] || 0)
+  const getSubmittedAmountForFee = (fee) => Number(feeSubmittedTotals[fee?.id] || 0)
+
+  const isFeeFullyPaid = (fee) => {
+    const approvedAmount = getApprovedAmountForFee(fee)
+    return approvedAmount >= Number(fee?.total_amount || 0)
+  }
+
+  const getFeeStatusBadge = (fee) => {
+    const approvedAmount = getApprovedAmountForFee(fee)
+    const submittedAmount = getSubmittedAmountForFee(fee)
+    const totalAmount = Number(fee?.total_amount || 0)
+
+    if (approvedAmount >= totalAmount && totalAmount > 0) return { className: 'bd b-ok', label: 'ชำระแล้ว' }
+    if (submittedAmount > 0 && submittedAmount < totalAmount) return { className: 'bd b-ac', label: 'ชำระบางส่วน' }
+    if (fee?.status === 'paid') return { className: 'bd b-ok', label: 'ชำระแล้ว' }
+    if (fee?.status === 'pending') return { className: 'bd b-pr', label: 'รอตรวจสอบ' }
+    if (fee?.status === 'overdue') return { className: 'bd b-dg', label: 'ค้างชำระ' }
     return { className: 'bd b-wn', label: 'ยังไม่ชำระ' }
   }
 
@@ -189,6 +223,17 @@ const AdminFees = () => {
     if (!editingFee) return
 
     try {
+      const currentApprovedAmount = getApprovedAmountForFee(editingFee)
+      const currentInvoiceTotal = Number(editingFee.total_amount || 0)
+      if (editForm.status === 'paid' && currentApprovedAmount < currentInvoiceTotal) {
+        await Swal.fire({
+          icon: 'warning',
+          title: 'ยังตั้งเป็นชำระแล้วไม่ได้',
+          text: `ยอดอนุมัติ ${currentApprovedAmount.toLocaleString('th-TH')} / ${currentInvoiceTotal.toLocaleString('th-TH')} บาท`,
+        })
+        return
+      }
+
       setSavingEdit(true)
       await updateFee(editingFee.id, {
         status: editForm.status || 'unpaid',
@@ -307,15 +352,22 @@ const AdminFees = () => {
   }
 
   const handleAddPayment = (fee) => {
-    const selectedItems = feeItemDefs
-      .filter((item) => Number(fee[item.key] || 0) > 0)
-      .map((item) => item.key)
+    const payableItems = feeItemDefs
+      .map((item) => ({ ...item, amount: Number(fee[item.key] || 0) }))
+      .filter((item) => item.amount > 0)
+
+    const selectedItems = payableItems.map((item) => item.key)
+    const itemAmounts = payableItems.reduce((acc, item) => {
+      acc[item.key] = item.amount
+      return acc
+    }, {})
 
     setPayingFee(fee)
     setPaymentForm({
       payment_method: 'transfer',
       paid_at: new Date().toISOString().slice(0, 16),
       selectedItems,
+      itemAmounts,
       note: '',
     })
     setShowPaymentModal(true)
@@ -323,8 +375,8 @@ const AdminFees = () => {
 
   const paymentSelectedAmount = useMemo(() => {
     if (!payingFee) return 0
-    return paymentForm.selectedItems.reduce((sum, key) => sum + Number(payingFee[key] || 0), 0)
-  }, [payingFee, paymentForm.selectedItems])
+    return paymentForm.selectedItems.reduce((sum, key) => sum + Number(paymentForm.itemAmounts?.[key] || 0), 0)
+  }, [payingFee, paymentForm.selectedItems, paymentForm.itemAmounts])
 
   const payableFeeItems = useMemo(() => {
     if (!payingFee) return []
@@ -356,10 +408,29 @@ const AdminFees = () => {
     })
   }
 
+  const handleChangeItemAmount = (itemKey, rawValue, maxAmount) => {
+    let nextValue = Number(rawValue)
+    if (!Number.isFinite(nextValue)) nextValue = 0
+    if (nextValue < 0) nextValue = 0
+    if (nextValue > maxAmount) nextValue = maxAmount
+
+    setPaymentForm((prev) => ({
+      ...prev,
+      itemAmounts: {
+        ...prev.itemAmounts,
+        [itemKey]: nextValue,
+      },
+    }))
+  }
+
   const selectAllPaymentItems = () => {
     setPaymentForm((prev) => ({
       ...prev,
       selectedItems: payableFeeItems.map((item) => item.key),
+      itemAmounts: payableFeeItems.reduce((acc, item) => {
+        acc[item.key] = Number(prev.itemAmounts?.[item.key] ?? item.amount)
+        return acc
+      }, {}),
     }))
   }
 
@@ -374,6 +445,10 @@ const AdminFees = () => {
       selectedItems: payableFeeItems
         .map((item) => item.key)
         .filter((key) => baseKeys.includes(key)),
+      itemAmounts: payableFeeItems.reduce((acc, item) => {
+        acc[item.key] = Number(prev.itemAmounts?.[item.key] ?? item.amount)
+        return acc
+      }, {}),
     }))
   }
 
@@ -385,11 +460,16 @@ const AdminFees = () => {
       return
     }
 
+    if (paymentSelectedAmount <= 0) {
+      await Swal.fire({ icon: 'warning', title: 'ยอดรับชำระต้องมากกว่า 0' })
+      return
+    }
+
     try {
       setSavingPayment(true)
       const selectedLabels = feeItemDefs
         .filter((item) => paymentForm.selectedItems.includes(item.key))
-        .map((item) => item.label)
+        .map((item) => `${item.label} ฿${Number(paymentForm.itemAmounts?.[item.key] || 0).toLocaleString('th-TH')}`)
 
       const noteParts = [`ชำระรายการ: ${selectedLabels.join(', ')}`]
       if (paymentForm.note.trim()) noteParts.push(paymentForm.note.trim())
@@ -430,6 +510,7 @@ const AdminFees = () => {
           <select className="page-filter-select" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
             <option value="all">ทุกสถานะ</option>
             <option value="unpaid">ยังไม่ชำระ</option>
+            <option value="partial">ชำระบางส่วน</option>
             <option value="pending">รอตรวจสอบ</option>
             <option value="paid">ชำระแล้ว</option>
             <option value="overdue">ค้างชำระ</option>
@@ -479,7 +560,7 @@ const AdminFees = () => {
                     <tr><td colSpan="7" style={{ textAlign: 'center', color: 'var(--mu)', padding: '20px' }}>ยังไม่มีใบแจ้งหนี้</td></tr>
                   ) : (
                     fees.map((fee) => {
-                      const badge = getFeeStatusBadge(fee.status)
+                      const badge = getFeeStatusBadge(fee)
                       return (
                         <tr key={fee.id}>
                           <td>{fee.houses?.house_no || '-'}<div style={{ fontSize: '11px', color: 'var(--mu)' }}>{fee.houses?.owner_name || '-'}</div></td>
@@ -491,9 +572,9 @@ const AdminFees = () => {
                           <td>
                             <div className="td-acts">
                               <button className="btn btn-xs btn-a" onClick={() => handleEditFee(fee)}>แก้ไข</button>
-                              {fee.status !== 'paid' && <button className="btn btn-xs btn-p" onClick={() => handleAddPayment(fee)}>รับชำระ</button>}
-                              {fee.status !== 'paid' && <button className="btn btn-xs btn-o" onClick={() => handleCalculateAnnual(fee)}>คำนวณทั้งปี</button>}
-                              {fee.status !== 'paid' && <button className="btn btn-xs btn-dg" onClick={() => handleCalculateOverdue(fee)}>คำนวณค่าปรับ</button>}
+                              {!isFeeFullyPaid(fee) && <button className="btn btn-xs btn-p" onClick={() => handleAddPayment(fee)}>รับชำระ</button>}
+                              {!isFeeFullyPaid(fee) && <button className="btn btn-xs btn-o" onClick={() => handleCalculateAnnual(fee)}>คำนวณทั้งปี</button>}
+                              {!isFeeFullyPaid(fee) && <button className="btn btn-xs btn-dg" onClick={() => handleCalculateOverdue(fee)}>คำนวณค่าปรับ</button>}
                               <button className="btn btn-xs btn-dg" onClick={() => handleDeleteFee(fee)}>ลบ</button>
                             </div>
                           </td>
@@ -511,7 +592,7 @@ const AdminFees = () => {
             ) : fees.length === 0 ? (
               <div className="mcard-empty">ยังไม่มีใบแจ้งหนี้</div>
             ) : fees.map((fee) => {
-              const badge = getFeeStatusBadge(fee.status)
+              const badge = getFeeStatusBadge(fee)
               return (
                 <div key={fee.id} className="mcard">
                   <div className="mcard-top">
@@ -526,9 +607,9 @@ const AdminFees = () => {
                   </div>
                   <div className="mcard-actions">
                     <button className="btn btn-xs btn-a" onClick={() => handleEditFee(fee)}>แก้ไข</button>
-                    {fee.status !== 'paid' && <button className="btn btn-xs btn-p" onClick={() => handleAddPayment(fee)}>รับชำระ</button>}
-                    {fee.status !== 'paid' && <button className="btn btn-xs btn-o" onClick={() => handleCalculateAnnual(fee)}>ทั้งปี</button>}
-                    {fee.status !== 'paid' && <button className="btn btn-xs btn-dg" onClick={() => handleCalculateOverdue(fee)}>ค่าปรับ</button>}
+                    {!isFeeFullyPaid(fee) && <button className="btn btn-xs btn-p" onClick={() => handleAddPayment(fee)}>รับชำระ</button>}
+                    {!isFeeFullyPaid(fee) && <button className="btn btn-xs btn-o" onClick={() => handleCalculateAnnual(fee)}>ทั้งปี</button>}
+                    {!isFeeFullyPaid(fee) && <button className="btn btn-xs btn-dg" onClick={() => handleCalculateOverdue(fee)}>ค่าปรับ</button>}
                     <button className="btn btn-xs btn-dg" onClick={() => handleDeleteFee(fee)}>ลบ</button>
                   </div>
                 </div>
@@ -612,9 +693,12 @@ const AdminFees = () => {
                       <select value={editForm.status} onChange={(e) => setEditForm((prev) => ({ ...prev, status: e.target.value }))}>
                         <option value="unpaid">ยังไม่ชำระ</option>
                         <option value="pending">รอตรวจสอบ</option>
-                        <option value="paid">ชำระแล้ว</option>
+                        <option value="paid" disabled={getApprovedAmountForFee(editingFee) < Number(editingFee.total_amount || 0)}>ชำระแล้ว</option>
                         <option value="overdue">ค้างชำระ</option>
                       </select>
+                      <small style={{ color: 'var(--mu)' }}>
+                        อนุมัติแล้ว {getApprovedAmountForFee(editingFee).toLocaleString('th-TH')} / {Number(editingFee.total_amount || 0).toLocaleString('th-TH')} บาท
+                      </small>
                     </label>
                     <label className="house-field">
                       <span>วันที่ออกใบแจ้งหนี้</span>
@@ -658,7 +742,7 @@ const AdminFees = () => {
 
       {showPaymentModal && payingFee && (
         <div className="house-mo">
-          <div className="house-md house-md-home" style={{ maxWidth: '860px' }}>
+          <div className="house-md house-md-home" style={{ maxWidth: '980px' }}>
             <div className="house-md-head">
               <div>
                 <div className="house-md-title">💳 บันทึกรับชำระ</div>
@@ -673,101 +757,146 @@ const AdminFees = () => {
 
             <form onSubmit={handleSubmitPayment}>
               <div className="house-md-body">
-                <section className="house-sec">
-                  <div className="house-sec-title">เลือกรายการที่ชำระ</div>
-                  <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 12 }}>
-                    <button type="button" className="btn btn-xs btn-a" onClick={selectAllPaymentItems}>เลือกทั้งหมด</button>
-                    <button type="button" className="btn btn-xs btn-o" onClick={selectBasePaymentItems}>เลือกพื้นฐาน</button>
-                    <button type="button" className="btn btn-xs btn-g" onClick={clearPaymentItems}>ล้างการเลือก</button>
-                  </div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1.6fr) minmax(300px, 1fr)', gap: 16 }}>
+                  <section className="house-sec" style={{ marginBottom: 0 }}>
+                    <div className="house-sec-title">เลือกรายการที่ชำระ</div>
+                    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 12 }}>
+                      <button type="button" className="btn btn-xs btn-a" onClick={selectAllPaymentItems}>เลือกทั้งหมด</button>
+                      <button type="button" className="btn btn-xs btn-o" onClick={selectBasePaymentItems}>เลือกพื้นฐาน</button>
+                      <button type="button" className="btn btn-xs btn-g" onClick={clearPaymentItems}>ล้างการเลือก</button>
+                    </div>
 
-                  <div
-                    style={{
-                      height: 10,
-                      borderRadius: 99,
-                      background: '#e5e7eb',
-                      overflow: 'hidden',
-                      marginBottom: 12,
-                    }}
-                  >
                     <div
                       style={{
-                        width: `${paymentCoveragePct}%`,
-                        height: '100%',
-                        background: paymentRemaining === 0 ? '#16a34a' : '#0ea5e9',
-                        transition: 'width .2s ease',
+                        height: 10,
+                        borderRadius: 99,
+                        background: '#e5e7eb',
+                        overflow: 'hidden',
+                        marginBottom: 12,
                       }}
-                    />
-                  </div>
-                  <div style={{ fontSize: 12, color: 'var(--mu)', marginBottom: 10 }}>
-                    ครอบคลุมยอดชำระ {paymentCoveragePct}% {paymentRemaining > 0 ? `· คงเหลือ ฿${paymentRemaining.toLocaleString('th-TH')}` : '· ครบยอดแล้ว'}
-                  </div>
+                    >
+                      <div
+                        style={{
+                          width: `${paymentCoveragePct}%`,
+                          height: '100%',
+                          background: paymentRemaining === 0 ? '#16a34a' : '#0ea5e9',
+                          transition: 'width .2s ease',
+                        }}
+                      />
+                    </div>
+                    <div style={{ fontSize: 12, color: 'var(--mu)', marginBottom: 10 }}>
+                      ครอบคลุมยอดชำระ {paymentCoveragePct}% {paymentRemaining > 0 ? `· คงเหลือ ฿${paymentRemaining.toLocaleString('th-TH')}` : '· ครบยอดแล้ว'}
+                    </div>
 
-                  <div className="house-grid house-grid-2">
-                    {payableFeeItems.map((item) => {
-                      const checked = paymentForm.selectedItems.includes(item.key)
-                      return (
-                        <label
-                          key={item.key}
-                          className="house-field"
-                          style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: 10,
-                            border: checked ? '1px solid #16a34a' : '1px solid var(--bo)',
-                            background: checked ? '#f0fdf4' : '#fff',
-                            borderRadius: 10,
-                            cursor: 'pointer',
-                          }}
-                        >
-                          <input
-                            type="checkbox"
-                            checked={checked}
-                            onChange={(e) => togglePaymentItem(item.key, e.target.checked)}
-                            style={{ width: 16, height: 16 }}
-                          />
-                          <div style={{ flex: 1 }}>
-                            <div style={{ fontWeight: 600 }}>{item.label}</div>
-                            <div style={{ fontSize: 12, color: 'var(--mu)' }}>{checked ? 'เลือกชำระแล้ว' : 'ยังไม่เลือก'}</div>
-                          </div>
-                          <strong style={{ color: checked ? '#166534' : 'inherit' }}>{item.amount.toLocaleString('th-TH')}</strong>
-                        </label>
-                      )
-                    })}
-                    {payableFeeItems.length === 0 && (
-                      <div style={{ color: 'var(--mu)', fontSize: 13 }}>ไม่พบรายการที่มียอดมากกว่า 0</div>
-                    )}
-                  </div>
-                </section>
+                    <div style={{ border: '1px solid var(--bo)', borderRadius: 10, overflow: 'hidden' }}>
+                      <table className="tw" style={{ width: '100%', minWidth: 420 }}>
+                        <thead>
+                          <tr>
+                            <th>รายการ</th>
+                            <th style={{ width: 80, textAlign: 'center' }}>เลือก</th>
+                            <th style={{ width: 220, textAlign: 'right' }}>จำนวนเงินที่ชำระ</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {payableFeeItems.length === 0 ? (
+                            <tr>
+                              <td colSpan="3" style={{ textAlign: 'center', color: 'var(--mu)', padding: '14px 10px' }}>
+                                ไม่พบรายการที่มียอดมากกว่า 0
+                              </td>
+                            </tr>
+                          ) : (
+                            payableFeeItems.map((item) => {
+                              const checked = paymentForm.selectedItems.includes(item.key)
+                              const value = Number(paymentForm.itemAmounts?.[item.key] ?? item.amount)
+                              return (
+                                <tr key={item.key} style={{ background: checked ? '#f0fdf4' : '#fff' }}>
+                                  <td>
+                                    <div style={{ fontWeight: 600 }}>{item.label}</div>
+                                    <div style={{ fontSize: 12, color: 'var(--mu)' }}>ยอดเต็ม ฿{item.amount.toLocaleString('th-TH')}</div>
+                                  </td>
+                                  <td style={{ textAlign: 'center' }}>
+                                    <input
+                                      type="checkbox"
+                                      checked={checked}
+                                      onChange={(e) => togglePaymentItem(item.key, e.target.checked)}
+                                      style={{ width: 16, height: 16 }}
+                                    />
+                                  </td>
+                                  <td style={{ textAlign: 'right' }}>
+                                    <input
+                                      type="number"
+                                      min="0"
+                                      max={item.amount}
+                                      step="0.01"
+                                      value={value}
+                                      onChange={(e) => handleChangeItemAmount(item.key, e.target.value, item.amount)}
+                                      disabled={!checked}
+                                      style={{ width: 160, textAlign: 'right' }}
+                                    />
+                                  </td>
+                                </tr>
+                              )
+                            })
+                          )}
+                        </tbody>
+                        <tfoot>
+                          <tr>
+                            <th colSpan="2" style={{ textAlign: 'right' }}>รวมยอดที่ชำระ</th>
+                            <th style={{ textAlign: 'right', color: '#166534' }}>฿{paymentSelectedAmount.toLocaleString('th-TH')}</th>
+                          </tr>
+                        </tfoot>
+                      </table>
+                    </div>
+                    <div style={{ marginTop: 8, fontSize: 12, color: 'var(--mu)' }}>
+                      คำแนะนำ: ติ๊กเฉพาะรายการที่ต้องรับชำระ และกรอกจำนวนเงินไม่เกินยอดเต็มของแต่ละรายการ เพื่อลดความผิดพลาด
+                    </div>
+                  </section>
 
-                <section className="house-sec">
-                  <div className="house-grid house-grid-3">
-                    <label className="house-field">
-                      <span>ยอดรับชำระรวม</span>
-                      <input value={paymentSelectedAmount.toLocaleString('th-TH')} readOnly className="house-readonly" />
-                    </label>
-                    <label className="house-field">
-                      <span>วิธีชำระ</span>
-                      <select value={paymentForm.payment_method} onChange={(e) => setPaymentForm((prev) => ({ ...prev, payment_method: e.target.value }))}>
-                        <option value="transfer">โอนเงิน</option>
-                        <option value="cash">เงินสด</option>
-                        <option value="qr">QR</option>
-                      </select>
-                    </label>
-                    <label className="house-field">
-                      <span>วันเวลา</span>
-                      <input type="datetime-local" value={paymentForm.paid_at} onChange={(e) => setPaymentForm((prev) => ({ ...prev, paid_at: e.target.value }))} />
-                    </label>
-                    <label className="house-field house-field-span-3">
-                      <span>หมายเหตุ</span>
-                      <textarea rows="2" value={paymentForm.note} onChange={(e) => setPaymentForm((prev) => ({ ...prev, note: e.target.value }))} placeholder="รายละเอียดเพิ่มเติม" />
-                    </label>
-                  </div>
-                </section>
+                  <section className="house-sec" style={{ marginBottom: 0 }}>
+                    <div className="house-sec-title">รายละเอียดการรับชำระ</div>
+                    <div style={{ display: 'grid', gap: 8, marginBottom: 12 }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', background: '#f8fafc', border: '1px solid var(--bo)', borderRadius: 8, padding: '10px 12px' }}>
+                        <span style={{ color: 'var(--mu)' }}>ยอดใบแจ้งหนี้</span>
+                        <strong>฿{paymentInvoiceTotal.toLocaleString('th-TH')}</strong>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', background: '#ecfeff', border: '1px solid #99f6e4', borderRadius: 8, padding: '10px 12px' }}>
+                        <span style={{ color: '#0f766e' }}>ยอดที่เลือกชำระ</span>
+                        <strong style={{ color: '#166534' }}>฿{paymentSelectedAmount.toLocaleString('th-TH')}</strong>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', background: '#fff7ed', border: '1px solid #fdba74', borderRadius: 8, padding: '10px 12px' }}>
+                        <span style={{ color: '#9a3412' }}>ยอดคงเหลือ</span>
+                        <strong style={{ color: '#9a3412' }}>฿{paymentRemaining.toLocaleString('th-TH')}</strong>
+                      </div>
+                    </div>
+
+                    <div className="house-grid" style={{ gridTemplateColumns: '1fr', gap: 10 }}>
+                      <label className="house-field">
+                        <span>วิธีชำระ</span>
+                        <select value={paymentForm.payment_method} onChange={(e) => setPaymentForm((prev) => ({ ...prev, payment_method: e.target.value }))}>
+                          <option value="transfer">โอนเงิน</option>
+                          <option value="cash">เงินสด</option>
+                          <option value="qr">QR</option>
+                        </select>
+                      </label>
+                      <label className="house-field">
+                        <span>วันเวลา</span>
+                        <input type="datetime-local" value={paymentForm.paid_at} onChange={(e) => setPaymentForm((prev) => ({ ...prev, paid_at: e.target.value }))} />
+                      </label>
+                      <label className="house-field">
+                        <span>หมายเหตุ</span>
+                        <textarea rows="3" value={paymentForm.note} onChange={(e) => setPaymentForm((prev) => ({ ...prev, note: e.target.value }))} placeholder="รายละเอียดเพิ่มเติม" />
+                      </label>
+                    </div>
+                  </section>
+                </div>
               </div>
               <div className="house-md-foot">
-                <button className="btn btn-g" type="button" onClick={() => { if (!savingPayment) { setShowPaymentModal(false); setPayingFee(null) } }}>ยกเลิก</button>
-                <button className="btn btn-p" type="submit" disabled={savingPayment || paymentForm.selectedItems.length === 0}>{savingPayment ? 'กำลังบันทึก...' : 'บันทึกรับชำระ'}</button>
+                <button className="btn btn-g" type="button" onClick={() => { if (!savingPayment) { setShowPaymentModal(false); setPayingFee(null) } }}>
+                  ยกเลิก
+                </button>
+                <button className="btn btn-p" type="submit" disabled={savingPayment || paymentSelectedAmount <= 0}>
+                  {savingPayment ? 'กำลังบันทึก...' : 'บันทึกรับชำระ'}
+                </button>
               </div>
             </form>
           </div>

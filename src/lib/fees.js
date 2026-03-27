@@ -519,6 +519,54 @@ export async function listHousePayments(houseId, { limit } = {}) {
   return data ?? []
 }
 
+export async function listApprovedPaymentTotalsByFeeIds(feeIds = []) {
+  const ids = Array.isArray(feeIds) ? feeIds.filter(Boolean) : []
+  if (ids.length === 0) return {}
+
+  const { data, error } = await supabase
+    .from('payments')
+    .select('fee_id, amount, verified_at')
+    .in('fee_id', ids)
+    .not('verified_at', 'is', null)
+
+  if (error) throw error
+
+  const totals = {}
+  for (const row of data || []) {
+    const feeId = row?.fee_id
+    if (!feeId) continue
+    totals[feeId] = Number(totals[feeId] || 0) + Number(row.amount || 0)
+  }
+  return totals
+}
+
+export async function listPaymentTotalsByFeeIds(feeIds = []) {
+  const ids = Array.isArray(feeIds) ? feeIds.filter(Boolean) : []
+  if (ids.length === 0) return { submitted: {}, approved: {} }
+
+  const { data, error } = await supabase
+    .from('payments')
+    .select('fee_id, amount, verified_at')
+    .in('fee_id', ids)
+
+  if (error) throw error
+
+  const submitted = {}
+  const approved = {}
+  for (const row of data || []) {
+    const feeId = row?.fee_id
+    if (!feeId) continue
+
+    const amount = Number(row.amount || 0)
+    submitted[feeId] = Number(submitted[feeId] || 0) + amount
+    if (row.verified_at) {
+      approved[feeId] = Number(approved[feeId] || 0) + amount
+    }
+  }
+
+  return { submitted, approved }
+}
+
 export async function createPayment(payload) {
   const payment = {
     fee_id: payload.fee_id || null,
