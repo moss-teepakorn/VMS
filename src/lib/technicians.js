@@ -3,7 +3,7 @@ import { supabase } from './supabase'
 export async function listTechnicians({ status = 'all', search = '' } = {}) {
   const { data, error } = await supabase
     .from('technicians')
-    .select('id, name, phone, line_id, address, rating, review_count, status, avatar_url, note, created_at, technician_services(id, skill, price_min, price_max, price_note)')
+    .select('id, name, phone, line_id, rating, review_count, status, avatar_url, note, created_at, technician_services(id, skill, price_min, price_max, price_note)')
     .order('created_at', { ascending: false })
 
   if (error) throw error
@@ -13,7 +13,7 @@ export async function listTechnicians({ status = 'all', search = '' } = {}) {
     if (status !== 'all' && item.status !== status) return false
     if (!keyword) return true
     const skills = (item.technician_services || []).map((s) => s.skill).join(' ')
-    const searchable = [item.name, item.phone, item.line_id, item.address, skills]
+    const searchable = [item.name, item.phone, item.line_id, skills]
       .filter(Boolean)
       .join(' ')
       .toLowerCase()
@@ -26,7 +26,6 @@ export async function createTechnician(payload, services = []) {
     name: payload.name?.trim() || null,
     phone: payload.phone?.trim() || null,
     line_id: payload.line_id?.trim() || null,
-    address: payload.address?.trim() || null,
     status: payload.status || 'pending',
     note: payload.note?.trim() || null,
   }
@@ -59,7 +58,7 @@ export async function createTechnician(payload, services = []) {
 
   const { data: full, error: fullError } = await supabase
     .from('technicians')
-    .select('id, name, phone, line_id, address, rating, review_count, status, avatar_url, note, created_at, technician_services(id, skill, price_min, price_max, price_note)')
+    .select('id, name, phone, line_id, rating, review_count, status, avatar_url, note, created_at, technician_services(id, skill, price_min, price_max, price_note)')
     .eq('id', data.id)
     .single()
 
@@ -72,7 +71,6 @@ export async function updateTechnician(id, payload, services = null) {
     name: payload.name?.trim() || null,
     phone: payload.phone?.trim() || null,
     line_id: payload.line_id?.trim() || null,
-    address: payload.address?.trim() || null,
     status: payload.status || 'pending',
     note: payload.note?.trim() || null,
   }
@@ -111,7 +109,7 @@ export async function updateTechnician(id, payload, services = null) {
 
   const { data: full, error: fullError } = await supabase
     .from('technicians')
-    .select('id, name, phone, line_id, address, rating, review_count, status, avatar_url, note, created_at, technician_services(id, skill, price_min, price_max, price_note)')
+    .select('id, name, phone, line_id, rating, review_count, status, avatar_url, note, created_at, technician_services(id, skill, price_min, price_max, price_note)')
     .eq('id', id)
     .single()
 
