@@ -66,12 +66,10 @@ export default function LoginPage() {
             </div>
             <div className="absolute -bottom-28 -left-20 w-[260px] h-[260px] rounded-full bg-white/10" />
 
-            <div className="relative z-10 flex flex-col justify-between p-10 w-full">
-              <div />
-
-              <div className="pb-4 pt-[210px] text-center">
-                <h1 className="text-[30px] font-bold leading-tight whitespace-nowrap">Village Management System</h1>
-                <p className="mt-3 text-[13.5px] text-white/85 leading-tight whitespace-nowrap">
+            <div className="relative z-10 flex flex-col items-center p-10 w-full">
+              <div className="mt-[238px] text-center w-full px-2">
+                <h1 className="text-[clamp(16px,1.9vw,24px)] font-bold leading-tight whitespace-nowrap tracking-tight">Village Management System</h1>
+                <p className="mt-2 text-[clamp(10px,0.95vw,12px)] text-white/85 leading-tight whitespace-nowrap">
                   ระบบบริหารจัดการหมู่บ้าน คอนโดอย่างมีประสิทธิภาพ
                 </p>
               </div>
