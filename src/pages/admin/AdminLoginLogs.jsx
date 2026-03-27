@@ -18,7 +18,8 @@ function fmtDatetime(iso) {
 export default function AdminLoginLogs() {
   const [logs, setLogs] = useState([])
   const [loading, setLoading] = useState(false)
-  const [search, setSearch] = useState('')
+  const [searchTerm, setSearchTerm] = useState('')
+  const [roleFilter, setRoleFilter] = useState('all')
   const [selected, setSelected] = useState(new Set())
   const [setup, setSetup] = useState({ villageName: 'The Greenfield', loginCircleLogoUrl: '' })
 
@@ -37,14 +38,16 @@ export default function AdminLoginLogs() {
 
   // client-side filter
   const filtered = useMemo(() => {
-    const kw = search.trim().toLowerCase()
-    if (!kw) return logs
-    return logs.filter(
-      (r) =>
+    const kw = searchTerm.trim().toLowerCase()
+    return logs.filter((r) => {
+      if (roleFilter !== 'all' && r.role !== roleFilter) return false
+      if (!kw) return true
+      return (
         (r.username || '').toLowerCase().includes(kw) ||
-        (r.full_name || '').toLowerCase().includes(kw),
-    )
-  }, [logs, search])
+        (r.full_name || '').toLowerCase().includes(kw)
+      )
+    })
+  }, [logs, searchTerm, roleFilter])
 
   // ─── Checkbox logic ────────────────────────────────────────────────
   const allChecked = filtered.length > 0 && filtered.every((r) => selected.has(r.id))
@@ -111,9 +114,9 @@ export default function AdminLoginLogs() {
   }
 
   return (
-    <div className="pane on page-compact" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-      {/* Page header */}
-      <div className="ph">
+    <div className="pane on houses-compact">
+      {/* Page header — filter row inside ph (same as AdminHouses) */}
+      <div className="ph houses-ph">
         <div className="ph-in">
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
             <div className="ph-ico">
@@ -125,106 +128,121 @@ export default function AdminLoginLogs() {
             </div>
           </div>
         </div>
+        <div className="houses-filter-row">
+          <input
+            type="text"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            placeholder="ค้นหา username / ชื่อ-นามสกุล..."
+            className="houses-filter-input"
+          />
+          <select
+            value={roleFilter}
+            onChange={(e) => setRoleFilter(e.target.value)}
+            className="houses-filter-select"
+          >
+            <option value="all">ทุกบทบาท</option>
+            <option value="admin">ผู้ดูแลระบบ</option>
+            <option value="resident">ลูกบ้าน</option>
+          </select>
+          <button
+            className="btn btn-a btn-sm houses-filter-btn"
+            onClick={loadLogs}
+            disabled={loading}
+          >
+            ค้นหา
+          </button>
+        </div>
       </div>
 
       <div className="card">
-        {/* Toolbar */}
-        <div className="ch page-list-head" style={{ flexWrap: 'wrap', gap: '8px' }}>
+        {/* Card header with action buttons */}
+        <div className="ch houses-list-head">
           <div className="ct">
-            รายการทั้งหมด {logs.length} รายการ
+            รายการทั้งหมด {filtered.length} รายการ
             {selected.size > 0 && (
               <span style={{ marginLeft: 8, color: 'var(--pr)', fontWeight: 600 }}>
-                (เลือก {selected.size})
+                · เลือก {selected.size}
               </span>
             )}
           </div>
-          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-            <input
-              className="page-filter-input"
-              type="text"
-              placeholder="ค้นหา username / ชื่อ..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              style={{ minWidth: 200 }}
-            />
-            <button className="btn btn-sm btn-o" onClick={loadLogs} disabled={loading}>
-              ↻ โหลดใหม่
-            </button>
+          <div className="houses-list-actions">
             <button
-              className="btn btn-sm btn-mu"
+              className="btn btn-mu btn-sm"
               onClick={handleDeleteSelected}
               disabled={selected.size === 0}
             >
-              ลบที่เลือก ({selected.size})
+              🗑 ลบที่เลือก ({selected.size})
             </button>
             <button
-              className="btn btn-sm btn-mu"
+              className="btn btn-mu btn-sm"
               onClick={handleDeleteAll}
               disabled={logs.length === 0}
             >
-              ลบทั้งหมด
+              🗑 ลบทั้งหมด
+            </button>
+            <button className="btn btn-g btn-sm" onClick={loadLogs} disabled={loading}>
+              🔄 รีเฟรช
             </button>
           </div>
         </div>
 
-        <div className="cb page-table-body">
+        <div className="cb houses-table-card-body">
           {/* Desktop table */}
-          <div className="desktop-only">
-            <div style={{ overflowX: 'auto' }}>
-              <table className="tw" style={{ width: '100%', minWidth: 680, fontSize: '13px' }}>
-                <thead>
-                  <tr>
-                    <th style={{ width: 36 }}>
+          <div className="houses-table-wrap houses-desktop-only">
+            <table className="tw houses-table" style={{ width: '100%', minWidth: 580 }}>
+              <thead>
+                <tr>
+                  <th style={{ width: 36 }}>
+                    <input
+                      type="checkbox"
+                      checked={allChecked}
+                      ref={(el) => { if (el) el.indeterminate = someChecked }}
+                      onChange={toggleAll}
+                    />
+                  </th>
+                  <th style={{ width: 40 }}>#</th>
+                  <th>วันที่ / เวลา</th>
+                  <th>Username</th>
+                  <th>ชื่อ - นามสกุล</th>
+                  <th>บทบาท</th>
+                </tr>
+              </thead>
+              <tbody>
+                {loading ? (
+                  <tr><td colSpan="6" style={{ textAlign: 'center', color: 'var(--mu)', padding: '24px' }}>กำลังโหลด...</td></tr>
+                ) : filtered.length === 0 ? (
+                  <tr><td colSpan="6" style={{ textAlign: 'center', color: 'var(--mu)', padding: '24px' }}>ไม่มีข้อมูล Log</td></tr>
+                ) : filtered.map((row, idx) => (
+                  <tr
+                    key={row.id}
+                    style={{ background: selected.has(row.id) ? 'var(--pr-bg, #f0f7ff)' : undefined, cursor: 'pointer' }}
+                    onClick={() => toggleRow(row.id)}
+                  >
+                    <td onClick={(e) => e.stopPropagation()}>
                       <input
                         type="checkbox"
-                        checked={allChecked}
-                        ref={(el) => { if (el) el.indeterminate = someChecked }}
-                        onChange={toggleAll}
+                        checked={selected.has(row.id)}
+                        onChange={() => toggleRow(row.id)}
                       />
-                    </th>
-                    <th style={{ width: 44 }}>#</th>
-                    <th>วันที่ / เวลา</th>
-                    <th>Username</th>
-                    <th>ชื่อ - นามสกุล</th>
-                    <th>บทบาท</th>
+                    </td>
+                    <td style={{ color: 'var(--mu)', textAlign: 'center' }}>{idx + 1}</td>
+                    <td style={{ whiteSpace: 'nowrap' }}>{fmtDatetime(row.login_at)}</td>
+                    <td style={{ fontFamily: 'monospace', fontWeight: 600 }}>{row.username}</td>
+                    <td>{row.full_name || '-'}</td>
+                    <td>
+                      <span className={`bd ${ROLE_CLASS[row.role] || 'b-pr'}`}>
+                        {ROLE_LABEL[row.role] || row.role || '-'}
+                      </span>
+                    </td>
                   </tr>
-                </thead>
-                <tbody>
-                  {loading ? (
-                    <tr><td colSpan="6" style={{ textAlign: 'center', color: 'var(--mu)', padding: '24px' }}>กำลังโหลด...</td></tr>
-                  ) : filtered.length === 0 ? (
-                    <tr><td colSpan="6" style={{ textAlign: 'center', color: 'var(--mu)', padding: '24px' }}>ไม่มีข้อมูล Log</td></tr>
-                  ) : filtered.map((row, idx) => (
-                    <tr
-                      key={row.id}
-                      style={{ background: selected.has(row.id) ? 'var(--pr-bg, #f0f7ff)' : undefined, cursor: 'pointer' }}
-                      onClick={() => toggleRow(row.id)}
-                    >
-                      <td onClick={(e) => e.stopPropagation()}>
-                        <input
-                          type="checkbox"
-                          checked={selected.has(row.id)}
-                          onChange={() => toggleRow(row.id)}
-                        />
-                      </td>
-                      <td style={{ color: 'var(--mu)', textAlign: 'center' }}>{idx + 1}</td>
-                      <td style={{ whiteSpace: 'nowrap' }}>{fmtDatetime(row.login_at)}</td>
-                      <td style={{ fontFamily: 'monospace', fontWeight: 600 }}>{row.username}</td>
-                      <td>{row.full_name || '-'}</td>
-                      <td>
-                        <span className={`bd ${ROLE_CLASS[row.role] || 'b-pr'}`}>
-                          {ROLE_LABEL[row.role] || row.role || '-'}
-                        </span>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                ))}
+              </tbody>
+            </table>
           </div>
 
           {/* Mobile cards */}
-          <div className="mobile-only">
+          <div className="houses-mobile-only" style={{ gap: 10, padding: '4px 0' }}>
             {loading ? (
               <div className="mcard-empty">กำลังโหลด...</div>
             ) : filtered.length === 0 ? (
@@ -233,16 +251,16 @@ export default function AdminLoginLogs() {
               <>
                 <div style={{ padding: '8px 12px', display: 'flex', gap: 8, alignItems: 'center' }}>
                   <input type="checkbox" checked={allChecked} ref={(el) => { if (el) el.indeterminate = someChecked }} onChange={toggleAll} />
-                  <span style={{ fontSize: 13, color: 'var(--mu)' }}>เลือกทั้งหมด</span>
+                  <span style={{ fontSize: 12, color: 'var(--mu)' }}>เลือกทั้งหมด</span>
                 </div>
                 {filtered.map((row) => (
                   <div
                     key={row.id}
-                    className="mcard"
+                    className="houses-mcard"
                     style={{ background: selected.has(row.id) ? 'var(--pr-bg, #f0f7ff)' : undefined }}
                     onClick={() => toggleRow(row.id)}
                   >
-                    <div className="mcard-top">
+                    <div className="houses-mcard-top">
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                         <input
                           type="checkbox"
@@ -250,13 +268,13 @@ export default function AdminLoginLogs() {
                           onChange={() => toggleRow(row.id)}
                           onClick={(e) => e.stopPropagation()}
                         />
-                        <div className="mcard-title" style={{ fontFamily: 'monospace' }}>{row.username}</div>
+                        <div className="houses-mcard-no" style={{ fontFamily: 'monospace' }}>{row.username}</div>
                       </div>
-                      <span className={`bd ${ROLE_CLASS[row.role] || 'b-pr'} mcard-badge`}>
+                      <span className={`bd ${ROLE_CLASS[row.role] || 'b-pr'} houses-mcard-badge`}>
                         {ROLE_LABEL[row.role] || row.role || '-'}
                       </span>
                     </div>
-                    <div className="mcard-meta">
+                    <div className="mcard-meta" style={{ marginTop: 4 }}>
                       <span><span className="mcard-label">ชื่อ</span> {row.full_name || '-'}</span>
                       <span><span className="mcard-label">เวลา</span> {fmtDatetime(row.login_at)}</span>
                     </div>
