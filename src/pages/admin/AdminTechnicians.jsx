@@ -11,9 +11,26 @@ const EMPTY_FORM = {
   name: '',
   phone: '',
   line_id: '',
+  address: '',
   status: 'pending',
   note: '',
 }
+
+const TECHNICIAN_SKILLS = [
+  'ช่างไฟฟ้า',
+  'ช่างประปา',
+  'ช่างก่อสร้าง',
+  'ช่างไม้',
+  'ช่างปูน',
+  'ช่างสี',
+  'ช่างเหล็ก/เชื่อม',
+  'ช่างแอร์',
+  'ช่างรถยนต์',
+  'ช่างรถจักรยานยนต์',
+  'ช่างอิเล็กทรอนิกส์',
+  'ช่างคอมพิวเตอร์',
+  'ช่างซ่อมแซมทั่วไป',
+]
 
 const EMPTY_SERVICE = { skill: '', price_min: '', price_max: '', price_note: '' }
 
@@ -72,6 +89,7 @@ const AdminTechnicians = () => {
       name: item.name || '',
       phone: item.phone || '',
       line_id: item.line_id || '',
+      address: item.address || '',
       status: item.status || 'pending',
       note: item.note || '',
     })
@@ -175,7 +193,7 @@ const AdminTechnicians = () => {
             type="text"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            placeholder="ค้นหา ชื่อ / เบอร์โทร / Line ID / ความเชี่ยวชาญ"
+            placeholder="ค้นหา ชื่อ / เบอร์โทร / Line ID / ที่อยู่ / ความเชี่ยวชาญ"
           />
           <select className="page-filter-select" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
             <option value="all">ทุกสถานะ</option>
@@ -203,6 +221,7 @@ const AdminTechnicians = () => {
                   <th>ชื่อ-นามสกุล</th>
                   <th>เบอร์โทร</th>
                   <th>Line ID</th>
+                  <th>ที่อยู่</th>
                   <th>ความเชี่ยวชาญ</th>
                   <th>คะแนน</th>
                   <th>สถานะ</th>
@@ -210,17 +229,18 @@ const AdminTechnicians = () => {
                 </tr></thead>
                 <tbody>
                   {loading ? (
-                    <tr><td colSpan="7" style={{ textAlign: 'center', color: 'var(--mu)', padding: '20px' }}>กำลังโหลด...</td></tr>
+                    <tr><td colSpan="8" style={{ textAlign: 'center', color: 'var(--mu)', padding: '20px' }}>กำลังโหลด...</td></tr>
                   ) : technicians.length === 0 ? (
-                    <tr><td colSpan="7" style={{ textAlign: 'center', color: 'var(--mu)', padding: '20px' }}>ไม่พบข้อมูล</td></tr>
+                    <tr><td colSpan="8" style={{ textAlign: 'center', color: 'var(--mu)', padding: '20px' }}>ไม่พบข้อมูล</td></tr>
                   ) : technicians.map((item) => {
                     const badge = getStatusBadge(item.status)
                     const skills = (item.technician_services || []).map((s) => s.skill).filter(Boolean).join(', ')
                     return (
                       <tr key={item.id}>
-                        <td><strong>{item.name}</strong></td>
+                        <td><strong>{item.name}</strong>{item.note ? <div style={{ fontSize: '11px', color: 'var(--mu)' }}>{item.note}</div> : null}</td>
                         <td>{item.phone || '-'}</td>
                         <td>{item.line_id || '-'}</td>
+                        <td style={{ maxWidth: '240px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.address || '-'}</td>
                         <td style={{ maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{skills || '-'}</td>
                         <td>{item.rating > 0 ? `${Number(item.rating).toFixed(1)} (${item.review_count})` : '-'}</td>
                         <td><span className={badge.className}>{badge.label}</span></td>
@@ -253,6 +273,7 @@ const AdminTechnicians = () => {
                     <span className={`${badge.className} mcard-badge`}>{badge.label}</span>
                   </div>
                   <div className="mcard-meta">
+                    {item.address && <span><span className="mcard-label">ที่อยู่</span> {item.address}</span>}
                     {skills && <span><span className="mcard-label">ความเชี่ยวชาญ</span> {skills}</span>}
                     <span><span className="mcard-label">คะแนน</span> {item.rating > 0 ? `${Number(item.rating).toFixed(1)} (${item.review_count})` : '-'}</span>
                   </div>
@@ -302,8 +323,12 @@ const AdminTechnicians = () => {
                       </select>
                     </label>
                     <label className="house-field house-field-span-2">
+                      <span>ที่อยู่ช่าง</span>
+                      <input name="address" value={form.address} onChange={handleChange} placeholder="เช่น 88/9 หมู่ 6 ต.บางพลีใหญ่ อ.บางพลี" />
+                    </label>
+                    <label className="house-field house-field-span-3">
                       <span>หมายเหตุ</span>
-                      <input name="note" value={form.note} onChange={handleChange} placeholder="บันทึกเพิ่มเติม" />
+                      <textarea name="note" value={form.note} onChange={handleChange} rows={4} placeholder="บันทึกเพิ่มเติม" />
                     </label>
                   </div>
                 </section>
@@ -317,7 +342,10 @@ const AdminTechnicians = () => {
                     <div key={idx} style={{ display: 'flex', gap: '8px', marginTop: '8px', flexWrap: 'wrap', alignItems: 'flex-end' }}>
                       <label className="house-field" style={{ flex: '2', minWidth: '140px' }}>
                         {idx === 0 && <span>ความเชี่ยวชาญ</span>}
-                        <input value={svc.skill} onChange={(e) => handleServiceChange(idx, 'skill', e.target.value)} placeholder="เช่น ไฟฟ้า, ประปา" />
+                        <select value={svc.skill} onChange={(e) => handleServiceChange(idx, 'skill', e.target.value)}>
+                          <option value="">เลือกความเชี่ยวชาญ</option>
+                          {TECHNICIAN_SKILLS.map((skill) => <option key={skill} value={skill}>{skill}</option>)}
+                        </select>
                       </label>
                       <label className="house-field" style={{ flex: '1', minWidth: '80px' }}>
                         {idx === 0 && <span>ราคาต่ำสุด</span>}
