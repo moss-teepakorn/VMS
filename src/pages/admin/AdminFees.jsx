@@ -5,6 +5,7 @@ import { listHouses } from '../../lib/houses'
 import { getSystemConfig } from '../../lib/systemConfig'
 import {
   calculateFullYearFeeByHouse,
+  calculateOverdueFeesBulk,
   calculateOverdueFeeCharges,
   createPayment,
   deleteFee,
@@ -109,7 +110,7 @@ const AdminFees = () => {
       await Swal.fire({
         icon: 'success',
         title: 'Process สำเร็จ',
-        html: `สร้างใหม่ ${result.created} หลัง<br/>อัปเดต ${result.updated} หลัง<br/>ข้าม (ชำระแล้ว) ${result.skippedPaid} หลัง`,
+        html: `สร้างใหม่ ${result.created} หลัง<br/>อัปเดต ${result.updated} หลัง<br/>ข้าม (ชำระแล้ว) ${result.skippedPaid} หลัง<br/>ข้าม (รอตรวจสอบ) ${result.skippedPending} หลัง`,
       })
       setShowProcessModal(false)
       await loadFeeData({ status: statusFilter, year: yearFilter })
@@ -227,6 +228,36 @@ const AdminFees = () => {
     }
   }
 
+  const handleBulkOverdue = async () => {
+    const result = await Swal.fire({
+      icon: 'question',
+      title: 'คำนวณค่าปรับทั้งหมด?',
+      text: yearFilter === 'all'
+        ? 'จะคำนวณทุกรายการที่เกินกำหนดทุกปี'
+        : `จะคำนวณเฉพาะปี ${toBE(yearFilter)}`,
+      showCancelButton: true,
+      confirmButtonText: 'คำนวณ',
+      cancelButtonText: 'ยกเลิก',
+      confirmButtonColor: '#0f766e',
+    })
+    if (!result.isConfirmed) return
+
+    try {
+      const summaryResult = await calculateOverdueFeesBulk({
+        year: yearFilter,
+        setup,
+      })
+      await Swal.fire({
+        icon: 'success',
+        title: 'คำนวณค่าปรับสำเร็จ',
+        html: `อัปเดต ${summaryResult.updated} รายการ<br/>ข้าม (ยังไม่ถึงกำหนด/ไม่มี due) ${summaryResult.skippedNotDue} รายการ<br/>ข้าม (ชำระแล้ว) ${summaryResult.skippedPaid} รายการ`,
+      })
+      await loadFeeData({ status: statusFilter, year: yearFilter })
+    } catch (error) {
+      await Swal.fire({ icon: 'error', title: 'คำนวณไม่สำเร็จ', text: error.message })
+    }
+  }
+
   const handleAddPayment = (fee) => {
     openModal('บันทึกการชำระเงิน', {
       amount: { label: 'จำนวนเงิน', type: 'number', value: String(fee.total_amount || 0) },
@@ -298,6 +329,7 @@ const AdminFees = () => {
           <div className="ct">ใบแจ้งหนี้ล่าสุด</div>
           <div className="page-list-actions">
             <button className="btn btn-p btn-sm" onClick={handleOpenProcessModal}>+ สร้างใบแจ้งหนี้</button>
+            <button className="btn btn-o btn-sm" onClick={handleBulkOverdue}>⚖ คำนวณค่าปรับทั้งหมด</button>
             <button className="btn btn-g btn-sm" onClick={() => loadFeeData({ status: statusFilter, year: yearFilter })}>🔄 รีเฟรช</button>
           </div>
         </div>

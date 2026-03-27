@@ -190,6 +190,7 @@ export async function processHalfYearFeesAllHouses({ yearBE, period, setup }) {
   let created = 0
   let updated = 0
   let skippedPaid = 0
+  let skippedPending = 0
 
   for (const house of houses) {
     const area = toAmount(house.area_sqw)
@@ -220,6 +221,11 @@ export async function processHalfYearFeesAllHouses({ yearBE, period, setup }) {
       continue
     }
 
+    if (existing.status === 'pending') {
+      skippedPending += 1
+      continue
+    }
+
     const { error } = await supabase
       .from('fees')
       .update(payload)
@@ -232,6 +238,7 @@ export async function processHalfYearFeesAllHouses({ yearBE, period, setup }) {
     created,
     updated,
     skippedPaid,
+    skippedPending,
     totalHouses: houses.length,
     yearCE,
     period,
@@ -336,6 +343,65 @@ export async function calculateOverdueFeeCharges(feeId, setup) {
 
   if (error) throw error
   return data
+}
+
+export async function calculateOverdueFeesBulk({ year, setup } = {}) {
+  const finePct = toAmount(setup?.overdue_fine_pct)
+  const noticeFee = toAmount(setup?.notice_fee)
+
+  let query = supabase
+    .from('fees')
+    .select('id, status, due_date, fee_common')
+
+  if (year && year !== 'all') {
+    query = query.eq('year', Number(year))
+  }
+
+  const { data, error } = await query
+  if (error) throw error
+
+  const now = new Date()
+  let updated = 0
+  let skippedPaid = 0
+  let skippedNotDue = 0
+
+  for (const fee of data || []) {
+    if (fee.status === 'paid') {
+      skippedPaid += 1
+      continue
+    }
+
+    if (!fee.due_date) {
+      skippedNotDue += 1
+      continue
+    }
+
+    const dueDate = new Date(`${fee.due_date}T23:59:59`)
+    if (now <= dueDate) {
+      skippedNotDue += 1
+      continue
+    }
+
+    const feeFine = round2(toAmount(fee.fee_common) * (finePct / 100))
+    const { error: updateError } = await supabase
+      .from('fees')
+      .update({
+        status: 'overdue',
+        fee_fine: feeFine,
+        fee_notice: round2(noticeFee),
+      })
+      .eq('id', fee.id)
+
+    if (updateError) throw updateError
+    updated += 1
+  }
+
+  return {
+    updated,
+    skippedPaid,
+    skippedNotDue,
+    total: (data || []).length,
+  }
 }
 
 export async function updateFee(id, updates) {
