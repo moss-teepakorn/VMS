@@ -55,6 +55,29 @@ export async function listFees({ status = 'all', year = 'all', search = '' } = {
   return data ?? []
 }
 
+export async function listHouseFees(houseId, { status = 'all', year = 'all' } = {}) {
+  if (!houseId) return []
+
+  let query = supabase
+    .from('fees')
+    .select('id, house_id, year, period, invoice_date, due_date, status, total_amount, note, created_at')
+    .eq('house_id', houseId)
+    .order('year', { ascending: false })
+    .order('created_at', { ascending: false })
+
+  if (status && status !== 'all') {
+    query = query.eq('status', status)
+  }
+
+  if (year && year !== 'all') {
+    query = query.eq('year', Number(year))
+  }
+
+  const { data, error } = await query
+  if (error) throw error
+  return data ?? []
+}
+
 export async function createFee(payload) {
   const fee = {
     house_id: payload.house_id || null,
@@ -112,6 +135,24 @@ export async function listPayments({ limit } = {}) {
   let query = supabase
     .from('payments')
     .select('id, fee_id, house_id, amount, payment_method, slip_url, paid_at, verified_by, verified_at, note, verified_profile:verified_by(full_name), fees(id, year, period, status, total_amount, due_date, invoice_date), houses(id, house_no, owner_name)')
+    .order('paid_at', { ascending: false })
+
+  if (limit) {
+    query = query.limit(limit)
+  }
+
+  const { data, error } = await query
+  if (error) throw error
+  return data ?? []
+}
+
+export async function listHousePayments(houseId, { limit } = {}) {
+  if (!houseId) return []
+
+  let query = supabase
+    .from('payments')
+    .select('id, fee_id, house_id, amount, payment_method, slip_url, paid_at, verified_by, verified_at, note, verified_profile:verified_by(full_name), fees(id, year, period, status, total_amount, due_date, invoice_date)')
+    .eq('house_id', houseId)
     .order('paid_at', { ascending: false })
 
   if (limit) {

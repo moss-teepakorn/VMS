@@ -7,6 +7,7 @@ import {
   residentUpdateViolation,
   uploadViolationImages,
 } from '../../lib/violations'
+import { createPayment, listHouseFees, listHousePayments } from '../../lib/fees'
 
 const MAX_ATTACHMENTS = 5
 const MAX_IMAGE_SIZE_BYTES = 100 * 1024
@@ -24,6 +25,15 @@ function showSwal(options) {
 
 export default function ResidentLayout() {
   const { profile, logout } = useAuth()
+  const [activeSection, setActiveSection] = useState('fees')
+  const [fees, setFees] = useState([])
+  const [payments, setPayments] = useState([])
+  const [feeLoading, setFeeLoading] = useState(false)
+  const [feeStatusFilter, setFeeStatusFilter] = useState('all')
+  const [feeYearFilter, setFeeYearFilter] = useState('all')
+  const [showPaymentModal, setShowPaymentModal] = useState(false)
+  const [selectedFee, setSelectedFee] = useState(null)
+  const [paymentForm, setPaymentForm] = useState({ amount: '', payment_method: 'transfer', slip_url: '', note: '' })
   const [violations, setViolations] = useState([])
   const [statusFilter, setStatusFilter] = useState('all')
   const [searchTerm, setSearchTerm] = useState('')
@@ -33,6 +43,26 @@ export default function ResidentLayout() {
   const [editingViolation, setEditingViolation] = useState(null)
   const [residentNote, setResidentNote] = useState('')
   const [attachments, setAttachments] = useState([])
+
+  const loadFeeData = async (override = {}) => {
+    if (!profile?.house_id) return
+    try {
+      setFeeLoading(true)
+      const [feeRows, paymentRows] = await Promise.all([
+        listHouseFees(profile.house_id, {
+          status: override.status ?? feeStatusFilter,
+          year: override.year ?? feeYearFilter,
+        }),
+        listHousePayments(profile.house_id),
+      ])
+      setFees(feeRows)
+      setPayments(paymentRows)
+    } catch (error) {
+      await showSwal({ icon: 'error', title: 'โหลดค่าส่วนกลางไม่สำเร็จ', text: error.message })
+    } finally {
+      setFeeLoading(false)
+    }
+  }
 
   const loadViolations = async (override = {}) => {
     if (!profile?.house_id) return
@@ -54,6 +84,22 @@ export default function ResidentLayout() {
     loadViolations()
   }, [profile?.house_id])
 
+  useEffect(() => {
+    loadFeeData()
+  }, [profile?.house_id])
+
+  const getFeeStatusBadge = (status) => {
+    if (status === 'paid') return { className: 'bd b-ok', label: 'ชำระแล้ว' }
+    if (status === 'pending') return { className: 'bd b-pr', label: 'รอตรวจสอบ' }
+    if (status === 'overdue') return { className: 'bd b-dg', label: 'ค้างชำระ' }
+    return { className: 'bd b-wn', label: 'ยังไม่ชำระ' }
+  }
+
+  const getPaymentStatusBadge = (row) => {
+    if (row.verified_at) return { className: 'bd b-ok', label: 'อนุมัติแล้ว' }
+    return { className: 'bd b-wn', label: 'รอตรวจสอบ' }
+  }
+
   const getStatusBadge = (status) => {
     if (status === 'resolved') return { className: 'bd b-ok', label: 'แก้ไขแล้ว' }
     if (status === 'in_progress') return { className: 'bd b-ac', label: 'กำลังดำเนินการ' }
@@ -65,6 +111,67 @@ export default function ResidentLayout() {
   const formatDate = (value) => {
     if (!value) return '-'
     return new Date(value).toLocaleDateString('th-TH', { year: 'numeric', month: 'short', day: 'numeric' })
+  }
+
+  const formatMoney = (value) => Number(value || 0).toLocaleString('th-TH')
+
+  const formatMethod = (method) => {
+    if (method === 'transfer') return 'โอนเงิน'
+    if (method === 'cash') return 'เงินสด'
+    if (method === 'qr') return 'QR'
+    return method || '-'
+  }
+
+  const openPaymentModal = (fee) => {
+    setSelectedFee(fee)
+    setPaymentForm({
+      amount: String(Number(fee.total_amount || 0)),
+      payment_method: 'transfer',
+      slip_url: '',
+      note: '',
+    })
+    setShowPaymentModal(true)
+  }
+
+  const closePaymentModal = () => {
+    setShowPaymentModal(false)
+    setSelectedFee(null)
+    setPaymentForm({ amount: '', payment_method: 'transfer', slip_url: '', note: '' })
+  }
+
+  const handleSubmitPayment = async (event) => {
+    event.preventDefault()
+    if (!selectedFee) return
+    if (!paymentForm.amount || Number(paymentForm.amount) <= 0) {
+      await showSwal({ icon: 'warning', title: 'กรุณาระบุยอดชำระ' })
+      return
+    }
+    if (!paymentForm.slip_url.trim()) {
+      await showSwal({ icon: 'warning', title: 'กรุณาแนบลิงก์หลักฐานการชำระ' })
+      return
+    }
+
+    try {
+      await createPayment({
+        fee_id: selectedFee.id,
+        house_id: profile?.house_id,
+        amount: Number(paymentForm.amount),
+        payment_method: paymentForm.payment_method,
+        slip_url: paymentForm.slip_url,
+        note: paymentForm.note,
+      })
+      await showSwal({
+        icon: 'success',
+        title: 'ส่งหลักฐานการชำระแล้ว',
+        text: 'ระบบส่งรายการให้นิติรอตรวจสอบแล้ว',
+        timer: 1400,
+        showConfirmButton: false,
+      })
+      closePaymentModal()
+      await loadFeeData({ status: feeStatusFilter, year: feeYearFilter })
+    } catch (error) {
+      await showSwal({ icon: 'error', title: 'ส่งหลักฐานไม่สำเร็จ', text: error.message })
+    }
   }
 
   const openUpdateModal = async (item) => {
@@ -262,11 +369,138 @@ export default function ResidentLayout() {
             </div>
           </div>
           <div className="ph-acts">
-            <button className="btn btn-o btn-sm" onClick={() => loadViolations({ status: statusFilter, search: searchTerm })}>🔄 รีเฟรช</button>
+            <button
+              className="btn btn-o btn-sm"
+              onClick={() => {
+                if (activeSection === 'fees') {
+                  loadFeeData({ status: feeStatusFilter, year: feeYearFilter })
+                } else {
+                  loadViolations({ status: statusFilter, search: searchTerm })
+                }
+              }}
+            >
+              🔄 รีเฟรช
+            </button>
             <button className="btn btn-g btn-sm" onClick={logout}>ออกจากระบบ</button>
           </div>
         </div>
       </div>
+
+      <div className="card" style={{ marginTop: '16px' }}>
+        <div className="cb" style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+          <button className={`btn btn-sm ${activeSection === 'fees' ? 'btn-a' : 'btn-o'}`} onClick={() => setActiveSection('fees')}>ค่าส่วนกลาง</button>
+          <button className={`btn btn-sm ${activeSection === 'violations' ? 'btn-a' : 'btn-o'}`} onClick={() => setActiveSection('violations')}>แจ้งกระทำผิด</button>
+        </div>
+      </div>
+
+      {activeSection === 'fees' && (
+        <>
+          <div className="card" style={{ marginTop: '16px', marginBottom: '16px' }}>
+            <div className="ch"><div className="ct">ค้นหาใบแจ้งหนี้ค่าส่วนกลาง</div></div>
+            <div className="cb" style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+              <select value={feeStatusFilter} onChange={(e) => setFeeStatusFilter(e.target.value)} style={{ padding: '8px 12px', border: '1px solid var(--bo)', borderRadius: '6px' }}>
+                <option value="all">ทุกสถานะ</option>
+                <option value="unpaid">ยังไม่ชำระ</option>
+                <option value="pending">รอตรวจสอบ</option>
+                <option value="paid">ชำระแล้ว</option>
+                <option value="overdue">ค้างชำระ</option>
+              </select>
+              <select value={feeYearFilter} onChange={(e) => setFeeYearFilter(e.target.value)} style={{ padding: '8px 12px', border: '1px solid var(--bo)', borderRadius: '6px' }}>
+                <option value="all">ทุกปี</option>
+                {[...new Set(fees.map((row) => row.year).filter(Boolean))].sort((a, b) => b - a).map((year) => (
+                  <option key={year} value={year}>{year}</option>
+                ))}
+              </select>
+              <button className="btn btn-a btn-sm" onClick={() => loadFeeData({ status: feeStatusFilter, year: feeYearFilter })}>ค้นหา</button>
+            </div>
+          </div>
+
+          <div className="card">
+            <div className="ch"><div className="ct">ใบแจ้งหนี้ของบ้านฉัน ({fees.length} รายการ)</div></div>
+            <div className="cb">
+              <div style={{ overflowX: 'auto' }}>
+                <table className="tw" style={{ width: '100%', minWidth: '860px' }}>
+                  <thead><tr>
+                    <th>ปี</th>
+                    <th>งวด</th>
+                    <th>วันที่ออก</th>
+                    <th>ครบกำหนด</th>
+                    <th>ยอดรวม</th>
+                    <th>สถานะ</th>
+                    <th></th>
+                  </tr></thead>
+                  <tbody>
+                    {feeLoading ? (
+                      <tr><td colSpan="7" style={{ textAlign: 'center', color: 'var(--mu)', padding: '20px' }}>กำลังโหลด...</td></tr>
+                    ) : fees.length === 0 ? (
+                      <tr><td colSpan="7" style={{ textAlign: 'center', color: 'var(--mu)', padding: '20px' }}>ยังไม่มีใบแจ้งหนี้</td></tr>
+                    ) : fees.map((fee) => {
+                      const badge = getFeeStatusBadge(fee.status)
+                      return (
+                        <tr key={fee.id}>
+                          <td>{fee.year || '-'}</td>
+                          <td>{fee.period || '-'}</td>
+                          <td>{formatDate(fee.invoice_date)}</td>
+                          <td>{formatDate(fee.due_date)}</td>
+                          <td><strong>฿{formatMoney(fee.total_amount)}</strong></td>
+                          <td><span className={badge.className}>{badge.label}</span></td>
+                          <td>
+                            {(fee.status === 'unpaid' || fee.status === 'overdue') && (
+                              <button className="btn btn-xs btn-a" onClick={() => openPaymentModal(fee)}>ส่งหลักฐานชำระ</button>
+                            )}
+                          </td>
+                        </tr>
+                      )
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <div className="card" style={{ marginTop: '16px' }}>
+            <div className="ch"><div className="ct">ประวัติการชำระ ({payments.length} รายการ)</div></div>
+            <div className="cb">
+              <div style={{ overflowX: 'auto' }}>
+                <table className="tw" style={{ width: '100%', minWidth: '900px' }}>
+                  <thead><tr>
+                    <th>งวดอ้างอิง</th>
+                    <th>ยอดชำระ</th>
+                    <th>วิธีชำระ</th>
+                    <th>หลักฐาน</th>
+                    <th>วันที่ส่ง</th>
+                    <th>สถานะ</th>
+                    <th>หมายเหตุ</th>
+                  </tr></thead>
+                  <tbody>
+                    {feeLoading ? (
+                      <tr><td colSpan="7" style={{ textAlign: 'center', color: 'var(--mu)', padding: '20px' }}>กำลังโหลด...</td></tr>
+                    ) : payments.length === 0 ? (
+                      <tr><td colSpan="7" style={{ textAlign: 'center', color: 'var(--mu)', padding: '20px' }}>ยังไม่มีประวัติชำระเงิน</td></tr>
+                    ) : payments.map((row) => {
+                      const badge = getPaymentStatusBadge(row)
+                      return (
+                        <tr key={row.id}>
+                          <td>{row.fees ? `${row.fees.period} ${row.fees.year}` : '-'}</td>
+                          <td>฿{formatMoney(row.amount)}</td>
+                          <td>{formatMethod(row.payment_method)}</td>
+                          <td>{row.slip_url ? <a href={row.slip_url} target="_blank" rel="noreferrer">ดูสลิป</a> : '-'}</td>
+                          <td>{new Date(row.paid_at).toLocaleString('th-TH')}</td>
+                          <td><span className={badge.className}>{badge.label}</span></td>
+                          <td>{row.note || '-'}</td>
+                        </tr>
+                      )
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
+
+      {activeSection === 'violations' && (
+        <>
 
       <div className="card" style={{ marginTop: '16px', marginBottom: '16px' }}>
         <div className="ch"><div className="ct">ค้นหารายการแจ้งกระทำผิด</div></div>
@@ -332,6 +566,72 @@ export default function ResidentLayout() {
           </div>
         </div>
       </div>
+        </>
+      )}
+
+      {showPaymentModal && (
+        <div className="house-mo">
+          <div className="house-md" style={{ maxWidth: '520px' }}>
+            <div className="house-md-head">
+              <div>
+                <div className="house-md-title">💳 ส่งหลักฐานการชำระ</div>
+                <div className="house-md-sub">งวด {selectedFee?.period || '-'} {selectedFee?.year || ''}</div>
+              </div>
+            </div>
+            <form onSubmit={handleSubmitPayment}>
+              <div className="house-md-body">
+                <section className="house-sec">
+                  <div className="house-grid" style={{ gridTemplateColumns: '1fr 1fr' }}>
+                    <label className="house-field">
+                      <span>ยอดชำระ *</span>
+                      <input
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        value={paymentForm.amount}
+                        onChange={(e) => setPaymentForm((prev) => ({ ...prev, amount: e.target.value }))}
+                      />
+                    </label>
+                    <label className="house-field">
+                      <span>วิธีชำระ *</span>
+                      <select
+                        value={paymentForm.payment_method}
+                        onChange={(e) => setPaymentForm((prev) => ({ ...prev, payment_method: e.target.value }))}
+                      >
+                        <option value="transfer">โอนเงิน</option>
+                        <option value="cash">เงินสด</option>
+                        <option value="qr">QR</option>
+                      </select>
+                    </label>
+                    <label className="house-field" style={{ gridColumn: '1 / -1' }}>
+                      <span>ลิงก์หลักฐานการชำระ (สลิป) *</span>
+                      <input
+                        type="url"
+                        placeholder="https://..."
+                        value={paymentForm.slip_url}
+                        onChange={(e) => setPaymentForm((prev) => ({ ...prev, slip_url: e.target.value }))}
+                      />
+                    </label>
+                    <label className="house-field" style={{ gridColumn: '1 / -1' }}>
+                      <span>หมายเหตุ</span>
+                      <textarea
+                        rows="3"
+                        value={paymentForm.note}
+                        onChange={(e) => setPaymentForm((prev) => ({ ...prev, note: e.target.value }))}
+                        placeholder="รายละเอียดเพิ่มเติม (ถ้ามี)"
+                      />
+                    </label>
+                  </div>
+                </section>
+              </div>
+              <div className="house-md-foot">
+                <button className="btn btn-g" type="button" onClick={closePaymentModal}>ยกเลิก</button>
+                <button className="btn btn-p" type="submit">ส่งตรวจสอบ</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {showModal && (
         <div className="house-mo">
