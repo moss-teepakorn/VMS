@@ -452,6 +452,28 @@ const AdminFees = () => {
     }))
   }
 
+  const setSelectedItemsToFullAmount = () => {
+    setPaymentForm((prev) => ({
+      ...prev,
+      itemAmounts: payableFeeItems.reduce((acc, item) => {
+        const isSelected = prev.selectedItems.includes(item.key)
+        acc[item.key] = isSelected ? item.amount : Number(prev.itemAmounts?.[item.key] ?? item.amount)
+        return acc
+      }, {}),
+    }))
+  }
+
+  const clearSelectedItemAmounts = () => {
+    setPaymentForm((prev) => ({
+      ...prev,
+      itemAmounts: payableFeeItems.reduce((acc, item) => {
+        const isSelected = prev.selectedItems.includes(item.key)
+        acc[item.key] = isSelected ? 0 : Number(prev.itemAmounts?.[item.key] ?? item.amount)
+        return acc
+      }, {}),
+    }))
+  }
+
   const handleSubmitPayment = async (event) => {
     event.preventDefault()
     if (!payingFee) return
@@ -763,6 +785,8 @@ const AdminFees = () => {
                     <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 12 }}>
                       <button type="button" className="btn btn-xs btn-a" onClick={selectAllPaymentItems}>เลือกทั้งหมด</button>
                       <button type="button" className="btn btn-xs btn-o" onClick={selectBasePaymentItems}>เลือกพื้นฐาน</button>
+                      <button type="button" className="btn btn-xs btn-p" onClick={setSelectedItemsToFullAmount}>กรอกยอดเต็ม (ที่เลือก)</button>
+                      <button type="button" className="btn btn-xs btn-g" onClick={clearSelectedItemAmounts}>ล้างยอด (ที่เลือก)</button>
                       <button type="button" className="btn btn-xs btn-g" onClick={clearPaymentItems}>ล้างการเลือก</button>
                     </div>
 
@@ -808,11 +832,15 @@ const AdminFees = () => {
                             payableFeeItems.map((item) => {
                               const checked = paymentForm.selectedItems.includes(item.key)
                               const value = Number(paymentForm.itemAmounts?.[item.key] ?? item.amount)
+                              const isPartialRow = checked && value > 0 && value < item.amount
+                              const isInvalidRow = checked && value <= 0
                               return (
                                 <tr key={item.key} style={{ background: checked ? '#f0fdf4' : '#fff' }}>
                                   <td>
                                     <div style={{ fontWeight: 600 }}>{item.label}</div>
                                     <div style={{ fontSize: 12, color: 'var(--mu)' }}>ยอดเต็ม ฿{item.amount.toLocaleString('th-TH')}</div>
+                                    {isPartialRow && <div style={{ fontSize: 12, color: '#0f766e' }}>ชำระบางส่วนของรายการนี้</div>}
+                                    {isInvalidRow && <div style={{ fontSize: 12, color: '#b91c1c' }}>โปรดระบุยอดมากกว่า 0</div>}
                                   </td>
                                   <td style={{ textAlign: 'center' }}>
                                     <input
@@ -831,7 +859,7 @@ const AdminFees = () => {
                                       value={value}
                                       onChange={(e) => handleChangeItemAmount(item.key, e.target.value, item.amount)}
                                       disabled={!checked}
-                                      style={{ width: 160, textAlign: 'right' }}
+                                      style={{ width: 160, textAlign: 'right', borderColor: isInvalidRow ? '#dc2626' : undefined }}
                                     />
                                   </td>
                                 </tr>
@@ -848,7 +876,7 @@ const AdminFees = () => {
                       </table>
                     </div>
                     <div style={{ marginTop: 8, fontSize: 12, color: 'var(--mu)' }}>
-                      คำแนะนำ: ติ๊กเฉพาะรายการที่ต้องรับชำระ และกรอกจำนวนเงินไม่เกินยอดเต็มของแต่ละรายการ เพื่อลดความผิดพลาด
+                      คำแนะนำ: ติ๊กเฉพาะรายการที่ต้องรับชำระ, กรอกยอดมากกว่า 0 และไม่เกินยอดเต็มของแต่ละรายการ เพื่อลดความผิดพลาด
                     </div>
                   </section>
 
