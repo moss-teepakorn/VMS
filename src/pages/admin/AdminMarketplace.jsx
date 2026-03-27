@@ -698,90 +698,101 @@ const AdminMarketplace = () => {
               </div>
             </div>
 
-            <div className="house-md-body">
-              <section className="house-sec">
-                <div className="house-sec-title">ข้อมูลทั่วไป</div>
-                <div className="house-grid house-grid-2">
-                  <label className="house-field"><span>บ้าน</span><input readOnly value={detailItem.houses?.house_no || '-'} /></label>
-                  <label className="house-field"><span>เจ้าของ</span><input readOnly value={detailItem.houses?.owner_name || '-'} /></label>
-                  <label className="house-field"><span>หมวดหมู่</span><input readOnly value={detailItem.category || '-'} /></label>
-                  <label className="house-field"><span>ประเภท</span><input readOnly value={getListingBadge(detailItem.listing_type).label} /></label>
-                  <label className="house-field"><span>ราคา</span><input readOnly value={detailItem.listing_type === 'free' ? 'ฟรี' : detailItem.listing_type === 'wanted' ? '-' : formatPrice(detailItem.price)} /></label>
-                  <label className="house-field"><span>ติดต่อ</span><input readOnly value={detailItem.contact || '-'} /></label>
+            <div className="house-md-body" style={{ background: '#eef2f7' }}>
+              <div style={{ width: 'min(860px, 100%)', margin: '0 auto', background: '#fff', border: '1px solid #d7dfeb', borderRadius: '12px', boxShadow: '0 8px 24px rgba(15,23,42,.08)', overflow: 'hidden' }}>
+                <div style={{ padding: '16px 18px', background: 'linear-gradient(135deg,#1e6b73 0%,#2bb673 100%)', color: '#fff' }}>
+                  <div style={{ fontSize: '12px', opacity: 0.85, letterSpacing: '1px' }}>COMMUNITY MARKET REPORT</div>
+                  <div style={{ fontSize: '22px', fontWeight: 800, lineHeight: 1.2, marginTop: '2px' }}>{detailItem.title || '-'}</div>
+                  <div style={{ marginTop: '8px', display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                    <span style={{ background: 'rgba(255,255,255,.18)', borderRadius: '999px', padding: '4px 10px', fontSize: '12px' }}>{getListingBadge(detailItem.listing_type).label}</span>
+                    <span style={{ background: 'rgba(255,255,255,.18)', borderRadius: '999px', padding: '4px 10px', fontSize: '12px' }}>{getStatusBadge(detailItem.status).label}</span>
+                    <span style={{ background: 'rgba(255,255,255,.18)', borderRadius: '999px', padding: '4px 10px', fontSize: '12px' }}>{formatDate(detailItem.created_at)}</span>
+                  </div>
                 </div>
-              </section>
 
-              <section className="house-sec">
-                <div className="house-sec-title">รายละเอียด</div>
-                <label className="house-field">
-                  <textarea readOnly rows="6" value={detailItem.detail || '-'} />
-                </label>
-              </section>
+                <div style={{ padding: '14px 18px 16px' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: '170px 1fr', gap: '8px 12px', fontSize: '13px', borderBottom: '1px solid #e5e7eb', paddingBottom: '12px', marginBottom: '12px' }}>
+                    <div style={{ color: '#64748b', fontWeight: 700 }}>บ้าน / เจ้าของ</div>
+                    <div style={{ color: '#0f172a', fontWeight: 600 }}>{detailItem.houses?.house_no || '-'}{detailItem.houses?.owner_name ? ` • ${detailItem.houses.owner_name}` : ''}</div>
+                    <div style={{ color: '#64748b', fontWeight: 700 }}>หมวดหมู่</div>
+                    <div style={{ color: '#0f172a' }}>{detailItem.category || '-'}</div>
+                    <div style={{ color: '#64748b', fontWeight: 700 }}>ราคา</div>
+                    <div style={{ color: '#0f172a', fontWeight: 700 }}>{detailItem.listing_type === 'free' ? 'ฟรี' : detailItem.listing_type === 'wanted' ? '-' : formatPrice(detailItem.price)}</div>
+                    <div style={{ color: '#64748b', fontWeight: 700 }}>ติดต่อ</div>
+                    <div style={{ color: '#0f172a' }}>{detailItem.contact || '-'}</div>
+                  </div>
 
-              <section className="house-sec" style={{ borderBottom: 0 }}>
-                <div className="house-sec-title">รูปภาพแนบ ({detailImages.length} รูป)</div>
-                {loadingDetailImages ? (
-                  <div style={{ color: 'var(--mu)', fontSize: '13px' }}>กำลังโหลดรูป...</div>
-                ) : detailImages.length === 0 ? (
-                  <div style={{ color: 'var(--mu)', fontSize: '13px' }}>ไม่มีรูปแนบ</div>
-                ) : (
+                  <div style={{ marginBottom: '14px' }}>
+                    <div style={{ fontSize: '12px', color: '#64748b', fontWeight: 700, marginBottom: '4px' }}>รายละเอียด</div>
+                    <div style={{ fontSize: '14px', lineHeight: 1.7, color: '#1f2937', whiteSpace: 'pre-wrap', minHeight: '84px' }}>{detailItem.detail || '-'}</div>
+                  </div>
+
                   <div>
-                    <div style={{ border: '1px solid #dbe3ed', borderRadius: '10px', overflow: 'hidden', background: '#fff' }}>
-                      <img
-                        src={detailImages[Math.min(detailImageIndex, detailImages.length - 1)]?.url}
-                        alt={detailImages[Math.min(detailImageIndex, detailImages.length - 1)]?.name || `image-${detailImageIndex + 1}`}
-                        style={{ width: '100%', height: '280px', objectFit: 'contain', background: '#f8fafc', display: 'block' }}
-                      />
-                    </div>
+                    <div style={{ fontSize: '12px', color: '#64748b', fontWeight: 700, marginBottom: '6px' }}>รูปภาพแนบ ({detailImages.length} รูป)</div>
+                    {loadingDetailImages ? (
+                      <div style={{ color: 'var(--mu)', fontSize: '13px' }}>กำลังโหลดรูป...</div>
+                    ) : detailImages.length === 0 ? (
+                      <div style={{ color: 'var(--mu)', fontSize: '13px' }}>ไม่มีรูปแนบ</div>
+                    ) : (
+                      <div>
+                        <div style={{ border: '1px solid #dbe3ed', borderRadius: '10px', overflow: 'hidden', background: '#fff' }}>
+                          <img
+                            src={detailImages[Math.min(detailImageIndex, detailImages.length - 1)]?.url}
+                            alt={detailImages[Math.min(detailImageIndex, detailImages.length - 1)]?.name || `image-${detailImageIndex + 1}`}
+                            style={{ width: '100%', height: '280px', objectFit: 'contain', background: '#f8fafc', display: 'block' }}
+                          />
+                        </div>
 
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '10px', gap: '8px' }}>
-                      <button
-                        type="button"
-                        className="btn btn-xs btn-o"
-                        onClick={() => setDetailImageIndex((cur) => Math.max(0, cur - 1))}
-                        disabled={detailImageIndex <= 0}
-                      >
-                        ← ก่อนหน้า
-                      </button>
-                      <div style={{ fontSize: '12px', color: 'var(--mu)' }}>
-                        รูป {Math.min(detailImageIndex + 1, detailImages.length)} / {detailImages.length}
-                      </div>
-                      <button
-                        type="button"
-                        className="btn btn-xs btn-o"
-                        onClick={() => setDetailImageIndex((cur) => Math.min(detailImages.length - 1, cur + 1))}
-                        disabled={detailImageIndex >= detailImages.length - 1}
-                      >
-                        ถัดไป →
-                      </button>
-                    </div>
-
-                    {detailImages.length > 1 && (
-                      <div style={{ display: 'flex', gap: '8px', marginTop: '10px', flexWrap: 'wrap' }}>
-                        {detailImages.map((img, idx) => (
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '10px', gap: '8px' }}>
                           <button
-                            key={img.path || img.url || idx}
                             type="button"
-                            onClick={() => setDetailImageIndex(idx)}
-                            style={{
-                              padding: 0,
-                              border: idx === detailImageIndex ? '2px solid #1e6b73' : '1px solid #dbe3ed',
-                              borderRadius: '8px',
-                              overflow: 'hidden',
-                              width: '70px',
-                              height: '70px',
-                              background: '#fff',
-                              cursor: 'pointer',
-                            }}
+                            className="btn btn-xs btn-o"
+                            onClick={() => setDetailImageIndex((cur) => Math.max(0, cur - 1))}
+                            disabled={detailImageIndex <= 0}
                           >
-                            <img src={img.url} alt={img.name || `thumb-${idx + 1}`} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+                            ← ก่อนหน้า
                           </button>
-                        ))}
+                          <div style={{ fontSize: '12px', color: 'var(--mu)' }}>
+                            รูป {Math.min(detailImageIndex + 1, detailImages.length)} / {detailImages.length}
+                          </div>
+                          <button
+                            type="button"
+                            className="btn btn-xs btn-o"
+                            onClick={() => setDetailImageIndex((cur) => Math.min(detailImages.length - 1, cur + 1))}
+                            disabled={detailImageIndex >= detailImages.length - 1}
+                          >
+                            ถัดไป →
+                          </button>
+                        </div>
+
+                        {detailImages.length > 1 && (
+                          <div style={{ display: 'flex', gap: '8px', marginTop: '10px', flexWrap: 'wrap' }}>
+                            {detailImages.map((img, idx) => (
+                              <button
+                                key={img.path || img.url || idx}
+                                type="button"
+                                onClick={() => setDetailImageIndex(idx)}
+                                style={{
+                                  padding: 0,
+                                  border: idx === detailImageIndex ? '2px solid #1e6b73' : '1px solid #dbe3ed',
+                                  borderRadius: '8px',
+                                  overflow: 'hidden',
+                                  width: '70px',
+                                  height: '70px',
+                                  background: '#fff',
+                                  cursor: 'pointer',
+                                }}
+                              >
+                                <img src={img.url} alt={img.name || `thumb-${idx + 1}`} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+                              </button>
+                            ))}
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>
-                )}
-              </section>
+                </div>
+              </div>
             </div>
 
             <div className="house-md-foot">
