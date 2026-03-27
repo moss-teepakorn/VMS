@@ -302,7 +302,7 @@ const AdminLayout = () => {
         {/* Password Change Modal */}
         {showPasswordModal && (
           <div className="house-mo">
-            <div className="house-md" style={{ maxWidth: '400px' }}>
+            <div className="house-md house-md--xs">
               <div className="house-md-head">
                 <div>
                   <div className="house-md-title">🔑 เปลี่ยนรหัสผ่าน</div>
