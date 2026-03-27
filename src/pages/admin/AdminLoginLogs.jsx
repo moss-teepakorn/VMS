@@ -151,7 +151,7 @@ export default function AdminLoginLogs() {
             className="btn btn-a btn-sm"
             onClick={loadLogs}
             disabled={loading}
-            style={{ flex: '0 0 auto' }}
+            style={{ flex: '0 0 auto', height: '34px' }}
           >
             ค้นหา
           </button>
