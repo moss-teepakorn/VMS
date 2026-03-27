@@ -91,10 +91,10 @@ async function resizeImageToLimit(file, sequence) {
   throw new Error(`ไม่สามารถย่อรูป ${file.name} ให้ต่ำกว่า 50KB ได้`)
 }
 
-const AdminWorkReportForm = () => {
+const AdminWorkReportForm = ({ modalMode = false, forceCreate = false, onSaved = null, onCancel = null }) => {
   const navigate = useNavigate()
   const { id } = useParams()
-  const isEdit = Boolean(id)
+  const isEdit = forceCreate ? false : Boolean(id)
 
   const [loading, setLoading] = useState(isEdit)
   const [saving, setSaving] = useState(false)
@@ -230,7 +230,20 @@ const AdminWorkReportForm = () => {
       }
 
       if (newFiles.length > 0) {
-        await uploadWorkReportImages(saved.id, newFiles)
+        try {
+          await uploadWorkReportImages(saved.id, newFiles)
+        } catch (uploadError) {
+          const message = String(uploadError?.message || '').toLowerCase()
+          if (message.includes('bucket') && message.includes('not found')) {
+            await Swal.fire({
+              icon: 'warning',
+              title: 'บันทึกแล้ว แต่แนบรูปไม่ได้',
+              text: 'ไม่พบบัคเก็ต work-report-images ใน Supabase Storage จึงยังอัปโหลดรูปไม่ได้',
+            })
+          } else {
+            throw uploadError
+          }
+        }
       }
 
       const currentImages = await listWorkReportImages(saved.id)
@@ -240,7 +253,11 @@ const AdminWorkReportForm = () => {
 
       await Swal.fire({ icon: 'success', title: 'บันทึกสำเร็จ', timer: 1200, showConfirmButton: false })
       revokeBlobUrls(attachments)
-      navigate('/admin/work-reports')
+      if (typeof onSaved === 'function') {
+        onSaved(saved)
+      } else {
+        navigate('/admin/work-reports')
+      }
     } catch (error) {
       await Swal.fire({ icon: 'error', title: 'บันทึกไม่สำเร็จ', text: error.message })
     } finally {
@@ -251,6 +268,96 @@ const AdminWorkReportForm = () => {
   if (loading) {
     return <div className="pane on"><div className="card"><div className="cb">กำลังโหลด...</div></div></div>
   }
+
+  const formBody = (
+    <form onSubmit={handleSubmit}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '14px', marginBottom: '16px' }}>
+        <label style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+          <span style={{ fontSize: '13px', fontWeight: 600 }}>เดือน *</span>
+          <select name="month" value={form.month} onChange={handleFormChange} className="houses-filter-select">
+            <option value="">เลือกเดือน</option>
+            {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((m) => (
+              <option key={m} value={m}>{new Date(2024, m - 1).toLocaleDateString('th-TH', { month: 'long' })}</option>
+            ))}
+          </select>
+        </label>
+
+        <label style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+          <span style={{ fontSize: '13px', fontWeight: 600 }}>ปี *</span>
+          <select name="year" value={form.year} onChange={handleFormChange} className="houses-filter-select">
+            {years.map((y) => <option key={y} value={y}>{y + 543}</option>)}
+          </select>
+        </label>
+
+        <label style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+          <span style={{ fontSize: '13px', fontWeight: 600 }}>หมวดหมู่ *</span>
+          <select name="category" value={form.category} onChange={handleFormChange} className="houses-filter-select">
+            {CATEGORIES.map((cat) => (
+              <option key={cat.value} value={cat.value}>{cat.label}</option>
+            ))}
+          </select>
+        </label>
+
+        <label style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '25px' }}>
+          <input type="checkbox" name="is_published" checked={form.is_published} onChange={handleFormChange} />
+          <span style={{ fontSize: '13px', fontWeight: 600 }}>เผยแพร่</span>
+        </label>
+      </div>
+
+      <label style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '14px' }}>
+        <span style={{ fontSize: '13px', fontWeight: 600 }}>สรุป *</span>
+        <input name="summary" value={form.summary} onChange={handleFormChange} type="text" className="houses-filter-input" placeholder="เช่น ซ่อมไฟถนน, ตัดแต่งต้นไม้" />
+      </label>
+
+      <label style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '14px' }}>
+        <span style={{ fontSize: '13px', fontWeight: 600 }}>รายละเอียด</span>
+        <textarea name="detail" value={form.detail} onChange={handleFormChange} rows={4} className="houses-filter-input" placeholder="รายละเอียดงานเพิ่มเติม" />
+      </label>
+
+      <div style={{ marginBottom: '18px' }}>
+        <div style={{ fontSize: '13px', fontWeight: 600, marginBottom: '8px' }}>รูปภาพ (ไม่เกิน 10 รูป, รูปละไม่เกิน 50KB)</div>
+        <label className="btn btn-o btn-sm" style={{ cursor: 'pointer', display: 'inline-block' }}>
+          <input type="file" accept="image/*" multiple onChange={handleAttachFiles} style={{ display: 'none' }} disabled={attachments.length >= MAX_ATTACHMENTS} />
+          แนบไฟล์
+        </label>
+        <div style={{ marginTop: '8px', color: 'var(--mu)', fontSize: '12px' }}>แนบแล้ว {attachments.length}/{MAX_ATTACHMENTS} รูป</div>
+
+        {attachments.length > 0 && (
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginTop: '12px' }}>
+            {attachments.map((img, index) => (
+              <div key={img.path || img.name || index} style={{ position: 'relative', width: '84px' }}>
+                <img src={img.url} alt={img.name || 'img'} style={{ width: '84px', height: '84px', objectFit: 'cover', borderRadius: '6px' }} />
+                <button
+                  type="button"
+                  onClick={() => handleRemoveAttachment(index)}
+                  style={{ position: 'absolute', top: '2px', right: '2px', width: '20px', height: '20px', border: 'none', borderRadius: '50%', background: 'rgba(0,0,0,.65)', color: '#fff', cursor: 'pointer' }}
+                >
+                  x
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
+        <button
+          type="button"
+          className="btn btn-o"
+          onClick={() => {
+            if (typeof onCancel === 'function') onCancel()
+            else navigate('/admin/work-reports')
+          }}
+          disabled={saving}
+        >
+          ยกเลิก
+        </button>
+        <button type="submit" className="btn btn-pr" disabled={saving}>บันทึก</button>
+      </div>
+    </form>
+  )
+
+  if (modalMode) return formBody
 
   return (
     <div className="pane on" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
@@ -270,83 +377,7 @@ const AdminWorkReportForm = () => {
         <div className="ch">
           <div className="ct">แบบฟอร์มผลงานนิติ</div>
         </div>
-        <div className="cb">
-          <form onSubmit={handleSubmit}>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '14px', marginBottom: '16px' }}>
-              <label style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                <span style={{ fontSize: '13px', fontWeight: 600 }}>เดือน *</span>
-                <select name="month" value={form.month} onChange={handleFormChange} className="houses-filter-select">
-                  <option value="">เลือกเดือน</option>
-                  {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((m) => (
-                    <option key={m} value={m}>{new Date(2024, m - 1).toLocaleDateString('th-TH', { month: 'long' })}</option>
-                  ))}
-                </select>
-              </label>
-
-              <label style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                <span style={{ fontSize: '13px', fontWeight: 600 }}>ปี *</span>
-                <select name="year" value={form.year} onChange={handleFormChange} className="houses-filter-select">
-                  {years.map((y) => <option key={y} value={y}>{y + 543}</option>)}
-                </select>
-              </label>
-
-              <label style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                <span style={{ fontSize: '13px', fontWeight: 600 }}>หมวดหมู่ *</span>
-                <select name="category" value={form.category} onChange={handleFormChange} className="houses-filter-select">
-                  {CATEGORIES.map((cat) => (
-                    <option key={cat.value} value={cat.value}>{cat.label}</option>
-                  ))}
-                </select>
-              </label>
-
-              <label style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '25px' }}>
-                <input type="checkbox" name="is_published" checked={form.is_published} onChange={handleFormChange} />
-                <span style={{ fontSize: '13px', fontWeight: 600 }}>เผยแพร่</span>
-              </label>
-            </div>
-
-            <label style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '14px' }}>
-              <span style={{ fontSize: '13px', fontWeight: 600 }}>สรุป *</span>
-              <input name="summary" value={form.summary} onChange={handleFormChange} type="text" className="houses-filter-input" placeholder="เช่น ซ่อมไฟถนน, ตัดแต่งต้นไม้" />
-            </label>
-
-            <label style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '14px' }}>
-              <span style={{ fontSize: '13px', fontWeight: 600 }}>รายละเอียด</span>
-              <textarea name="detail" value={form.detail} onChange={handleFormChange} rows={4} className="houses-filter-input" placeholder="รายละเอียดงานเพิ่มเติม" />
-            </label>
-
-            <div style={{ marginBottom: '18px' }}>
-              <div style={{ fontSize: '13px', fontWeight: 600, marginBottom: '8px' }}>รูปภาพ (ไม่เกิน 10 รูป, รูปละไม่เกิน 50KB)</div>
-              <label className="btn btn-o btn-sm" style={{ cursor: 'pointer', display: 'inline-block' }}>
-                <input type="file" accept="image/*" multiple onChange={handleAttachFiles} style={{ display: 'none' }} disabled={attachments.length >= MAX_ATTACHMENTS} />
-                แนบไฟล์
-              </label>
-              <div style={{ marginTop: '8px', color: 'var(--mu)', fontSize: '12px' }}>แนบแล้ว {attachments.length}/{MAX_ATTACHMENTS} รูป</div>
-
-              {attachments.length > 0 && (
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginTop: '12px' }}>
-                  {attachments.map((img, index) => (
-                    <div key={img.path || img.name || index} style={{ position: 'relative', width: '84px' }}>
-                      <img src={img.url} alt={img.name || 'img'} style={{ width: '84px', height: '84px', objectFit: 'cover', borderRadius: '6px' }} />
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveAttachment(index)}
-                        style={{ position: 'absolute', top: '2px', right: '2px', width: '20px', height: '20px', border: 'none', borderRadius: '50%', background: 'rgba(0,0,0,.65)', color: '#fff', cursor: 'pointer' }}
-                      >
-                        x
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
-              <button type="button" className="btn btn-o" onClick={() => navigate('/admin/work-reports')} disabled={saving}>ยกเลิก</button>
-              <button type="submit" className="btn btn-pr" disabled={saving}>บันทึก</button>
-            </div>
-          </form>
-        </div>
+        <div className="cb">{formBody}</div>
       </div>
     </div>
   )

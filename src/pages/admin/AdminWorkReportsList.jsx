@@ -8,6 +8,7 @@ import {
   listWorkReportImages,
   listWorkReports,
 } from '../../lib/workReports'
+import AdminWorkReportForm from './AdminWorkReportForm'
 import { getSetupConfig } from '../../lib/setup'
 import './AdminDashboard.css'
 
@@ -37,6 +38,7 @@ const AdminWorkReportsList = () => {
   const [reports, setReports] = useState([])
   const [loading, setLoading] = useState(false)
   const [setup, setSetup] = useState({ villageName: 'The Greenfield' })
+  const [showCreateModal, setShowCreateModal] = useState(false)
 
   const [searchTerm, setSearchTerm] = useState('')
   const [filterMonth, setFilterMonth] = useState('')
@@ -202,7 +204,7 @@ const AdminWorkReportsList = () => {
         <div className="ch houses-list-head">
           <div className="ct">รายการผลงานนิติ ({reports.length} รายการ)</div>
           <div className="houses-list-actions">
-            <button className="btn btn-p btn-sm" onClick={() => navigate('/admin/work-reports/new')}>+ เพิ่มผลงาน</button>
+            <button className="btn btn-p btn-sm" onClick={() => setShowCreateModal(true)}>+ เพิ่มผลงาน</button>
             <button className="btn btn-g btn-sm" onClick={() => loadReports()}>รีเฟรช</button>
           </div>
         </div>
@@ -249,6 +251,30 @@ const AdminWorkReportsList = () => {
           </div>
         </div>
       </div>
+
+      {showCreateModal && (
+        <div className="house-mo">
+          <div className="house-md house-md-vehicle">
+            <div className="house-md-head">
+              <div>
+                <div className="house-md-title">🏆 เพิ่มผลงานนิติ</div>
+                <div className="house-md-sub">บันทึกผลงานประจำเดือน พร้อมแนบรูป</div>
+              </div>
+            </div>
+            <div className="house-md-body">
+              <AdminWorkReportForm
+                modalMode
+                forceCreate
+                onCancel={() => setShowCreateModal(false)}
+                onSaved={async () => {
+                  setShowCreateModal(false)
+                  await loadReports()
+                }}
+              />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

@@ -123,7 +123,13 @@ export async function uploadWorkReportImages(reportId, files) {
       .from(WORK_REPORT_IMAGE_BUCKET)
       .upload(path, file, { upsert: true, contentType: file.type || 'image/jpeg' })
 
-    if (error) throw error
+    if (error) {
+      const message = String(error.message || '').toLowerCase()
+      if (message.includes('bucket') && message.includes('not found')) {
+        throw new Error('ไม่พบบัคเก็ต work-report-images ใน Supabase Storage กรุณาสร้าง bucket นี้ก่อนอัปโหลดรูป')
+      }
+      throw error
+    }
 
     const { data: publicUrlData } = supabase.storage
       .from(WORK_REPORT_IMAGE_BUCKET)
