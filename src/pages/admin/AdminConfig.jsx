@@ -138,6 +138,7 @@ const AdminConfig = () => {
     try {
       setSaving(true)
       const payload = { ...form }
+      const hasLogoColumns = Object.prototype.hasOwnProperty.call(form, 'village_logo_url') && Object.prototype.hasOwnProperty.call(form, 'village_logo_path')
       NUMBER_FIELDS.forEach((field) => {
         payload[field] = Number(payload[field] || 0)
       })
@@ -165,8 +166,10 @@ const AdminConfig = () => {
         if (previousLogoPath) {
           await deleteSystemAssetByPath(previousLogoPath)
         }
-        payload.village_logo_url = null
-        payload.village_logo_path = null
+        if (hasLogoColumns) {
+          payload.village_logo_url = null
+          payload.village_logo_path = null
+        }
         localStorage.removeItem('vms-login-circle-logo-url')
         localStorage.removeItem('vms-login-circle-logo-path')
       }
@@ -176,10 +179,16 @@ const AdminConfig = () => {
           await deleteSystemAssetByPath(previousLogoPath)
         }
         const uploadedLogo = await uploadVillageLogo(logoFile)
-        payload.village_logo_url = uploadedLogo?.url || null
-        payload.village_logo_path = uploadedLogo?.path || null
+        if (hasLogoColumns) {
+          payload.village_logo_url = uploadedLogo?.url || null
+          payload.village_logo_path = uploadedLogo?.path || null
+        }
         localStorage.setItem('vms-login-circle-logo-url', payload.village_logo_url || '')
         localStorage.setItem('vms-login-circle-logo-path', payload.village_logo_path || '')
+        if (!hasLogoColumns) {
+          localStorage.setItem('vms-login-circle-logo-url', uploadedLogo?.url || '')
+          localStorage.setItem('vms-login-circle-logo-path', uploadedLogo?.path || '')
+        }
       }
 
       if (signatureFile) {

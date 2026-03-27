@@ -283,6 +283,8 @@ create table if not exists system_config (
   id                      uuid    primary key default gen_random_uuid(),
   -- Section 1: ข้อมูลนิติบุคคล
   village_name            text    default 'The Greenfield',
+  village_logo_url        text,
+  village_logo_path       text,
   juristic_name           text    default 'นิติบุคคลหมู่บ้านเดอะกรีนฟิลด์',
   juristic_phone          text    default '02-123-4567',
   juristic_email          text    default 'niti@greenfield.co.th',
@@ -320,7 +322,7 @@ insert into system_config default values;
 -- VIEW: public config สำหรับ resident
 create or replace view public_config as
   select
-    village_name, juristic_name, juristic_phone,
+    village_name, village_logo_url, juristic_name, juristic_phone,
     juristic_signature_url,
     bank_name, bank_account_no, bank_account_name,
     invoice_message, date_format, system_language
