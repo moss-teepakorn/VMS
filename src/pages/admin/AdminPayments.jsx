@@ -4,19 +4,32 @@ import { listPayments } from '../../lib/fees'
 export default function AdminPayments() {
   const [payments, setPayments] = useState([])
   const [loading, setLoading] = useState(false)
+  const [search, setSearch] = useState('')
+
+  const totalAmount = payments.reduce((sum, payment) => sum + Number(payment.amount || 0), 0)
+
+  const filtered = payments.filter((payment) => {
+    const kw = search.trim().toLowerCase()
+    if (!kw) return true
+    return (
+      (payment.houses?.house_no || '').toLowerCase().includes(kw)
+      || (payment.payment_method || '').toLowerCase().includes(kw)
+      || (payment.note || '').toLowerCase().includes(kw)
+    )
+  })
+
+  const loadPayments = async () => {
+    try {
+      setLoading(true)
+      setPayments(await listPayments())
+    } catch (error) {
+      console.error('Error loading payments:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
 
   useEffect(() => {
-    const loadPayments = async () => {
-      try {
-        setLoading(true)
-        setPayments(await listPayments())
-      } catch (error) {
-        console.error('Error loading payments:', error)
-      } finally {
-        setLoading(false)
-      }
-    }
-
     loadPayments()
   }, [])
 
@@ -27,16 +40,27 @@ export default function AdminPayments() {
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
             <div className="ph-ico">💳</div>
             <div>
-              <div className="ph-h1">การชำระเงิน</div>
-              <div className="ph-sub">รายการรับชำระจากฐานข้อมูลจริง</div>
+              <div className="ph-h1">จ่ายค่าส่วนกลาง</div>
+              <div className="ph-sub">ตาราง payments จากฐานข้อมูลจริง · {payments.length} รายการ · รวม ฿{totalAmount.toLocaleString('th-TH')}</div>
             </div>
           </div>
         </div>
       </div>
 
-        <div className="card">
+      <div className="card">
         <div className="ch page-list-head">
-          <div className="ct">รายการชำระเงินทั้งหมด</div>
+          <div className="ct">รายการชำระเงินทั้งหมด {filtered.length} รายการ</div>
+          <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
+            <input
+              type="text"
+              className="page-filter-input"
+              placeholder="ค้นหา บ้าน / วิธีชำระ / หมายเหตุ"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              style={{ minWidth: '240px' }}
+            />
+            <button className="btn btn-sm btn-o" onClick={loadPayments} disabled={loading}>↻ โหลดใหม่</button>
+          </div>
         </div>
         <div className="cb page-table-body">
           <div className="desktop-only">
@@ -55,10 +79,10 @@ export default function AdminPayments() {
                 <tbody>
                   {loading ? (
                     <tr><td colSpan="6" style={{ textAlign: 'center', color: 'var(--mu)', padding: '20px' }}>กำลังโหลดข้อมูล...</td></tr>
-                  ) : payments.length === 0 ? (
+                  ) : filtered.length === 0 ? (
                     <tr><td colSpan="6" style={{ textAlign: 'center', color: 'var(--mu)', padding: '20px' }}>ยังไม่มีรายการชำระเงิน</td></tr>
                   ) : (
-                    payments.map((payment) => (
+                    filtered.map((payment) => (
                       <tr key={payment.id}>
                         <td>{payment.houses?.house_no || '-'}</td>
                         <td>{payment.fees ? `${payment.fees.period} ${payment.fees.year}` : '-'}</td>
@@ -76,9 +100,9 @@ export default function AdminPayments() {
           <div className="mobile-only">
             {loading ? (
               <div className="mcard-empty">กำลังโหลดข้อมูล...</div>
-            ) : payments.length === 0 ? (
+            ) : filtered.length === 0 ? (
               <div className="mcard-empty">ยังไม่มีรายการชำระเงิน</div>
-            ) : payments.map((payment) => (
+            ) : filtered.map((payment) => (
               <div key={payment.id} className="mcard">
                 <div className="mcard-top">
                   <div className="mcard-title">{payment.houses?.house_no || '-'}</div>

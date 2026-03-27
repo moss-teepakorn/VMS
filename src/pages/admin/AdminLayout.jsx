@@ -89,6 +89,7 @@ const AdminLayout = () => {
       { id: 'houses', label: 'ข้อมูลบ้าน', icon: '🏠', path: '/admin/houses' },
       { id: 'vehicles', label: 'ข้อมูลรถ', icon: '🚗', path: '/admin/vehicles' },
       { id: 'fees', label: 'ค่าส่วนกลาง', icon: '💰', path: '/admin/fees' },
+      { id: 'payments', label: 'จ่ายค่าส่วนกลาง', icon: '💳', path: '/admin/payments' },
     ]},
     { section: 'จัดการ', items: [
       { id: 'req', label: 'คำขอแก้ไข', icon: '📝', path: '/admin/requests', badge: '7' },
