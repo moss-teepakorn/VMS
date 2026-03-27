@@ -269,95 +269,96 @@ const AdminWorkReportForm = ({ modalMode = false, forceCreate = false, onSaved =
     return <div className="pane on"><div className="card"><div className="cb">กำลังโหลด...</div></div></div>
   }
 
-  const formBody = (
-    <form onSubmit={handleSubmit}>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '14px', marginBottom: '16px' }}>
-        <label style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-          <span style={{ fontSize: '13px', fontWeight: 600 }}>เดือน *</span>
-          <select name="month" value={form.month} onChange={handleFormChange} className="houses-filter-select">
-            <option value="">เลือกเดือน</option>
-            {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((m) => (
-              <option key={m} value={m}>{new Date(2024, m - 1).toLocaleDateString('th-TH', { month: 'long' })}</option>
-            ))}
-          </select>
-        </label>
+  const cancelHandler = () => {
+    if (typeof onCancel === 'function') onCancel()
+    else navigate('/admin/work-reports')
+  }
 
-        <label style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-          <span style={{ fontSize: '13px', fontWeight: 600 }}>ปี *</span>
-          <select name="year" value={form.year} onChange={handleFormChange} className="houses-filter-select">
-            {years.map((y) => <option key={y} value={y}>{y + 543}</option>)}
-          </select>
-        </label>
+  const formFields = (
+    <>
+      <section className="house-sec">
+        <div className="house-sec-title">ข้อมูลผลงาน</div>
+        <div className="house-grid house-grid-3">
+          <label className="house-field">
+            <span>เดือน *</span>
+            <select name="month" value={form.month} onChange={handleFormChange}>
+              <option value="">เลือกเดือน</option>
+              {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((m) => (
+                <option key={m} value={m}>{new Date(2024, m - 1).toLocaleDateString('th-TH', { month: 'long' })}</option>
+              ))}
+            </select>
+          </label>
+          <label className="house-field">
+            <span>ปี *</span>
+            <select name="year" value={form.year} onChange={handleFormChange}>
+              {years.map((y) => <option key={y} value={y}>{y + 543}</option>)}
+            </select>
+          </label>
+          <label className="house-field">
+            <span>หมวดหมู่ *</span>
+            <select name="category" value={form.category} onChange={handleFormChange}>
+              {CATEGORIES.map((cat) => (
+                <option key={cat.value} value={cat.value}>{cat.label}</option>
+              ))}
+            </select>
+          </label>
+        </div>
+      </section>
 
-        <label style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-          <span style={{ fontSize: '13px', fontWeight: 600 }}>หมวดหมู่ *</span>
-          <select name="category" value={form.category} onChange={handleFormChange} className="houses-filter-select">
-            {CATEGORIES.map((cat) => (
-              <option key={cat.value} value={cat.value}>{cat.label}</option>
-            ))}
-          </select>
-        </label>
+      <section className="house-sec">
+        <div className="house-sec-title">รายละเอียด</div>
+        <div className="house-grid" style={{ gridTemplateColumns: '1fr' }}>
+          <label className="house-field">
+            <span>สรุปผลงาน *</span>
+            <input name="summary" value={form.summary} onChange={handleFormChange} type="text" placeholder="เช่น ซ่อมไฟถนน, ตัดแต่งต้นไม้" />
+          </label>
+          <label className="house-field">
+            <span>รายละเอียด</span>
+            <textarea name="detail" value={form.detail} onChange={handleFormChange} rows={4} placeholder="รายละเอียดงานเพิ่มเติม" />
+          </label>
+          <label className="house-field" style={{ flexDirection: 'row', alignItems: 'center', gap: '8px', paddingTop: '2px' }}>
+            <input type="checkbox" name="is_published" checked={form.is_published} onChange={handleFormChange} style={{ width: 'auto', minHeight: 'auto', flex: 'none' }} />
+            <span style={{ fontWeight: 600 }}>เผยแพร่ให้ลูกบ้านเห็น</span>
+          </label>
+        </div>
+      </section>
 
-        <label style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '25px' }}>
-          <input type="checkbox" name="is_published" checked={form.is_published} onChange={handleFormChange} />
-          <span style={{ fontSize: '13px', fontWeight: 600 }}>เผยแพร่</span>
-        </label>
-      </div>
-
-      <label style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '14px' }}>
-        <span style={{ fontSize: '13px', fontWeight: 600 }}>สรุป *</span>
-        <input name="summary" value={form.summary} onChange={handleFormChange} type="text" className="houses-filter-input" placeholder="เช่น ซ่อมไฟถนน, ตัดแต่งต้นไม้" />
-      </label>
-
-      <label style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '14px' }}>
-        <span style={{ fontSize: '13px', fontWeight: 600 }}>รายละเอียด</span>
-        <textarea name="detail" value={form.detail} onChange={handleFormChange} rows={4} className="houses-filter-input" placeholder="รายละเอียดงานเพิ่มเติม" />
-      </label>
-
-      <div style={{ marginBottom: '18px' }}>
-        <div style={{ fontSize: '13px', fontWeight: 600, marginBottom: '8px' }}>รูปภาพ (ไม่เกิน 10 รูป, รูปละไม่เกิน 50KB)</div>
+      <section className="house-sec" style={{ borderBottom: 0 }}>
+        <div className="house-sec-title">รูปภาพ (ไม่เกิน 10 รูป, รูปละไม่เกิน 50KB)</div>
         <label className="btn btn-o btn-sm" style={{ cursor: 'pointer', display: 'inline-block' }}>
           <input type="file" accept="image/*" multiple onChange={handleAttachFiles} style={{ display: 'none' }} disabled={attachments.length >= MAX_ATTACHMENTS} />
           แนบไฟล์
         </label>
-        <div style={{ marginTop: '8px', color: 'var(--mu)', fontSize: '12px' }}>แนบแล้ว {attachments.length}/{MAX_ATTACHMENTS} รูป</div>
-
+        <div style={{ marginTop: '6px', color: 'var(--mu)', fontSize: '12px' }}>แนบแล้ว {attachments.length}/{MAX_ATTACHMENTS} รูป</div>
         {attachments.length > 0 && (
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginTop: '12px' }}>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginTop: '10px' }}>
             {attachments.map((img, index) => (
               <div key={img.path || img.name || index} style={{ position: 'relative', width: '84px' }}>
                 <img src={img.url} alt={img.name || 'img'} style={{ width: '84px', height: '84px', objectFit: 'cover', borderRadius: '6px' }} />
                 <button
                   type="button"
                   onClick={() => handleRemoveAttachment(index)}
-                  style={{ position: 'absolute', top: '2px', right: '2px', width: '20px', height: '20px', border: 'none', borderRadius: '50%', background: 'rgba(0,0,0,.65)', color: '#fff', cursor: 'pointer' }}
-                >
-                  x
-                </button>
+                  style={{ position: 'absolute', top: '2px', right: '2px', width: '20px', height: '20px', border: 'none', borderRadius: '50%', background: 'rgba(0,0,0,.65)', color: '#fff', cursor: 'pointer', fontSize: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                >✕</button>
               </div>
             ))}
           </div>
         )}
-      </div>
-
-      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
-        <button
-          type="button"
-          className="btn btn-o"
-          onClick={() => {
-            if (typeof onCancel === 'function') onCancel()
-            else navigate('/admin/work-reports')
-          }}
-          disabled={saving}
-        >
-          ยกเลิก
-        </button>
-        <button type="submit" className="btn btn-pr" disabled={saving}>บันทึก</button>
-      </div>
-    </form>
+      </section>
+    </>
   )
 
-  if (modalMode) return formBody
+  if (modalMode) {
+    return (
+      <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
+        <div className="house-md-body">{formFields}</div>
+        <div className="house-md-foot">
+          <button type="button" className="btn btn-g" onClick={cancelHandler} disabled={saving}>ยกเลิก</button>
+          <button type="submit" className="btn btn-p" disabled={saving}>{saving ? 'กำลังบันทึก...' : 'บันทึก'}</button>
+        </div>
+      </form>
+    )
+  }
 
   return (
     <div className="pane on" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
@@ -377,7 +378,15 @@ const AdminWorkReportForm = ({ modalMode = false, forceCreate = false, onSaved =
         <div className="ch">
           <div className="ct">แบบฟอร์มผลงานนิติ</div>
         </div>
-        <div className="cb">{formBody}</div>
+        <div className="cb" style={{ padding: '8px 14px 16px' }}>
+          <form onSubmit={handleSubmit}>
+            {formFields}
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', paddingTop: '14px' }}>
+              <button type="button" className="btn btn-g" onClick={cancelHandler} disabled={saving}>ยกเลิก</button>
+              <button type="submit" className="btn btn-p" disabled={saving}>{saving ? 'กำลังบันทึก...' : 'บันทึก'}</button>
+            </div>
+          </form>
+        </div>
       </div>
     </div>
   )

@@ -231,28 +231,29 @@ const AdminWorkReportsList = () => {
           </div>
         </div>
 
-        <div className="houses-filter-row" style={{ gridTemplateColumns: 'minmax(150px,1fr) 118px 100px 130px auto' }}>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px 10px', alignItems: 'center', marginTop: '10px', position: 'relative', zIndex: 1 }}>
           <input
             type="text"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             placeholder="ค้นหาจากสรุป/รายละเอียด..."
             className="houses-filter-input"
+            style={{ flex: '1', minWidth: '160px' }}
           />
-          <select value={filterMonth} onChange={(e) => setFilterMonth(e.target.value)} className="houses-filter-select">
+          <select value={filterMonth} onChange={(e) => setFilterMonth(e.target.value)} className="houses-filter-select" style={{ width: '118px' }}>
             <option value="">ทุกเดือน</option>
             {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((m) => (
               <option key={m} value={m}>{new Date(2024, m - 1).toLocaleDateString('th-TH', { month: 'long' })}</option>
             ))}
           </select>
-          <select value={filterYear} onChange={(e) => setFilterYear(e.target.value)} className="houses-filter-select">
+          <select value={filterYear} onChange={(e) => setFilterYear(e.target.value)} className="houses-filter-select" style={{ width: '100px' }}>
             {YEAR_OPTIONS.map((y) => <option key={y} value={y}>{y + 543}</option>)}
           </select>
-          <select value={filterCategory} onChange={(e) => setFilterCategory(e.target.value)} className="houses-filter-select">
+          <select value={filterCategory} onChange={(e) => setFilterCategory(e.target.value)} className="houses-filter-select" style={{ width: '130px' }}>
             <option value="all">ทุกหมวดหมู่</option>
             {CATEGORIES.map((cat) => <option key={cat.value} value={cat.value}>{cat.label}</option>)}
           </select>
-          <button className="btn btn-a btn-sm houses-filter-btn" onClick={() => loadReports()}>ค้นหา</button>
+          <button className="btn btn-a btn-sm houses-filter-btn" style={{ flexShrink: 0 }} onClick={() => loadReports()}>ค้นหา</button>
         </div>
       </div>
 
@@ -353,24 +354,22 @@ const AdminWorkReportsList = () => {
 
       {showCreateModal && (
         <div className="house-mo">
-          <div className="house-md house-md-vehicle">
+          <div className="house-md house-md-home">
             <div className="house-md-head">
               <div>
                 <div className="house-md-title">🏆 เพิ่มผลงานนิติ</div>
                 <div className="house-md-sub">บันทึกผลงานประจำเดือน พร้อมแนบรูป</div>
               </div>
             </div>
-            <div className="house-md-body">
-              <AdminWorkReportForm
-                modalMode
-                forceCreate
-                onCancel={() => setShowCreateModal(false)}
-                onSaved={async () => {
-                  setShowCreateModal(false)
-                  await loadReports()
-                }}
-              />
-            </div>
+            <AdminWorkReportForm
+              modalMode
+              forceCreate
+              onCancel={() => setShowCreateModal(false)}
+              onSaved={async () => {
+                setShowCreateModal(false)
+                await loadReports()
+              }}
+            />
           </div>
         </div>
       )}
