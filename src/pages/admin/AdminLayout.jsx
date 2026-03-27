@@ -95,7 +95,7 @@ const AdminLayout = () => {
       { id: 'issues', label: 'จัดการปัญหา', icon: '🔧', path: '/admin/issues', badge: '3' },
       { id: 'vio', label: 'แจ้งกระทำผิด', icon: '⚠️', path: '/admin/violations' },
       { id: 'ann', label: 'ประกาศ', icon: '📢', path: '/admin/announcements' },
-      { id: 'rep', label: 'ผลงานนิติ', icon: '🏆', path: '/admin/reports' },
+      { id: 'rep', label: 'ผลงานนิติ', icon: '🏆', path: '/admin/work-reports' },
       { id: 'tech', label: 'ทำเนียบช่าง', icon: '🔨', path: '/admin/technicians' },
       { id: 'market', label: 'ตลาดชุมชน', icon: '🛒', path: '/admin/marketplace' },
     ]},

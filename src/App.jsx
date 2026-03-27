@@ -11,6 +11,7 @@ import AdminIssues from './pages/admin/AdminIssues'
 import AdminViolations from './pages/admin/AdminViolations'
 import AdminAnnouncements from './pages/admin/AdminAnnouncements'
 import AdminReports from './pages/admin/AdminReports'
+import AdminWorkReports from './pages/admin/AdminWorkReports'
 import AdminTechnicians from './pages/admin/AdminTechnicians'
 import AdminMarketplace from './pages/admin/AdminMarketplace'
 import AdminConfig from './pages/admin/AdminConfig'
@@ -86,6 +87,7 @@ function AppRoutes() {
         <Route path="violations" element={<AdminViolations />} />
         <Route path="announcements" element={<AdminAnnouncements />} />
         <Route path="reports" element={<AdminReports />} />
+        <Route path="work-reports" element={<AdminWorkReports />} />
         <Route path="technicians" element={<AdminTechnicians />} />
         <Route path="marketplace" element={<AdminMarketplace />} />
         <Route path="config" element={<AdminConfig />} />
