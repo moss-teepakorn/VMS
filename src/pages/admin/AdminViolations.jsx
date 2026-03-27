@@ -774,11 +774,39 @@ const AdminViolations = () => {
     const images = await listViolationImages(item.id)
     const pages = await buildViolationReportPages(item, images)
     const baseName = item.report_no || `violation-${item.id}`
-    const firstPage = pages[0]
+    const firstPage = pages[0]?.canvas
     if (!firstPage) throw new Error('ไม่พบข้อมูลหน้าเอกสารสำหรับสร้างรูปภาพ')
 
+    const pageGap = 16
+    const totalHeight = pages.reduce((sum, entry, index) => sum + entry.canvas.height + (index > 0 ? pageGap : 0), 0)
+
+    // Guard against browser canvas limits on very long documents.
+    if (totalHeight > 30000) {
+      throw new Error('รูปภาพยาวเกินขีดจำกัดระบบ แนะนำใช้ PDF สำหรับเอกสารยาวมาก')
+    }
+
+    const mergedCanvas = document.createElement('canvas')
+    mergedCanvas.width = firstPage.width
+    mergedCanvas.height = totalHeight
+    const mergedCtx = mergedCanvas.getContext('2d')
+    if (!mergedCtx) throw new Error('ไม่สามารถสร้างไฟล์รูปภาพได้')
+
+    mergedCtx.fillStyle = '#ffffff'
+    mergedCtx.fillRect(0, 0, mergedCanvas.width, mergedCanvas.height)
+
+    let offsetY = 0
+    pages.forEach((entry, index) => {
+      if (index > 0) {
+        mergedCtx.fillStyle = '#e5e7eb'
+        mergedCtx.fillRect(0, offsetY, mergedCanvas.width, pageGap)
+        offsetY += pageGap
+      }
+      mergedCtx.drawImage(entry.canvas, 0, offsetY)
+      offsetY += entry.canvas.height
+    })
+
     const link = document.createElement('a')
-    link.href = firstPage.canvas.toDataURL('image/jpeg', 0.95)
+    link.href = mergedCanvas.toDataURL('image/jpeg', 0.95)
     link.download = `${baseName}.jpg`
     document.body.appendChild(link)
     link.click()
