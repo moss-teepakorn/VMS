@@ -502,6 +502,7 @@ const AdminViolations = () => {
             .toolbar .actions { display: flex; gap: 8px; }
             .toolbar button { border: none; border-radius: 8px; padding: 8px 12px; cursor: pointer; font-size: 13px; }
             .btn-print { background: #2563eb; color: #fff; }
+            .btn-image { background: #16a34a; color: #fff; }
             .btn-close { background: #e5e7eb; color: #111827; }
             .canvas { padding: ${includeToolbar ? '16px 0 30px' : '0'}; }
             .a4 { width: 210mm; min-height: 297mm; margin: 0 auto 16px; background: #fff; border: 1px solid #d1d5db; padding: 9mm 11mm; display: block; }
@@ -540,6 +541,7 @@ const AdminViolations = () => {
             <div>ตัวอย่างรายงาน A4 • ${escapeHtml(item.report_no || '-')}</div>
             <div class="actions">
               <button class="btn-print" onclick="window.print()">Print</button>
+              <button class="btn-image" onclick="if (window.opener && typeof window.opener.__downloadViolationImageFromPreview === 'function') { window.opener.__downloadViolationImageFromPreview(); }">Image</button>
               <button class="btn-close" onclick="window.close()">ปิด</button>
             </div>
           </div>
@@ -815,6 +817,19 @@ const AdminViolations = () => {
 
   const handleOpenPrintPreview = async (item) => {
     try {
+      window.__downloadViolationImageFromPreview = async () => {
+        try {
+          await downloadViolationReportImage(item)
+          await showSwal({ icon: 'success', title: 'ดาวน์โหลด Image สำเร็จ', timer: 1000, showConfirmButton: false })
+        } catch (error) {
+          await showSwal({
+            icon: 'error',
+            title: 'ดาวน์โหลด Image ไม่สำเร็จ',
+            text: `${error.message} (build ${typeof __BUILD_SHA__ !== 'undefined' ? __BUILD_SHA__ : 'unknown'})`,
+          })
+        }
+      }
+
       const images = await listViolationImages(item.id)
       const html = buildReportPreviewHtml(item, images)
       const previewWindow = window.open('', '_blank', 'width=1100,height=840')
@@ -840,19 +855,6 @@ const AdminViolations = () => {
       await showSwal({
         icon: 'error',
         title: 'ดาวน์โหลด PDF ไม่สำเร็จ',
-        text: `${error.message} (build ${typeof __BUILD_SHA__ !== 'undefined' ? __BUILD_SHA__ : 'unknown'})`,
-      })
-    }
-  }
-
-  const handleDownloadImage = async (item) => {
-    try {
-      await downloadViolationReportImage(item)
-      await showSwal({ icon: 'success', title: 'ดาวน์โหลด Image สำเร็จ', timer: 1000, showConfirmButton: false })
-    } catch (error) {
-      await showSwal({
-        icon: 'error',
-        title: 'ดาวน์โหลด Image ไม่สำเร็จ',
         text: `${error.message} (build ${typeof __BUILD_SHA__ !== 'undefined' ? __BUILD_SHA__ : 'unknown'})`,
       })
     }
@@ -946,7 +948,6 @@ const AdminViolations = () => {
                         <td><div className="td-acts">
                           <button className="btn btn-xs btn-o" onClick={() => handleOpenPrintPreview(item)}>พิมพ์</button>
                           <button className="btn btn-xs btn-p" onClick={() => handleDownloadPdf(item)}>PDF</button>
-                          <button className="btn btn-xs btn-g" onClick={() => handleDownloadImage(item)}>Image</button>
                           <button className="btn btn-xs btn-a" onClick={() => openEditModal(item)}>แก้ไข</button>
                           <button className="btn btn-xs btn-dg" onClick={() => handleDelete(item)}>ลบ</button>
                         </div></td>
@@ -981,7 +982,6 @@ const AdminViolations = () => {
                   <div className="mcard-actions">
                     <button className="btn btn-xs btn-o" onClick={() => handleOpenPrintPreview(item)}>พิมพ์</button>
                     <button className="btn btn-xs btn-p" onClick={() => handleDownloadPdf(item)}>PDF</button>
-                    <button className="btn btn-xs btn-g" onClick={() => handleDownloadImage(item)}>Image</button>
                     <button className="btn btn-xs btn-a" onClick={() => openEditModal(item)}>แก้ไข</button>
                     <button className="btn btn-xs btn-dg" onClick={() => handleDelete(item)}>ลบ</button>
                   </div>
