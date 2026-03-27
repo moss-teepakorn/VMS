@@ -594,16 +594,15 @@ const AdminViolations = () => {
     `
   }
 
-  const downloadViolationReportPdf = async (item) => {
-    const images = await listViolationImages(item.id)
-    const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' })
-
+  const buildViolationReportPages = async (item, images) => {
     const pageWidthPx = 1240
     const pageHeightPx = 1754
-    const marginX = 70
-    const marginY = 78
+    const marginX = 48
+    const marginY = 56
     const contentWidth = pageWidthPx - (marginX * 2)
-    const lineHeight = 32
+    const lineHeight = 30
+    const labelWidth = 300
+    const bodyBottomY = pageHeightPx - marginY
 
     const createPageCanvas = () => {
       const canvas = document.createElement('canvas')
@@ -616,31 +615,121 @@ const AdminViolations = () => {
       return { canvas, ctx }
     }
 
-    const signatureSource = reportIdentity.juristic_signature_url || juristicSignature
-    const signatureRawImage = isSvgSource(signatureSource) ? null : await loadImageElement(signatureSource)
-    const signatureImage = prepareSignatureImageForPdf(signatureRawImage)
-    const firstEvidenceImage = await loadImageElement(images[0]?.url)
+    const pages = []
+    let pageIndex = 0
+    let page = null
+    let ctx = null
+    let cursorY = marginY
 
-    const firstPage = createPageCanvas()
-    const firstCtx = firstPage.ctx
+    const startNewPage = (isFirstPage = false) => {
+      page = createPageCanvas()
+      ctx = page.ctx
+      pages.push(page)
+      pageIndex += 1
 
-    firstCtx.fillStyle = '#0d9488'
-    firstCtx.fillRect(marginX, marginY, 64, 64)
-    firstCtx.fillStyle = '#ffffff'
-    firstCtx.font = 'bold 24px Arial, Helvetica, sans-serif'
-    firstCtx.textAlign = 'center'
-    firstCtx.fillText('GF', marginX + 32, marginY + 42)
-    firstCtx.textAlign = 'left'
+      if (isFirstPage) {
+        ctx.fillStyle = '#0d9488'
+        ctx.fillRect(marginX, marginY, 64, 64)
+        ctx.fillStyle = '#ffffff'
+        ctx.font = 'bold 24px Arial, Helvetica, sans-serif'
+        ctx.textAlign = 'center'
+        ctx.fillText('GF', marginX + 32, marginY + 42)
+        ctx.textAlign = 'left'
 
-    firstCtx.fillStyle = '#111827'
-    firstCtx.font = 'bold 38px Arial, Helvetica, sans-serif'
-    firstCtx.fillText('รายงานการกระทำผิด', marginX + 86, marginY + 32)
-    firstCtx.fillStyle = '#374151'
-    firstCtx.font = '22px Arial, Helvetica, sans-serif'
-    firstCtx.fillText(reportIdentity.village_name || DEFAULT_REPORT_IDENTITY.village_name, marginX + 86, marginY + 70)
-    firstCtx.fillStyle = '#4b5563'
-    firstCtx.font = '18px Arial, Helvetica, sans-serif'
-    firstCtx.fillText(`เลขที่รายงาน: ${item.report_no || '-'}   วันที่รายงาน: ${formatDate(item.report_date)}`, marginX, marginY + 118)
+        ctx.fillStyle = '#111827'
+        ctx.font = 'bold 40px Arial, Helvetica, sans-serif'
+        ctx.fillText('รายงานการกระทำผิด', marginX + 86, marginY + 34)
+        ctx.fillStyle = '#374151'
+        ctx.font = '22px Arial, Helvetica, sans-serif'
+        ctx.fillText(reportIdentity.village_name || DEFAULT_REPORT_IDENTITY.village_name, marginX + 86, marginY + 70)
+        ctx.fillStyle = '#4b5563'
+        ctx.font = '18px Arial, Helvetica, sans-serif'
+        ctx.fillText(`เลขที่รายงาน: ${item.report_no || '-'}   วันที่รายงาน: ${formatDate(item.report_date)}`, marginX, marginY + 118)
+        cursorY = marginY + 162
+      } else {
+        ctx.fillStyle = '#111827'
+        ctx.font = 'bold 28px Arial, Helvetica, sans-serif'
+        ctx.fillText('รายงานการกระทำผิด (ต่อ)', marginX, marginY + 14)
+        ctx.fillStyle = '#4b5563'
+        ctx.font = '18px Arial, Helvetica, sans-serif'
+        ctx.fillText(`เลขที่รายงาน: ${item.report_no || '-'} • บ้าน: ${item.houses?.house_no || '-'}`, marginX, marginY + 44)
+        cursorY = marginY + 74
+      }
+    }
+
+    const ensureSpace = (requiredHeight) => {
+      if (!ctx) startNewPage(true)
+      if ((cursorY + requiredHeight) <= bodyBottomY) return
+      startNewPage(false)
+    }
+
+    const drawFieldRow = (label, value) => {
+      ctx.fillStyle = '#111827'
+      ctx.font = '20px Arial, Helvetica, sans-serif'
+      const valueLines = wrapTextByWidth(ctx, value, contentWidth - labelWidth)
+      const blockHeight = Math.max(lineHeight, valueLines.length * lineHeight) + 8
+      ensureSpace(blockHeight)
+
+      ctx.fillStyle = '#111827'
+      ctx.font = 'bold 20px Arial, Helvetica, sans-serif'
+      ctx.fillText(label, marginX, cursorY)
+
+      ctx.font = '20px Arial, Helvetica, sans-serif'
+      valueLines.forEach((line, idx) => {
+        ctx.fillText(line, marginX + labelWidth, cursorY + (idx * lineHeight))
+      })
+
+      cursorY += blockHeight
+    }
+
+    const drawEvidenceSection = async (title, image, includeSignature = false) => {
+      const sectionTitleHeight = 32
+      const evidenceHeight = includeSignature ? 360 : (pageHeightPx - marginY - cursorY - 90)
+      const safeEvidenceHeight = Math.max(320, evidenceHeight)
+      const signatureBlockHeight = includeSignature ? 150 : 0
+      ensureSpace(sectionTitleHeight + safeEvidenceHeight + signatureBlockHeight)
+
+      ctx.fillStyle = '#111827'
+      ctx.font = 'bold 22px Arial, Helvetica, sans-serif'
+      ctx.fillText(title, marginX, cursorY + 18)
+      const evidenceY = cursorY + 34
+
+      ctx.strokeStyle = '#d1d5db'
+      ctx.lineWidth = 2
+      ctx.strokeRect(marginX, evidenceY, contentWidth, safeEvidenceHeight)
+      drawImageContain(ctx, image, marginX + 2, evidenceY + 2, contentWidth - 4, safeEvidenceHeight - 4)
+
+      cursorY = evidenceY + safeEvidenceHeight + 10
+
+      if (includeSignature) {
+        const signatureSource = reportIdentity.juristic_signature_url || juristicSignature
+        const signatureRawImage = isSvgSource(signatureSource) ? null : await loadImageElement(signatureSource)
+        const signatureImage = prepareSignatureImageForPdf(signatureRawImage)
+        const signBoxWidth = 320
+        const signBoxX = marginX + contentWidth - signBoxWidth
+        const signBaseY = cursorY + 8
+        if (signatureImage) {
+          drawImageContain(ctx, signatureImage, signBoxX, signBaseY, signBoxWidth, 72)
+        }
+
+        ctx.strokeStyle = '#111827'
+        ctx.lineWidth = 1.2
+        ctx.beginPath()
+        ctx.moveTo(signBoxX, signBaseY + 90)
+        ctx.lineTo(signBoxX + signBoxWidth, signBaseY + 90)
+        ctx.stroke()
+
+        ctx.fillStyle = '#111827'
+        ctx.font = '18px Arial, Helvetica, sans-serif'
+        ctx.textAlign = 'center'
+        ctx.fillText(`(${reportIdentity.juristic_name || DEFAULT_REPORT_IDENTITY.juristic_name})`, signBoxX + (signBoxWidth / 2), signBaseY + 120)
+        ctx.textAlign = 'left'
+
+        cursorY = signBaseY + 130
+      }
+    }
+
+    startNewPage(true)
 
     const rows = [
       ['บ้าน/เจ้าของ', `${item.houses?.house_no || '-'} ${item.houses?.owner_name ? `- ${item.houses.owner_name}` : ''}`],
@@ -654,67 +743,46 @@ const AdminViolations = () => {
       ['อัปเดตจากลูกบ้าน', item.resident_note || '-'],
     ]
 
-    let cursorY = marginY + 175
-    for (const [label, value] of rows) {
-      firstCtx.fillStyle = '#111827'
-      firstCtx.font = 'bold 20px Arial, Helvetica, sans-serif'
-      firstCtx.fillText(label, marginX, cursorY)
-      firstCtx.font = '20px Arial, Helvetica, sans-serif'
-      const valueLines = wrapTextByWidth(firstCtx, value, contentWidth - 360)
-      for (let i = 0; i < valueLines.length; i += 1) {
-        firstCtx.fillText(valueLines[i], marginX + 360, cursorY + (i * lineHeight))
-      }
-      cursorY += Math.max(lineHeight, valueLines.length * lineHeight)
-    }
+    rows.forEach(([label, value]) => drawFieldRow(label, value))
 
-    firstCtx.fillStyle = '#111827'
-    firstCtx.font = 'bold 22px Arial, Helvetica, sans-serif'
-    firstCtx.fillText('รูปภาพหลักฐาน', marginX, cursorY + 20)
-    const evidenceY = cursorY + 36
-    const evidenceHeight = 390
-    firstCtx.strokeStyle = '#d1d5db'
-    firstCtx.lineWidth = 2
-    firstCtx.strokeRect(marginX, evidenceY, contentWidth, evidenceHeight)
-    drawImageContain(firstCtx, firstEvidenceImage, marginX + 2, evidenceY + 2, contentWidth - 4, evidenceHeight - 4)
-
-    const signBoxWidth = 300
-    const signBoxX = marginX + contentWidth - signBoxWidth
-    const signBaseY = evidenceY + evidenceHeight + 46
-    if (signatureImage) {
-      drawImageContain(firstCtx, signatureImage, signBoxX, signBaseY, signBoxWidth, 72)
-    }
-    firstCtx.strokeStyle = '#111827'
-    firstCtx.lineWidth = 1.2
-    firstCtx.beginPath()
-    firstCtx.moveTo(signBoxX, signBaseY + 90)
-    firstCtx.lineTo(signBoxX + signBoxWidth, signBaseY + 90)
-    firstCtx.stroke()
-    firstCtx.fillStyle = '#111827'
-    firstCtx.font = '18px Arial, Helvetica, sans-serif'
-    firstCtx.textAlign = 'center'
-    firstCtx.fillText(`(${reportIdentity.juristic_name || DEFAULT_REPORT_IDENTITY.juristic_name})`, signBoxX + (signBoxWidth / 2), signBaseY + 120)
-    firstCtx.textAlign = 'left'
-
-    pdf.addImage(firstPage.canvas.toDataURL('image/jpeg', 0.95), 'JPEG', 0, 0, 210, 297)
+    const firstEvidenceImage = await loadImageElement(images[0]?.url)
+    await drawEvidenceSection('รูปภาพหลักฐาน', firstEvidenceImage, true)
 
     for (let index = 1; index < images.length; index += 1) {
+      startNewPage(false)
       const evidenceImage = await loadImageElement(images[index]?.url)
-      const page = createPageCanvas()
-      const ctx = page.ctx
-      ctx.fillStyle = '#111827'
-      ctx.font = 'bold 42px Arial, Helvetica, sans-serif'
-      ctx.fillText(`หลักฐานเพิ่มเติม ${index + 1}`, marginX, marginY + 20)
-      ctx.strokeStyle = '#d1d5db'
-      ctx.lineWidth = 2
-      const imageY = marginY + 60
-      const imageHeight = pageHeightPx - imageY - marginY
-      ctx.strokeRect(marginX, imageY, contentWidth, imageHeight)
-      drawImageContain(ctx, evidenceImage, marginX + 2, imageY + 2, contentWidth - 4, imageHeight - 4)
-      pdf.addPage('a4', 'portrait')
-      pdf.addImage(page.canvas.toDataURL('image/jpeg', 0.95), 'JPEG', 0, 0, 210, 297)
+      await drawEvidenceSection(`หลักฐานเพิ่มเติม ${index + 1}`, evidenceImage, false)
     }
 
+    return pages
+  }
+
+  const downloadViolationReportPdf = async (item) => {
+    const images = await listViolationImages(item.id)
+    const pages = await buildViolationReportPages(item, images)
+    const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' })
+
+    pages.forEach((entry, index) => {
+      if (index > 0) pdf.addPage('a4', 'portrait')
+      pdf.addImage(entry.canvas.toDataURL('image/jpeg', 0.95), 'JPEG', 0, 0, 210, 297)
+    })
+
     pdf.save(`${item.report_no || `violation-${item.id}`}.pdf`)
+  }
+
+  const downloadViolationReportImage = async (item) => {
+    const images = await listViolationImages(item.id)
+    const pages = await buildViolationReportPages(item, images)
+    const baseName = item.report_no || `violation-${item.id}`
+
+    pages.forEach((entry, index) => {
+      const link = document.createElement('a')
+      link.href = entry.canvas.toDataURL('image/jpeg', 0.95)
+      link.download = pages.length === 1
+        ? `${baseName}.jpg`
+        : `${baseName}-p${String(index + 1).padStart(2, '0')}.jpg`
+      link.click()
+    })
   }
 
   const handleOpenPrintPreview = async (item) => {
@@ -744,6 +812,19 @@ const AdminViolations = () => {
       await showSwal({
         icon: 'error',
         title: 'ดาวน์โหลด PDF ไม่สำเร็จ',
+        text: `${error.message} (build ${typeof __BUILD_SHA__ !== 'undefined' ? __BUILD_SHA__ : 'unknown'})`,
+      })
+    }
+  }
+
+  const handleDownloadImage = async (item) => {
+    try {
+      await downloadViolationReportImage(item)
+      await showSwal({ icon: 'success', title: 'ดาวน์โหลด Image สำเร็จ', timer: 1000, showConfirmButton: false })
+    } catch (error) {
+      await showSwal({
+        icon: 'error',
+        title: 'ดาวน์โหลด Image ไม่สำเร็จ',
         text: `${error.message} (build ${typeof __BUILD_SHA__ !== 'undefined' ? __BUILD_SHA__ : 'unknown'})`,
       })
     }
@@ -837,6 +918,7 @@ const AdminViolations = () => {
                         <td><div className="td-acts">
                           <button className="btn btn-xs btn-o" onClick={() => handleOpenPrintPreview(item)}>พิมพ์</button>
                           <button className="btn btn-xs btn-p" onClick={() => handleDownloadPdf(item)}>PDF</button>
+                          <button className="btn btn-xs btn-g" onClick={() => handleDownloadImage(item)}>Image</button>
                           <button className="btn btn-xs btn-a" onClick={() => openEditModal(item)}>แก้ไข</button>
                           <button className="btn btn-xs btn-dg" onClick={() => handleDelete(item)}>ลบ</button>
                         </div></td>
@@ -871,6 +953,7 @@ const AdminViolations = () => {
                   <div className="mcard-actions">
                     <button className="btn btn-xs btn-o" onClick={() => handleOpenPrintPreview(item)}>พิมพ์</button>
                     <button className="btn btn-xs btn-p" onClick={() => handleDownloadPdf(item)}>PDF</button>
+                    <button className="btn btn-xs btn-g" onClick={() => handleDownloadImage(item)}>Image</button>
                     <button className="btn btn-xs btn-a" onClick={() => openEditModal(item)}>แก้ไข</button>
                     <button className="btn btn-xs btn-dg" onClick={() => handleDelete(item)}>ลบ</button>
                   </div>
