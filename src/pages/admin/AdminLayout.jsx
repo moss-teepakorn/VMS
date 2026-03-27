@@ -184,7 +184,7 @@ const AdminLayout = () => {
         {/* Logo */}
         <div className="sb-logo">
           <div className="sb-logo-ico sb-logo-ico-img">
-            <img src={villageLogo} alt="Village Logo" className="sb-logo-image" />
+            <img src={setup.loginCircleLogoUrl || villageLogo} alt="Village Logo" className="sb-logo-image" />
           </div>
           <div>
             <div className="sb-logo-name">{setup.villageName}</div>
