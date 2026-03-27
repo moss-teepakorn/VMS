@@ -128,7 +128,7 @@ export default function AdminLoginLogs() {
             </div>
           </div>
         </div>
-        <div className="houses-filter-row">
+        <div className="houses-filter-row" style={{ gridTemplateColumns: 'minmax(180px,1fr) 140px auto' }}>
           <input
             type="text"
             value={searchTerm}
