@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import bcrypt from 'bcryptjs'
+import { insertLoginLog } from '../lib/loginLogs'
 
 const AuthContext = createContext(null)
 const SESSION_KEY = 'vms-local-auth'
@@ -55,6 +56,13 @@ export function AuthProvider({ children }) {
       setUser(nextUser)
       setProfile(nextProfile)
       localStorage.setItem(SESSION_KEY, JSON.stringify({ user: nextUser, profile: nextProfile }))
+      // บันทึก login log
+      insertLoginLog({
+        user_id: data.id,
+        username: data.username,
+        full_name: data.full_name || null,
+        role: data.role || null,
+      })
       return { error: null }
     } catch (error) {
       return { error }

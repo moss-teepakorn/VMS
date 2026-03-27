@@ -17,6 +17,7 @@ import AdminMarketplace from './pages/admin/AdminMarketplace'
 import AdminConfig from './pages/admin/AdminConfig'
 import AdminUsers from './pages/admin/AdminUsers'
 import AdminLogs from './pages/admin/AdminLogs'
+import AdminLoginLogs from './pages/admin/AdminLoginLogs'
 import AdminResidents from './pages/admin/AdminResidents'
 import AdminUnits from './pages/admin/AdminUnits'
 import AdminPayments from './pages/admin/AdminPayments'
@@ -98,6 +99,7 @@ function AppRoutes() {
         <Route path="config" element={<AdminConfig />} />
         <Route path="users" element={<AdminUsers />} />
         <Route path="logs" element={<AdminLogs />} />
+        <Route path="login-logs" element={<AdminLoginLogs />} />
         <Route path="residents" element={<AdminResidents />} />
         <Route path="units" element={<AdminUnits />} />
         <Route path="payments" element={<AdminPayments />} />

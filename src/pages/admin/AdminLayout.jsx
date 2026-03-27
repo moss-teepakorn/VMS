@@ -103,6 +103,7 @@ const AdminLayout = () => {
       { id: 'cfg', label: 'Config ระบบ', icon: '⚙️', path: '/admin/config' },
       { id: 'usr', label: 'ผู้ใช้งาน', icon: '👥', path: '/admin/users' },
       { id: 'log', label: 'ข้อมูล Log', icon: '📋', path: '/admin/logs' },
+      { id: 'login-logs', label: 'Log การ Login', icon: '🔐', path: '/admin/login-logs' },
     ]},
   ]
 
