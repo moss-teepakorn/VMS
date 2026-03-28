@@ -355,6 +355,10 @@ const AdminConfig = () => {
                     <span>ชื่อนิติบุคคล</span>
                     <input name="juristic_name" value={form.juristic_name || ''} onChange={handleChange} />
                   </label>
+                  <label className="house-field house-field-span-3">
+                    <span>ที่อยู่นิติบุคคล</span>
+                    <textarea name="juristic_address" rows="2" value={form.juristic_address || ''} onChange={handleChange} />
+                  </label>
                   <label className="house-field">
                     <span>โทรนิติบุคคล</span>
                     <input name="juristic_phone" value={form.juristic_phone || ''} onChange={handleChange} />

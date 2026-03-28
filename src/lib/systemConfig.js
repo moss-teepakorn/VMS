@@ -7,6 +7,7 @@ const DEFAULT_SYSTEM_CONFIG = {
   village_logo_url: '',
   village_logo_path: '',
   juristic_name: 'นิติบุคคลหมู่บ้านเดอะกรีนฟิลด์',
+  juristic_address: '',
   juristic_phone: '02-123-4567',
   juristic_email: 'niti@greenfield.co.th',
   juristic_signature_url: '',
@@ -82,11 +83,27 @@ export async function updateSystemConfig(configId, updates) {
   const errorMessage = String(error?.message || '')
   const missingVillageLogoColumn = errorMessage.includes("Could not find the 'village_logo_path' column")
     || errorMessage.includes("Could not find the 'village_logo_url' column")
+  const missingJuristicAddressColumn = errorMessage.includes("Could not find the 'juristic_address' column")
 
   if (missingVillageLogoColumn) {
     const fallbackPayload = { ...payload }
     delete fallbackPayload.village_logo_url
     delete fallbackPayload.village_logo_path
+
+    const fallback = await supabase
+      .from('system_config')
+      .update(fallbackPayload)
+      .eq('id', configId)
+      .select('*')
+      .single()
+
+    data = fallback.data
+    error = fallback.error
+  }
+
+  if (missingJuristicAddressColumn) {
+    const fallbackPayload = { ...payload }
+    delete fallbackPayload.juristic_address
 
     const fallback = await supabase
       .from('system_config')

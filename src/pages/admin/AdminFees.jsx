@@ -38,6 +38,7 @@ const AdminFees = () => {
     village_name: 'The Greenfield',
     village_logo_url: '',
     juristic_name: 'นิติบุคคลหมู่บ้านเดอะกรีนฟิลด์',
+    juristic_address: '',
     bank_name: 'กสิกรไทย',
     bank_account_no: '-',
     bank_account_name: 'นิติบุคคลหมู่บ้าน เดอะกรีนฟิลด์',
@@ -470,17 +471,13 @@ const AdminFees = () => {
     }
 
     const copies = ['ต้นฉบับ', 'สำเนา']
-    const totalPages = targetFees.length * copies.length
-    let pageCounter = 0
     const invoiceBlocks = targetFees.map((fee) => {
       const invoiceNo = `INV-${String(fee.year || '').slice(-2)}-${String(fee.id || '').slice(0, 8).toUpperCase()}`
       const periodText = `${periodLabel(fee.period)} ปี ${toBE(fee.year)}`
       return copies.map((copyType) => {
-        pageCounter += 1
-        const isLastPage = pageCounter === totalPages
         const logoUrl = setup.village_logo_url || villageLogo
         return `
-          <section class="sheet ${isLastPage ? '' : 'page-break'}">
+          <section class="sheet page-break">
             <header class="head">
               <div class="brand">
                 <img src="${logoUrl}" alt="village-logo" />
@@ -488,6 +485,7 @@ const AdminFees = () => {
                   <div class="doc">ใบแจ้งหนี้ค่าส่วนกลาง</div>
                   <div class="village">${setup.village_name || 'The Greenfield'}</div>
                   <div class="sub">${setup.juristic_name || 'นิติบุคคลหมู่บ้านเดอะกรีนฟิลด์'}</div>
+                  <div class="sub">${setup.juristic_address || '-'}</div>
                   <div class="sub">${title}</div>
                 </div>
               </div>
@@ -544,14 +542,9 @@ const AdminFees = () => {
               <div class="note">
                 หมายเหตุ: กรุณาชำระภายในวันที่ครบกำหนด เพื่อหลีกเลี่ยงค่าปรับ/ค่าทวงถามเพิ่มเติม
               </div>
-              <div class="sign-wrap">
-                <div class="line"></div>
-                <div>ผู้มีอำนาจลงนาม / นิติบุคคลหมู่บ้าน</div>
-              </div>
             </section>
 
             <div class="stamp">${copyType}</div>
-            <div class="page-no">หน้า ${pageCounter}/${totalPages}</div>
           </section>
         `
       }).join('')
@@ -593,7 +586,7 @@ const AdminFees = () => {
             .brand img {
               width: 58px;
               height: 58px;
-              border-radius: 999px;
+              border-radius: 8px;
               object-fit: cover;
               border: 1px solid #d1d5db;
             }
@@ -637,14 +630,9 @@ const AdminFees = () => {
               border: 1px solid #d1d5db;
               border-radius: 10px;
               padding: 12px;
-              display: flex;
-              justify-content: space-between;
-              gap: 12px;
-              align-items: flex-end;
+              display: block;
             }
             .note { font-size: 12px; color: #4b5563; }
-            .sign-wrap { min-width: 220px; text-align: center; font-size: 12px; color: #4b5563; }
-            .line { border-top: 1px solid #6b7280; margin-bottom: 6px; height: 46px; }
             .stamp {
               position: absolute;
               top: 16mm;
@@ -658,22 +646,20 @@ const AdminFees = () => {
               font-weight: 700;
               background: #ffffff;
             }
-            .page-no {
-              position: absolute;
-              bottom: 10mm;
-              right: 14mm;
-              font-size: 12px;
-              color: #6b7280;
-            }
             @media print {
               body { background: #fff; }
               .sheet { margin: 0; box-shadow: none; }
+              .page-break { page-break-after: always; }
+              .sheet:last-child.page-break { page-break-after: auto; }
             }
           </style>
         </head>
         <body>
           ${invoiceBlocks}
-          <script>window.onload = () => window.print();</script>
+          <script>
+            try { window.history.replaceState({}, '', '${window.location.origin}/invoice-print'); } catch (e) {}
+            window.onload = () => window.print();
+          </script>
         </body>
       </html>
     `)
