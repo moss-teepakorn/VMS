@@ -657,9 +657,11 @@ const AdminFees = () => {
           <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
           <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;700&display=swap" rel="stylesheet">
           <style>
-            @page { size: A4; margin: 10mm; }
+            /* Setting page margin to 0 removes browser-injected header (date/title) and footer (URL/page no.).
+               Body padding compensates so content is not flush against paper edges. */
+            @page { size: A4; margin: 0; }
             * { box-sizing: border-box; }
-            body { font-family: 'Sarabun', 'TH Sarabun New', Tahoma, sans-serif; margin: 0; color: #111827; background: #f8fafc; }
+            body { font-family: 'Sarabun', 'TH Sarabun New', Tahoma, sans-serif; margin: 0; padding: 10mm; color: #111827; background: #f8fafc; }
             .sheet {
               position: relative;
               width: 210mm;
