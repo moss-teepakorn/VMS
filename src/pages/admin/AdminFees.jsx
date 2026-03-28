@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react'
 import Swal from 'sweetalert2'
 import { listHouses } from '../../lib/houses'
 import { getSystemConfig } from '../../lib/systemConfig'
+import villageLogo from '../../assets/village-logo.svg'
 import {
   calculateFullYearFeeByHouse,
   calculateOverdueFeesByIds,
@@ -34,6 +35,9 @@ const AdminFees = () => {
   const [payments, setPayments] = useState([])
   const [houses, setHouses] = useState([])
   const [setup, setSetup] = useState({
+    village_name: 'The Greenfield',
+    village_logo_url: '',
+    juristic_name: 'นิติบุคคลหมู่บ้านเดอะกรีนฟิลด์',
     fee_rate_per_sqw: 85,
     waste_fee_per_period: 100,
     early_pay_discount_pct: 3,
@@ -374,7 +378,6 @@ const AdminFees = () => {
     const fmtMoney = (value) => Number(value || 0).toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
     const itemRows = (fee) => feeItemDefs
       .map((item) => ({ ...item, amount: Number(fee[item.key] || 0) }))
-      .filter((item) => item.amount > 0)
       .map((item, idx) => `
         <tr>
           <td class="c">${idx + 1}</td>
@@ -382,13 +385,7 @@ const AdminFees = () => {
           <td class="r">${fmtMoney(item.amount)}</td>
         </tr>
       `)
-      .join('') || `
-        <tr>
-          <td class="c">1</td>
-          <td>ค่าส่วนกลาง</td>
-          <td class="r">${fmtMoney(fee.total_amount || 0)}</td>
-        </tr>
-      `
+      .join('')
 
     const copies = ['ต้นฉบับ', 'สำเนา']
     const totalPages = targetFees.length * copies.length
@@ -399,13 +396,18 @@ const AdminFees = () => {
       return copies.map((copyType) => {
         pageCounter += 1
         const isLastPage = pageCounter === totalPages
+        const logoUrl = setup.village_logo_url || villageLogo
         return `
           <section class="sheet ${isLastPage ? '' : 'page-break'}">
             <header class="head">
-              <div>
-                <div class="doc">ใบแจ้งหนี้ค่าส่วนกลาง</div>
-                <div class="village">หมู่บ้านเดอะกรีนฟิลด์</div>
-                <div class="sub">${title}</div>
+              <div class="brand">
+                <img src="${logoUrl}" alt="village-logo" />
+                <div>
+                  <div class="doc">ใบแจ้งหนี้ค่าส่วนกลาง</div>
+                  <div class="village">${setup.village_name || 'The Greenfield'}</div>
+                  <div class="sub">${setup.juristic_name || 'นิติบุคคลหมู่บ้านเดอะกรีนฟิลด์'}</div>
+                  <div class="sub">${title}</div>
+                </div>
               </div>
               <div class="doc-meta">
                 <div><span>เลขที่เอกสาร:</span> <strong>${invoiceNo}</strong></div>
@@ -473,6 +475,7 @@ const AdminFees = () => {
             * { box-sizing: border-box; }
             body { font-family: 'Sarabun', 'TH Sarabun New', Tahoma, sans-serif; margin: 0; color: #111827; background: #f8fafc; }
             .sheet {
+              position: relative;
               width: 210mm;
               min-height: 297mm;
               margin: 0 auto;
@@ -490,7 +493,15 @@ const AdminFees = () => {
               border: 1px solid #d1d5db;
               border-radius: 10px;
               padding: 12px;
-              background: linear-gradient(120deg, #f0fdfa 0%, #ffffff 70%);
+              background: #ffffff;
+            }
+            .brand { display: flex; align-items: center; gap: 12px; }
+            .brand img {
+              width: 58px;
+              height: 58px;
+              border-radius: 999px;
+              object-fit: cover;
+              border: 1px solid #d1d5db;
             }
             .doc { font-size: 24px; font-weight: 700; }
             .village { font-size: 16px; margin-top: 2px; }
