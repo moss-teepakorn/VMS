@@ -258,14 +258,38 @@ export async function calculateFullYearFeeByHouse({ houseId, year, setup }) {
   const wastePerPeriod = toAmount(setup?.waste_fee_per_period)
   const discountPct = toAmount(setup?.early_pay_discount_pct)
 
-  const [houseResp, parkingByHouseResp, existingResp] = await Promise.all([
+  const [houseResp, parkingByHouseResp, yearFeesResp] = await Promise.all([
     supabase.from('houses').select('id, area_sqw').eq('id', houseId).single(),
     getParkingMonthlyByHouse(),
-    supabase.from('fees').select('id').eq('house_id', houseId).eq('year', yearCE).eq('period', 'full_year').maybeSingle(),
+    supabase
+      .from('fees')
+      .select('id, period, status, fee_common, fee_parking, fee_waste, fee_overdue_common, fee_overdue_fine, fee_overdue_notice, fee_fine, fee_notice, fee_violation, fee_other')
+      .eq('house_id', houseId)
+      .eq('year', yearCE)
+      .in('period', ['first_half', 'second_half', 'full_year']),
   ])
 
   if (houseResp.error) throw houseResp.error
-  if (existingResp.error) throw existingResp.error
+  if (yearFeesResp.error) throw yearFeesResp.error
+
+  const yearFees = yearFeesResp.data || []
+  const existingFullYear = yearFees.find((row) => row.period === 'full_year')
+  const halfYearRows = yearFees.filter((row) => row.period === 'first_half' || row.period === 'second_half')
+
+  if (halfYearRows.length > 0) {
+    const halfYearIds = halfYearRows.map((row) => row.id)
+    const { data: paymentRows, error: paymentError } = await supabase
+      .from('payments')
+      .select('id')
+      .in('fee_id', halfYearIds)
+      .gt('amount', 0)
+      .limit(1)
+
+    if (paymentError) throw paymentError
+    if ((paymentRows || []).length > 0) {
+      throw new Error('บ้านนี้มีรายการจ่ายค่าส่วนกลางแล้ว ไม่สามารถสร้างใบแจ้งหนี้ทั้งปีได้')
+    }
+  }
 
   const area = toAmount(houseResp.data?.area_sqw)
   const parkingMonthly = toAmount(parkingByHouseResp.get(houseId))
@@ -275,6 +299,7 @@ export async function calculateFullYearFeeByHouse({ houseId, year, setup }) {
   const feeParking = round2(parkingMonthly * 12)
   const feeWaste = round2(wastePerPeriod * 2)
 
+  const hasSecondHalf = halfYearRows.some((row) => row.period === 'second_half')
   const payload = {
     house_id: houseId,
     year: yearCE,
@@ -285,17 +310,48 @@ export async function calculateFullYearFeeByHouse({ houseId, year, setup }) {
     fee_common: feeCommon,
     fee_parking: feeParking,
     fee_waste: feeWaste,
+    fee_overdue_common: 0,
+    fee_overdue_fine: 0,
+    fee_overdue_notice: 0,
+    fee_fine: 0,
+    fee_notice: 0,
+    fee_violation: 0,
+    fee_other: 0,
     note: `คำนวณทั้งปี ลดเฉพาะค่าส่วนกลาง ${discountPct}% (ลด ${discountAmount.toLocaleString('th-TH')} บาท, ปัดขึ้นเป็นจำนวนเต็ม)`,
   }
 
-  if (existingResp.data?.id) {
+  if (hasSecondHalf) {
+    const sumField = (field) => halfYearRows.reduce((sum, row) => sum + toAmount(row[field]), 0)
+    payload.fee_common = round2(sumField('fee_common'))
+    payload.fee_parking = round2(sumField('fee_parking'))
+    payload.fee_waste = round2(sumField('fee_waste'))
+    payload.fee_overdue_common = round2(sumField('fee_overdue_common'))
+    payload.fee_overdue_fine = round2(sumField('fee_overdue_fine'))
+    payload.fee_overdue_notice = round2(sumField('fee_overdue_notice'))
+    payload.fee_fine = round2(sumField('fee_fine'))
+    payload.fee_notice = round2(sumField('fee_notice'))
+    payload.fee_violation = round2(sumField('fee_violation'))
+    payload.fee_other = round2(sumField('fee_other'))
+    payload.note = 'รวมรายการจากใบแจ้งหนี้ครึ่งปีเป็นใบแจ้งหนี้เต็มปี (ไม่ใช้ส่วนลด)'
+  }
+
+  if (existingFullYear?.id) {
     const { data, error } = await supabase
       .from('fees')
       .update(payload)
-      .eq('id', existingResp.data.id)
+      .eq('id', existingFullYear.id)
       .select('id, house_id, year, period, invoice_date, due_date, status, fee_common, fee_parking, fee_waste, fee_overdue_common, fee_overdue_fine, fee_overdue_notice, fee_fine, fee_notice, fee_violation, fee_other, total_amount, note, created_at, houses(id, house_no, owner_name)')
       .single()
     if (error) throw error
+
+    if (halfYearRows.length > 0) {
+      const { error: deleteHalfError } = await supabase
+        .from('fees')
+        .delete()
+        .in('id', halfYearRows.map((row) => row.id))
+      if (deleteHalfError) throw deleteHalfError
+    }
+
     return data
   }
 
@@ -305,6 +361,15 @@ export async function calculateFullYearFeeByHouse({ houseId, year, setup }) {
     .select('id, house_id, year, period, invoice_date, due_date, status, fee_common, fee_parking, fee_waste, fee_overdue_common, fee_overdue_fine, fee_overdue_notice, fee_fine, fee_notice, fee_violation, fee_other, total_amount, note, created_at, houses(id, house_no, owner_name)')
     .single()
   if (error) throw error
+
+  if (halfYearRows.length > 0) {
+    const { error: deleteHalfError } = await supabase
+      .from('fees')
+      .delete()
+      .in('id', halfYearRows.map((row) => row.id))
+    if (deleteHalfError) throw deleteHalfError
+  }
+
   return data
 }
 

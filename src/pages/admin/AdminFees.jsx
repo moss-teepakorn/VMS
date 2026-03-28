@@ -213,6 +213,18 @@ const AdminFees = () => {
     return approvedAmount >= Number(fee?.total_amount || 0)
   }
 
+  const hasAnyApprovedPaymentInYearForHouse = (fee) => fees.some((item) => (
+    item.house_id === fee.house_id
+    && item.year === fee.year
+    && Number(feeApprovedTotals[item.id] || 0) > 0
+  ))
+
+  const canCalculateAnnualFee = (fee) => (
+    fee?.period !== 'full_year'
+    && !isFeeFullyPaid(fee)
+    && !hasAnyApprovedPaymentInYearForHouse(fee)
+  )
+
   const getOutstandingAmountForFee = (fee) => {
     const submittedAmount = getSubmittedAmountForFee(fee)
     return Math.max(0, Number(fee?.total_amount || 0) - submittedAmount)
@@ -257,7 +269,7 @@ const AdminFees = () => {
         html: `สร้างใหม่ ${result.created} หลัง<br/>อัปเดต ${result.updated} หลัง<br/>ข้าม (ชำระแล้ว) ${result.skippedPaid} หลัง<br/>ข้าม (รอตรวจสอบ) ${result.skippedPending} หลัง${processForm.overwritePending ? '<br/><span style="color:#0f766e">* เลือกทับรายการรอตรวจสอบแล้ว</span>' : ''}`,
       })
       setShowProcessModal(false)
-      await loadFeeData({ status: statusFilter, year: yearFilter })
+      await loadFeeData({ status: statusFilter, year: yearFilter, period: periodFilter })
     } catch (error) {
       await Swal.fire({ icon: 'error', title: 'Process ไม่สำเร็จ', text: error.message })
     } finally {
@@ -1009,7 +1021,7 @@ const AdminFees = () => {
                             <div className="td-acts" style={{ justifyContent: 'flex-end', display: 'flex', width: '100%' }}>
                               <button className="btn btn-xs btn-a" onClick={() => handleEditFee(fee)}>แก้ไข</button>
                               <button className="btn btn-xs btn-g" onClick={() => handlePrintInvoiceByHouse(fee)}>พิมพ์</button>
-                              {!isFeeFullyPaid(fee) && <button className="btn btn-xs btn-o" onClick={() => handleCalculateAnnual(fee)}>คำนวณทั้งปี</button>}
+                              {canCalculateAnnualFee(fee) && <button className="btn btn-xs btn-o" onClick={() => handleCalculateAnnual(fee)}>คำนวณทั้งปี</button>}
                               {!isFeeFullyPaid(fee) && <button className="btn btn-xs btn-dg" onClick={() => handleCalculateOverdue(fee)}>คำนวณค่าปรับ</button>}
                               <button className="btn btn-xs btn-dg" onClick={() => handleDeleteFee(fee)}>ลบ</button>
                             </div>
@@ -1046,7 +1058,7 @@ const AdminFees = () => {
                   <div className="mcard-actions">
                     <button className="btn btn-xs btn-a" onClick={() => handleEditFee(fee)}>แก้ไข</button>
                     <button className="btn btn-xs btn-g" onClick={() => handlePrintInvoiceByHouse(fee)}>พิมพ์</button>
-                    {!isFeeFullyPaid(fee) && <button className="btn btn-xs btn-o" onClick={() => handleCalculateAnnual(fee)}>ทั้งปี</button>}
+                    {canCalculateAnnualFee(fee) && <button className="btn btn-xs btn-o" onClick={() => handleCalculateAnnual(fee)}>ทั้งปี</button>}
                     {!isFeeFullyPaid(fee) && <button className="btn btn-xs btn-dg" onClick={() => handleCalculateOverdue(fee)}>ค่าปรับ</button>}
                     <button className="btn btn-xs btn-dg" onClick={() => handleDeleteFee(fee)}>ลบ</button>
                   </div>
