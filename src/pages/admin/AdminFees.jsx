@@ -439,14 +439,34 @@ const AdminFees = () => {
     }
   }
 
-  const handlePrintInvoices = (targetFees, title) => {
+  const handlePrintInvoices = async (targetFees, title) => {
     if (!targetFees || targetFees.length === 0) {
       Swal.fire({ icon: 'info', title: 'ไม่พบใบแจ้งหนี้สำหรับพิมพ์' })
       return
     }
 
+    // Open window synchronously (must stay in user-gesture call stack to avoid popup blocker)
     const w = window.open('', '_blank', 'width=1200,height=900')
     if (!w) return
+
+    // Re-fetch latest system config so logo is always current
+    const freshConfig = await getSystemConfig().catch(() => null)
+    const rawLogoUrl = freshConfig?.village_logo_url || setup.village_logo_url || localStorage.getItem('vms-login-circle-logo-url') || ''
+    // Convert logo to base64 data URL so it embeds reliably in the about:blank print window
+    let printLogoUrl = `${window.location.origin}${villageLogo}`
+    if (rawLogoUrl) {
+      try {
+        const r = await fetch(rawLogoUrl)
+        const blob = await r.blob()
+        printLogoUrl = await new Promise((res) => {
+          const reader = new FileReader()
+          reader.onloadend = () => res(reader.result)
+          reader.readAsDataURL(blob)
+        })
+      } catch {
+        printLogoUrl = rawLogoUrl
+      }
+    }
 
     const fmtDate = (value) => formatDateDMY(value)
     const fmtMoney = (value) => Number(value || 0).toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
@@ -543,13 +563,12 @@ const AdminFees = () => {
     const invoiceBlocks = targetFees.map((fee, index) => {
       const invoiceNo = `INV-${String(fee.year || '').slice(-2)}-${String(fee.id || '').slice(0, 8).toUpperCase()}`
       const periodText = `${periodLabel(fee.period)} ปี ${toBE(fee.year)}`
-      const logoUrl = setup.village_logo_url || localStorage.getItem('vms-login-circle-logo-url') || villageLogo
       const pageClass = index < targetFees.length - 1 ? 'sheet page-break' : 'sheet'
       return `
           <section class="${pageClass}">
             <header class="head">
               <div class="brand">
-                <img src="${logoUrl}" alt="village-logo" />
+                <img src="${printLogoUrl}" alt="village-logo" />
                 <div>
                   <div class="doc">ใบแจ้งหนี้ค่าส่วนกลาง</div>
                   <div class="village">${setup.village_name || 'The Greenfield'}</div>
