@@ -148,6 +148,15 @@ const AdminFees = () => {
 
   const yearOptions = useMemo(() => (feeYears.length > 0 ? feeYears : [currentFeeYear]), [feeYears, currentFeeYear])
 
+  const yearCards = useMemo(() => {
+    const latestYear = currentFeeYear
+    return [
+      { value: latestYear, label: toBE(latestYear) },
+      { value: latestYear - 1, label: toBE(latestYear - 1) },
+      { value: latestYear - 2, label: toBE(latestYear - 2) },
+    ]
+  }, [currentFeeYear])
+
   const loadFeeData = async (override = {}) => {
     try {
       setLoading(true)
@@ -539,7 +548,7 @@ const AdminFees = () => {
     const printSignatureUrl = await resolveImageToDataUrl(rawSignatureUrl, '')
 
     const fmtDate = (value) => formatDateDMY(value)
-    const fmtMoney = (value) => Number(value || 0).toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+    const fmtMoney = (value) => Number(value || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 
     const toThaiBahtText = (value) => {
       const amount = Number(value || 0)
@@ -630,13 +639,16 @@ const AdminFees = () => {
       .join('')
     }
 
-    // One invoice section per house (original only) — no duplicate copy section.
-    const invoiceBlocks = targetFees.map((fee, index) => {
+    // Two invoice sections per house (original + copy) — separate pages
+    const invoiceBlocks = targetFees.flatMap((fee, feeIndex) => {
       const invoiceNo = `INV-${String(fee.year || '').slice(-2)}-${String(fee.id || '').slice(0, 8).toUpperCase()}`
       const periodText = `${periodLabel(fee.period)} ปี ${toBE(fee.year)}`
-      const pageClass = index < targetFees.length - 1 ? 'sheet page-break' : 'sheet'
-      return `
-          <section class="${pageClass}">
+      const isLastFee = feeIndex === targetFees.length - 1
+      
+      return [
+        // Original page
+        `
+          <section class="sheet page-break">
             <header class="head">
               <div class="brand">
                 <img src="${printLogoUrl}" alt="village-logo" />
@@ -654,7 +666,6 @@ const AdminFees = () => {
                 <div><span>ครบกำหนดชำระ:</span> <strong>${fmtDate(fee.due_date)}</strong></div>
                 <div class="copy-mark-row">
                   <div class="copy-mark copy-mark--active">ต้นฉบับ</div>
-                  <div class="copy-mark">สำเนา</div>
                 </div>
               </div>
             </header>
@@ -665,8 +676,88 @@ const AdminFees = () => {
                 <div><span>ชื่อเจ้าของบ้าน</span><strong>${fee.houses?.owner_name || '-'}</strong></div>
                 <div><span>งวดเรียกเก็บ</span><strong>${periodText}</strong></div>
                 <div><span>ซอย</span><strong>${fee.houses?.soi || '-'}</strong></div>
-                <div><span>พื้นที่ (ตร.วา)</span><strong>${Number(fee.houses?.area_sqw || 0).toLocaleString('th-TH')}</strong></div>
-                <div><span>อัตราค่าส่วนกลาง</span><strong>${Number(setup.fee_rate_per_sqw || fee.houses?.fee_rate || 0).toLocaleString('th-TH')} บาท/ตร.วา/ปี</strong></div>
+                <div><span>พื้นที่ (ตร.วา)</span><strong>${Number(fee.houses?.area_sqw || 0).toLocaleString('en-US')}</strong></div>
+                <div><span>อัตราค่าส่วนกลาง</span><strong>${Number(setup.fee_rate_per_sqw || fee.houses?.fee_rate || 0).toLocaleString('en-US')} บาท/ตร.วา/ปี</strong></div>
+              </div>
+            </section>
+
+            <section class="box">
+              <table>
+                <thead>
+                  <tr>
+                    <th class="c" style="width:56px;">ลำดับ</th>
+                    <th>รายการ</th>
+                    <th class="r" style="width:180px;">จำนวนเงิน (บาท)</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${itemRows(fee)}
+                </tbody>
+                <tfoot>
+                  <tr>
+                    <td colspan="2" class="r"><strong>รวมทั้งสิ้น</strong></td>
+                    <td class="r"><strong>${fmtMoney(fee.total_amount || 0)}</strong></td>
+                  </tr>
+                </tfoot>
+              </table>
+              <div class="amount-text">(${toThaiBahtText(fee.total_amount || 0)})</div>
+            </section>
+
+            <section class="box payment-box">
+              <div class="payment-title">รายละเอียดการชำระเงิน</div>
+              <div class="payment-grid">
+                <div><span>ธนาคาร</span><strong>${setup.bank_name || '-'}</strong></div>
+                <div><span>เลขที่บัญชี</span><strong>${setup.bank_account_no || '-'}</strong></div>
+                <div><span>ชื่อบัญชี</span><strong>${setup.bank_account_name || '-'}</strong></div>
+                <div><span>กำหนดชำระ</span><strong>${fmtDate(fee.due_date)}</strong></div>
+              </div>
+              <div class="payment-note">${setup.invoice_message || 'กรุณาแนบหลักฐานการโอนทุกครั้งหลังชำระ'}</div>
+            </section>
+
+            <section class="foot">
+              <div class="note">
+                หมายเหตุ: กรุณาชำระภายในวันที่ครบกำหนด เพื่อหลีกเลี่ยงค่าปรับ/ค่าทวงถามเพิ่มเติม
+              </div>
+              <div class="sign-wrap">
+                ${printSignatureUrl ? `<img src="${printSignatureUrl}" alt="juristic-signature" />` : ''}
+                <div class="sign-line"></div>
+                <div>ผู้มีอำนาจลงนาม</div>
+              </div>
+            </section>
+          </section>
+        `,
+        // Copy page
+        `
+          <section class="sheet${isLastFee ? '' : ' page-break'}">
+            <header class="head">
+              <div class="brand">
+                <img src="${printLogoUrl}" alt="village-logo" />
+                <div>
+                  <div class="doc">ใบแจ้งหนี้ค่าส่วนกลาง</div>
+                  <div class="village">${setup.village_name || 'The Greenfield'}</div>
+                  <div class="sub">${setup.juristic_name || 'นิติบุคคลหมู่บ้านเดอะกรีนฟิลด์'}</div>
+                  <div class="sub">${setup.juristic_address || '-'}</div>
+                  <div class="sub">${title}</div>
+                </div>
+              </div>
+              <div class="doc-meta">
+                <div><span>เลขที่เอกสาร:</span> <strong>${invoiceNo}</strong></div>
+                <div><span>วันที่ออกเอกสาร:</span> <strong>${fmtDate(fee.invoice_date)}</strong></div>
+                <div><span>ครบกำหนดชำระ:</span> <strong>${fmtDate(fee.due_date)}</strong></div>
+                <div class="copy-mark-row">
+                  <div class="copy-mark copy-mark--active">สำเนา</div>
+                </div>
+              </div>
+            </header>
+
+            <section class="box">
+              <div class="grid">
+                <div><span>บ้านเลขที่</span><strong>${fee.houses?.house_no || '-'}</strong></div>
+                <div><span>ชื่อเจ้าของบ้าน</span><strong>${fee.houses?.owner_name || '-'}</strong></div>
+                <div><span>งวดเรียกเก็บ</span><strong>${periodText}</strong></div>
+                <div><span>ซอย</span><strong>${fee.houses?.soi || '-'}</strong></div>
+                <div><span>พื้นที่ (ตร.วา)</span><strong>${Number(fee.houses?.area_sqw || 0).toLocaleString('en-US')}</strong></div>
+                <div><span>อัตราค่าส่วนกลาง</span><strong>${Number(setup.fee_rate_per_sqw || fee.houses?.fee_rate || 0).toLocaleString('en-US')} บาท/ตร.วา/ปี</strong></div>
               </div>
             </section>
 
@@ -715,6 +806,7 @@ const AdminFees = () => {
             </section>
           </section>
         `
+      ]
     }).join('')
 
     return `
@@ -729,42 +821,43 @@ const AdminFees = () => {
                Body padding compensates so content is not flush against paper edges. */
             @page { size: A4; margin: 0; }
             * { box-sizing: border-box; }
-            body { font-family: 'Sarabun', 'TH Sarabun New', Tahoma, sans-serif; margin: 0; padding: 5mm; color: #111827; background: #f8fafc; }
+            body { font-family: 'Sarabun', 'TH Sarabun New', Tahoma, sans-serif; margin: 0; padding: 5mm; color: #111827; background: #fff; }
             .sheet {
               position: relative;
-              width: 200mm;
+              width: 210mm;
+              height: 297mm;
               margin: 0 auto;
               background: #fff;
-              padding: 6mm 7mm;
+              padding: 10mm 10mm;
               display: flex;
               flex-direction: column;
-              gap: 6px;
+              gap: 8px;
               overflow: hidden;
             }
-            .page-break { page-break-after: always; }
+            .page-break { }
             .head {
               display: flex;
               justify-content: space-between;
-              gap: 8px;
-              border: 1px solid #d1d5db;
-              border-radius: 8px;
-              padding: 6px 8px;
+              gap: 12px;
+              border: 1px solid #cbd5e1;
+              border-radius: 4px;
+              padding: 10px 12px;
               background: #ffffff;
+              margin-bottom: 4px;
             }
-            .brand { display: flex; align-items: flex-start; gap: 12px; }
+            .brand { display: flex; align-items: flex-start; gap: 10px; flex: 1; min-width: 0; }
             .brand img {
-              width: 52px;
-              height: 52px;
-              border-radius: 8px;
+              width: 48px;
+              height: 48px;
+              border-radius: 6px;
               object-fit: cover;
-              border: 1px solid #d1d5db;
-              margin-top: -2px;
+              border: 1px solid #cbd5e1;
             }
-            .doc { font-size: 18px; font-weight: 700; line-height: 1.2; }
-            .village { font-size: 12px; margin-top: 2px; }
-            .sub { font-size: 10px; color: #6b7280; margin-top: 2px; }
-            .doc-meta { font-size: 11px; min-width: 220px; display: flex; flex-direction: column; gap: 3px; }
-            .doc-meta span { color: #6b7280; }
+            .doc { font-size: 16px; font-weight: 700; line-height: 1.3; }
+            .village { font-size: 11px; margin-top: 3px; font-weight: 600; }
+            .sub { font-size: 9px; color: #6b7280; margin-top: 2px; }
+            .doc-meta { font-size: 10px; min-width: 180px; display: flex; flex-direction: column; gap: 2px; word-break: break-word; }
+            .doc-meta span { color: #6b7280; font-weight: 500; }
             .copy-mark-row {
               display: flex;
               gap: 6px;
@@ -788,17 +881,17 @@ const AdminFees = () => {
               color: #0c4a6e;
               background: #eff6ff;
             }
-            .box { border: 1px solid #d1d5db; border-radius: 8px; padding: 6px; }
-            .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 8px; }
-            .grid > div { display: flex; flex-direction: column; gap: 2px; }
-            .grid span { font-size: 9px; color: #6b7280; }
-            .grid strong { font-size: 11px; }
-            table { width: 100%; border-collapse: collapse; }
-            th, td { border: 1px solid #d1d5db; padding: 5px 6px; font-size: 10px; }
-            th { background: #f3f4f6; text-align: left; }
+            .box { border: 1px solid #cbd5e1; border-radius: 4px; padding: 10px 12px; }
+            .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 10px; word-break: break-word; }
+            .grid > div { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+            .grid span { font-size: 9px; color: #6b7280; font-weight: 500; }
+            .grid strong { font-size: 11px; font-weight: 600; }
+            table { width: 100%; border-collapse: collapse; table-layout: auto; }
+            th, td { border: 1px solid #cbd5e1; padding: 6px 8px; font-size: 10px; word-wrap: break-word; overflow-wrap: break-word; }
+            th { background: #f1f5f9; text-align: left; font-weight: 600; }
             .c { text-align: center; }
             .r { text-align: right; }
-            tfoot td { background: #f8fafc; }
+            tfoot td { background: #f1f5f9; font-weight: 600; }
             .amount-text {
               margin-top: 4px;
               font-size: 10px;
@@ -806,12 +899,12 @@ const AdminFees = () => {
               font-weight: 500;
               text-align: right;
             }
-            .payment-box { display: flex; flex-direction: column; gap: 4px; }
+            .payment-box { display: flex; flex-direction: column; gap: 6px; margin-top: 4px; }
             .payment-title { font-size: 11px; font-weight: 700; color: #111827; }
-            .payment-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 8px; }
-            .payment-grid > div { display: flex; flex-direction: column; gap: 2px; }
-            .payment-grid span { font-size: 9px; color: #6b7280; }
-            .payment-grid strong { font-size: 11px; }
+            .payment-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 10px; word-break: break-word; }
+            .payment-grid > div { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+            .payment-grid span { font-size: 9px; color: #6b7280; font-weight: 500; }
+            .payment-grid strong { font-size: 11px; font-weight: 600; }
             .payment-note {
               border-top: 1px dashed #d1d5db;
               padding-top: 4px;
@@ -819,24 +912,24 @@ const AdminFees = () => {
               color: #4b5563;
             }
             .foot {
-              margin-top: 4px;
-              border: 1px solid #d1d5db;
-              border-radius: 8px;
-              padding: 6px;
+              margin-top: 8px;
+              border: 1px solid #cbd5e1;
+              border-radius: 4px;
+              padding: 10px 12px;
               display: flex;
               align-items: flex-end;
               justify-content: space-between;
-              gap: 10px;
+              gap: 12px;
+              background: #f9fafb;
             }
-            .note { font-size: 10px; color: #4b5563; line-height: 1.25; }
-            .sign-wrap { min-width: 150px; text-align: center; font-size: 10px; color: #4b5563; }
-            .sign-wrap img { max-width: 110px; max-height: 38px; object-fit: contain; margin-bottom: 3px; }
-            .sign-line { border-top: 1px solid #6b7280; margin: 3px 0; }
+            .note { font-size: 9px; color: #64748b; line-height: 1.4; }
+            .sign-wrap { min-width: 140px; text-align: center; font-size: 9px; color: #64748b; }
+            .sign-wrap img { max-width: 100px; max-height: 36px; object-fit: contain; margin-bottom: 4px; }
+            .sign-line { border-top: 1px solid #cbd5e1; margin: 4px 0; }
             @media print {
-              body { background: #fff; }
-              .sheet { margin: 0; box-shadow: none; }
-              .page-break { page-break-after: always; }
-              .sheet:last-child.page-break { page-break-after: auto; }
+              body { background: #fff; margin: 0; padding: 0; }
+              .sheet { margin: 0; box-shadow: none; page-break-after: always; }
+              .sheet:last-child { page-break-after: avoid; }
             }
           </style>
         </head>
@@ -1083,7 +1176,7 @@ const AdminFees = () => {
       setSavingPayment(true)
       const selectedLabels = feeItemDefs
         .filter((item) => paymentForm.selectedItems.includes(item.key))
-        .map((item) => `${item.label} ฿${Number(paymentForm.itemAmounts?.[item.key] || 0).toLocaleString('th-TH')}`)
+        .map((item) => `${item.label} ${Number(paymentForm.itemAmounts?.[item.key] || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`)
 
       const noteParts = [`ชำระรายการ: ${selectedLabels.join(', ')}`]
       if (paymentForm.note.trim()) noteParts.push(paymentForm.note.trim())
@@ -1127,22 +1220,36 @@ const AdminFees = () => {
           </div>
         </div>
         <div className="page-filter-row" style={{ justifyContent: 'space-between', alignItems: 'center' }}>
-          <div style={{ fontSize: 13, color: 'var(--mu)' }}>
-            ปีที่แสดง: <strong>พ.ศ. {toBE(currentFeeYear)}</strong>
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+            {yearCards.map((card) => {
+              const active = currentFeeYear === card.value
+              return (
+                <button
+                  key={card.value}
+                  type="button"
+                  onClick={() => {
+                    setCurrentFeeYear(card.value)
+                    setYearFilter(card.value)
+                    loadFeeData({ year: card.value, status: 'all', period: 'all' })
+                  }}
+                  style={{
+                    border: active ? '2px solid #0c4a6e' : '1px solid var(--bo)',
+                    background: active ? '#eff6ff' : '#fff',
+                    color: active ? '#0c4a6e' : '#334155',
+                    borderRadius: 8,
+                    padding: '8px 14px',
+                    cursor: 'pointer',
+                    fontSize: 13,
+                    fontWeight: active ? 700 : 500,
+                    transition: 'all 0.15s',
+                  }}
+                >
+                  {card.label}
+                </button>
+              )
+            })}
           </div>
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
-            <select
-              className="page-filter-select"
-              value={currentFeeYear}
-              onChange={(e) => {
-                const nextYear = Number(e.target.value)
-                setCurrentFeeYear(nextYear)
-                setYearFilter(nextYear)
-                loadFeeData({ year: nextYear, status: 'all', period: 'all' })
-              }}
-            >
-              {yearOptions.map((year) => <option key={year} value={year}>{toBE(year)}</option>)}
-            </select>
             <input
               className="page-filter-input"
               placeholder="ค้นหา ซอย / บ้านเลขที่ / เจ้าของ"
@@ -1165,9 +1272,9 @@ const AdminFees = () => {
       </div>
 
       <div className="stats">
-        <div className="sc"><div className="sc-ico a">💵</div><div><div className="sc-v">฿{summary.totalCollected.toLocaleString('th-TH')}</div><div className="sc-l">รวมเก็บแล้ว</div></div></div>
-        <div className="sc"><div className="sc-ico d">⏳</div><div><div className="sc-v">฿{summary.totalOutstanding.toLocaleString('th-TH')}</div><div className="sc-l">ค้างชำระ</div></div></div>
-        <div className="sc"><div className="sc-ico p">🧾</div><div><div className="sc-v">฿{summary.totalInvoiced.toLocaleString('th-TH')}</div><div className="sc-l">ยอดออกใบแจ้งหนี้</div></div></div>
+        <div className="sc"><div className="sc-ico a">💵</div><div><div className="sc-v">{summary.totalCollected.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div><div className="sc-l">รวมเก็บแล้ว</div></div></div>
+        <div className="sc"><div className="sc-ico d">⏳</div><div><div className="sc-v">{summary.totalOutstanding.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div><div className="sc-l">ค้างชำระ</div></div></div>
+        <div className="sc"><div className="sc-ico p">🧾</div><div><div className="sc-v">{summary.totalInvoiced.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div><div className="sc-l">ยอดออกใบแจ้งหนี้</div></div></div>
       </div>
 
       <div className="card">
@@ -1255,8 +1362,8 @@ const AdminFees = () => {
                           <td>{toBE(fee.year)}</td>
                           <td>{periodLabel(fee.period)}</td>
                           <td>{formatDateDMY(fee.due_date)}</td>
-                          <td><strong>฿{Number(fee.total_amount || 0).toLocaleString('th-TH')}</strong></td>
-                          <td><strong style={{ color: outstanding > 0 ? '#9a3412' : '#166534' }}>฿{outstanding.toLocaleString('th-TH')}</strong></td>
+                          <td><strong>{Number(fee.total_amount || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong></td>
+                          <td><strong style={{ color: outstanding > 0 ? '#9a3412' : '#166534' }}>{outstanding.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong></td>
                           <td><span className={badge.className}>{badge.label}</span></td>
                           <td style={{ width: '1%', whiteSpace: 'nowrap' }}>
                             <div className="td-acts" style={{ justifyContent: 'flex-end', display: 'flex', width: '100%' }}>
@@ -1293,8 +1400,8 @@ const AdminFees = () => {
                   <div className="mcard-body">{fee.houses?.owner_name || '-'}</div>
                   <div className="mcard-meta">
                     <span><span className="mcard-label">ครบกำหนด</span> {formatDateDMY(fee.due_date)}</span>
-                    <span><span className="mcard-label">ยอดรวม</span> ฿{Number(fee.total_amount || 0).toLocaleString('th-TH')}</span>
-                    <span><span className="mcard-label">ยอดค้างชำระ</span> ฿{outstanding.toLocaleString('th-TH')}</span>
+                    <span><span className="mcard-label">ยอดรวม</span> {Number(fee.total_amount || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                    <span><span className="mcard-label">ยอดค้างชำระ</span> {outstanding.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                   </div>
                   <div className="mcard-actions">
                     <button className="btn btn-xs btn-a" onClick={() => handleEditFee(fee)}>แก้ไข</button>
@@ -1358,7 +1465,7 @@ const AdminFees = () => {
                         <td>{toBE(fee.year)}</td>
                         <td>{periodLabel(fee.period)}</td>
                         <td>{formatDateDMY(fee.due_date)}</td>
-                        <td><strong>฿{Number(fee.total_amount || 0).toLocaleString('th-TH')}</strong></td>
+                        <td><strong>{Number(fee.total_amount || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong></td>
                         <td><span className={badge.className}>{badge.label}</span></td>
                         <td style={{ width: '1%', whiteSpace: 'nowrap' }}>
                           <div className="td-acts" style={{ justifyContent: 'flex-end', display: 'flex', width: '100%' }}>
@@ -1388,7 +1495,7 @@ const AdminFees = () => {
                 <div className="mcard-body">{fee.houses?.owner_name || '-'}</div>
                 <div className="mcard-meta">
                   <span><span className="mcard-label">ครบกำหนด</span> {formatDateDMY(fee.due_date)}</span>
-                  <span><span className="mcard-label">ยอดรวม</span> ฿{Number(fee.total_amount || 0).toLocaleString('th-TH')}</span>
+                  <span><span className="mcard-label">ยอดรวม</span> {Number(fee.total_amount || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                 </div>
                 <div className="mcard-actions">
                   <button className="btn btn-xs btn-a" onClick={() => handleEditFee(fee)}>แก้ไข</button>
@@ -1480,8 +1587,8 @@ const AdminFees = () => {
                 </div>
               </div>
               <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center' }}>
-                <span className="bd b-ok">อนุมัติแล้ว ฿{getApprovedAmountForFee(editingFee).toLocaleString('th-TH')}</span>
-                <span className="bd b-pr">ใบแจ้งหนี้ ฿{Number(editingFee.total_amount || 0).toLocaleString('th-TH')}</span>
+                <span className="bd b-ok">อนุมัติแล้ว {getApprovedAmountForFee(editingFee).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                <span className="bd b-pr">ใบแจ้งหนี้ {Number(editingFee.total_amount || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
               </div>
             </div>
 
@@ -1514,15 +1621,15 @@ const AdminFees = () => {
                     <div style={{ display: 'grid', gap: 8 }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 10, padding: '10px 12px' }}>
                         <span style={{ color: '#1d4ed8' }}>ยอดใบแจ้งหนี้เดิม</span>
-                        <strong>฿{Number(editingFee.total_amount || 0).toLocaleString('th-TH')}</strong>
+                        <strong>{Number(editingFee.total_amount || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong>
                       </div>
                       <div style={{ display: 'flex', justifyContent: 'space-between', background: '#f0fdf4', border: '1px solid #86efac', borderRadius: 10, padding: '10px 12px' }}>
                         <span style={{ color: '#166534' }}>ยอดอนุมัติแล้ว</span>
-                        <strong>฿{getApprovedAmountForFee(editingFee).toLocaleString('th-TH')}</strong>
+                        <strong>{getApprovedAmountForFee(editingFee).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong>
                       </div>
                       <div style={{ display: 'flex', justifyContent: 'space-between', background: '#0c4a6e', color: '#fff', borderRadius: 10, padding: '12px' }}>
                         <span style={{ opacity: .85 }}>ยอดรวมใหม่</span>
-                        <strong style={{ fontSize: 20 }}>฿{editTotal.toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong>
+                        <strong style={{ fontSize: 20 }}>{editTotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong>
                       </div>
                     </div>
                     <label className="house-field">
@@ -1610,9 +1717,9 @@ const AdminFees = () => {
                 <div className="house-md-sub">{payingFee.houses?.house_no || '-'} · {periodLabel(payingFee.period)} · ปี {toBE(payingFee.year)}</div>
               </div>
               <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                <span className="bd b-pr">ยอดแจ้งหนี้ ฿{paymentInvoiceTotal.toLocaleString('th-TH')}</span>
-                <span className="bd b-ok">เลือกแล้ว ฿{paymentSelectedAmount.toLocaleString('th-TH')}</span>
-                <span className="bd b-wn">คงเหลือ ฿{paymentRemaining.toLocaleString('th-TH')}</span>
+                <span className="bd b-pr">ยอดแจ้งหนี้ {paymentInvoiceTotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                <span className="bd b-ok">เลือกแล้ว {paymentSelectedAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                <span className="bd b-wn">คงเหลือ {paymentRemaining.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
               </div>
             </div>
 
@@ -1648,7 +1755,7 @@ const AdminFees = () => {
                       />
                     </div>
                     <div style={{ fontSize: 12, color: 'var(--mu)', marginBottom: 10 }}>
-                      ครอบคลุมยอดชำระ {paymentCoveragePct}% {paymentRemaining > 0 ? `· คงเหลือ ฿${paymentRemaining.toLocaleString('th-TH')}` : '· ครบยอดแล้ว'}
+                      ครอบคลุมยอดชำระ {paymentCoveragePct}% {paymentRemaining > 0 ? `· คงเหลือ ${paymentRemaining.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '· ครบยอดแล้ว'}
                     </div>
 
                     <div style={{ border: '1px solid var(--bo)', borderRadius: 10, overflow: 'hidden' }}>
@@ -1677,7 +1784,7 @@ const AdminFees = () => {
                                 <tr key={item.key} style={{ background: checked ? '#f0fdf4' : '#fff' }}>
                                   <td>
                                     <div style={{ fontWeight: 600 }}>{item.label}</div>
-                                    <div style={{ fontSize: 12, color: 'var(--mu)' }}>ยอดเต็ม ฿{item.amount.toLocaleString('th-TH')}</div>
+                                    <div style={{ fontSize: 12, color: 'var(--mu)' }}>ยอดเต็ม {item.amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
                                     {isPartialRow && <div style={{ fontSize: 12, color: '#0f766e' }}>ชำระบางส่วนของรายการนี้</div>}
                                     {isInvalidRow && <div style={{ fontSize: 12, color: '#b91c1c' }}>โปรดระบุยอดมากกว่า 0</div>}
                                   </td>
@@ -1709,7 +1816,7 @@ const AdminFees = () => {
                         <tfoot>
                           <tr>
                             <th colSpan="2" style={{ textAlign: 'right' }}>รวมยอดที่ชำระ</th>
-                            <th style={{ textAlign: 'right', color: '#166534' }}>฿{paymentSelectedAmount.toLocaleString('th-TH')}</th>
+                            <th style={{ textAlign: 'right', color: '#166534' }}>{paymentSelectedAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</th>
                           </tr>
                         </tfoot>
                       </table>
@@ -1724,15 +1831,15 @@ const AdminFees = () => {
                     <div style={{ display: 'grid', gap: 8, marginBottom: 12 }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', background: '#f8fafc', border: '1px solid var(--bo)', borderRadius: 8, padding: '10px 12px' }}>
                         <span style={{ color: 'var(--mu)' }}>ยอดใบแจ้งหนี้</span>
-                        <strong>฿{paymentInvoiceTotal.toLocaleString('th-TH')}</strong>
+                        <strong>{paymentInvoiceTotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong>
                       </div>
                       <div style={{ display: 'flex', justifyContent: 'space-between', background: '#ecfeff', border: '1px solid #99f6e4', borderRadius: 8, padding: '10px 12px' }}>
                         <span style={{ color: '#0f766e' }}>ยอดที่เลือกชำระ</span>
-                        <strong style={{ color: '#166534' }}>฿{paymentSelectedAmount.toLocaleString('th-TH')}</strong>
+                        <strong style={{ color: '#166534' }}>{paymentSelectedAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong>
                       </div>
                       <div style={{ display: 'flex', justifyContent: 'space-between', background: '#fff7ed', border: '1px solid #fdba74', borderRadius: 8, padding: '10px 12px' }}>
                         <span style={{ color: '#9a3412' }}>ยอดคงเหลือ</span>
-                        <strong style={{ color: '#9a3412' }}>฿{paymentRemaining.toLocaleString('th-TH')}</strong>
+                        <strong style={{ color: '#9a3412' }}>{paymentRemaining.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong>
                       </div>
                     </div>
 
