@@ -30,6 +30,26 @@ function toBE(yearCE) {
   return year + 543
 }
 
+function formatDateDMY(value) {
+  if (!value) return '-'
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return '-'
+  const d = String(date.getDate()).padStart(2, '0')
+  const m = String(date.getMonth() + 1).padStart(2, '0')
+  const y = date.getFullYear()
+  return `${d}/${m}/${y}`
+}
+
+function extractDiscountFromNote(note) {
+  const raw = String(note || '')
+  const match = raw.match(/^\[DISCOUNT:([0-9]+(?:\.[0-9]+)?)\]\s*/)
+  return match ? Number(match[1]) : 0
+}
+
+function stripDiscountTag(note) {
+  return String(note || '').replace(/^\[DISCOUNT:[0-9]+(?:\.[0-9]+)?\]\s*/, '')
+}
+
 const houseSorter = new Intl.Collator('th-TH', { numeric: true, sensitivity: 'base' })
 
 function normalizeSoiValue(soi) {
@@ -49,6 +69,7 @@ const AdminFees = () => {
     bank_name: 'กสิกรไทย',
     bank_account_no: '-',
     bank_account_name: 'นิติบุคคลหมู่บ้าน เดอะกรีนฟิลด์',
+    juristic_signature_url: '',
     invoice_message: 'กรุณาชำระภายในวันที่ครบกำหนด หากพ้นกำหนดจะมีค่าปรับตามประกาศนิติบุคคล',
     fee_rate_per_sqw: 85,
     waste_fee_per_period: 100,
@@ -81,6 +102,7 @@ const AdminFees = () => {
     fee_notice: '0',
     fee_violation: '0',
     fee_other: '0',
+    fee_discount: '0',
     note: '',
   })
   const [showPaymentModal, setShowPaymentModal] = useState(false)
@@ -244,6 +266,9 @@ const AdminFees = () => {
   }
 
   const handleEditFee = (fee) => {
+    const discountAmount = extractDiscountFromNote(fee.note)
+    const feeOtherBase = Number(fee.fee_other || 0) + discountAmount
+
     setEditingFee(fee)
     setEditForm({
       status: fee.status || 'unpaid',
@@ -258,8 +283,9 @@ const AdminFees = () => {
       fee_fine: String(fee.fee_fine || 0),
       fee_notice: String(fee.fee_notice || 0),
       fee_violation: String(fee.fee_violation || 0),
-      fee_other: String(fee.fee_other || 0),
-      note: fee.note || '',
+      fee_other: String(feeOtherBase),
+      fee_discount: String(discountAmount),
+      note: stripDiscountTag(fee.note || ''),
     })
     setShowEditModal(true)
   }
@@ -281,6 +307,10 @@ const AdminFees = () => {
       }
 
       setSavingEdit(true)
+      const discountAmount = Math.max(0, Number(editForm.fee_discount || 0))
+      const feeOtherNet = Number(editForm.fee_other || 0) - discountAmount
+      const noteValue = `${discountAmount > 0 ? `[DISCOUNT:${discountAmount}] ` : ''}${editForm.note || ''}`.trim() || null
+
       await updateFee(editingFee.id, {
         status: editForm.status || 'unpaid',
         invoice_date: editForm.invoice_date || null,
@@ -294,8 +324,8 @@ const AdminFees = () => {
         fee_fine: Number(editForm.fee_fine || 0),
         fee_notice: Number(editForm.fee_notice || 0),
         fee_violation: Number(editForm.fee_violation || 0),
-        fee_other: Number(editForm.fee_other || 0),
-        note: editForm.note || null,
+        fee_other: feeOtherNet,
+        note: noteValue,
       })
       setShowEditModal(false)
       setEditingFee(null)
@@ -406,7 +436,7 @@ const AdminFees = () => {
     const w = window.open('', '_blank', 'width=1200,height=900')
     if (!w) return
 
-    const fmtDate = (value) => (value ? new Date(value).toLocaleDateString('th-TH') : '-')
+    const fmtDate = (value) => formatDateDMY(value)
     const fmtMoney = (value) => Number(value || 0).toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 
     const toThaiBahtText = (value) => {
@@ -470,20 +500,21 @@ const AdminFees = () => {
     }
 
     const itemRows = (fee) => {
-      const fineAndNotice =
-        Number(fee.fee_overdue_fine || 0)
-        + Number(fee.fee_overdue_notice || 0)
-        + Number(fee.fee_fine || 0)
-        + Number(fee.fee_notice || 0)
+      const discountAmount = extractDiscountFromNote(fee.note)
+      const feeOtherBase = Number(fee.fee_other || 0) + discountAmount
 
       const printItems = [
         { label: 'ค่าส่วนกลาง', amount: Number(fee.fee_common || 0) },
         { label: 'ค่าจอดรถ', amount: Number(fee.fee_parking || 0) },
         { label: 'ค่าขยะ', amount: Number(fee.fee_waste || 0) },
         { label: 'ยอดค้างยกมา', amount: Number(fee.fee_overdue_common || 0) },
-        { label: 'ค่าปรับและค่าทวงถาม', amount: fineAndNotice },
+        { label: 'ค่าปรับยอดค้าง', amount: Number(fee.fee_overdue_fine || 0) },
+        { label: 'ค่าทวงถามยอดค้าง', amount: Number(fee.fee_overdue_notice || 0) },
+        { label: 'ค่าปรับ', amount: Number(fee.fee_fine || 0) },
+        { label: 'ค่าทวงถาม', amount: Number(fee.fee_notice || 0) },
         { label: 'ค่ากระทำผิด', amount: Number(fee.fee_violation || 0) },
-        { label: 'ค่าอื่นๆ', amount: Number(fee.fee_other || 0) },
+        { label: 'ค่าอื่นๆ', amount: feeOtherBase },
+        { label: 'ส่วนลด', amount: -discountAmount },
       ]
 
       return printItems
@@ -529,6 +560,8 @@ const AdminFees = () => {
                 <div><span>ชื่อเจ้าของบ้าน</span><strong>${fee.houses?.owner_name || '-'}</strong></div>
                 <div><span>งวดเรียกเก็บ</span><strong>${periodText}</strong></div>
                 <div><span>ซอย</span><strong>${fee.houses?.soi || '-'}</strong></div>
+                <div><span>พื้นที่ (ตร.วา)</span><strong>${Number(fee.houses?.area_sqw || 0).toLocaleString('th-TH')}</strong></div>
+                <div><span>อัตราค่าส่วนกลาง</span><strong>${Number(setup.fee_rate_per_sqw || fee.houses?.fee_rate || 0).toLocaleString('th-TH')} บาท/ตร.วา/ปี</strong></div>
               </div>
             </section>
 
@@ -568,6 +601,11 @@ const AdminFees = () => {
             <section class="foot">
               <div class="note">
                 หมายเหตุ: กรุณาชำระภายในวันที่ครบกำหนด เพื่อหลีกเลี่ยงค่าปรับ/ค่าทวงถามเพิ่มเติม
+              </div>
+              <div class="sign-wrap">
+                ${setup.juristic_signature_url ? `<img src="${setup.juristic_signature_url}" alt="juristic-signature" />` : ''}
+                <div class="sign-line"></div>
+                <div>ผู้มีอำนาจลงนาม</div>
               </div>
             </section>
 
@@ -609,13 +647,14 @@ const AdminFees = () => {
               padding: 12px;
               background: #ffffff;
             }
-            .brand { display: flex; align-items: center; gap: 12px; }
+            .brand { display: flex; align-items: flex-start; gap: 12px; }
             .brand img {
               width: 58px;
               height: 58px;
               border-radius: 8px;
               object-fit: cover;
               border: 1px solid #d1d5db;
+              margin-top: -4px;
             }
             .doc { font-size: 24px; font-weight: 700; }
             .village { font-size: 16px; margin-top: 2px; }
@@ -657,9 +696,15 @@ const AdminFees = () => {
               border: 1px solid #d1d5db;
               border-radius: 10px;
               padding: 12px;
-              display: block;
+              display: flex;
+              align-items: flex-end;
+              justify-content: space-between;
+              gap: 12px;
             }
             .note { font-size: 12px; color: #4b5563; }
+            .sign-wrap { min-width: 180px; text-align: center; font-size: 12px; color: #4b5563; }
+            .sign-wrap img { max-width: 150px; max-height: 54px; object-fit: contain; margin-bottom: 6px; }
+            .sign-line { border-top: 1px solid #6b7280; margin: 4px 0; }
             .stamp {
               position: absolute;
               top: 16mm;
@@ -942,7 +987,7 @@ const AdminFees = () => {
         <div className="cb page-table-body">
           <div className="desktop-only">
             <div style={{ overflowX: 'auto' }}>
-              <table className="tw" style={{ width: '100%', minWidth: '1180px' }}>
+              <table className="tw" style={{ width: '100%' }}>
                 <thead>
                   <tr>
                     <th>ซอย</th>
@@ -971,12 +1016,12 @@ const AdminFees = () => {
                           <td>{fee.houses?.house_no || '-'}<div style={{ fontSize: '11px', color: 'var(--mu)' }}>{fee.houses?.owner_name || '-'}</div></td>
                           <td>{toBE(fee.year)}</td>
                           <td>{periodLabel(fee.period)}</td>
-                          <td>{fee.due_date ? new Date(fee.due_date).toLocaleDateString('th-TH') : '-'}</td>
+                          <td>{formatDateDMY(fee.due_date)}</td>
                           <td><strong>฿{Number(fee.total_amount || 0).toLocaleString('th-TH')}</strong></td>
                           <td><strong style={{ color: outstanding > 0 ? '#9a3412' : '#166534' }}>฿{outstanding.toLocaleString('th-TH')}</strong></td>
                           <td><span className={badge.className}>{badge.label}</span></td>
-                          <td>
-                            <div className="td-acts" style={{ justifyContent: 'flex-end' }}>
+                          <td style={{ width: '1%', whiteSpace: 'nowrap' }}>
+                            <div className="td-acts" style={{ justifyContent: 'flex-end', display: 'flex', width: '100%' }}>
                               <button className="btn btn-xs btn-a" onClick={() => handleEditFee(fee)}>แก้ไข</button>
                               <button className="btn btn-xs btn-g" onClick={() => handlePrintInvoiceByHouse(fee)}>พิมพ์</button>
                               {!isFeeFullyPaid(fee) && <button className="btn btn-xs btn-o" onClick={() => handleCalculateAnnual(fee)}>คำนวณทั้งปี</button>}
@@ -1009,7 +1054,7 @@ const AdminFees = () => {
                   </div>
                   <div className="mcard-body">{fee.houses?.owner_name || '-'}</div>
                   <div className="mcard-meta">
-                    <span><span className="mcard-label">ครบกำหนด</span> {fee.due_date ? new Date(fee.due_date).toLocaleDateString('th-TH') : '-'}</span>
+                    <span><span className="mcard-label">ครบกำหนด</span> {formatDateDMY(fee.due_date)}</span>
                     <span><span className="mcard-label">ยอดรวม</span> ฿{Number(fee.total_amount || 0).toLocaleString('th-TH')}</span>
                     <span><span className="mcard-label">ยอดค้างชำระ</span> ฿{outstanding.toLocaleString('th-TH')}</span>
                   </div>
@@ -1132,6 +1177,7 @@ const AdminFees = () => {
                     <label className="house-field"><span>ค่าทวงถาม</span><input type="number" step="0.01" value={editForm.fee_notice} onChange={(e) => setEditForm((prev) => ({ ...prev, fee_notice: e.target.value }))} /></label>
                     <label className="house-field"><span>ค่ากระทำผิด</span><input type="number" step="0.01" value={editForm.fee_violation} onChange={(e) => setEditForm((prev) => ({ ...prev, fee_violation: e.target.value }))} /></label>
                     <label className="house-field"><span>ค่าอื่นๆ</span><input type="number" step="0.01" value={editForm.fee_other} onChange={(e) => setEditForm((prev) => ({ ...prev, fee_other: e.target.value }))} /></label>
+                    <label className="house-field"><span>ส่วนลด</span><input type="number" step="0.01" min="0" value={editForm.fee_discount} onChange={(e) => setEditForm((prev) => ({ ...prev, fee_discount: e.target.value }))} /></label>
                     <label className="house-field house-field-span-3">
                       <span>หมายเหตุ</span>
                       <textarea rows="2" value={editForm.note} onChange={(e) => setEditForm((prev) => ({ ...prev, note: e.target.value }))} />

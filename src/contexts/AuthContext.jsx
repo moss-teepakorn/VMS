@@ -6,6 +6,17 @@ import { insertLoginLog } from '../lib/loginLogs'
 const AuthContext = createContext(null)
 const SESSION_KEY = 'vms-local-auth'
 
+function clearClientStorage() {
+  const keysToRemove = []
+  for (let i = 0; i < localStorage.length; i += 1) {
+    const key = localStorage.key(i)
+    if (!key) continue
+    if (key === SESSION_KEY || key.startsWith('vms-')) keysToRemove.push(key)
+  }
+  keysToRemove.forEach((key) => localStorage.removeItem(key))
+  sessionStorage.clear()
+}
+
 function safeParse(value) {
   try {
     return JSON.parse(value)
@@ -20,6 +31,15 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
+    const isDirectOpen = Boolean(
+      window.location.pathname !== '/login'
+      && (!document.referrer || !document.referrer.startsWith(window.location.origin)),
+    )
+
+    if (isDirectOpen) {
+      clearClientStorage()
+    }
+
     const raw = localStorage.getItem(SESSION_KEY)
     const session = safeParse(raw)
     if (session?.user && session?.profile) {
@@ -70,7 +90,7 @@ export function AuthProvider({ children }) {
   }
 
   async function signOut() {
-    localStorage.removeItem(SESSION_KEY)
+    clearClientStorage()
     setUser(null)
     setProfile(null)
   }

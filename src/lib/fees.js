@@ -89,7 +89,7 @@ async function refreshFeeStatusFromPayments(feeId) {
 export async function listFees({ status = 'all', year = 'all', period = 'all', search = '' } = {}) {
   let query = supabase
     .from('fees')
-    .select('id, house_id, year, period, invoice_date, due_date, status, fee_common, fee_parking, fee_waste, fee_overdue_common, fee_overdue_fine, fee_overdue_notice, fee_fine, fee_notice, fee_violation, fee_other, total_amount, note, created_at, houses(id, house_no, soi, owner_name)')
+    .select('id, house_id, year, period, invoice_date, due_date, status, fee_common, fee_parking, fee_waste, fee_overdue_common, fee_overdue_fine, fee_overdue_notice, fee_fine, fee_notice, fee_violation, fee_other, total_amount, note, created_at, houses(id, house_no, soi, owner_name, area_sqw, fee_rate)')
     .order('created_at', { ascending: false })
 
   if (status && status !== 'all') {
@@ -161,7 +161,7 @@ export async function createFee(payload) {
   const { data, error } = await supabase
     .from('fees')
     .insert([fee])
-    .select('id, house_id, year, period, invoice_date, due_date, status, fee_common, fee_parking, fee_waste, fee_overdue_common, fee_overdue_fine, fee_overdue_notice, fee_fine, fee_notice, fee_violation, fee_other, total_amount, note, created_at, houses(id, house_no, soi, owner_name)')
+    .select('id, house_id, year, period, invoice_date, due_date, status, fee_common, fee_parking, fee_waste, fee_overdue_common, fee_overdue_fine, fee_overdue_notice, fee_fine, fee_notice, fee_violation, fee_other, total_amount, note, created_at, houses(id, house_no, soi, owner_name, area_sqw, fee_rate)')
     .single()
 
   if (error) throw error
