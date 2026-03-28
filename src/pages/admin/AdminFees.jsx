@@ -812,14 +812,14 @@ const AdminFees = () => {
     return `
       <html>
         <head>
-          <title></title>
+          <title>${title}</title>
           <link rel="preconnect" href="https://fonts.googleapis.com">
           <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
           <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;700&display=swap" rel="stylesheet">
           <style>
             /* Setting page margin to 0 removes browser-injected header (date/title) and footer (URL/page no.).
                Body padding compensates so content is not flush against paper edges. */
-            @page { size: A4; margin: 12mm 14mm; }
+            @page { size: A4; margin: 0; }
             * { box-sizing: border-box; }
             html, body { font-family: 'Sarabun', 'TH Sarabun New', Tahoma, sans-serif; margin: 0; padding: 0; color: #111827; background: #fff; }
             .sheet {
@@ -827,7 +827,7 @@ const AdminFees = () => {
               width: ${forCapture ? '794px' : '100%'};
               ${forCapture ? 'height: 1122px; overflow: hidden;' : 'page-break-after: always; break-after: page; break-inside: avoid;'}
               background: #fff;
-              padding: ${forCapture ? '24px 28px' : '0'};
+              padding: 24px 28px;
               display: flex;
               flex-direction: column;
               gap: 8px;
