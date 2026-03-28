@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import html2canvas from 'html2canvas'
+import { jsPDF } from 'jspdf'
 import Swal from 'sweetalert2'
 import { listHouses } from '../../lib/houses'
 import { getSystemConfig } from '../../lib/systemConfig'
@@ -10,6 +11,7 @@ import {
   calculateOverdueFeeCharges,
   createPayment,
   deleteFee,
+  getLatestFeeYear,
   listFees,
   listPaymentTotalsByFeeIds,
   listPayments,
@@ -80,7 +82,9 @@ const AdminFees = () => {
   })
   const [statusFilter, setStatusFilter] = useState('all')
   const [yearFilter, setYearFilter] = useState('all')
+  const [currentFeeYear, setCurrentFeeYear] = useState(new Date().getFullYear())
   const [periodFilter, setPeriodFilter] = useState('all')
+  const [archiveFilter, setArchiveFilter] = useState('paid')
   const [searchInput, setSearchInput] = useState('')
   const [searchKeyword, setSearchKeyword] = useState('')
   const [loading, setLoading] = useState(false)
@@ -191,11 +195,32 @@ const AdminFees = () => {
   }
 
   useEffect(() => {
-    getSystemConfig().then(setSetup).catch(() => {})
-    loadFeeData()
+    const init = async () => {
+      const latestYear = await getLatestFeeYear().catch(() => new Date().getFullYear())
+      setCurrentFeeYear(latestYear)
+      setYearFilter(latestYear)
+      setProcessForm((prev) => ({ ...prev, yearBE: String(latestYear + 543) }))
+      await Promise.all([
+        getSystemConfig().then(setSetup).catch(() => {}),
+        loadFeeData({ year: latestYear, status: 'all', period: 'all' }),
+      ])
+    }
+
+    init()
   }, [])
 
-  const summary = useMemo(() => summarizeFees(fees, payments), [fees, payments])
+  const summary = useMemo(() => {
+    const totalInvoiced = fees
+      .filter((fee) => fee.status !== 'cancelled')
+      .reduce((sum, fee) => sum + Number(fee.total_amount || 0), 0)
+    const totalCollected = fees
+      .reduce((sum, fee) => sum + Math.min(Number(feeApprovedTotals[fee.id] || 0), Number(fee.total_amount || 0)), 0)
+    const totalOutstanding = fees
+      .filter((fee) => fee.status !== 'paid' && fee.status !== 'cancelled')
+      .reduce((sum, fee) => sum + Math.max(0, Number(fee.total_amount || 0) - Number(feeSubmittedTotals[fee.id] || 0)), 0)
+
+    return { totalInvoiced, totalCollected, totalOutstanding }
+  }, [fees, feeApprovedTotals, feeSubmittedTotals])
 
   // Auto-computed total matching the DB trigger: SUM(all fee fields) where fee_other is stored as (fee_other - discount).
   const editTotal = useMemo(() => {
@@ -216,6 +241,11 @@ const AdminFees = () => {
     })
   }, [fees, searchKeyword])
 
+  const filteredFees = useMemo(() => {
+    if (periodFilter === 'all') return displayFees
+    return displayFees.filter((fee) => fee.period === periodFilter)
+  }, [displayFees, periodFilter])
+
   const getApprovedAmountForFee = (fee) => Number(feeApprovedTotals[fee?.id] || 0)
   const getSubmittedAmountForFee = (fee) => Number(feeSubmittedTotals[fee?.id] || 0)
 
@@ -232,6 +262,7 @@ const AdminFees = () => {
 
   const canCalculateAnnualFee = (fee) => (
     fee?.period !== 'full_year'
+    && fee?.status !== 'cancelled'
     && !isFeeFullyPaid(fee)
     && !hasAnyApprovedPaymentInYearForHouse(fee)
   )
@@ -246,6 +277,7 @@ const AdminFees = () => {
     const submittedAmount = getSubmittedAmountForFee(fee)
     const totalAmount = Number(fee?.total_amount || 0)
 
+    if (fee?.status === 'cancelled') return { className: 'bd b-dg', label: 'ยกเลิก' }
     if (approvedAmount >= totalAmount && totalAmount > 0) return { className: 'bd b-ok', label: 'ชำระแล้ว' }
     if (submittedAmount > 0 && submittedAmount < totalAmount) return { className: 'bd b-ac', label: 'ชำระบางส่วน' }
     if (fee?.status === 'paid') return { className: 'bd b-ok', label: 'ชำระแล้ว' }
@@ -254,9 +286,32 @@ const AdminFees = () => {
     return { className: 'bd b-wn', label: 'ยังไม่ชำระ' }
   }
 
+  const periodCards = useMemo(() => ([
+    { value: 'all', label: 'ทั้งหมด', count: fees.length },
+    { value: 'first_half', label: 'ครึ่งปีแรก', count: fees.filter((fee) => fee.period === 'first_half').length },
+    { value: 'second_half', label: 'ครึ่งปีหลัง', count: fees.filter((fee) => fee.period === 'second_half').length },
+    { value: 'full_year', label: 'เต็มปี', count: fees.filter((fee) => fee.period === 'full_year').length },
+  ]), [fees])
+
+  const activeFees = useMemo(() => filteredFees.filter((fee) => {
+    if (fee.status === 'cancelled') return false
+    if (isFeeFullyPaid(fee) || fee.status === 'paid') return false
+    return getOutstandingAmountForFee(fee) > 0
+  }), [filteredFees, feeApprovedTotals, feeSubmittedTotals])
+
+  const archiveCards = useMemo(() => ([
+    { value: 'paid', label: 'ชำระแล้ว', count: filteredFees.filter((fee) => isFeeFullyPaid(fee) || fee.status === 'paid').length },
+    { value: 'cancelled', label: 'ยกเลิก', count: filteredFees.filter((fee) => fee.status === 'cancelled').length },
+  ]), [filteredFees, feeApprovedTotals])
+
+  const archiveFees = useMemo(() => filteredFees.filter((fee) => {
+    if (archiveFilter === 'cancelled') return fee.status === 'cancelled'
+    return isFeeFullyPaid(fee) || fee.status === 'paid'
+  }), [filteredFees, archiveFilter, feeApprovedTotals])
+
   const handleOpenProcessModal = () => {
     setProcessForm({
-      yearBE: String(new Date().getFullYear() + 543),
+      yearBE: String(currentFeeYear + 543),
       period: 'first_half',
       overwritePending: false,
     })
@@ -277,7 +332,7 @@ const AdminFees = () => {
       await Swal.fire({
         icon: 'success',
         title: 'Process สำเร็จ',
-        html: `สร้างใหม่ ${result.created} หลัง<br/>อัปเดต ${result.updated} หลัง<br/>ข้าม (ชำระแล้ว) ${result.skippedPaid} หลัง<br/>ข้าม (รอตรวจสอบ) ${result.skippedPending} หลัง${result.skippedFullYear > 0 ? `<br/>ข้าม (มีใบแจ้งหนี้เต็มปีแล้ว) <strong>${result.skippedFullYear}</strong> หลัง` : ''}${processForm.overwritePending ? '<br/><span style="color:#0f766e">* เลือกทับรายการรอตรวจสอบแล้ว</span>' : ''}`,
+        html: `สร้างใหม่ ${result.created} หลัง<br/>อัปเดต ${result.updated} หลัง<br/>ข้าม (ชำระแล้ว) ${result.skippedPaid} หลัง<br/>ข้าม (รอตรวจสอบ) ${result.skippedPending} หลัง${result.skippedFullYear > 0 ? `<br/>ข้าม (มีใบแจ้งหนี้เต็มปีแล้ว) <strong>${result.skippedFullYear}</strong> หลัง` : ''}${result.cancelledFirstHalf > 0 ? `<br/>ยกเลิกใบแจ้งหนี้ครึ่งปีแรกเดิม ${result.cancelledFirstHalf} หลัง` : ''}${processForm.overwritePending ? '<br/><span style="color:#0f766e">* เลือกทับรายการรอตรวจสอบแล้ว</span>' : ''}`,
       })
       setShowProcessModal(false)
       await loadFeeData({ status: statusFilter, year: yearFilter, period: periodFilter })
@@ -773,37 +828,62 @@ const AdminFees = () => {
     return w
   }
 
+  const renderInvoicesInIframe = async (html) => {
+    const iframe = document.createElement('iframe')
+    iframe.style.position = 'fixed'
+    iframe.style.left = '-99999px'
+    iframe.style.top = '0'
+    iframe.style.width = '1200px'
+    iframe.style.height = '1600px'
+    document.body.appendChild(iframe)
+    const doc = iframe.contentDocument
+    doc.open()
+    doc.write(html)
+    doc.close()
+    await new Promise((resolve) => setTimeout(resolve, 700))
+    return {
+      iframe,
+      doc,
+      sheets: Array.from(doc.querySelectorAll('.sheet')),
+    }
+  }
+
   const runPrintAction = async (mode) => {
     if (!printPayload?.fees?.length) return
     try {
       setRunningPrintAction(true)
 
-      if (mode === 'image') {
+      if (mode === 'image' || mode === 'pdf') {
         const html = await buildInvoiceHtml(printPayload.fees, printPayload.title, { autoPrint: false })
-        const iframe = document.createElement('iframe')
-        iframe.style.position = 'fixed'
-        iframe.style.left = '-99999px'
-        iframe.style.top = '0'
-        iframe.style.width = '1200px'
-        iframe.style.height = '1600px'
-        document.body.appendChild(iframe)
-        const doc = iframe.contentDocument
-        doc.open()
-        doc.write(html)
-        doc.close()
-        await new Promise((resolve) => setTimeout(resolve, 600))
+        const { iframe, sheets } = await renderInvoicesInIframe(html)
 
-        const sheets = Array.from(doc.querySelectorAll('.sheet'))
-        for (let i = 0; i < sheets.length; i += 1) {
-          const canvas = await html2canvas(sheets[i], {
-            scale: 2,
-            useCORS: true,
-            backgroundColor: '#ffffff',
-          })
-          const link = document.createElement('a')
-          link.href = canvas.toDataURL('image/png')
-          link.download = `${printPayload.title || 'invoice'}-${i + 1}.png`
-          link.click()
+        if (mode === 'image') {
+          for (let i = 0; i < sheets.length; i += 1) {
+            const canvas = await html2canvas(sheets[i], {
+              scale: 2,
+              useCORS: true,
+              backgroundColor: '#ffffff',
+            })
+            const link = document.createElement('a')
+            link.href = canvas.toDataURL('image/png')
+            link.download = `${printPayload.title || 'invoice'}-${i + 1}.png`
+            link.click()
+          }
+        } else {
+          const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' })
+          for (let i = 0; i < sheets.length; i += 1) {
+            const canvas = await html2canvas(sheets[i], {
+              scale: 2,
+              useCORS: true,
+              backgroundColor: '#ffffff',
+            })
+            const imgData = canvas.toDataURL('image/jpeg', 0.95)
+            const pageWidth = pdf.internal.pageSize.getWidth()
+            const pageHeight = pdf.internal.pageSize.getHeight()
+            if (i > 0) pdf.addPage()
+            pdf.addImage(imgData, 'JPEG', 0, 0, pageWidth, pageHeight, undefined, 'FAST')
+          }
+          pdf.save(`${printPayload.title || 'invoice'}.pdf`)
         }
 
         document.body.removeChild(iframe)
@@ -817,14 +897,6 @@ const AdminFees = () => {
         await Swal.fire({ icon: 'warning', title: 'ไม่สามารถเปิดหน้าต่างพิมพ์ได้', text: 'กรุณาอนุญาต popup ของเบราว์เซอร์' })
         return
       }
-
-      if (mode === 'pdf') {
-        await Swal.fire({
-          icon: 'info',
-          title: 'Export PDF',
-          text: 'ในหน้าต่างพิมพ์ ให้เลือก Printer = Save as PDF แล้วกด Save',
-        })
-      }
       setShowPrintActionModal(false)
     } catch (error) {
       await Swal.fire({ icon: 'error', title: 'ดำเนินการไม่สำเร็จ', text: error.message })
@@ -834,7 +906,7 @@ const AdminFees = () => {
   }
 
   const handlePrintInvoicesAll = () => {
-    openPrintActionModal(displayFees, 'ใบแจ้งหนี้ทั้งหมด')
+    openPrintActionModal(filteredFees, 'ใบแจ้งหนี้ทั้งหมด')
   }
 
   const handlePrintInvoiceByHouse = (fee) => {
@@ -1026,7 +1098,11 @@ const AdminFees = () => {
             </div>
           </div>
         </div>
-        <div className="page-filter-row" style={{ justifyContent: 'flex-end' }}>
+        <div className="page-filter-row" style={{ justifyContent: 'space-between', alignItems: 'center' }}>
+          <div style={{ fontSize: 13, color: 'var(--mu)' }}>
+            แสดงข้อมูลปีล่าสุด: <strong>พ.ศ. {toBE(currentFeeYear)}</strong>
+          </div>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
           <input
             className="page-filter-input"
             placeholder="ค้นหา ซอย / บ้านเลขที่ / เจ้าของ"
@@ -1034,34 +1110,17 @@ const AdminFees = () => {
             onChange={(e) => setSearchInput(e.target.value)}
             style={{ minWidth: 240 }}
           />
-          <select className="page-filter-select" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
-            <option value="all">ทุกสถานะ</option>
-            <option value="unpaid">ยังไม่ชำระ</option>
-            <option value="partial">ชำระบางส่วน</option>
-            <option value="pending">รอตรวจสอบ</option>
-            <option value="paid">ชำระแล้ว</option>
-            <option value="overdue">ค้างชำระ</option>
-          </select>
-          <select className="page-filter-select" value={yearFilter} onChange={(e) => setYearFilter(e.target.value)}>
-            <option value="all">ทุกปี</option>
-            {yearOptions.map((year) => <option key={year} value={year}>{toBE(year)}</option>)}
-          </select>
-          <select className="page-filter-select" value={periodFilter} onChange={(e) => setPeriodFilter(e.target.value)}>
-            <option value="all">ทุกรอบ</option>
-            <option value="first_half">ครึ่งปีแรก</option>
-            <option value="second_half">ครึ่งปีหลัง</option>
-            <option value="full_year">ทั้งปี</option>
-          </select>
           <button
             type="button"
             className="btn btn-a btn-sm page-filter-btn"
             onClick={() => {
               setSearchKeyword(searchInput.trim())
-              loadFeeData({ status: statusFilter, year: yearFilter, period: periodFilter })
+              loadFeeData({ year: currentFeeYear, status: 'all', period: 'all' })
             }}
           >
             ค้นหา
           </button>
+          </div>
         </div>
       </div>
 
@@ -1071,14 +1130,38 @@ const AdminFees = () => {
         <div className="sc"><div className="sc-ico p">🧾</div><div><div className="sc-v">฿{summary.totalInvoiced.toLocaleString('th-TH')}</div><div className="sc-l">ยอดออกใบแจ้งหนี้</div></div></div>
       </div>
 
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 10 }}>
+        {periodCards.map((item) => {
+          const active = periodFilter === item.value
+          return (
+            <button
+              key={item.value}
+              type="button"
+              onClick={() => setPeriodFilter(item.value)}
+              style={{
+                border: active ? '1px solid #0c4a6e' : '1px solid var(--bo)',
+                background: active ? '#eff6ff' : '#fff',
+                borderRadius: 12,
+                padding: '12px 14px',
+                textAlign: 'left',
+                cursor: 'pointer',
+              }}
+            >
+              <div style={{ fontSize: 12, color: active ? '#0c4a6e' : 'var(--mu)' }}>{item.label}</div>
+              <div style={{ fontSize: 22, fontWeight: 700, color: '#111827' }}>{item.count}</div>
+            </button>
+          )
+        })}
+      </div>
+
       <div className="card">
         <div className="ch page-list-head">
-          <div className="ct">ใบแจ้งหนี้ล่าสุด ({displayFees.length})</div>
+          <div className="ct">ใบแจ้งหนี้ค้างชำระ ({activeFees.length})</div>
           <div className="page-list-actions">
             <button className="btn btn-p btn-sm" onClick={handleOpenProcessModal}>+ สร้างใบแจ้งหนี้</button>
             <button className="btn btn-a btn-sm" onClick={handlePrintInvoicesAll}>🖨 พิมพ์ใบแจ้งหนี้ทั้งหมด</button>
             <button className="btn btn-dg btn-sm" onClick={handleBulkOverdue}>⚖ คำนวณค่าปรับทั้งหมด</button>
-            <button className="btn btn-g btn-sm" onClick={() => loadFeeData({ status: statusFilter, year: yearFilter, period: periodFilter })}>🔄 รีเฟรช</button>
+            <button className="btn btn-g btn-sm" onClick={() => loadFeeData({ year: currentFeeYear, status: 'all', period: 'all' })}>🔄 รีเฟรช</button>
           </div>
         </div>
         <div className="cb page-table-body">
@@ -1101,10 +1184,10 @@ const AdminFees = () => {
                 <tbody>
                   {loading ? (
                     <tr><td colSpan="9" style={{ textAlign: 'center', color: 'var(--mu)', padding: '20px' }}>กำลังโหลดข้อมูล...</td></tr>
-                  ) : displayFees.length === 0 ? (
+                  ) : activeFees.length === 0 ? (
                     <tr><td colSpan="9" style={{ textAlign: 'center', color: 'var(--mu)', padding: '20px' }}>ไม่พบข้อมูลตามเงื่อนไขค้นหา</td></tr>
                   ) : (
-                    displayFees.map((fee) => {
+                    activeFees.map((fee) => {
                       const badge = getFeeStatusBadge(fee)
                       const outstanding = getOutstandingAmountForFee(fee)
                       return (
@@ -1137,9 +1220,9 @@ const AdminFees = () => {
           <div className="mobile-only">
             {loading ? (
               <div className="mcard-empty">กำลังโหลดข้อมูล...</div>
-            ) : displayFees.length === 0 ? (
+            ) : activeFees.length === 0 ? (
               <div className="mcard-empty">ยังไม่มีใบแจ้งหนี้</div>
-            ) : displayFees.map((fee) => {
+            ) : activeFees.map((fee) => {
               const badge = getFeeStatusBadge(fee)
               const outstanding = getOutstandingAmountForFee(fee)
               return (
@@ -1170,55 +1253,91 @@ const AdminFees = () => {
       </div>
 
       <div className="card">
-        <div className="ch"><div className="ct">การชำระเงินล่าสุด</div></div>
+        <div className="ch page-list-head">
+          <div className="ct">ใบแจ้งหนี้ปิดรายการ ({archiveFees.length})</div>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            {archiveCards.map((item) => {
+              const active = archiveFilter === item.value
+              return (
+                <button
+                  key={item.value}
+                  type="button"
+                  className={`btn btn-sm ${active ? 'btn-a' : 'btn-g'}`}
+                  onClick={() => setArchiveFilter(item.value)}
+                >
+                  {item.label} ({item.count})
+                </button>
+              )
+            })}
+          </div>
+        </div>
         <div className="cb page-table-body">
           <div className="desktop-only">
             <div style={{ overflowX: 'auto' }}>
-              <table className="tw" style={{ width: '100%', minWidth: '720px' }}>
+              <table className="tw" style={{ width: '100%' }}>
                 <thead>
                   <tr>
+                    <th>ซอย</th>
                     <th>บ้าน</th>
+                    <th>ปี</th>
                     <th>งวด</th>
-                    <th>จำนวนเงิน</th>
-                    <th>วิธีชำระ</th>
-                    <th>วันที่</th>
+                    <th>ครบกำหนด</th>
+                    <th>ยอดรวม</th>
+                    <th>สถานะ</th>
+                    <th style={{ textAlign: 'right' }}>จัดการ</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {payments.length === 0 ? (
-                    <tr><td colSpan="5" style={{ textAlign: 'center', color: 'var(--mu)', padding: '20px' }}>ยังไม่มีรายการชำระเงิน</td></tr>
+                  {archiveFees.length === 0 ? (
+                    <tr><td colSpan="8" style={{ textAlign: 'center', color: 'var(--mu)', padding: '20px' }}>ยังไม่มีรายการ</td></tr>
                   ) : (
-                    payments.map((payment) => (
-                      <tr key={payment.id}>
-                        <td>{payment.houses?.house_no || '-'}<div style={{ fontSize: '11px', color: 'var(--mu)' }}>{payment.houses?.owner_name || '-'}</div></td>
-                        <td>{payment.fees ? `${periodLabel(payment.fees.period)} ${toBE(payment.fees.year)}` : '-'}</td>
-                        <td>฿{Number(payment.amount || 0).toLocaleString('th-TH')}</td>
-                        <td>{payment.payment_method}</td>
-                        <td>{payment.paid_at ? new Date(payment.paid_at).toLocaleString('th-TH') : '-'}</td>
+                    archiveFees.map((fee) => {
+                      const badge = getFeeStatusBadge(fee)
+                      return (
+                      <tr key={fee.id}>
+                        <td>{fee.houses?.soi || '-'}</td>
+                        <td>{fee.houses?.house_no || '-'}<div style={{ fontSize: '11px', color: 'var(--mu)' }}>{fee.houses?.owner_name || '-'}</div></td>
+                        <td>{toBE(fee.year)}</td>
+                        <td>{periodLabel(fee.period)}</td>
+                        <td>{formatDateDMY(fee.due_date)}</td>
+                        <td><strong>฿{Number(fee.total_amount || 0).toLocaleString('th-TH')}</strong></td>
+                        <td><span className={badge.className}>{badge.label}</span></td>
+                        <td style={{ width: '1%', whiteSpace: 'nowrap' }}>
+                          <div className="td-acts" style={{ justifyContent: 'flex-end', display: 'flex', width: '100%' }}>
+                            <button className="btn btn-xs btn-a" onClick={() => handleEditFee(fee)}>แก้ไข</button>
+                            <button className="btn btn-xs btn-g" onClick={() => handlePrintInvoiceByHouse(fee)}>พิมพ์</button>
+                          </div>
+                        </td>
                       </tr>
-                    ))
+                    )})
                   )}
                 </tbody>
               </table>
             </div>
           </div>
           <div className="mobile-only">
-            {payments.length === 0 ? (
-              <div className="mcard-empty">ยังไม่มีรายการชำระเงิน</div>
-            ) : payments.map((payment) => (
-              <div key={payment.id} className="mcard">
+            {archiveFees.length === 0 ? (
+              <div className="mcard-empty">ยังไม่มีรายการ</div>
+            ) : archiveFees.map((fee) => {
+              const badge = getFeeStatusBadge(fee)
+              return (
+              <div key={fee.id} className="mcard">
                 <div className="mcard-top">
-                  <div className="mcard-title">{payment.houses?.house_no || '-'}</div>
-                  <div className="mcard-sub">{payment.fees ? `${periodLabel(payment.fees.period)} ${toBE(payment.fees.year)}` : '-'}</div>
+                  <div className="mcard-title">{fee.houses?.house_no || '-'}</div>
+                  <div className="mcard-sub">ซอย {fee.houses?.soi || '-'} · {toBE(fee.year)} · {periodLabel(fee.period)}</div>
+                  <span className={`${badge.className} mcard-badge`}>{badge.label}</span>
                 </div>
-                <div className="mcard-body">{payment.houses?.owner_name || '-'}</div>
+                <div className="mcard-body">{fee.houses?.owner_name || '-'}</div>
                 <div className="mcard-meta">
-                  <span><span className="mcard-label">จำนวน</span> ฿{Number(payment.amount || 0).toLocaleString('th-TH')}</span>
-                  <span><span className="mcard-label">วิธีชำระ</span> {payment.payment_method}</span>
-                  <span><span className="mcard-label">วันที่</span> {payment.paid_at ? new Date(payment.paid_at).toLocaleDateString('th-TH') : '-'}</span>
+                  <span><span className="mcard-label">ครบกำหนด</span> {formatDateDMY(fee.due_date)}</span>
+                  <span><span className="mcard-label">ยอดรวม</span> ฿{Number(fee.total_amount || 0).toLocaleString('th-TH')}</span>
+                </div>
+                <div className="mcard-actions">
+                  <button className="btn btn-xs btn-a" onClick={() => handleEditFee(fee)}>แก้ไข</button>
+                  <button className="btn btn-xs btn-g" onClick={() => handlePrintInvoiceByHouse(fee)}>พิมพ์</button>
                 </div>
               </div>
-            ))}
+            )})}
           </div>
         </div>
       </div>
@@ -1264,7 +1383,7 @@ const AdminFees = () => {
 
       {showEditModal && editingFee && (
         <div className="house-mo">
-          <div className="house-md house-md--md">
+          <div className="house-md house-md--lg">
             <div className="house-md-head">
               <div>
                 <div className="house-md-title">🧾 แก้ไขใบแจ้งหนี้</div>
@@ -1280,9 +1399,10 @@ const AdminFees = () => {
 
             <form onSubmit={handleSubmitEdit}>
               <div className="house-md-body">
-                <section className="house-sec" style={{ paddingTop: 0 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'minmax(260px, 0.9fr) minmax(0, 1.6fr)', gap: 16 }}>
+                <section className="house-sec" style={{ paddingTop: 0, marginBottom: 0 }}>
                   <div className="house-sec-title">ข้อมูลเอกสาร</div>
-                  <div className="house-grid house-grid-3">
+                  <div className="house-grid" style={{ gridTemplateColumns: '1fr', gap: 10 }}>
                     <label className="house-field">
                       <span>สถานะ</span>
                       <select value={editForm.status} onChange={(e) => setEditForm((prev) => ({ ...prev, status: e.target.value }))}>
@@ -1303,10 +1423,33 @@ const AdminFees = () => {
                       <span>วันครบกำหนด</span>
                       <input type="date" value={editForm.due_date} onChange={(e) => setEditForm((prev) => ({ ...prev, due_date: e.target.value }))} />
                     </label>
+                    <div style={{ display: 'grid', gap: 8 }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 10, padding: '10px 12px' }}>
+                        <span style={{ color: '#1d4ed8' }}>ยอดใบแจ้งหนี้เดิม</span>
+                        <strong>฿{Number(editingFee.total_amount || 0).toLocaleString('th-TH')}</strong>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', background: '#f0fdf4', border: '1px solid #86efac', borderRadius: 10, padding: '10px 12px' }}>
+                        <span style={{ color: '#166534' }}>ยอดอนุมัติแล้ว</span>
+                        <strong>฿{getApprovedAmountForFee(editingFee).toLocaleString('th-TH')}</strong>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', background: '#0c4a6e', color: '#fff', borderRadius: 10, padding: '12px' }}>
+                        <span style={{ opacity: .85 }}>ยอดรวมใหม่</span>
+                        <strong style={{ fontSize: 20 }}>฿{editTotal.toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong>
+                      </div>
+                    </div>
+                    <label className="house-field">
+                      <span>หมายเหตุ</span>
+                      <textarea
+                        rows="5"
+                        style={{ resize: 'vertical' }}
+                        value={editForm.note}
+                        onChange={(e) => setEditForm((prev) => ({ ...prev, note: e.target.value }))}
+                      />
+                    </label>
                   </div>
                 </section>
 
-                <section className="house-sec">
+                <section className="house-sec" style={{ marginBottom: 0 }}>
                   <div className="house-sec-title">รายการค่าใช้จ่าย</div>
                   <div style={{ border: '1px solid var(--bo)', borderRadius: 10, overflow: 'hidden' }}>
                     {/* Base fees */}
@@ -1320,7 +1463,7 @@ const AdminFees = () => {
                     ].map((item, i, arr) => (
                       <div key={item.key} style={{ display: 'flex', alignItems: 'center', padding: '7px 12px', borderBottom: i < arr.length - 1 ? '1px solid var(--bo)' : undefined, gap: 8 }}>
                         <span style={{ flex: 1, fontSize: 13 }}>{item.label}</span>
-                        <input type="number" step="0.01" value={editForm[item.key]} onChange={(e) => setEditForm((prev) => ({ ...prev, [item.key]: e.target.value }))} style={{ width: 160, textAlign: 'right' }} />
+                        <input type="number" step="0.01" value={editForm[item.key]} onChange={(e) => setEditForm((prev) => ({ ...prev, [item.key]: e.target.value }))} style={{ width: 132, textAlign: 'right' }} />
                       </div>
                     ))}
 
@@ -1340,7 +1483,7 @@ const AdminFees = () => {
                       return (
                         <div key={item.key} style={{ display: 'flex', alignItems: 'center', padding: '7px 12px', borderBottom: i < arr.length - 1 ? '1px solid var(--bo)' : undefined, gap: 8, background: hasValue ? '#fffbeb' : '#fff' }}>
                           <span style={{ flex: 1, fontSize: 13, color: hasValue ? '#92400e' : 'inherit' }}>{item.label}</span>
-                          <input type="number" step="0.01" value={editForm[item.key]} onChange={(e) => setEditForm((prev) => ({ ...prev, [item.key]: e.target.value }))} style={{ width: 160, textAlign: 'right', borderColor: hasValue ? '#f59e0b' : undefined }} />
+                          <input type="number" step="0.01" value={editForm[item.key]} onChange={(e) => setEditForm((prev) => ({ ...prev, [item.key]: e.target.value }))} style={{ width: 132, textAlign: 'right', borderColor: hasValue ? '#f59e0b' : undefined }} />
                         </div>
                       )
                     })}
@@ -1351,32 +1494,15 @@ const AdminFees = () => {
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', padding: '7px 12px', borderBottom: '1px solid var(--bo)', gap: 8 }}>
                       <span style={{ flex: 1, fontSize: 13 }}>ค่าอื่นๆ</span>
-                      <input type="number" step="0.01" value={editForm.fee_other} onChange={(e) => setEditForm((prev) => ({ ...prev, fee_other: e.target.value }))} style={{ width: 160, textAlign: 'right' }} />
+                      <input type="number" step="0.01" value={editForm.fee_other} onChange={(e) => setEditForm((prev) => ({ ...prev, fee_other: e.target.value }))} style={{ width: 132, textAlign: 'right' }} />
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', padding: '7px 12px', gap: 8, background: Number(editForm.fee_discount || 0) > 0 ? '#fef2f2' : '#fff' }}>
                       <span style={{ flex: 1, fontSize: 13, fontWeight: 600, color: '#dc2626' }}>ส่วนลด (−)</span>
-                      <input type="number" step="0.01" min="0" value={editForm.fee_discount} onChange={(e) => setEditForm((prev) => ({ ...prev, fee_discount: e.target.value }))} style={{ width: 160, textAlign: 'right', color: '#dc2626', borderColor: Number(editForm.fee_discount || 0) > 0 ? '#dc2626' : undefined }} />
+                      <input type="number" step="0.01" min="0" value={editForm.fee_discount} onChange={(e) => setEditForm((prev) => ({ ...prev, fee_discount: e.target.value }))} style={{ width: 132, textAlign: 'right', color: '#dc2626', borderColor: Number(editForm.fee_discount || 0) > 0 ? '#dc2626' : undefined }} />
                     </div>
                   </div>
-
-                  {/* Running total — read-only */}
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#0c4a6e', color: '#fff', borderRadius: 10, padding: '11px 16px', marginTop: 10 }}>
-                    <span style={{ fontSize: 13, opacity: .85 }}>ยอดรวมใบแจ้งหนี้ (คำนวณอัตโนมัติ)</span>
-                    <span style={{ fontSize: 20, fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>
-                      ฿{editTotal.toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                    </span>
-                  </div>
                 </section>
-
-                <section className="house-sec" style={{ borderBottom: 0, paddingBottom: 0 }}>
-                  <div className="house-sec-title">หมายเหตุ</div>
-                  <textarea
-                    rows="2"
-                    style={{ width: '100%', borderRadius: 8, border: '1px solid var(--bo)', padding: '7px 10px', fontSize: 13, resize: 'vertical', fontFamily: 'inherit' }}
-                    value={editForm.note}
-                    onChange={(e) => setEditForm((prev) => ({ ...prev, note: e.target.value }))}
-                  />
-                </section>
+                </div>
               </div>
               <div className="house-md-foot">
                 <button className="btn btn-g" type="button" onClick={() => { if (!savingEdit) { setShowEditModal(false); setEditingFee(null) } }}>ยกเลิก</button>

@@ -114,6 +114,18 @@ export async function listFees({ status = 'all', year = 'all', period = 'all', s
   return data ?? []
 }
 
+export async function getLatestFeeYear() {
+  const { data, error } = await supabase
+    .from('fees')
+    .select('year')
+    .order('year', { ascending: false })
+    .limit(1)
+    .maybeSingle()
+
+  if (error) throw error
+  return Number(data?.year || new Date().getFullYear())
+}
+
 export async function listHouseFees(houseId, { status = 'all', year = 'all' } = {}) {
   if (!houseId) return []
 
@@ -177,29 +189,54 @@ export async function processHalfYearFeesAllHouses({ yearBE, period, setup, over
 
   const ratePerSqw = toAmount(setup?.fee_rate_per_sqw)
   const wastePerPeriod = toAmount(setup?.waste_fee_per_period)
+  const finePct = toAmount(setup?.overdue_fine_pct)
+  const noticeFee = round2(toAmount(setup?.notice_fee))
   const dates = halfYearDates(yearCE, period)
 
-  const [housesResp, existingResp, fullYearResp, parkingByHouse] = await Promise.all([
+  const [housesResp, existingResp, fullYearResp, firstHalfResp, parkingByHouse] = await Promise.all([
     supabase.from('houses').select('id, area_sqw'),
     supabase.from('fees').select('id, house_id, status').eq('year', yearCE).eq('period', period),
     // Check which houses already have a full_year invoice for this year — must not create half-year on top
     supabase.from('fees').select('house_id').eq('year', yearCE).eq('period', 'full_year'),
+    supabase
+      .from('fees')
+      .select('id, house_id, status, total_amount, note')
+      .eq('year', yearCE)
+      .eq('period', 'first_half'),
     getParkingMonthlyByHouse(),
   ])
 
   if (housesResp.error) throw housesResp.error
   if (existingResp.error) throw existingResp.error
   if (fullYearResp.error) throw fullYearResp.error
+  if (firstHalfResp.error) throw firstHalfResp.error
 
   const existingByHouse = new Map((existingResp.data || []).map((row) => [row.house_id, row]))
   const fullYearHouseIds = new Set((fullYearResp.data || []).map((row) => row.house_id))
+  const firstHalfByHouse = new Map((firstHalfResp.data || []).map((row) => [row.house_id, row]))
   const houses = housesResp.data || []
+
+  const firstHalfIds = (firstHalfResp.data || []).map((row) => row.id)
+  const firstHalfPaymentFeeIds = new Set()
+  if (firstHalfIds.length > 0) {
+    const { data: firstHalfPayments, error: firstHalfPaymentError } = await supabase
+      .from('payments')
+      .select('fee_id')
+      .in('fee_id', firstHalfIds)
+      .gt('amount', 0)
+
+    if (firstHalfPaymentError) throw firstHalfPaymentError
+    for (const row of firstHalfPayments || []) {
+      if (row?.fee_id) firstHalfPaymentFeeIds.add(row.fee_id)
+    }
+  }
 
   let created = 0
   let updated = 0
   let skippedPaid = 0
   let skippedPending = 0
   let skippedFullYear = 0
+  let cancelledFirstHalf = 0
 
   for (const house of houses) {
     // Skip houses that already have a full_year invoice — no half-year duplicate allowed
@@ -219,14 +256,49 @@ export async function processHalfYearFeesAllHouses({ yearBE, period, setup, over
       fee_common: round2(area * 6 * ratePerSqw),
       fee_parking: round2(parkingMonthly * 6),
       fee_waste: round2(wastePerPeriod),
+      fee_overdue_common: 0,
+      fee_overdue_fine: 0,
+      fee_overdue_notice: 0,
+      fee_fine: 0,
+      fee_notice: 0,
+      fee_violation: 0,
       fee_other: 0,
       note: null,
     }
 
+    const firstHalfFee = period === 'second_half' ? firstHalfByHouse.get(house.id) : null
+    const canCarryFirstHalf = Boolean(
+      firstHalfFee
+      && !firstHalfPaymentFeeIds.has(firstHalfFee.id)
+      && ['unpaid', 'overdue'].includes(String(firstHalfFee.status || ''))
+      && String(firstHalfFee.status || '') !== 'cancelled'
+    )
+
+    if (canCarryFirstHalf) {
+      const carryAmount = round2(toAmount(firstHalfFee.total_amount))
+      payload.fee_overdue_common = carryAmount
+      payload.fee_overdue_fine = carryAmount > 0 ? round2(carryAmount * (finePct / 100)) : 0
+      payload.fee_overdue_notice = carryAmount > 0 ? noticeFee : 0
+      payload.note = `รวมยอดค้างจากใบแจ้งหนี้ครึ่งปีแรก เลขที่ ${firstHalfFee.id}`
+    }
+
     const existing = existingByHouse.get(house.id)
     if (!existing) {
-      const { error } = await supabase.from('fees').insert([{ house_id: house.id, ...payload }])
+      const { data: insertedFee, error } = await supabase.from('fees').insert([{ house_id: house.id, ...payload }]).select('id').single()
       if (error) throw error
+
+      if (canCarryFirstHalf) {
+        const { error: cancelError } = await supabase
+          .from('fees')
+          .update({
+            status: 'cancelled',
+            note: `${String(firstHalfFee.note || '').trim()}${firstHalfFee.note ? '\n' : ''}ยกเลิกหลังรวมยอดไปใบแจ้งหนี้ครึ่งปีหลัง ${insertedFee?.id || ''}`.trim(),
+          })
+          .eq('id', firstHalfFee.id)
+        if (cancelError) throw cancelError
+        cancelledFirstHalf += 1
+      }
+
       created += 1
       continue
     }
@@ -246,6 +318,19 @@ export async function processHalfYearFeesAllHouses({ yearBE, period, setup, over
       .update(payload)
       .eq('id', existing.id)
     if (error) throw error
+
+    if (canCarryFirstHalf) {
+      const { error: cancelError } = await supabase
+        .from('fees')
+        .update({
+          status: 'cancelled',
+          note: `${String(firstHalfFee.note || '').trim()}${firstHalfFee.note ? '\n' : ''}ยกเลิกหลังรวมยอดไปใบแจ้งหนี้ครึ่งปีหลัง ${existing.id}`.trim(),
+        })
+        .eq('id', firstHalfFee.id)
+      if (cancelError) throw cancelError
+      cancelledFirstHalf += 1
+    }
+
     updated += 1
   }
 
@@ -255,6 +340,7 @@ export async function processHalfYearFeesAllHouses({ yearBE, period, setup, over
     skippedPaid,
     skippedPending,
     skippedFullYear,
+    cancelledFirstHalf,
     totalHouses: houses.length,
     yearCE,
     period,
@@ -739,7 +825,7 @@ export function summarizeFees(fees, payments) {
     .filter((payment) => payment.verified_at)
     .reduce((sum, payment) => sum + Number(payment.amount || 0), 0)
   const totalOutstanding = fees
-    .filter((fee) => fee.status !== 'paid')
+    .filter((fee) => fee.status !== 'paid' && fee.status !== 'cancelled')
     .reduce((sum, fee) => sum + Number(fee.total_amount || 0), 0)
 
   return {
