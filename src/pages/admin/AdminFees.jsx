@@ -502,16 +502,16 @@ const AdminFees = () => {
     const itemRows = (fee) => {
       const discountAmount = extractDiscountFromNote(fee.note)
       const feeOtherBase = Number(fee.fee_other || 0) + discountAmount
+      const fineTotal = Number(fee.fee_overdue_fine || 0) + Number(fee.fee_fine || 0)
+      const noticeTotal = Number(fee.fee_overdue_notice || 0) + Number(fee.fee_notice || 0)
 
       const printItems = [
         { label: 'ค่าส่วนกลาง', amount: Number(fee.fee_common || 0) },
         { label: 'ค่าจอดรถ', amount: Number(fee.fee_parking || 0) },
         { label: 'ค่าขยะ', amount: Number(fee.fee_waste || 0) },
         { label: 'ยอดค้างยกมา', amount: Number(fee.fee_overdue_common || 0) },
-        { label: 'ค่าปรับยอดค้าง', amount: Number(fee.fee_overdue_fine || 0) },
-        { label: 'ค่าทวงถามยอดค้าง', amount: Number(fee.fee_overdue_notice || 0) },
-        { label: 'ค่าปรับ', amount: Number(fee.fee_fine || 0) },
-        { label: 'ค่าทวงถาม', amount: Number(fee.fee_notice || 0) },
+        { label: 'ค่าปรับ', amount: fineTotal },
+        { label: 'ค่าทวงถาม', amount: noticeTotal },
         { label: 'ค่ากระทำผิด', amount: Number(fee.fee_violation || 0) },
         { label: 'ค่าอื่นๆ', amount: feeOtherBase },
         { label: 'ส่วนลด', amount: -discountAmount },
@@ -528,14 +528,13 @@ const AdminFees = () => {
       .join('')
     }
 
-    const copies = ['ต้นฉบับ', 'สำเนา']
-    const invoiceBlocks = targetFees.map((fee) => {
+    const invoiceBlocks = targetFees.map((fee, index) => {
       const invoiceNo = `INV-${String(fee.year || '').slice(-2)}-${String(fee.id || '').slice(0, 8).toUpperCase()}`
       const periodText = `${periodLabel(fee.period)} ปี ${toBE(fee.year)}`
-      return copies.map((copyType) => {
-        const logoUrl = setup.village_logo_url || localStorage.getItem('vms-login-circle-logo-url') || villageLogo
-        return `
-          <section class="sheet page-break">
+      const logoUrl = setup.village_logo_url || localStorage.getItem('vms-login-circle-logo-url') || villageLogo
+      const pageClass = index < targetFees.length - 1 ? 'sheet page-break' : 'sheet'
+      return `
+          <section class="${pageClass}">
             <header class="head">
               <div class="brand">
                 <img src="${logoUrl}" alt="village-logo" />
@@ -608,11 +607,8 @@ const AdminFees = () => {
                 <div>ผู้มีอำนาจลงนาม</div>
               </div>
             </section>
-
-            <div class="stamp">${copyType}</div>
           </section>
         `
-      }).join('')
     }).join('')
 
     w.document.write(`
@@ -632,10 +628,11 @@ const AdminFees = () => {
               min-height: 297mm;
               margin: 0 auto;
               background: #fff;
-              padding: 12mm;
+              padding: 9mm 10mm;
               display: flex;
               flex-direction: column;
-              gap: 12px;
+              gap: 8px;
+              overflow: hidden;
             }
             .page-break { page-break-after: always; }
             .head {
@@ -643,8 +640,8 @@ const AdminFees = () => {
               justify-content: space-between;
               gap: 10px;
               border: 1px solid #d1d5db;
-              border-radius: 10px;
-              padding: 12px;
+              border-radius: 8px;
+              padding: 8px 10px;
               background: #ffffff;
             }
             .brand { display: flex; align-items: flex-start; gap: 12px; }
@@ -656,68 +653,55 @@ const AdminFees = () => {
               border: 1px solid #d1d5db;
               margin-top: -4px;
             }
-            .doc { font-size: 24px; font-weight: 700; }
-            .village { font-size: 16px; margin-top: 2px; }
-            .sub { font-size: 12px; color: #6b7280; margin-top: 4px; }
+            .doc { font-size: 20px; font-weight: 700; }
+            .village { font-size: 14px; margin-top: 2px; }
+            .sub { font-size: 11px; color: #6b7280; margin-top: 3px; }
             .doc-meta { font-size: 12px; min-width: 240px; display: flex; flex-direction: column; gap: 4px; }
             .doc-meta span { color: #6b7280; }
-            .box { border: 1px solid #d1d5db; border-radius: 10px; padding: 10px; }
-            .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 14px; }
+            .box { border: 1px solid #d1d5db; border-radius: 8px; padding: 8px; }
+            .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 10px; }
             .grid > div { display: flex; flex-direction: column; gap: 2px; }
-            .grid span { font-size: 11px; color: #6b7280; }
-            .grid strong { font-size: 14px; }
+            .grid span { font-size: 10px; color: #6b7280; }
+            .grid strong { font-size: 12px; }
             table { width: 100%; border-collapse: collapse; }
-            th, td { border: 1px solid #d1d5db; padding: 8px 9px; font-size: 12px; }
+            th, td { border: 1px solid #d1d5db; padding: 6px 8px; font-size: 11px; }
             th { background: #f3f4f6; text-align: left; }
             .c { text-align: center; }
             .r { text-align: right; }
             tfoot td { background: #f8fafc; }
             .amount-text {
-              margin-top: 8px;
-              font-size: 13px;
+              margin-top: 6px;
+              font-size: 12px;
               color: #374151;
               font-weight: 500;
               text-align: right;
             }
-            .payment-box { display: flex; flex-direction: column; gap: 8px; }
-            .payment-title { font-size: 14px; font-weight: 700; color: #111827; }
-            .payment-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 14px; }
+            .payment-box { display: flex; flex-direction: column; gap: 6px; }
+            .payment-title { font-size: 13px; font-weight: 700; color: #111827; }
+            .payment-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 10px; }
             .payment-grid > div { display: flex; flex-direction: column; gap: 2px; }
-            .payment-grid span { font-size: 11px; color: #6b7280; }
-            .payment-grid strong { font-size: 13px; }
+            .payment-grid span { font-size: 10px; color: #6b7280; }
+            .payment-grid strong { font-size: 12px; }
             .payment-note {
               border-top: 1px dashed #d1d5db;
-              padding-top: 8px;
-              font-size: 12px;
+              padding-top: 6px;
+              font-size: 11px;
               color: #4b5563;
             }
             .foot {
               margin-top: auto;
               border: 1px solid #d1d5db;
-              border-radius: 10px;
-              padding: 12px;
+              border-radius: 8px;
+              padding: 8px;
               display: flex;
               align-items: flex-end;
               justify-content: space-between;
               gap: 12px;
             }
-            .note { font-size: 12px; color: #4b5563; }
-            .sign-wrap { min-width: 180px; text-align: center; font-size: 12px; color: #4b5563; }
-            .sign-wrap img { max-width: 150px; max-height: 54px; object-fit: contain; margin-bottom: 6px; }
+            .note { font-size: 11px; color: #4b5563; }
+            .sign-wrap { min-width: 170px; text-align: center; font-size: 11px; color: #4b5563; }
+            .sign-wrap img { max-width: 130px; max-height: 46px; object-fit: contain; margin-bottom: 5px; }
             .sign-line { border-top: 1px solid #6b7280; margin: 4px 0; }
-            .stamp {
-              position: absolute;
-              top: 16mm;
-              right: 14mm;
-              font-size: 12px;
-              letter-spacing: .5px;
-              border: 1px solid #0f766e;
-              color: #0f766e;
-              padding: 2px 10px;
-              border-radius: 999px;
-              font-weight: 700;
-              background: #ffffff;
-            }
             @media print {
               body { background: #fff; }
               .sheet { margin: 0; box-shadow: none; }
