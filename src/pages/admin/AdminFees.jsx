@@ -629,7 +629,6 @@ const AdminFees = () => {
       ]
 
       return printItems
-      .filter((item) => item.amount !== 0)
       .map((item, idx) => `
         <tr>
           <td class="c">${idx + 1}</td>
@@ -866,18 +865,18 @@ const AdminFees = () => {
             }
             .copy-mark {
               border: none;
-              border-radius: 6px;
-              padding: 4px 12px;
+              border-radius: 4px;
+              padding: 3px 10px;
               text-align: center;
-              font-size: 15px;
+              font-size: 14px;
               font-weight: 700;
-              line-height: 1.2;
+              line-height: 1.3;
               color: #94a3b8;
               background: transparent;
             }
             .copy-mark--active {
               color: #0c4a6e;
-              background: #dbeafe;
+              background: transparent;
             }
             .box { border: 1px solid #cbd5e1; border-radius: 4px; padding: 10px 12px; }
             .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 10px; word-break: break-word; }
@@ -1036,9 +1035,8 @@ const AdminFees = () => {
   }
 
   const handlePrintInvoiceByHouse = (fee) => {
-    const sameHouse = fees.filter((item) => item.house_id === fee.house_id)
-    const title = `ใบแจ้งหนี้บ้าน ${fee.houses?.house_no || '-'} ทั้งหมด`
-    openPrintActionModal(sameHouse, title)
+    const title = `ใบแจ้งหนี้ ${fee.houses?.house_no || '-'} ${periodLabel(fee.period)} ปี ${toBE(fee.year)}`
+    openPrintActionModal([fee], title)
   }
 
   const handleAddPayment = (fee) => {
