@@ -540,7 +540,7 @@ const AdminFees = () => {
     }
   }
 
-  const buildInvoiceHtml = async (targetFees, title, { autoPrint = false } = {}) => {
+  const buildInvoiceHtml = async (targetFees, title, { autoPrint = false, forCapture = false } = {}) => {
     const freshConfig = await getSystemConfig().catch(() => null)
     const rawLogoUrl = freshConfig?.village_logo_url || setup.village_logo_url || localStorage.getItem('vms-login-circle-logo-url') || ''
     const rawSignatureUrl = freshConfig?.juristic_signature_url || setup.juristic_signature_url || ''
@@ -629,6 +629,7 @@ const AdminFees = () => {
       ]
 
       return printItems
+      .filter((item) => item.amount !== 0)
       .map((item, idx) => `
         <tr>
           <td class="c">${idx + 1}</td>
@@ -819,21 +820,20 @@ const AdminFees = () => {
           <style>
             /* Setting page margin to 0 removes browser-injected header (date/title) and footer (URL/page no.).
                Body padding compensates so content is not flush against paper edges. */
-            @page { size: A4; margin: 10mm 12mm; }
+            @page { size: A4; margin: 12mm 14mm; }
             * { box-sizing: border-box; }
-            body { font-family: 'Sarabun', 'TH Sarabun New', Tahoma, sans-serif; margin: 0; padding: 0; color: #111827; background: #fff; }
+            html, body { font-family: 'Sarabun', 'TH Sarabun New', Tahoma, sans-serif; margin: 0; padding: 0; color: #111827; background: #fff; }
             .sheet {
               position: relative;
-              width: 100%;
+              width: ${forCapture ? '794px' : '100%'};
+              ${forCapture ? 'height: 1122px; overflow: hidden;' : 'page-break-after: always; break-after: page; break-inside: avoid;'}
               background: #fff;
-              padding: 0;
+              padding: ${forCapture ? '24px 28px' : '0'};
               display: flex;
               flex-direction: column;
               gap: 8px;
-              page-break-after: always;
-              break-after: page;
             }
-            .page-break { }
+            .page-break {}
             .head {
               display: flex;
               justify-content: space-between;
@@ -925,8 +925,8 @@ const AdminFees = () => {
             .sign-wrap img { max-width: 100px; max-height: 36px; object-fit: contain; margin-bottom: 4px; }
             .sign-line { border-top: 1px solid #cbd5e1; margin: 4px 0; }
             @media print {
-              body { background: #fff; }
-              .sheet { page-break-after: always; break-after: page; }
+              html, body { background: #fff; }
+              .sheet { page-break-after: always; break-after: page; break-inside: avoid; }
               .sheet:last-child { page-break-after: avoid; break-after: avoid; }
             }
           </style>
@@ -947,19 +947,19 @@ const AdminFees = () => {
     return w
   }
 
-  const renderInvoicesInIframe = async (html) => {
+  const renderInvoicesInIframe = async (html, sheetCount = 2) => {
     const iframe = document.createElement('iframe')
-    iframe.style.position = 'fixed'
-    iframe.style.left = '-99999px'
-    iframe.style.top = '0'
-    iframe.style.width = '1200px'
-    iframe.style.height = '1600px'
+    iframe.style.cssText = 'position:fixed;left:-9999px;top:0;border:none;'
+    // 794px = A4 width at 96dpi — must match exactly so html2canvas captures at A4 ratio
+    iframe.style.width = '794px'
+    iframe.style.height = `${sheetCount * 1200}px`
     document.body.appendChild(iframe)
     const doc = iframe.contentDocument
     doc.open()
     doc.write(html)
     doc.close()
-    await new Promise((resolve) => setTimeout(resolve, 700))
+    // Wait for fonts + images to load
+    await new Promise((resolve) => setTimeout(resolve, 1000))
     return {
       iframe,
       doc,
@@ -973,8 +973,10 @@ const AdminFees = () => {
       setRunningPrintAction(true)
 
       if (mode === 'image' || mode === 'pdf') {
-        const html = await buildInvoiceHtml(printPayload.fees, printPayload.title, { autoPrint: false })
-        const { iframe, sheets } = await renderInvoicesInIframe(html)
+        // forCapture=true → each .sheet is fixed 794×1122px (exact A4 at 96dpi)
+        const expectedSheets = printPayload.fees.length * 2 // original + copy per fee
+        const html = await buildInvoiceHtml(printPayload.fees, printPayload.title, { autoPrint: false, forCapture: true })
+        const { iframe, sheets } = await renderInvoicesInIframe(html, expectedSheets)
 
         if (mode === 'image') {
           for (let i = 0; i < sheets.length; i += 1) {
@@ -982,6 +984,8 @@ const AdminFees = () => {
               scale: 2,
               useCORS: true,
               backgroundColor: '#ffffff',
+              width: 794,
+              height: 1122,
             })
             const link = document.createElement('a')
             link.href = canvas.toDataURL('image/png')
@@ -990,17 +994,20 @@ const AdminFees = () => {
           }
         } else {
           const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' })
+          const A4W = pdf.internal.pageSize.getWidth()   // 210mm
+          const A4H = pdf.internal.pageSize.getHeight()  // 297mm
           for (let i = 0; i < sheets.length; i += 1) {
             const canvas = await html2canvas(sheets[i], {
               scale: 2,
               useCORS: true,
               backgroundColor: '#ffffff',
+              width: 794,
+              height: 1122,
             })
             const imgData = canvas.toDataURL('image/jpeg', 0.95)
-            const pageWidth = pdf.internal.pageSize.getWidth()
-            const pageHeight = pdf.internal.pageSize.getHeight()
             if (i > 0) pdf.addPage()
-            pdf.addImage(imgData, 'JPEG', 0, 0, pageWidth, pageHeight, undefined, 'FAST')
+            // canvas is exactly A4 ratio (794:1122 ≈ 210:297) → no distortion
+            pdf.addImage(imgData, 'JPEG', 0, 0, A4W, A4H, undefined, 'FAST')
           }
           pdf.save(`${printPayload.title || 'invoice'}.pdf`)
         }
