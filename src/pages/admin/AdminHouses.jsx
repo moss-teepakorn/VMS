@@ -405,7 +405,7 @@ const AdminHouses = () => {
 
       {showModal && (
         <div className="house-mo">
-          <div className="house-md house-md--lg">
+          <div className="house-md house-md--md">
             <div className="house-md-head">
               <div>
                 <div className="house-md-title">🏠 {editingHouse ? 'แก้ไขข้อมูลบ้าน' : 'เพิ่มข้อมูลบ้าน'}</div>

@@ -86,7 +86,7 @@ async function refreshFeeStatusFromPayments(feeId) {
   if (updateError) throw updateError
 }
 
-export async function listFees({ status = 'all', year = 'all', search = '' } = {}) {
+export async function listFees({ status = 'all', year = 'all', period = 'all', search = '' } = {}) {
   let query = supabase
     .from('fees')
     .select('id, house_id, year, period, invoice_date, due_date, status, fee_common, fee_parking, fee_waste, fee_overdue_common, fee_overdue_fine, fee_overdue_notice, fee_fine, fee_notice, fee_violation, fee_other, total_amount, note, created_at, houses(id, house_no, owner_name)')
@@ -98,6 +98,10 @@ export async function listFees({ status = 'all', year = 'all', search = '' } = {
 
   if (year && year !== 'all') {
     query = query.eq('year', Number(year))
+  }
+
+  if (period && period !== 'all') {
+    query = query.eq('period', period)
   }
 
   if (search && search.trim()) {
@@ -267,7 +271,7 @@ export async function calculateFullYearFeeByHouse({ houseId, year, setup }) {
   const parkingMonthly = toAmount(parkingByHouseResp.get(houseId))
   const commonBeforeDiscount = round2(area * 12 * ratePerSqw)
   const discountAmount = round2(commonBeforeDiscount * (discountPct / 100))
-  const feeCommon = round2(commonBeforeDiscount - discountAmount)
+  const feeCommon = Math.ceil(Math.max(0, commonBeforeDiscount - discountAmount))
   const feeParking = round2(parkingMonthly * 12)
   const feeWaste = round2(wastePerPeriod * 2)
 
@@ -281,7 +285,7 @@ export async function calculateFullYearFeeByHouse({ houseId, year, setup }) {
     fee_common: feeCommon,
     fee_parking: feeParking,
     fee_waste: feeWaste,
-    note: `คำนวณทั้งปี ลดค่าส่วนกลาง ${discountPct}% (ลด ${discountAmount.toLocaleString('th-TH')} บาท)`,
+    note: `คำนวณทั้งปี ลดเฉพาะค่าส่วนกลาง ${discountPct}% (ลด ${discountAmount.toLocaleString('th-TH')} บาท, ปัดขึ้นเป็นจำนวนเต็ม)`,
   }
 
   if (existingResp.data?.id) {
@@ -305,38 +309,27 @@ export async function calculateFullYearFeeByHouse({ houseId, year, setup }) {
 }
 
 export async function calculateOverdueFeeCharges(feeId, setup) {
-  const finePct = toAmount(setup?.overdue_fine_pct)
-  const noticeFee = toAmount(setup?.notice_fee)
-
   const { data: fee, error: feeError } = await supabase
     .from('fees')
-    .select('id, status, due_date, fee_common')
+    .select('id, status, due_date, fee_common, fee_overdue_common')
     .eq('id', feeId)
     .single()
 
   if (feeError) throw feeError
-  if (!fee?.due_date) {
-    throw new Error('ใบแจ้งหนี้นี้ยังไม่มีวันครบกำหนด')
-  }
 
   if (fee.status === 'paid') {
     throw new Error('ใบแจ้งหนี้ชำระแล้ว ไม่สามารถคำนวณค่าปรับได้')
   }
 
-  const dueDate = new Date(`${fee.due_date}T23:59:59`)
-  const now = new Date()
-  if (now <= dueDate) {
-    throw new Error('ยังไม่เกินกำหนดชำระ')
+  const updatePayload = buildOverdueUpdatePayload(fee, setup)
+
+  if (!updatePayload) {
+    throw new Error('ยังไม่ถึงเงื่อนไขการคำนวณค่าปรับ')
   }
 
-  const feeFine = round2(toAmount(fee.fee_common) * (finePct / 100))
   const { data, error } = await supabase
     .from('fees')
-    .update({
-      status: 'overdue',
-      fee_fine: feeFine,
-      fee_notice: round2(noticeFee),
-    })
+    .update(updatePayload)
     .eq('id', feeId)
     .select('id, house_id, year, period, invoice_date, due_date, status, fee_common, fee_parking, fee_waste, fee_overdue_common, fee_overdue_fine, fee_overdue_notice, fee_fine, fee_notice, fee_violation, fee_other, total_amount, note, created_at, houses(id, house_no, owner_name)')
     .single()
@@ -346,12 +339,9 @@ export async function calculateOverdueFeeCharges(feeId, setup) {
 }
 
 export async function calculateOverdueFeesBulk({ year, setup } = {}) {
-  const finePct = toAmount(setup?.overdue_fine_pct)
-  const noticeFee = toAmount(setup?.notice_fee)
-
   let query = supabase
     .from('fees')
-    .select('id, status, due_date, fee_common')
+    .select('id, status, due_date, fee_common, fee_overdue_common')
 
   if (year && year !== 'all') {
     query = query.eq('year', Number(year))
@@ -360,7 +350,6 @@ export async function calculateOverdueFeesBulk({ year, setup } = {}) {
   const { data, error } = await query
   if (error) throw error
 
-  const now = new Date()
   let updated = 0
   let skippedPaid = 0
   let skippedNotDue = 0
@@ -371,25 +360,15 @@ export async function calculateOverdueFeesBulk({ year, setup } = {}) {
       continue
     }
 
-    if (!fee.due_date) {
+    const updatePayload = buildOverdueUpdatePayload(fee, setup)
+    if (!updatePayload) {
       skippedNotDue += 1
       continue
     }
 
-    const dueDate = new Date(`${fee.due_date}T23:59:59`)
-    if (now <= dueDate) {
-      skippedNotDue += 1
-      continue
-    }
-
-    const feeFine = round2(toAmount(fee.fee_common) * (finePct / 100))
     const { error: updateError } = await supabase
       .from('fees')
-      .update({
-        status: 'overdue',
-        fee_fine: feeFine,
-        fee_notice: round2(noticeFee),
-      })
+      .update(updatePayload)
       .eq('id', fee.id)
 
     if (updateError) throw updateError
@@ -410,17 +389,13 @@ export async function calculateOverdueFeesByIds({ feeIds, setup } = {}) {
     return { updated: 0, skippedPaid: 0, skippedNotDue: 0, total: 0 }
   }
 
-  const finePct = toAmount(setup?.overdue_fine_pct)
-  const noticeFee = toAmount(setup?.notice_fee)
-
   const { data, error } = await supabase
     .from('fees')
-    .select('id, status, due_date, fee_common')
+    .select('id, status, due_date, fee_common, fee_overdue_common')
     .in('id', ids)
 
   if (error) throw error
 
-  const now = new Date()
   let updated = 0
   let skippedPaid = 0
   let skippedNotDue = 0
@@ -431,25 +406,15 @@ export async function calculateOverdueFeesByIds({ feeIds, setup } = {}) {
       continue
     }
 
-    if (!fee.due_date) {
+    const updatePayload = buildOverdueUpdatePayload(fee, setup)
+    if (!updatePayload) {
       skippedNotDue += 1
       continue
     }
 
-    const dueDate = new Date(`${fee.due_date}T23:59:59`)
-    if (now <= dueDate) {
-      skippedNotDue += 1
-      continue
-    }
-
-    const feeFine = round2(toAmount(fee.fee_common) * (finePct / 100))
     const { error: updateError } = await supabase
       .from('fees')
-      .update({
-        status: 'overdue',
-        fee_fine: feeFine,
-        fee_notice: round2(noticeFee),
-      })
+      .update(updatePayload)
       .eq('id', fee.id)
 
     if (updateError) throw updateError
@@ -566,12 +531,45 @@ export async function createPayment(payload) {
   if (error) throw error
 
   if (payload.fee_id) {
-    const { error: feeError } = await supabase
-      .from('fees')
-      .update({ status: 'pending' })
-      .eq('id', payload.fee_id)
+    if (payload.setFeeStatusFromAmount) {
+      const { data: feeRow, error: feeReadError } = await supabase
+        .from('fees')
+        .select('id, total_amount')
+        .eq('id', payload.fee_id)
+        .single()
 
-    if (feeError) throw feeError
+      if (feeReadError) throw feeReadError
+
+      const { data: paymentRows, error: paymentReadError } = await supabase
+        .from('payments')
+        .select('amount')
+        .eq('fee_id', payload.fee_id)
+
+      if (paymentReadError) throw paymentReadError
+
+      const submittedTotal = (paymentRows || []).reduce((sum, row) => sum + Number(row.amount || 0), 0)
+      const totalAmount = Number(feeRow?.total_amount || 0)
+
+      const nextStatus = submittedTotal >= totalAmount
+        ? 'paid'
+        : submittedTotal > 0
+          ? 'partial'
+          : 'unpaid'
+
+      const { error: feeError } = await supabase
+        .from('fees')
+        .update({ status: nextStatus })
+        .eq('id', payload.fee_id)
+
+      if (feeError) throw feeError
+    } else {
+      const { error: feeError } = await supabase
+        .from('fees')
+        .update({ status: 'pending' })
+        .eq('id', payload.fee_id)
+
+      if (feeError) throw feeError
+    }
   }
 
   return data
@@ -669,5 +667,33 @@ export function summarizeFees(fees, payments) {
     totalInvoiced,
     totalCollected,
     totalOutstanding,
+  }
+}
+
+function buildOverdueUpdatePayload(fee, setup) {
+  const finePct = toAmount(setup?.overdue_fine_pct)
+  const noticeFee = round2(toAmount(setup?.notice_fee))
+
+  const now = new Date()
+  const dueOver = fee?.due_date ? now > new Date(`${fee.due_date}T23:59:59`) : false
+
+  const carryBase = toAmount(fee?.fee_overdue_common)
+  const currentBase = toAmount(fee?.fee_common)
+
+  const overdueFineCarry = carryBase > 0 ? round2(carryBase * (finePct / 100)) : 0
+  const overdueNoticeCarry = carryBase > 0 ? noticeFee : 0
+
+  const overdueFineCurrent = dueOver && currentBase > 0 ? round2(currentBase * (finePct / 100)) : 0
+  const overdueNoticeCurrent = dueOver && currentBase > 0 ? noticeFee : 0
+
+  const hasAnyCharge = overdueFineCarry > 0 || overdueNoticeCarry > 0 || overdueFineCurrent > 0 || overdueNoticeCurrent > 0
+  if (!hasAnyCharge) return null
+
+  return {
+    status: dueOver ? 'overdue' : fee?.status || 'unpaid',
+    fee_overdue_fine: overdueFineCarry,
+    fee_overdue_notice: overdueNoticeCarry,
+    fee_fine: overdueFineCurrent,
+    fee_notice: overdueNoticeCurrent,
   }
 }

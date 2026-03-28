@@ -66,6 +66,19 @@ function buildReceiptNo(payment) {
   return `RC-${y}${m}${d}-${String(payment.id || '').slice(0, 6).toUpperCase()}`
 }
 
+const feeItemDefs = [
+  { key: 'fee_common', label: 'ค่าส่วนกลาง' },
+  { key: 'fee_parking', label: 'ค่าจอดรถ' },
+  { key: 'fee_waste', label: 'ค่าขยะ' },
+  { key: 'fee_overdue_common', label: 'ยอดค่าส่วนกลางค้างเดิม' },
+  { key: 'fee_overdue_fine', label: 'ยอดปรับค้างเดิม' },
+  { key: 'fee_overdue_notice', label: 'ยอดทวงถามค้างเดิม' },
+  { key: 'fee_fine', label: 'ค่าปรับงวดนี้' },
+  { key: 'fee_notice', label: 'ค่าทวงถามงวดนี้' },
+  { key: 'fee_violation', label: 'ค่าผิดระเบียบ' },
+  { key: 'fee_other', label: 'ค่าอื่นๆ' },
+]
+
 export default function AdminPayments() {
   const { profile } = useAuth()
   const [payments, setPayments] = useState([])
@@ -79,6 +92,8 @@ export default function AdminPayments() {
     amount: '',
     payment_method: 'transfer',
     paid_at: new Date().toISOString().slice(0, 16),
+    selectedItems: [],
+    itemAmounts: {},
     note: '',
   })
   const [setup, setSetup] = useState({
@@ -89,6 +104,22 @@ export default function AdminPayments() {
     bankAccountName: '',
     bankAccountNo: '',
   })
+
+  const selectedReceiveFee = useMemo(
+    () => feeOptions.find((fee) => fee.id === receiveForm.fee_id) || null,
+    [feeOptions, receiveForm.fee_id],
+  )
+
+  const receivePayableItems = useMemo(() => {
+    if (!selectedReceiveFee) return []
+    return feeItemDefs
+      .map((item) => ({ ...item, amount: Number(selectedReceiveFee[item.key] || 0) }))
+      .filter((item) => item.amount > 0)
+  }, [selectedReceiveFee])
+
+  const receiveSelectedAmount = useMemo(() => (
+    receiveForm.selectedItems.reduce((sum, key) => sum + Number(receiveForm.itemAmounts?.[key] || 0), 0)
+  ), [receiveForm.selectedItems, receiveForm.itemAmounts])
 
   const summary = useMemo(() => {
     const totalAmount = payments.reduce((sum, payment) => sum + Number(payment.amount || 0), 0)
@@ -143,12 +174,23 @@ export default function AdminPayments() {
       }
 
       const first = candidates[0]
+      const payableItems = feeItemDefs
+        .map((item) => ({ ...item, amount: Number(first[item.key] || 0) }))
+        .filter((item) => item.amount > 0)
+      const selectedItems = payableItems.map((item) => item.key)
+      const itemAmounts = payableItems.reduce((acc, item) => {
+        acc[item.key] = item.amount
+        return acc
+      }, {})
+
       setFeeOptions(candidates)
       setReceiveForm({
         fee_id: first.id,
         amount: String(Number(first.total_amount || 0)),
         payment_method: 'transfer',
         paid_at: new Date().toISOString().slice(0, 16),
+        selectedItems,
+        itemAmounts,
         note: '',
       })
       setShowReceiveModal(true)
@@ -159,12 +201,74 @@ export default function AdminPayments() {
 
   const handleChangeReceiveFee = (feeId) => {
     const nextFee = feeOptions.find((fee) => fee.id === feeId)
+    const payableItems = feeItemDefs
+      .map((item) => ({ ...item, amount: Number(nextFee?.[item.key] || 0) }))
+      .filter((item) => item.amount > 0)
+    const selectedItems = payableItems.map((item) => item.key)
+    const itemAmounts = payableItems.reduce((acc, item) => {
+      acc[item.key] = item.amount
+      return acc
+    }, {})
+
     setReceiveForm((prev) => ({
       ...prev,
       fee_id: feeId,
       amount: nextFee ? String(Number(nextFee.total_amount || 0)) : prev.amount,
+      selectedItems,
+      itemAmounts,
     }))
   }
+
+  const toggleReceiveItem = (itemKey, checked) => {
+    setReceiveForm((prev) => {
+      const exists = prev.selectedItems.includes(itemKey)
+      if (checked && !exists) {
+        return { ...prev, selectedItems: [...prev.selectedItems, itemKey] }
+      }
+      if (!checked && exists) {
+        return { ...prev, selectedItems: prev.selectedItems.filter((key) => key !== itemKey) }
+      }
+      return prev
+    })
+  }
+
+  const handleChangeReceiveItemAmount = (itemKey, rawValue, maxAmount) => {
+    let nextValue = Number(rawValue)
+    if (!Number.isFinite(nextValue)) nextValue = 0
+    if (nextValue < 0) nextValue = 0
+    if (nextValue > maxAmount) nextValue = maxAmount
+
+    setReceiveForm((prev) => ({
+      ...prev,
+      itemAmounts: {
+        ...prev.itemAmounts,
+        [itemKey]: nextValue,
+      },
+    }))
+  }
+
+  const selectAllReceiveItems = () => {
+    setReceiveForm((prev) => ({
+      ...prev,
+      selectedItems: receivePayableItems.map((item) => item.key),
+      itemAmounts: receivePayableItems.reduce((acc, item) => {
+        acc[item.key] = Number(prev.itemAmounts?.[item.key] ?? item.amount)
+        return acc
+      }, {}),
+    }))
+  }
+
+  const clearReceiveItems = () => {
+    setReceiveForm((prev) => ({ ...prev, selectedItems: [] }))
+  }
+
+  useEffect(() => {
+    setReceiveForm((prev) => {
+      const nextAmount = String(receiveSelectedAmount)
+      if (prev.amount === nextAmount) return prev
+      return { ...prev, amount: nextAmount }
+    })
+  }, [receiveSelectedAmount])
 
   const handleSubmitReceive = async (event) => {
     event.preventDefault()
@@ -175,7 +279,12 @@ export default function AdminPayments() {
       return
     }
 
-    const amount = Number(receiveForm.amount || 0)
+    if (receiveForm.selectedItems.length === 0) {
+      await Swal.fire({ icon: 'warning', title: 'กรุณาเลือกรายการที่รับชำระอย่างน้อย 1 รายการ' })
+      return
+    }
+
+    const amount = Number(receiveSelectedAmount || 0)
     if (!Number.isFinite(amount) || amount <= 0) {
       await Swal.fire({ icon: 'warning', title: 'ยอดรับชำระต้องมากกว่า 0' })
       return
@@ -183,13 +292,21 @@ export default function AdminPayments() {
 
     try {
       setSavingReceive(true)
+      const selectedLabels = feeItemDefs
+        .filter((item) => receiveForm.selectedItems.includes(item.key))
+        .map((item) => `${item.label} ฿${Number(receiveForm.itemAmounts?.[item.key] || 0).toLocaleString('th-TH')}`)
+      const noteParts = []
+      if (selectedLabels.length > 0) noteParts.push(`ชำระรายการ: ${selectedLabels.join(', ')}`)
+      if (receiveForm.note.trim()) noteParts.push(receiveForm.note.trim())
+
       await createPayment({
         fee_id: targetFee.id,
         house_id: targetFee.house_id,
         amount,
         payment_method: receiveForm.payment_method,
         paid_at: receiveForm.paid_at,
-        note: receiveForm.note,
+        note: noteParts.join(' | '),
+        setFeeStatusFromAmount: true,
       })
       setShowReceiveModal(false)
       await loadPayments()
@@ -547,21 +664,66 @@ export default function AdminPayments() {
                       <select value={receiveForm.fee_id} onChange={(e) => handleChangeReceiveFee(e.target.value)}>
                         {feeOptions.map((fee) => (
                           <option key={fee.id} value={fee.id}>
-                            {fee.houses?.house_no || '-'} · {formatPeriod(fee.period)} {fee.year} · ฿{Number(fee.total_amount || 0).toLocaleString('th-TH')}
+                            {fee.houses?.house_no || '-'} · {formatPeriod(fee.period)} {fee.year} · ยอดรวม ฿{Number(fee.total_amount || 0).toLocaleString('th-TH')}
                           </option>
                         ))}
                       </select>
                     </label>
-                    <label className="house-field">
-                      <span>ยอดรับชำระ *</span>
-                      <input
-                        type="number"
-                        min="0"
-                        step="0.01"
-                        value={receiveForm.amount}
-                        onChange={(e) => setReceiveForm((prev) => ({ ...prev, amount: e.target.value }))}
-                      />
-                    </label>
+                    <div className="house-field" style={{ gap: 10 }}>
+                      <span>เลือกรายการรับชำระ</span>
+                      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                        <button type="button" className="btn btn-xs btn-a" onClick={selectAllReceiveItems}>เลือกทั้งหมด</button>
+                        <button type="button" className="btn btn-xs btn-g" onClick={clearReceiveItems}>ล้างการเลือก</button>
+                      </div>
+                      <div className="houses-table-wrap" style={{ maxHeight: '280px', overflow: 'auto' }}>
+                        <table className="tw" style={{ width: '100%', minWidth: '620px' }}>
+                          <thead>
+                            <tr>
+                              <th style={{ width: '52px', textAlign: 'center' }}>เลือก</th>
+                              <th>รายการ</th>
+                              <th style={{ width: '180px' }}>ยอดเต็ม</th>
+                              <th style={{ width: '180px' }}>ยอดรับชำระ</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {receivePayableItems.length === 0 ? (
+                              <tr><td colSpan="4" style={{ textAlign: 'center', color: 'var(--mu)', padding: '14px' }}>ไม่มีรายการที่มียอดเรียกเก็บ</td></tr>
+                            ) : receivePayableItems.map((item) => {
+                              const checked = receiveForm.selectedItems.includes(item.key)
+                              return (
+                                <tr key={item.key}>
+                                  <td style={{ textAlign: 'center' }}>
+                                    <input
+                                      type="checkbox"
+                                      checked={checked}
+                                      onChange={(e) => toggleReceiveItem(item.key, e.target.checked)}
+                                    />
+                                  </td>
+                                  <td>{item.label}</td>
+                                  <td>฿{item.amount.toLocaleString('th-TH')}</td>
+                                  <td>
+                                    <input
+                                      type="number"
+                                      min="0"
+                                      max={item.amount}
+                                      step="0.01"
+                                      value={receiveForm.itemAmounts?.[item.key] ?? item.amount}
+                                      disabled={!checked}
+                                      onChange={(e) => handleChangeReceiveItemAmount(item.key, e.target.value, item.amount)}
+                                      style={{ width: '100%' }}
+                                    />
+                                  </td>
+                                </tr>
+                              )
+                            })}
+                          </tbody>
+                        </table>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap', color: 'var(--mu)', fontSize: 13 }}>
+                        <span>ยอดใบแจ้งหนี้: ฿{Number(selectedReceiveFee?.total_amount || 0).toLocaleString('th-TH')}</span>
+                        <span style={{ fontWeight: 700, color: 'var(--tx)' }}>ยอดรับชำระรวม: ฿{Number(receiveSelectedAmount || 0).toLocaleString('th-TH')}</span>
+                      </div>
+                    </div>
                     <label className="house-field">
                       <span>วิธีชำระ *</span>
                       <select

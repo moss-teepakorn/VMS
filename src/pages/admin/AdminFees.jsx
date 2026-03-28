@@ -42,6 +42,7 @@ const AdminFees = () => {
   })
   const [statusFilter, setStatusFilter] = useState('all')
   const [yearFilter, setYearFilter] = useState('all')
+  const [periodFilter, setPeriodFilter] = useState('all')
   const [loading, setLoading] = useState(false)
   const [showProcessModal, setShowProcessModal] = useState(false)
   const [processing, setProcessing] = useState(false)
@@ -107,7 +108,11 @@ const AdminFees = () => {
       const queryStatus = effectiveStatus === 'partial' ? 'all' : effectiveStatus
 
       const [feeData, paymentData, houseData] = await Promise.all([
-        listFees({ status: queryStatus, year: override.year ?? yearFilter }),
+        listFees({
+          status: queryStatus,
+          year: override.year ?? yearFilter,
+          period: override.period ?? periodFilter,
+        }),
         listPayments({ limit: 10 }),
         houses.length === 0 ? listHouses() : Promise.resolve(houses),
       ])
@@ -148,6 +153,11 @@ const AdminFees = () => {
   const isFeeFullyPaid = (fee) => {
     const approvedAmount = getApprovedAmountForFee(fee)
     return approvedAmount >= Number(fee?.total_amount || 0)
+  }
+
+  const getOutstandingAmountForFee = (fee) => {
+    const submittedAmount = getSubmittedAmountForFee(fee)
+    return Math.max(0, Number(fee?.total_amount || 0) - submittedAmount)
   }
 
   const getFeeStatusBadge = (fee) => {
@@ -351,6 +361,74 @@ const AdminFees = () => {
     }
   }
 
+  const handlePrintInvoices = (targetFees, title) => {
+    if (!targetFees || targetFees.length === 0) {
+      Swal.fire({ icon: 'info', title: 'ไม่พบใบแจ้งหนี้สำหรับพิมพ์' })
+      return
+    }
+
+    const w = window.open('', '_blank', 'width=1200,height=900')
+    if (!w) return
+
+    const rows = targetFees.map((fee, idx) => `
+      <tr>
+        <td>${idx + 1}</td>
+        <td>${fee.houses?.house_no || '-'}</td>
+        <td>${fee.houses?.owner_name || '-'}</td>
+        <td>${periodLabel(fee.period)} ${toBE(fee.year)}</td>
+        <td>${fee.invoice_date ? new Date(fee.invoice_date).toLocaleDateString('th-TH') : '-'}</td>
+        <td>${fee.due_date ? new Date(fee.due_date).toLocaleDateString('th-TH') : '-'}</td>
+        <td style="text-align:right;">${Number(fee.total_amount || 0).toLocaleString('th-TH')}</td>
+      </tr>
+    `).join('')
+
+    w.document.write(`
+      <html>
+        <head>
+          <title>${title}</title>
+          <style>
+            body { font-family: Arial, sans-serif; padding: 20px; color: #111827; }
+            h1 { margin: 0 0 6px; font-size: 22px; }
+            .sub { color: #6b7280; font-size: 13px; margin-bottom: 16px; }
+            table { width: 100%; border-collapse: collapse; }
+            th, td { border: 1px solid #d1d5db; padding: 8px; font-size: 12px; }
+            th { background: #f3f4f6; text-align: left; }
+          </style>
+        </head>
+        <body>
+          <h1>${title}</h1>
+          <div class="sub">พิมพ์เมื่อ ${new Date().toLocaleString('th-TH')}</div>
+          <table>
+            <thead>
+              <tr>
+                <th style="width:40px;">#</th>
+                <th style="width:90px;">บ้าน</th>
+                <th>เจ้าของ</th>
+                <th style="width:180px;">งวด/ปี</th>
+                <th style="width:120px;">วันที่ออก</th>
+                <th style="width:120px;">ครบกำหนด</th>
+                <th style="width:140px; text-align:right;">ยอดรวม (บาท)</th>
+              </tr>
+            </thead>
+            <tbody>${rows}</tbody>
+          </table>
+          <script>window.onload = () => window.print();</script>
+        </body>
+      </html>
+    `)
+    w.document.close()
+  }
+
+  const handlePrintInvoicesAll = () => {
+    handlePrintInvoices(fees, 'ใบแจ้งหนี้ทั้งหมด')
+  }
+
+  const handlePrintInvoiceByHouse = (fee) => {
+    const sameHouse = fees.filter((item) => item.house_id === fee.house_id)
+    const title = `ใบแจ้งหนี้บ้าน ${fee.houses?.house_no || '-'} ทั้งหมด`
+    handlePrintInvoices(sameHouse, title)
+  }
+
   const handleAddPayment = (fee) => {
     const payableItems = feeItemDefs
       .map((item) => ({ ...item, amount: Number(fee[item.key] || 0) }))
@@ -541,7 +619,13 @@ const AdminFees = () => {
             <option value="all">ทุกปี</option>
             {yearOptions.map((year) => <option key={year} value={year}>{toBE(year)}</option>)}
           </select>
-          <button className="btn btn-a btn-sm page-filter-btn" onClick={() => loadFeeData({ status: statusFilter, year: yearFilter })}>ค้นหา</button>
+          <select className="page-filter-select" value={periodFilter} onChange={(e) => setPeriodFilter(e.target.value)}>
+            <option value="all">ทุกรอบ</option>
+            <option value="first_half">ครึ่งปีแรก</option>
+            <option value="second_half">ครึ่งปีหลัง</option>
+            <option value="full_year">ทั้งปี</option>
+          </select>
+          <button className="btn btn-a btn-sm page-filter-btn" onClick={() => loadFeeData({ status: statusFilter, year: yearFilter, period: periodFilter })}>ค้นหา</button>
         </div>
       </div>
 
@@ -556,14 +640,15 @@ const AdminFees = () => {
           <div className="ct">ใบแจ้งหนี้ล่าสุด</div>
           <div className="page-list-actions">
             <button className="btn btn-p btn-sm" onClick={handleOpenProcessModal}>+ สร้างใบแจ้งหนี้</button>
+            <button className="btn btn-a btn-sm" onClick={handlePrintInvoicesAll}>🖨 พิมพ์ใบแจ้งหนี้ทั้งหมด</button>
             <button className="btn btn-dg btn-sm" onClick={handleBulkOverdue}>⚖ คำนวณค่าปรับทั้งหมด</button>
-            <button className="btn btn-g btn-sm" onClick={() => loadFeeData({ status: statusFilter, year: yearFilter })}>🔄 รีเฟรช</button>
+            <button className="btn btn-g btn-sm" onClick={() => loadFeeData({ status: statusFilter, year: yearFilter, period: periodFilter })}>🔄 รีเฟรช</button>
           </div>
         </div>
         <div className="cb page-table-body">
           <div className="desktop-only">
             <div style={{ overflowX: 'auto' }}>
-              <table className="tw" style={{ width: '100%', minWidth: '1080px' }}>
+              <table className="tw" style={{ width: '100%', minWidth: '1180px' }}>
                 <thead>
                   <tr>
                     <th>บ้าน</th>
@@ -571,18 +656,20 @@ const AdminFees = () => {
                     <th>งวด</th>
                     <th>ครบกำหนด</th>
                     <th>ยอดรวม</th>
+                    <th>ยอดค้างชำระ</th>
                     <th>สถานะ</th>
                     <th></th>
                   </tr>
                 </thead>
                 <tbody>
                   {loading ? (
-                    <tr><td colSpan="7" style={{ textAlign: 'center', color: 'var(--mu)', padding: '20px' }}>กำลังโหลดข้อมูล...</td></tr>
+                    <tr><td colSpan="8" style={{ textAlign: 'center', color: 'var(--mu)', padding: '20px' }}>กำลังโหลดข้อมูล...</td></tr>
                   ) : fees.length === 0 ? (
-                    <tr><td colSpan="7" style={{ textAlign: 'center', color: 'var(--mu)', padding: '20px' }}>ยังไม่มีใบแจ้งหนี้</td></tr>
+                    <tr><td colSpan="8" style={{ textAlign: 'center', color: 'var(--mu)', padding: '20px' }}>ยังไม่มีใบแจ้งหนี้</td></tr>
                   ) : (
                     fees.map((fee) => {
                       const badge = getFeeStatusBadge(fee)
+                      const outstanding = getOutstandingAmountForFee(fee)
                       return (
                         <tr key={fee.id}>
                           <td>{fee.houses?.house_no || '-'}<div style={{ fontSize: '11px', color: 'var(--mu)' }}>{fee.houses?.owner_name || '-'}</div></td>
@@ -590,10 +677,12 @@ const AdminFees = () => {
                           <td>{periodLabel(fee.period)}</td>
                           <td>{fee.due_date ? new Date(fee.due_date).toLocaleDateString('th-TH') : '-'}</td>
                           <td><strong>฿{Number(fee.total_amount || 0).toLocaleString('th-TH')}</strong></td>
+                          <td><strong style={{ color: outstanding > 0 ? '#9a3412' : '#166534' }}>฿{outstanding.toLocaleString('th-TH')}</strong></td>
                           <td><span className={badge.className}>{badge.label}</span></td>
                           <td>
                             <div className="td-acts">
                               <button className="btn btn-xs btn-a" onClick={() => handleEditFee(fee)}>แก้ไข</button>
+                              <button className="btn btn-xs btn-g" onClick={() => handlePrintInvoiceByHouse(fee)}>พิมพ์</button>
                               {!isFeeFullyPaid(fee) && <button className="btn btn-xs btn-o" onClick={() => handleCalculateAnnual(fee)}>คำนวณทั้งปี</button>}
                               {!isFeeFullyPaid(fee) && <button className="btn btn-xs btn-dg" onClick={() => handleCalculateOverdue(fee)}>คำนวณค่าปรับ</button>}
                               <button className="btn btn-xs btn-dg" onClick={() => handleDeleteFee(fee)}>ลบ</button>
@@ -614,6 +703,7 @@ const AdminFees = () => {
               <div className="mcard-empty">ยังไม่มีใบแจ้งหนี้</div>
             ) : fees.map((fee) => {
               const badge = getFeeStatusBadge(fee)
+              const outstanding = getOutstandingAmountForFee(fee)
               return (
                 <div key={fee.id} className="mcard">
                   <div className="mcard-top">
@@ -625,9 +715,11 @@ const AdminFees = () => {
                   <div className="mcard-meta">
                     <span><span className="mcard-label">ครบกำหนด</span> {fee.due_date ? new Date(fee.due_date).toLocaleDateString('th-TH') : '-'}</span>
                     <span><span className="mcard-label">ยอดรวม</span> ฿{Number(fee.total_amount || 0).toLocaleString('th-TH')}</span>
+                    <span><span className="mcard-label">ยอดค้างชำระ</span> ฿{outstanding.toLocaleString('th-TH')}</span>
                   </div>
                   <div className="mcard-actions">
                     <button className="btn btn-xs btn-a" onClick={() => handleEditFee(fee)}>แก้ไข</button>
+                    <button className="btn btn-xs btn-g" onClick={() => handlePrintInvoiceByHouse(fee)}>พิมพ์</button>
                     {!isFeeFullyPaid(fee) && <button className="btn btn-xs btn-o" onClick={() => handleCalculateAnnual(fee)}>ทั้งปี</button>}
                     {!isFeeFullyPaid(fee) && <button className="btn btn-xs btn-dg" onClick={() => handleCalculateOverdue(fee)}>ค่าปรับ</button>}
                     <button className="btn btn-xs btn-dg" onClick={() => handleDeleteFee(fee)}>ลบ</button>
