@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react'
+import html2canvas from 'html2canvas'
 import Swal from 'sweetalert2'
 import { listHouses } from '../../lib/houses'
 import { getSystemConfig } from '../../lib/systemConfig'
@@ -108,6 +109,9 @@ const AdminFees = () => {
   const [showPaymentModal, setShowPaymentModal] = useState(false)
   const [savingPayment, setSavingPayment] = useState(false)
   const [payingFee, setPayingFee] = useState(null)
+  const [showPrintActionModal, setShowPrintActionModal] = useState(false)
+  const [runningPrintAction, setRunningPrintAction] = useState(false)
+  const [printPayload, setPrintPayload] = useState({ fees: [], title: '' })
   const [feeSubmittedTotals, setFeeSubmittedTotals] = useState({})
   const [feeApprovedTotals, setFeeApprovedTotals] = useState({})
   const [paymentForm, setPaymentForm] = useState({
@@ -446,34 +450,37 @@ const AdminFees = () => {
     }
   }
 
-  const handlePrintInvoices = async (targetFees, title) => {
+  const openPrintActionModal = (targetFees, title) => {
     if (!targetFees || targetFees.length === 0) {
       Swal.fire({ icon: 'info', title: 'ไม่พบใบแจ้งหนี้สำหรับพิมพ์' })
       return
     }
+    setPrintPayload({ fees: targetFees, title })
+    setShowPrintActionModal(true)
+  }
 
-    // Open window synchronously (must stay in user-gesture call stack to avoid popup blocker)
-    const w = window.open('', '_blank', 'width=1200,height=900')
-    if (!w) return
+  const resolveImageToDataUrl = async (url, fallback = '') => {
+    const raw = String(url || '').trim()
+    if (!raw) return fallback
+    try {
+      const r = await fetch(raw)
+      const blob = await r.blob()
+      return await new Promise((res) => {
+        const reader = new FileReader()
+        reader.onloadend = () => res(String(reader.result || fallback || raw))
+        reader.readAsDataURL(blob)
+      })
+    } catch {
+      return raw || fallback
+    }
+  }
 
-    // Re-fetch latest system config so logo is always current
+  const buildInvoiceHtml = async (targetFees, title, { autoPrint = false } = {}) => {
     const freshConfig = await getSystemConfig().catch(() => null)
     const rawLogoUrl = freshConfig?.village_logo_url || setup.village_logo_url || localStorage.getItem('vms-login-circle-logo-url') || ''
-    // Convert logo to base64 data URL so it embeds reliably in the about:blank print window
-    let printLogoUrl = `${window.location.origin}${villageLogo}`
-    if (rawLogoUrl) {
-      try {
-        const r = await fetch(rawLogoUrl)
-        const blob = await r.blob()
-        printLogoUrl = await new Promise((res) => {
-          const reader = new FileReader()
-          reader.onloadend = () => res(reader.result)
-          reader.readAsDataURL(blob)
-        })
-      } catch {
-        printLogoUrl = rawLogoUrl
-      }
-    }
+    const rawSignatureUrl = freshConfig?.juristic_signature_url || setup.juristic_signature_url || ''
+    const printLogoUrl = await resolveImageToDataUrl(rawLogoUrl, `${window.location.origin}${villageLogo}`)
+    const printSignatureUrl = await resolveImageToDataUrl(rawSignatureUrl, '')
 
     const fmtDate = (value) => formatDateDMY(value)
     const fmtMoney = (value) => Number(value || 0).toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
@@ -567,6 +574,7 @@ const AdminFees = () => {
       .join('')
     }
 
+    // One invoice section per house (original only) — no duplicate copy section.
     const invoiceBlocks = targetFees.map((fee, index) => {
       const invoiceNo = `INV-${String(fee.year || '').slice(-2)}-${String(fee.id || '').slice(0, 8).toUpperCase()}`
       const periodText = `${periodLabel(fee.period)} ปี ${toBE(fee.year)}`
@@ -640,7 +648,7 @@ const AdminFees = () => {
                 หมายเหตุ: กรุณาชำระภายในวันที่ครบกำหนด เพื่อหลีกเลี่ยงค่าปรับ/ค่าทวงถามเพิ่มเติม
               </div>
               <div class="sign-wrap">
-                ${setup.juristic_signature_url ? `<img src="${setup.juristic_signature_url}" alt="juristic-signature" />` : ''}
+                ${printSignatureUrl ? `<img src="${printSignatureUrl}" alt="juristic-signature" />` : ''}
                 <div class="sign-line"></div>
                 <div>ผู้มีอำนาจลงนาม</div>
               </div>
@@ -649,7 +657,7 @@ const AdminFees = () => {
         `
     }).join('')
 
-    w.document.write(`
+    return `
       <html>
         <head>
           <title></title>
@@ -661,87 +669,86 @@ const AdminFees = () => {
                Body padding compensates so content is not flush against paper edges. */
             @page { size: A4; margin: 0; }
             * { box-sizing: border-box; }
-            body { font-family: 'Sarabun', 'TH Sarabun New', Tahoma, sans-serif; margin: 0; padding: 10mm; color: #111827; background: #f8fafc; }
+            body { font-family: 'Sarabun', 'TH Sarabun New', Tahoma, sans-serif; margin: 0; padding: 5mm; color: #111827; background: #f8fafc; }
             .sheet {
               position: relative;
-              width: 210mm;
-              min-height: 297mm;
+              width: 200mm;
               margin: 0 auto;
               background: #fff;
-              padding: 9mm 10mm;
+              padding: 6mm 7mm;
               display: flex;
               flex-direction: column;
-              gap: 8px;
+              gap: 6px;
               overflow: hidden;
             }
             .page-break { page-break-after: always; }
             .head {
               display: flex;
               justify-content: space-between;
-              gap: 10px;
+              gap: 8px;
               border: 1px solid #d1d5db;
               border-radius: 8px;
-              padding: 8px 10px;
+              padding: 6px 8px;
               background: #ffffff;
             }
             .brand { display: flex; align-items: flex-start; gap: 12px; }
             .brand img {
-              width: 58px;
-              height: 58px;
+              width: 52px;
+              height: 52px;
               border-radius: 8px;
               object-fit: cover;
               border: 1px solid #d1d5db;
-              margin-top: -4px;
+              margin-top: -2px;
             }
-            .doc { font-size: 20px; font-weight: 700; }
-            .village { font-size: 14px; margin-top: 2px; }
-            .sub { font-size: 11px; color: #6b7280; margin-top: 3px; }
-            .doc-meta { font-size: 12px; min-width: 240px; display: flex; flex-direction: column; gap: 4px; }
+            .doc { font-size: 18px; font-weight: 700; line-height: 1.2; }
+            .village { font-size: 12px; margin-top: 2px; }
+            .sub { font-size: 10px; color: #6b7280; margin-top: 2px; }
+            .doc-meta { font-size: 11px; min-width: 220px; display: flex; flex-direction: column; gap: 3px; }
             .doc-meta span { color: #6b7280; }
-            .box { border: 1px solid #d1d5db; border-radius: 8px; padding: 8px; }
-            .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 10px; }
+            .box { border: 1px solid #d1d5db; border-radius: 8px; padding: 6px; }
+            .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 8px; }
             .grid > div { display: flex; flex-direction: column; gap: 2px; }
-            .grid span { font-size: 10px; color: #6b7280; }
-            .grid strong { font-size: 12px; }
+            .grid span { font-size: 9px; color: #6b7280; }
+            .grid strong { font-size: 11px; }
             table { width: 100%; border-collapse: collapse; }
-            th, td { border: 1px solid #d1d5db; padding: 6px 8px; font-size: 11px; }
+            th, td { border: 1px solid #d1d5db; padding: 5px 6px; font-size: 10px; }
             th { background: #f3f4f6; text-align: left; }
             .c { text-align: center; }
             .r { text-align: right; }
             tfoot td { background: #f8fafc; }
             .amount-text {
-              margin-top: 6px;
-              font-size: 12px;
+              margin-top: 4px;
+              font-size: 10px;
               color: #374151;
               font-weight: 500;
               text-align: right;
             }
-            .payment-box { display: flex; flex-direction: column; gap: 6px; }
-            .payment-title { font-size: 13px; font-weight: 700; color: #111827; }
-            .payment-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 10px; }
+            .payment-box { display: flex; flex-direction: column; gap: 4px; }
+            .payment-title { font-size: 11px; font-weight: 700; color: #111827; }
+            .payment-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 8px; }
             .payment-grid > div { display: flex; flex-direction: column; gap: 2px; }
-            .payment-grid span { font-size: 10px; color: #6b7280; }
-            .payment-grid strong { font-size: 12px; }
+            .payment-grid span { font-size: 9px; color: #6b7280; }
+            .payment-grid strong { font-size: 11px; }
             .payment-note {
               border-top: 1px dashed #d1d5db;
-              padding-top: 6px;
-              font-size: 11px;
+              padding-top: 4px;
+              font-size: 10px;
               color: #4b5563;
             }
             .foot {
-              margin-top: auto;
+              margin-top: 4px;
               border: 1px solid #d1d5db;
               border-radius: 8px;
-              padding: 8px;
+              padding: 6px;
               display: flex;
               align-items: flex-end;
               justify-content: space-between;
-              gap: 12px;
+              gap: 10px;
             }
-            .note { font-size: 11px; color: #4b5563; }
-            .sign-wrap { min-width: 170px; text-align: center; font-size: 11px; color: #4b5563; }
-            .sign-wrap img { max-width: 130px; max-height: 46px; object-fit: contain; margin-bottom: 5px; }
-            .sign-line { border-top: 1px solid #6b7280; margin: 4px 0; }
+            .note { font-size: 10px; color: #4b5563; line-height: 1.25; }
+            .sign-wrap { min-width: 150px; text-align: center; font-size: 10px; color: #4b5563; }
+            .sign-wrap img { max-width: 110px; max-height: 38px; object-fit: contain; margin-bottom: 3px; }
+            .sign-line { border-top: 1px solid #6b7280; margin: 3px 0; }
             @media print {
               body { background: #fff; }
               .sheet { margin: 0; box-shadow: none; }
@@ -752,23 +759,88 @@ const AdminFees = () => {
         </head>
         <body>
           ${invoiceBlocks}
-          <script>
-            window.onload = () => window.print();
-          </script>
+          ${autoPrint ? `<script>window.onload = () => window.print();</script>` : ''}
         </body>
       </html>
-    `)
+    `
+  }
+
+  const openHtmlInWindow = (html) => {
+    const w = window.open('', '_blank', 'width=1200,height=900')
+    if (!w) return null
+    w.document.write(html)
     w.document.close()
+    return w
+  }
+
+  const runPrintAction = async (mode) => {
+    if (!printPayload?.fees?.length) return
+    try {
+      setRunningPrintAction(true)
+
+      if (mode === 'image') {
+        const html = await buildInvoiceHtml(printPayload.fees, printPayload.title, { autoPrint: false })
+        const iframe = document.createElement('iframe')
+        iframe.style.position = 'fixed'
+        iframe.style.left = '-99999px'
+        iframe.style.top = '0'
+        iframe.style.width = '1200px'
+        iframe.style.height = '1600px'
+        document.body.appendChild(iframe)
+        const doc = iframe.contentDocument
+        doc.open()
+        doc.write(html)
+        doc.close()
+        await new Promise((resolve) => setTimeout(resolve, 600))
+
+        const sheets = Array.from(doc.querySelectorAll('.sheet'))
+        for (let i = 0; i < sheets.length; i += 1) {
+          const canvas = await html2canvas(sheets[i], {
+            scale: 2,
+            useCORS: true,
+            backgroundColor: '#ffffff',
+          })
+          const link = document.createElement('a')
+          link.href = canvas.toDataURL('image/png')
+          link.download = `${printPayload.title || 'invoice'}-${i + 1}.png`
+          link.click()
+        }
+
+        document.body.removeChild(iframe)
+        setShowPrintActionModal(false)
+        return
+      }
+
+      const html = await buildInvoiceHtml(printPayload.fees, printPayload.title, { autoPrint: true })
+      const w = openHtmlInWindow(html)
+      if (!w) {
+        await Swal.fire({ icon: 'warning', title: 'ไม่สามารถเปิดหน้าต่างพิมพ์ได้', text: 'กรุณาอนุญาต popup ของเบราว์เซอร์' })
+        return
+      }
+
+      if (mode === 'pdf') {
+        await Swal.fire({
+          icon: 'info',
+          title: 'Export PDF',
+          text: 'ในหน้าต่างพิมพ์ ให้เลือก Printer = Save as PDF แล้วกด Save',
+        })
+      }
+      setShowPrintActionModal(false)
+    } catch (error) {
+      await Swal.fire({ icon: 'error', title: 'ดำเนินการไม่สำเร็จ', text: error.message })
+    } finally {
+      setRunningPrintAction(false)
+    }
   }
 
   const handlePrintInvoicesAll = () => {
-    handlePrintInvoices(displayFees, 'ใบแจ้งหนี้ทั้งหมด')
+    openPrintActionModal(displayFees, 'ใบแจ้งหนี้ทั้งหมด')
   }
 
   const handlePrintInvoiceByHouse = (fee) => {
     const sameHouse = fees.filter((item) => item.house_id === fee.house_id)
     const title = `ใบแจ้งหนี้บ้าน ${fee.houses?.house_no || '-'} ทั้งหมด`
-    handlePrintInvoices(sameHouse, title)
+    openPrintActionModal(sameHouse, title)
   }
 
   const handleAddPayment = (fee) => {
@@ -1150,6 +1222,45 @@ const AdminFees = () => {
           </div>
         </div>
       </div>
+
+      {showPrintActionModal && (
+        <div className="house-mo">
+          <div className="house-md house-md--xs">
+            <div className="house-md-head">
+              <div>
+                <div className="house-md-title">🖨 ตัวเลือกการพิมพ์</div>
+                <div className="house-md-sub">{printPayload?.title || '-'}</div>
+              </div>
+            </div>
+            <div className="house-md-body" style={{ display: 'grid', gap: 10 }}>
+              <button className="btn btn-p" onClick={() => runPrintAction('paper')} disabled={runningPrintAction}>
+                {runningPrintAction ? 'กำลังดำเนินการ...' : 'พิมพ์เป็น Paper'}
+              </button>
+              <button className="btn btn-a" onClick={() => runPrintAction('pdf')} disabled={runningPrintAction}>
+                {runningPrintAction ? 'กำลังดำเนินการ...' : 'Export เป็น PDF'}
+              </button>
+              <button className="btn btn-g" onClick={() => runPrintAction('image')} disabled={runningPrintAction}>
+                {runningPrintAction ? 'กำลังดำเนินการ...' : 'Save เป็น Image (ต้นฉบับ)'}
+              </button>
+              <div style={{ fontSize: 12, color: 'var(--mu)' }}>
+                หมายเหตุ: Save as Image จะบันทึกเฉพาะหน้าเอกสารต้นฉบับที่สร้างจริง ไม่มีการสร้างหน้าสำเนา
+              </div>
+            </div>
+            <div className="house-md-foot">
+              <button
+                className="btn btn-g"
+                type="button"
+                onClick={() => {
+                  if (runningPrintAction) return
+                  setShowPrintActionModal(false)
+                }}
+              >
+                ปิด
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {showEditModal && editingFee && (
         <div className="house-mo">
