@@ -273,7 +273,7 @@ const AdminFees = () => {
       await Swal.fire({
         icon: 'success',
         title: 'Process สำเร็จ',
-        html: `สร้างใหม่ ${result.created} หลัง<br/>อัปเดต ${result.updated} หลัง<br/>ข้าม (ชำระแล้ว) ${result.skippedPaid} หลัง<br/>ข้าม (รอตรวจสอบ) ${result.skippedPending} หลัง${processForm.overwritePending ? '<br/><span style="color:#0f766e">* เลือกทับรายการรอตรวจสอบแล้ว</span>' : ''}`,
+        html: `สร้างใหม่ ${result.created} หลัง<br/>อัปเดต ${result.updated} หลัง<br/>ข้าม (ชำระแล้ว) ${result.skippedPaid} หลัง<br/>ข้าม (รอตรวจสอบ) ${result.skippedPending} หลัง${result.skippedFullYear > 0 ? `<br/>ข้าม (มีใบแจ้งหนี้เต็มปีแล้ว) <strong>${result.skippedFullYear}</strong> หลัง` : ''}${processForm.overwritePending ? '<br/><span style="color:#0f766e">* เลือกทับรายการรอตรวจสอบแล้ว</span>' : ''}`,
       })
       setShowProcessModal(false)
       await loadFeeData({ status: statusFilter, year: yearFilter, period: periodFilter })

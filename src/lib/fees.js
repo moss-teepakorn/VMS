@@ -179,24 +179,35 @@ export async function processHalfYearFeesAllHouses({ yearBE, period, setup, over
   const wastePerPeriod = toAmount(setup?.waste_fee_per_period)
   const dates = halfYearDates(yearCE, period)
 
-  const [housesResp, existingResp, parkingByHouse] = await Promise.all([
+  const [housesResp, existingResp, fullYearResp, parkingByHouse] = await Promise.all([
     supabase.from('houses').select('id, area_sqw'),
     supabase.from('fees').select('id, house_id, status').eq('year', yearCE).eq('period', period),
+    // Check which houses already have a full_year invoice for this year — must not create half-year on top
+    supabase.from('fees').select('house_id').eq('year', yearCE).eq('period', 'full_year'),
     getParkingMonthlyByHouse(),
   ])
 
   if (housesResp.error) throw housesResp.error
   if (existingResp.error) throw existingResp.error
+  if (fullYearResp.error) throw fullYearResp.error
 
   const existingByHouse = new Map((existingResp.data || []).map((row) => [row.house_id, row]))
+  const fullYearHouseIds = new Set((fullYearResp.data || []).map((row) => row.house_id))
   const houses = housesResp.data || []
 
   let created = 0
   let updated = 0
   let skippedPaid = 0
   let skippedPending = 0
+  let skippedFullYear = 0
 
   for (const house of houses) {
+    // Skip houses that already have a full_year invoice — no half-year duplicate allowed
+    if (fullYearHouseIds.has(house.id)) {
+      skippedFullYear += 1
+      continue
+    }
+
     const area = toAmount(house.area_sqw)
     const parkingMonthly = toAmount(parkingByHouse.get(house.id))
     const payload = {
@@ -243,6 +254,7 @@ export async function processHalfYearFeesAllHouses({ yearBE, period, setup, over
     updated,
     skippedPaid,
     skippedPending,
+    skippedFullYear,
     totalHouses: houses.length,
     yearCE,
     period,
