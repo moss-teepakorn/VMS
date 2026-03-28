@@ -126,6 +126,17 @@ export async function getLatestFeeYear() {
   return Number(data?.year || new Date().getFullYear())
 }
 
+export async function getFeeYears() {
+  const { data, error } = await supabase
+    .from('fees')
+    .select('year')
+    .order('year', { ascending: false })
+
+  if (error) throw error
+
+  return [...new Set((data || []).map((row) => Number(row.year)).filter(Boolean))].sort((a, b) => b - a)
+}
+
 export async function listHouseFees(houseId, { status = 'all', year = 'all' } = {}) {
   if (!houseId) return []
 

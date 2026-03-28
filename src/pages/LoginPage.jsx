@@ -79,7 +79,7 @@ export default function LoginPage() {
           <div className="bg-white flex items-center justify-center px-6 py-10 sm:px-10">
             <div className="w-full max-w-[420px]">
               <div className="text-center md:hidden mb-8">
-                <img src={villageLogo} alt="Village Logo" className="w-16 h-16 mx-auto rounded-xl object-cover shadow" />
+                <img src={setup.loginCircleLogoUrl || villageLogo} alt="Village Logo" className="w-16 h-16 mx-auto rounded-xl object-cover shadow" />
                 <h1 className="mt-3 text-xl font-bold text-slate-800">เข้าสู่ระบบ</h1>
                 <p className="text-sm text-slate-500">กรุณากรอกข้อมูลเพื่อเข้าใช้งาน</p>
               </div>

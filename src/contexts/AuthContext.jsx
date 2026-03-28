@@ -5,12 +5,18 @@ import { insertLoginLog } from '../lib/loginLogs'
 
 const AuthContext = createContext(null)
 const SESSION_KEY = 'vms-local-auth'
+const PERSISTENT_BRANDING_KEYS = new Set([
+  'vms-login-circle-logo-url',
+  'vms-login-circle-logo-path',
+  'vms-setup-village-name',
+])
 
 function clearClientStorage() {
   const keysToRemove = []
   for (let i = 0; i < localStorage.length; i += 1) {
     const key = localStorage.key(i)
     if (!key) continue
+    if (PERSISTENT_BRANDING_KEYS.has(key)) continue
     if (key === SESSION_KEY || key.startsWith('vms-')) keysToRemove.push(key)
   }
   keysToRemove.forEach((key) => localStorage.removeItem(key))

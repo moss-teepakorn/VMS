@@ -1,9 +1,11 @@
 import React, { useEffect, useState } from 'react'
 import Swal from 'sweetalert2'
 import {
+  buildSystemAssetPublicUrl,
   deleteSystemAssetByPath,
   extractSystemAssetPath,
   getSystemConfig,
+  syncPublicSetupConfig,
   updateSystemConfig,
   uploadVillageLogo,
   uploadJuristicSignature,
@@ -282,6 +284,21 @@ const AdminConfig = () => {
 
       const updated = await updateSystemConfig(configId, payload)
 
+      const nextLogoPath = updated.village_logo_path || payload.village_logo_path || ''
+      const nextLogoUrl = updated.village_logo_url || payload.village_logo_url || buildSystemAssetPublicUrl(nextLogoPath, { cacheBust: Date.now() }) || ''
+      const nextPublicSetup = {
+        village_name: updated.village_name || payload.village_name || '',
+        village_logo_url: nextLogoUrl || null,
+        village_logo_path: nextLogoPath || null,
+        juristic_name: updated.juristic_name || payload.juristic_name || '',
+        juristic_address: updated.juristic_address || payload.juristic_address || '',
+        bank_name: updated.bank_name || payload.bank_name || '',
+        bank_account_no: updated.bank_account_no || payload.bank_account_no || '',
+        bank_account_name: updated.bank_account_name || payload.bank_account_name || '',
+      }
+
+      await syncPublicSetupConfig(nextPublicSetup)
+
       if ((shouldRemoveLogo || logoFile) && previousLogoPath && previousLogoPath !== uploadedLogo?.path) {
         await deleteSystemAssetByPath(previousLogoPath)
       }
@@ -301,11 +318,10 @@ const AdminConfig = () => {
         URL.revokeObjectURL(logoPreviewUrl)
       }
       setSignaturePreviewUrl(updated.juristic_signature_url || '')
-      const nextLogoUrl = updated.village_logo_url || payload.village_logo_url || ''
       setLogoPreviewUrl(nextLogoUrl)
       if (nextLogoUrl) {
         localStorage.setItem('vms-login-circle-logo-url', nextLogoUrl)
-        localStorage.setItem('vms-login-circle-logo-path', updated.village_logo_path || payload.village_logo_path || '')
+        localStorage.setItem('vms-login-circle-logo-path', nextLogoPath)
       } else {
         localStorage.removeItem('vms-login-circle-logo-url')
         localStorage.removeItem('vms-login-circle-logo-path')

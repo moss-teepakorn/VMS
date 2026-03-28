@@ -11,6 +11,7 @@ import {
   calculateOverdueFeeCharges,
   createPayment,
   deleteFee,
+  getFeeYears,
   getLatestFeeYear,
   listFees,
   listPaymentTotalsByFeeIds,
@@ -83,6 +84,7 @@ const AdminFees = () => {
   const [statusFilter, setStatusFilter] = useState('all')
   const [yearFilter, setYearFilter] = useState('all')
   const [currentFeeYear, setCurrentFeeYear] = useState(new Date().getFullYear())
+  const [feeYears, setFeeYears] = useState([])
   const [periodFilter, setPeriodFilter] = useState('all')
   const [archiveFilter, setArchiveFilter] = useState('paid')
   const [searchInput, setSearchInput] = useState('')
@@ -144,10 +146,7 @@ const AdminFees = () => {
     { key: 'fee_other', label: 'ค่าอื่นๆ' },
   ]
 
-  const yearOptions = useMemo(() => {
-    const years = [...new Set(fees.map((fee) => fee.year).filter(Boolean))].sort((a, b) => b - a)
-    return years
-  }, [fees])
+  const yearOptions = useMemo(() => (feeYears.length > 0 ? feeYears : [currentFeeYear]), [feeYears, currentFeeYear])
 
   const loadFeeData = async (override = {}) => {
     try {
@@ -197,8 +196,10 @@ const AdminFees = () => {
   useEffect(() => {
     const init = async () => {
       const latestYear = await getLatestFeeYear().catch(() => new Date().getFullYear())
+      const allYears = await getFeeYears().catch(() => [latestYear])
       setCurrentFeeYear(latestYear)
       setYearFilter(latestYear)
+      setFeeYears(allYears)
       setProcessForm((prev) => ({ ...prev, yearBE: String(latestYear + 543) }))
       await Promise.all([
         getSystemConfig().then(setSetup).catch(() => {}),
@@ -651,6 +652,10 @@ const AdminFees = () => {
                 <div><span>เลขที่เอกสาร:</span> <strong>${invoiceNo}</strong></div>
                 <div><span>วันที่ออกเอกสาร:</span> <strong>${fmtDate(fee.invoice_date)}</strong></div>
                 <div><span>ครบกำหนดชำระ:</span> <strong>${fmtDate(fee.due_date)}</strong></div>
+                <div class="copy-mark-row">
+                  <div class="copy-mark copy-mark--active">ต้นฉบับ</div>
+                  <div class="copy-mark">สำเนา</div>
+                </div>
               </div>
             </header>
 
@@ -760,6 +765,29 @@ const AdminFees = () => {
             .sub { font-size: 10px; color: #6b7280; margin-top: 2px; }
             .doc-meta { font-size: 11px; min-width: 220px; display: flex; flex-direction: column; gap: 3px; }
             .doc-meta span { color: #6b7280; }
+            .copy-mark-row {
+              display: flex;
+              gap: 6px;
+              justify-content: flex-end;
+              margin-top: 4px;
+            }
+            .copy-mark {
+              min-width: 92px;
+              border: 1px solid #cbd5e1;
+              border-radius: 999px;
+              padding: 4px 10px;
+              text-align: center;
+              font-size: 16px;
+              font-weight: 700;
+              line-height: 1;
+              color: #94a3b8;
+              background: #f8fafc;
+            }
+            .copy-mark--active {
+              border-color: #0c4a6e;
+              color: #0c4a6e;
+              background: #eff6ff;
+            }
             .box { border: 1px solid #d1d5db; border-radius: 8px; padding: 6px; }
             .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 8px; }
             .grid > div { display: flex; flex-direction: column; gap: 2px; }
@@ -1100,26 +1128,38 @@ const AdminFees = () => {
         </div>
         <div className="page-filter-row" style={{ justifyContent: 'space-between', alignItems: 'center' }}>
           <div style={{ fontSize: 13, color: 'var(--mu)' }}>
-            แสดงข้อมูลปีล่าสุด: <strong>พ.ศ. {toBE(currentFeeYear)}</strong>
+            ปีที่แสดง: <strong>พ.ศ. {toBE(currentFeeYear)}</strong>
           </div>
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
-          <input
-            className="page-filter-input"
-            placeholder="ค้นหา ซอย / บ้านเลขที่ / เจ้าของ"
-            value={searchInput}
-            onChange={(e) => setSearchInput(e.target.value)}
-            style={{ minWidth: 240 }}
-          />
-          <button
-            type="button"
-            className="btn btn-a btn-sm page-filter-btn"
-            onClick={() => {
-              setSearchKeyword(searchInput.trim())
-              loadFeeData({ year: currentFeeYear, status: 'all', period: 'all' })
-            }}
-          >
-            ค้นหา
-          </button>
+            <select
+              className="page-filter-select"
+              value={currentFeeYear}
+              onChange={(e) => {
+                const nextYear = Number(e.target.value)
+                setCurrentFeeYear(nextYear)
+                setYearFilter(nextYear)
+                loadFeeData({ year: nextYear, status: 'all', period: 'all' })
+              }}
+            >
+              {yearOptions.map((year) => <option key={year} value={year}>{toBE(year)}</option>)}
+            </select>
+            <input
+              className="page-filter-input"
+              placeholder="ค้นหา ซอย / บ้านเลขที่ / เจ้าของ"
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
+              style={{ minWidth: 240 }}
+            />
+            <button
+              type="button"
+              className="btn btn-a btn-sm page-filter-btn"
+              onClick={() => {
+                setSearchKeyword(searchInput.trim())
+                loadFeeData({ year: currentFeeYear, status: 'all', period: 'all' })
+              }}
+            >
+              ค้นหา
+            </button>
           </div>
         </div>
       </div>
@@ -1130,38 +1170,56 @@ const AdminFees = () => {
         <div className="sc"><div className="sc-ico p">🧾</div><div><div className="sc-v">฿{summary.totalInvoiced.toLocaleString('th-TH')}</div><div className="sc-l">ยอดออกใบแจ้งหนี้</div></div></div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 10 }}>
-        {periodCards.map((item) => {
-          const active = periodFilter === item.value
-          return (
-            <button
-              key={item.value}
-              type="button"
-              onClick={() => setPeriodFilter(item.value)}
-              style={{
-                border: active ? '1px solid #0c4a6e' : '1px solid var(--bo)',
-                background: active ? '#eff6ff' : '#fff',
-                borderRadius: 12,
-                padding: '12px 14px',
-                textAlign: 'left',
-                cursor: 'pointer',
-              }}
-            >
-              <div style={{ fontSize: 12, color: active ? '#0c4a6e' : 'var(--mu)' }}>{item.label}</div>
-              <div style={{ fontSize: 22, fontWeight: 700, color: '#111827' }}>{item.count}</div>
-            </button>
-          )
-        })}
-      </div>
-
       <div className="card">
         <div className="ch page-list-head">
           <div className="ct">ใบแจ้งหนี้ค้างชำระ ({activeFees.length})</div>
-          <div className="page-list-actions">
+          <div className="page-list-actions" style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center', width: '100%' }}>
             <button className="btn btn-p btn-sm" onClick={handleOpenProcessModal}>+ สร้างใบแจ้งหนี้</button>
             <button className="btn btn-a btn-sm" onClick={handlePrintInvoicesAll}>🖨 พิมพ์ใบแจ้งหนี้ทั้งหมด</button>
             <button className="btn btn-dg btn-sm" onClick={handleBulkOverdue}>⚖ คำนวณค่าปรับทั้งหมด</button>
             <button className="btn btn-g btn-sm" onClick={() => loadFeeData({ year: currentFeeYear, status: 'all', period: 'all' })}>🔄 รีเฟรช</button>
+            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginLeft: 'auto' }}>
+              {periodCards.map((item) => {
+                const active = periodFilter === item.value
+                return (
+                  <button
+                    key={item.value}
+                    type="button"
+                    onClick={() => setPeriodFilter(item.value)}
+                    style={{
+                      border: active ? '1px solid #0c4a6e' : '1px solid var(--bo)',
+                      background: active ? '#eff6ff' : '#fff',
+                      color: active ? '#0c4a6e' : '#334155',
+                      borderRadius: 999,
+                      padding: '6px 10px',
+                      minHeight: 34,
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 6,
+                      cursor: 'pointer',
+                      fontSize: 12,
+                      fontWeight: 600,
+                    }}
+                  >
+                    <span>{item.label}</span>
+                    <span style={{
+                      minWidth: 20,
+                      height: 20,
+                      borderRadius: 999,
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      background: active ? '#0c4a6e' : '#e2e8f0',
+                      color: active ? '#fff' : '#475569',
+                      fontSize: 11,
+                      padding: '0 6px',
+                    }}>
+                      {item.count}
+                    </span>
+                  </button>
+                )
+              })}
+            </div>
           </div>
         </div>
         <div className="cb page-table-body">
@@ -1352,14 +1410,44 @@ const AdminFees = () => {
               </div>
             </div>
             <div className="house-md-body" style={{ display: 'grid', gap: 10 }}>
-              <button className="btn btn-p" onClick={() => runPrintAction('paper')} disabled={runningPrintAction}>
-                {runningPrintAction ? 'กำลังดำเนินการ...' : 'พิมพ์เป็น Paper'}
+              <button
+                className="btn btn-p"
+                type="button"
+                onClick={() => runPrintAction('paper')}
+                disabled={runningPrintAction}
+                style={{ justifyContent: 'space-between', padding: '12px 14px', fontFamily: 'inherit', letterSpacing: 0, fontStretch: 'normal' }}
+              >
+                <span style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', lineHeight: 1.25 }}>
+                  <span style={{ fontSize: 15, fontWeight: 700 }}>พิมพ์เอกสาร</span>
+                  <span style={{ fontSize: 12, fontWeight: 500, opacity: 0.88 }}>เปิดหน้าพิมพ์สำหรับใบแจ้งหนี้ทั้งหมด</span>
+                </span>
+                <span style={{ fontSize: 12, fontWeight: 700 }}>{runningPrintAction ? 'กำลังดำเนินการ...' : 'Paper'}</span>
               </button>
-              <button className="btn btn-a" onClick={() => runPrintAction('pdf')} disabled={runningPrintAction}>
-                {runningPrintAction ? 'กำลังดำเนินการ...' : 'Export เป็น PDF'}
+              <button
+                className="btn btn-a"
+                type="button"
+                onClick={() => runPrintAction('pdf')}
+                disabled={runningPrintAction}
+                style={{ justifyContent: 'space-between', padding: '12px 14px', fontFamily: 'inherit', letterSpacing: 0, fontStretch: 'normal' }}
+              >
+                <span style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', lineHeight: 1.25 }}>
+                  <span style={{ fontSize: 15, fontWeight: 700 }}>Save เป็น PDF</span>
+                  <span style={{ fontSize: 12, fontWeight: 500, opacity: 0.88 }}>ดาวน์โหลดไฟล์ PDF ลงเครื่องทันที</span>
+                </span>
+                <span style={{ fontSize: 12, fontWeight: 700 }}>{runningPrintAction ? 'กำลังดำเนินการ...' : 'PDF'}</span>
               </button>
-              <button className="btn btn-g" onClick={() => runPrintAction('image')} disabled={runningPrintAction}>
-                {runningPrintAction ? 'กำลังดำเนินการ...' : 'Save เป็น Image (ต้นฉบับ)'}
+              <button
+                className="btn btn-g"
+                type="button"
+                onClick={() => runPrintAction('image')}
+                disabled={runningPrintAction}
+                style={{ justifyContent: 'space-between', padding: '12px 14px', fontFamily: 'inherit', letterSpacing: 0, fontStretch: 'normal' }}
+              >
+                <span style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', lineHeight: 1.25 }}>
+                  <span style={{ fontSize: 15, fontWeight: 700 }}>Save เป็น Image</span>
+                  <span style={{ fontSize: 12, fontWeight: 500, opacity: 0.88 }}>บันทึกเฉพาะหน้าเอกสารต้นฉบับ</span>
+                </span>
+                <span style={{ fontSize: 12, fontWeight: 700 }}>{runningPrintAction ? 'กำลังดำเนินการ...' : 'PNG'}</span>
               </button>
               <div style={{ fontSize: 12, color: 'var(--mu)' }}>
                 หมายเหตุ: Save as Image จะบันทึกเฉพาะหน้าเอกสารต้นฉบับที่สร้างจริง ไม่มีการสร้างหน้าสำเนา

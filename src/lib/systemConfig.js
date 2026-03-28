@@ -1,6 +1,16 @@
 import { supabase } from './supabase'
 
 const SYSTEM_ASSET_BUCKET = 'system-assets'
+const PUBLIC_SETUP_FIELDS = [
+  'village_name',
+  'village_logo_url',
+  'village_logo_path',
+  'juristic_name',
+  'juristic_address',
+  'bank_name',
+  'bank_account_no',
+  'bank_account_name',
+]
 
 const DEFAULT_SYSTEM_CONFIG = {
   village_name: 'The Greenfield',
@@ -141,7 +151,22 @@ export function extractSystemAssetPath(publicUrl) {
   const marker = `/storage/v1/object/public/${SYSTEM_ASSET_BUCKET}/`
   const index = value.indexOf(marker)
   if (index < 0) return ''
-  return decodeURIComponent(value.slice(index + marker.length))
+  return decodeURIComponent(value.slice(index + marker.length).split('?')[0])
+}
+
+export function buildSystemAssetPublicUrl(path, { cacheBust } = {}) {
+  const target = String(path || '').trim()
+  if (!target) return ''
+
+  const { data } = supabase.storage
+    .from(SYSTEM_ASSET_BUCKET)
+    .getPublicUrl(target)
+
+  const publicUrl = String(data?.publicUrl || '').trim()
+  if (!publicUrl) return ''
+  if (!cacheBust) return publicUrl
+  const separator = publicUrl.includes('?') ? '&' : '?'
+  return `${publicUrl}${separator}v=${encodeURIComponent(String(cacheBust))}`
 }
 
 export async function uploadJuristicSignature(file) {
@@ -171,8 +196,7 @@ export async function uploadVillageLogo(file) {
   if (!file) return null
   const extension = String(file.name || 'png').split('.').pop()?.toLowerCase() || 'png'
   const safeExt = ['png', 'jpg', 'jpeg', 'webp'].includes(extension) ? extension : 'png'
-  const fileName = `logo_${Date.now()}.${safeExt}`
-  const path = `logo/${fileName}`
+  const path = `logo/login-circle.${safeExt}`
 
   const { error } = await supabase.storage
     .from(SYSTEM_ASSET_BUCKET)
@@ -180,13 +204,20 @@ export async function uploadVillageLogo(file) {
 
   if (error) throw error
 
-  const { data: publicUrlData } = supabase.storage
-    .from(SYSTEM_ASSET_BUCKET)
-    .getPublicUrl(path)
+  const staleLogoVariants = ['png', 'jpg', 'jpeg', 'webp']
+    .map((ext) => `logo/login-circle.${ext}`)
+    .filter((candidate) => candidate !== path)
+
+  if (staleLogoVariants.length > 0) {
+    await supabase.storage
+      .from(SYSTEM_ASSET_BUCKET)
+      .remove(staleLogoVariants)
+      .catch(() => null)
+  }
 
   return {
     path,
-    url: publicUrlData?.publicUrl || '',
+    url: buildSystemAssetPublicUrl(path, { cacheBust: Date.now() }),
   }
 }
 
@@ -200,4 +231,86 @@ export async function deleteSystemAssetByPath(path) {
 
   if (error) throw error
   return true
+}
+
+function filterPayloadByColumns(payload, columns) {
+  const allowedColumns = new Set(columns || [])
+  return Object.entries(payload).reduce((acc, [key, value]) => {
+    if (allowedColumns.has(key)) acc[key] = value
+    return acc
+  }, {})
+}
+
+export async function syncPublicSetupConfig(updates) {
+  const incomingPayload = Object.entries(updates || {}).reduce((acc, [key, value]) => {
+    if (PUBLIC_SETUP_FIELDS.includes(key)) acc[key] = value
+    return acc
+  }, {})
+
+  if (Object.keys(incomingPayload).length === 0) return null
+
+  try {
+    const { data: currentRow, error: currentError } = await supabase
+      .from('public_config')
+      .select('*')
+      .limit(1)
+      .maybeSingle()
+
+    if (currentError) throw currentError
+
+    if (!currentRow) {
+      const { data: inserted, error: insertError } = await supabase
+        .from('public_config')
+        .insert([incomingPayload])
+        .select('*')
+        .maybeSingle()
+
+      if (insertError) throw insertError
+      return inserted || null
+    }
+
+    let payload = filterPayloadByColumns(incomingPayload, Object.keys(currentRow))
+    if (Object.keys(payload).length === 0) return currentRow
+
+    let data = null
+    let error = null
+    for (let attempt = 0; attempt < 30; attempt += 1) {
+      const result = await supabase
+        .from('public_config')
+        .update(payload)
+        .eq('id', currentRow.id)
+        .select('*')
+        .maybeSingle()
+
+      data = result.data
+      error = result.error
+
+      if (!error) break
+
+      const errorMessage = String(error?.message || '')
+      const matches = [
+        ...errorMessage.matchAll(/Could not find the '([^']+)' column/g),
+        ...errorMessage.matchAll(/column\s+"?([a-zA-Z0-9_]+)"?\s+does not exist/g),
+        ...errorMessage.matchAll(/'([a-zA-Z0-9_]+)'\s+column/i),
+      ]
+      if (matches.length === 0) break
+
+      let removedAny = false
+      for (const match of matches) {
+        const missingColumn = match[1]
+        if (Object.prototype.hasOwnProperty.call(payload, missingColumn)) {
+          delete payload[missingColumn]
+          removedAny = true
+        }
+      }
+
+      if (!removedAny || Object.keys(payload).length === 0) break
+    }
+
+    if (error) throw error
+    return data || currentRow
+  } catch (error) {
+    console.warn('syncPublicSetupConfig fallback:', error)
+    return null
+  }
 }

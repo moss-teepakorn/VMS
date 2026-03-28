@@ -1,4 +1,5 @@
 import { supabase } from './supabase'
+import { buildSystemAssetPublicUrl } from './systemConfig'
 
 const DEFAULT_SETUP = {
   villageName: 'The Greenfield',
@@ -18,7 +19,8 @@ function toSetup(row) {
   const villageName = row?.village_name?.trim() || DEFAULT_SETUP.villageName
   const address = row?.juristic_address?.trim() || row?.juristic_name?.trim() || DEFAULT_SETUP.address
   const fromLocalLogo = String(localStorage.getItem('vms-login-circle-logo-url') || '').trim()
-  const loginCircleLogoUrl = String(row?.village_logo_url || fromLocalLogo || '').trim()
+  const derivedLogoUrl = row?.village_logo_path ? buildSystemAssetPublicUrl(row.village_logo_path) : ''
+  const loginCircleLogoUrl = String(row?.village_logo_url || derivedLogoUrl || fromLocalLogo || '').trim()
   return {
     ...DEFAULT_SETUP,
     villageName,
