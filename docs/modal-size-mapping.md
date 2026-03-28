@@ -23,13 +23,13 @@ Rule:
 
 - `AdminLayout` -> Change password modal: `house-md--xs`
 - `AdminAnnouncements` -> Create/Edit announcement: `house-md--lg`
-- `AdminFees` -> Edit invoice: `house-md--lg`
-- `AdminFees` -> Receive payment: `house-md--xl`
-- `AdminFees` -> Process invoices all houses: `house-md--sm`
-- `AdminHouses` -> Create/Edit house: `house-md--lg`
+- `AdminFees` -> Edit invoice: `house-md--md`
+- `AdminFees` -> Process invoices all houses: `house-md--xs`
+- `AdminHouses` -> Create/Edit house: `house-md--md`
 - `AdminIssues` -> Create/Edit issue: `house-md--md`
 - `AdminMarketplace` -> Create/Edit listing: `house-md--md`
 - `AdminMarketplace` -> Listing detail view: `house-md--lg`
+- `AdminPayments` -> Receive payment modal: `house-md--md`
 - `AdminTechnicians` -> Create/Edit technician: `house-md--md`
 - `AdminUsers` -> Create/Edit user: `house-md--md`
 - `AdminVehicles` -> Create/Edit vehicle: `house-md--xl`

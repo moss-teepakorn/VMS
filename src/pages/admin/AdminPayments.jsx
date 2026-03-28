@@ -1,7 +1,14 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import Swal from 'sweetalert2'
 import { useAuth } from '../../contexts/AuthContext'
-import { approvePayment, listPayments, rejectPayment, revokePaymentApproval } from '../../lib/fees'
+import {
+  approvePayment,
+  createPayment,
+  listFees,
+  listPayments,
+  rejectPayment,
+  revokePaymentApproval,
+} from '../../lib/fees'
 import { getSetupConfig } from '../../lib/setup'
 import villageLogo from '../../assets/village-logo.svg'
 
@@ -44,6 +51,13 @@ function formatMethod(method) {
   return method || '-'
 }
 
+function formatPeriod(period) {
+  if (period === 'first_half') return 'ครึ่งปีแรก'
+  if (period === 'second_half') return 'ครึ่งปีหลัง'
+  if (period === 'full_year') return 'เต็มปี'
+  return period || '-'
+}
+
 function buildReceiptNo(payment) {
   const date = new Date(payment.verified_at || payment.paid_at || Date.now())
   const y = date.getFullYear() + 543
@@ -57,6 +71,16 @@ export default function AdminPayments() {
   const [payments, setPayments] = useState([])
   const [loading, setLoading] = useState(false)
   const [search, setSearch] = useState('')
+  const [showReceiveModal, setShowReceiveModal] = useState(false)
+  const [savingReceive, setSavingReceive] = useState(false)
+  const [feeOptions, setFeeOptions] = useState([])
+  const [receiveForm, setReceiveForm] = useState({
+    fee_id: '',
+    amount: '',
+    payment_method: 'transfer',
+    paid_at: new Date().toISOString().slice(0, 16),
+    note: '',
+  })
   const [setup, setSetup] = useState({
     villageName: 'The Greenfield',
     address: '',
@@ -107,6 +131,75 @@ export default function AdminPayments() {
     getSetupConfig().then(setSetup).catch(() => {})
     loadPayments()
   }, [])
+
+  const openReceiveModal = async () => {
+    try {
+      const feeRows = await listFees({ status: 'all' })
+      const candidates = feeRows.filter((fee) => fee.status !== 'paid')
+
+      if (candidates.length === 0) {
+        await Swal.fire({ icon: 'info', title: 'ไม่มีใบแจ้งหนี้ที่รับชำระได้' })
+        return
+      }
+
+      const first = candidates[0]
+      setFeeOptions(candidates)
+      setReceiveForm({
+        fee_id: first.id,
+        amount: String(Number(first.total_amount || 0)),
+        payment_method: 'transfer',
+        paid_at: new Date().toISOString().slice(0, 16),
+        note: '',
+      })
+      setShowReceiveModal(true)
+    } catch (error) {
+      await Swal.fire({ icon: 'error', title: 'โหลดใบแจ้งหนี้ไม่สำเร็จ', text: error.message })
+    }
+  }
+
+  const handleChangeReceiveFee = (feeId) => {
+    const nextFee = feeOptions.find((fee) => fee.id === feeId)
+    setReceiveForm((prev) => ({
+      ...prev,
+      fee_id: feeId,
+      amount: nextFee ? String(Number(nextFee.total_amount || 0)) : prev.amount,
+    }))
+  }
+
+  const handleSubmitReceive = async (event) => {
+    event.preventDefault()
+
+    const targetFee = feeOptions.find((fee) => fee.id === receiveForm.fee_id)
+    if (!targetFee) {
+      await Swal.fire({ icon: 'warning', title: 'กรุณาเลือกใบแจ้งหนี้' })
+      return
+    }
+
+    const amount = Number(receiveForm.amount || 0)
+    if (!Number.isFinite(amount) || amount <= 0) {
+      await Swal.fire({ icon: 'warning', title: 'ยอดรับชำระต้องมากกว่า 0' })
+      return
+    }
+
+    try {
+      setSavingReceive(true)
+      await createPayment({
+        fee_id: targetFee.id,
+        house_id: targetFee.house_id,
+        amount,
+        payment_method: receiveForm.payment_method,
+        paid_at: receiveForm.paid_at,
+        note: receiveForm.note,
+      })
+      setShowReceiveModal(false)
+      await loadPayments()
+      await Swal.fire({ icon: 'success', title: 'บันทึกรับชำระแล้ว', timer: 1200, showConfirmButton: false })
+    } catch (error) {
+      await Swal.fire({ icon: 'error', title: 'รับชำระไม่สำเร็จ', text: error.message })
+    } finally {
+      setSavingReceive(false)
+    }
+  }
 
   const handleApprove = async (payment) => {
     const result = await Swal.fire({
@@ -340,6 +433,7 @@ export default function AdminPayments() {
         <div className="ch houses-list-head">
           <div className="ct">รายการชำระเงินทั้งหมด {filtered.length} รายการ</div>
           <div className="houses-list-actions">
+            <button className="btn btn-p btn-sm" onClick={openReceiveModal}>+ รับชำระ</button>
             <button className="btn btn-g btn-sm" onClick={loadPayments} disabled={loading}>🔄 รีเฟรช</button>
           </div>
         </div>
@@ -434,6 +528,79 @@ export default function AdminPayments() {
           </div>
         </div>
       </div>
+
+      {showReceiveModal && (
+        <div className="house-mo">
+          <div className="house-md house-md--md">
+            <div className="house-md-head">
+              <div>
+                <div className="house-md-title">💳 รับชำระค่าส่วนกลาง</div>
+                <div className="house-md-sub">บันทึกรายการรับชำระและส่งเข้ารอตรวจสอบ</div>
+              </div>
+            </div>
+            <form onSubmit={handleSubmitReceive}>
+              <div className="house-md-body">
+                <section className="house-sec">
+                  <div className="house-grid" style={{ gridTemplateColumns: '1fr' }}>
+                    <label className="house-field">
+                      <span>ใบแจ้งหนี้ *</span>
+                      <select value={receiveForm.fee_id} onChange={(e) => handleChangeReceiveFee(e.target.value)}>
+                        {feeOptions.map((fee) => (
+                          <option key={fee.id} value={fee.id}>
+                            {fee.houses?.house_no || '-'} · {formatPeriod(fee.period)} {fee.year} · ฿{Number(fee.total_amount || 0).toLocaleString('th-TH')}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                    <label className="house-field">
+                      <span>ยอดรับชำระ *</span>
+                      <input
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        value={receiveForm.amount}
+                        onChange={(e) => setReceiveForm((prev) => ({ ...prev, amount: e.target.value }))}
+                      />
+                    </label>
+                    <label className="house-field">
+                      <span>วิธีชำระ *</span>
+                      <select
+                        value={receiveForm.payment_method}
+                        onChange={(e) => setReceiveForm((prev) => ({ ...prev, payment_method: e.target.value }))}
+                      >
+                        <option value="transfer">โอนเงิน</option>
+                        <option value="cash">เงินสด</option>
+                        <option value="qr">QR</option>
+                      </select>
+                    </label>
+                    <label className="house-field">
+                      <span>วันเวลา *</span>
+                      <input
+                        type="datetime-local"
+                        value={receiveForm.paid_at}
+                        onChange={(e) => setReceiveForm((prev) => ({ ...prev, paid_at: e.target.value }))}
+                      />
+                    </label>
+                    <label className="house-field">
+                      <span>หมายเหตุ</span>
+                      <textarea
+                        rows="3"
+                        value={receiveForm.note}
+                        onChange={(e) => setReceiveForm((prev) => ({ ...prev, note: e.target.value }))}
+                        placeholder="รายละเอียดเพิ่มเติม"
+                      />
+                    </label>
+                  </div>
+                </section>
+              </div>
+              <div className="house-md-foot">
+                <button className="btn btn-g" type="button" onClick={() => setShowReceiveModal(false)} disabled={savingReceive}>ยกเลิก</button>
+                <button className="btn btn-p" type="submit" disabled={savingReceive}>{savingReceive ? 'กำลังบันทึก...' : 'บันทึกรับชำระ'}</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

@@ -594,7 +594,6 @@ const AdminFees = () => {
                           <td>
                             <div className="td-acts">
                               <button className="btn btn-xs btn-a" onClick={() => handleEditFee(fee)}>แก้ไข</button>
-                              {!isFeeFullyPaid(fee) && <button className="btn btn-xs btn-p" onClick={() => handleAddPayment(fee)}>รับชำระ</button>}
                               {!isFeeFullyPaid(fee) && <button className="btn btn-xs btn-o" onClick={() => handleCalculateAnnual(fee)}>คำนวณทั้งปี</button>}
                               {!isFeeFullyPaid(fee) && <button className="btn btn-xs btn-dg" onClick={() => handleCalculateOverdue(fee)}>คำนวณค่าปรับ</button>}
                               <button className="btn btn-xs btn-dg" onClick={() => handleDeleteFee(fee)}>ลบ</button>
@@ -629,7 +628,6 @@ const AdminFees = () => {
                   </div>
                   <div className="mcard-actions">
                     <button className="btn btn-xs btn-a" onClick={() => handleEditFee(fee)}>แก้ไข</button>
-                    {!isFeeFullyPaid(fee) && <button className="btn btn-xs btn-p" onClick={() => handleAddPayment(fee)}>รับชำระ</button>}
                     {!isFeeFullyPaid(fee) && <button className="btn btn-xs btn-o" onClick={() => handleCalculateAnnual(fee)}>ทั้งปี</button>}
                     {!isFeeFullyPaid(fee) && <button className="btn btn-xs btn-dg" onClick={() => handleCalculateOverdue(fee)}>ค่าปรับ</button>}
                     <button className="btn btn-xs btn-dg" onClick={() => handleDeleteFee(fee)}>ลบ</button>
@@ -697,7 +695,7 @@ const AdminFees = () => {
 
       {showEditModal && editingFee && (
         <div className="house-mo">
-          <div className="house-md house-md--lg">
+          <div className="house-md house-md--md">
             <div className="house-md-head">
               <div>
                 <div className="house-md-title">🧾 แก้ไขใบแจ้งหนี้</div>
@@ -933,7 +931,7 @@ const AdminFees = () => {
 
       {showProcessModal && (
         <div className="house-mo">
-          <div className="house-md house-md--sm">
+          <div className="house-md house-md--xs">
             <div className="house-md-head">
               <div>
                 <div className="house-md-title">🧾 สร้างใบแจ้งหนี้ทุกหลัง</div>
@@ -944,7 +942,7 @@ const AdminFees = () => {
             <form onSubmit={handleProcessAll}>
               <div className="house-md-body">
                 <section className="house-sec">
-                  <div className="house-grid" style={{ gridTemplateColumns: '1fr 1fr' }}>
+                  <div className="house-grid" style={{ gridTemplateColumns: '1fr' }}>
                     <label className="house-field">
                       <span>ปี (พ.ศ.) *</span>
                       <input
