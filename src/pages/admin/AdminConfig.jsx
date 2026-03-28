@@ -324,14 +324,14 @@ const AdminConfig = () => {
   }
 
   return (
-    <div className="pane on" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+    <div className="pane on page-compact" style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
       <div className="ph">
         <div className="ph-in">
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
             <div className="ph-ico">⚙️</div>
             <div>
               <div className="ph-h1">Config ระบบ</div>
-              <div className="ph-sub">ตั้งค่าการทำงานของระบบ</div>
+              <div className="ph-sub">ตั้งค่าหลักของโครงการและการคำนวณ</div>
             </div>
           </div>
         </div>
@@ -339,13 +339,13 @@ const AdminConfig = () => {
 
       <div className="card">
         <div className="ch"><div className="ct">ตั้งค่าระบบ (system_config)</div></div>
-        <div className="cb">
+        <div className="cb" style={{ maxWidth: '1080px', margin: '0 auto', width: '100%' }}>
           {loading ? (
             <div style={{ color: 'var(--mu)' }}>กำลังโหลดข้อมูล...</div>
           ) : (
             <>
-              <div className="house-sec" style={{ paddingTop: 0 }}>
-                <div className="house-sec-title">1) ข้อมูลนิติบุคคล</div>
+              <div className="house-sec" style={{ paddingTop: 0, paddingBottom: 10 }}>
+                <div className="house-sec-title">ข้อมูลนิติบุคคล</div>
                 <div className="house-grid house-grid-3">
                   <label className="house-field">
                     <span>ชื่อหมู่บ้าน</span>
@@ -367,36 +367,41 @@ const AdminConfig = () => {
                     <span>อีเมลนิติบุคคล</span>
                     <input name="juristic_email" value={form.juristic_email || ''} onChange={handleChange} />
                   </label>
-                  <div className="house-field house-field-span-3">
-                    <span>โลโก้สำหรับหน้า Login (PNG/JPG ไม่เกิน 50KB)</span>
-                    <input type="file" accept="image/png,image/jpeg,image/webp" onChange={handleLogoFile} />
-                    <div style={{ marginTop: '8px', display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
-                      {logoPreviewUrl ? (
-                        <>
-                          <div style={{ width: '96px', height: '96px', border: '1px solid var(--bo)', borderRadius: '50%', background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
-                            <img src={logoPreviewUrl} alt="login-logo" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                          </div>
-                          <button type="button" className="btn btn-xs btn-dg" onClick={handleRemoveLogo}>ลบโลโก้</button>
-                        </>
-                      ) : (
-                        <div style={{ fontSize: '12px', color: 'var(--mu)' }}>ยังไม่มีโลโก้สำหรับหน้า Login</div>
-                      )}
-                    </div>
-                  </div>
-                  <div className="house-field house-field-span-3">
-                    <span>ลายเซ็นนิติ (PNG/JPG)</span>
-                    <input type="file" accept="image/png,image/jpeg,image/webp" onChange={handleSignatureFile} />
-                    <div style={{ marginTop: '8px', display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
-                      {signaturePreviewUrl ? (
-                        <>
-                          <div style={{ width: '220px', height: '72px', border: '1px solid var(--bo)', borderRadius: '8px', background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
-                            <img src={signaturePreviewUrl} alt="juristic-signature" style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />
-                          </div>
-                          <button type="button" className="btn btn-xs btn-dg" onClick={handleRemoveSignature}>ลบลายเซ็น</button>
-                        </>
-                      ) : (
-                        <div style={{ fontSize: '12px', color: 'var(--mu)' }}>ยังไม่มีลายเซ็นที่อัปโหลด</div>
-                      )}
+                  <div className="house-field house-field-span-3" style={{ padding: 0, border: 0, background: 'transparent' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 10 }}>
+                      <div style={{ border: '1px solid var(--bo)', borderRadius: 12, padding: 10, background: '#fff' }}>
+                        <span style={{ display: 'block', marginBottom: 6 }}>โลโก้หน้า Login (PNG/JPG ≤ 50KB)</span>
+                        <input type="file" accept="image/png,image/jpeg,image/webp" onChange={handleLogoFile} />
+                        <div style={{ marginTop: 8, display: 'flex', alignItems: 'center', gap: 8, minHeight: 44 }}>
+                          {logoPreviewUrl ? (
+                            <>
+                              <div style={{ width: 44, height: 44, border: '1px solid var(--bo)', borderRadius: 10, background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
+                                <img src={logoPreviewUrl} alt="login-logo" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                              </div>
+                              <button type="button" className="btn btn-xs btn-dg" onClick={handleRemoveLogo}>ลบโลโก้</button>
+                            </>
+                          ) : (
+                            <div style={{ fontSize: 12, color: 'var(--mu)' }}>ยังไม่มีโลโก้</div>
+                          )}
+                        </div>
+                      </div>
+
+                      <div style={{ border: '1px solid var(--bo)', borderRadius: 12, padding: 10, background: '#fff' }}>
+                        <span style={{ display: 'block', marginBottom: 6 }}>ลายเซ็นนิติ (PNG/JPG)</span>
+                        <input type="file" accept="image/png,image/jpeg,image/webp" onChange={handleSignatureFile} />
+                        <div style={{ marginTop: 8, display: 'flex', alignItems: 'center', gap: 8, minHeight: 44 }}>
+                          {signaturePreviewUrl ? (
+                            <>
+                              <div style={{ width: 120, height: 38, border: '1px solid var(--bo)', borderRadius: 8, background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
+                                <img src={signaturePreviewUrl} alt="juristic-signature" style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />
+                              </div>
+                              <button type="button" className="btn btn-xs btn-dg" onClick={handleRemoveSignature}>ลบลายเซ็น</button>
+                            </>
+                          ) : (
+                            <div style={{ fontSize: 12, color: 'var(--mu)' }}>ยังไม่มีลายเซ็น</div>
+                          )}
+                        </div>
+                      </div>
                     </div>
                   </div>
                   <label className="house-field">
@@ -414,8 +419,8 @@ const AdminConfig = () => {
                 </div>
               </div>
 
-              <div className="house-sec">
-                <div className="house-sec-title">2) การคำนวณค่าส่วนกลาง</div>
+              <div className="house-sec" style={{ paddingTop: 10, paddingBottom: 10 }}>
+                <div className="house-sec-title">การคำนวณค่าส่วนกลาง</div>
                 <div className="house-grid house-grid-3">
                   <label className="house-field"><span>อัตราค่าส่วนกลาง/ตร.ว.</span><input type="number" name="fee_rate_per_sqw" value={form.fee_rate_per_sqw ?? ''} onChange={handleChange} /></label>
                   <label className="house-field"><span>รอบเก็บ/ปี</span><input type="number" name="fee_periods_per_year" value={form.fee_periods_per_year ?? ''} onChange={handleChange} /></label>
@@ -433,8 +438,8 @@ const AdminConfig = () => {
                 </div>
               </div>
 
-              <div className="house-sec">
-                <div className="house-sec-title">3) โซน / เฟส</div>
+              <div className="house-sec" style={{ paddingTop: 10, paddingBottom: 10 }}>
+                <div className="house-sec-title">โซน / เฟส</div>
                 <div className="house-grid house-grid-3">
                   <label className="house-field"><span>จำนวนโซน</span><input type="number" name="zone_count" value={form.zone_count ?? ''} onChange={handleChange} /></label>
                   <label className="house-field"><span>จำนวนบ้านทั้งหมด</span><input type="number" name="total_houses" value={form.total_houses ?? ''} onChange={handleChange} /></label>
@@ -442,8 +447,8 @@ const AdminConfig = () => {
                 </div>
               </div>
 
-              <div className="house-sec" style={{ borderBottom: 0, paddingBottom: 0 }}>
-                <div className="house-sec-title">4) ตั้งค่าระบบ</div>
+              <div className="house-sec" style={{ borderBottom: 0, paddingTop: 10, paddingBottom: 0 }}>
+                <div className="house-sec-title">ตั้งค่าระบบ</div>
                 <div className="house-grid house-grid-3">
                   <label className="house-field">
                     <span>รูปแบบวันที่</span>
@@ -468,7 +473,7 @@ const AdminConfig = () => {
                 </div>
               </div>
 
-              <div style={{ marginTop: '16px', display: 'flex', justifyContent: 'flex-end' }}>
+              <div style={{ marginTop: 10, display: 'flex', justifyContent: 'flex-end' }}>
                 <button className="btn btn-p" onClick={handleSave} disabled={saving}>
                   {saving ? 'กำลังบันทึก...' : 'บันทึกการตั้งค่า'}
                 </button>
