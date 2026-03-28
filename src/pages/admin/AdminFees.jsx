@@ -819,20 +819,19 @@ const AdminFees = () => {
           <style>
             /* Setting page margin to 0 removes browser-injected header (date/title) and footer (URL/page no.).
                Body padding compensates so content is not flush against paper edges. */
-            @page { size: A4; margin: 0; }
+            @page { size: A4; margin: 10mm 12mm; }
             * { box-sizing: border-box; }
-            body { font-family: 'Sarabun', 'TH Sarabun New', Tahoma, sans-serif; margin: 0; padding: 5mm; color: #111827; background: #fff; }
+            body { font-family: 'Sarabun', 'TH Sarabun New', Tahoma, sans-serif; margin: 0; padding: 0; color: #111827; background: #fff; }
             .sheet {
               position: relative;
-              width: 210mm;
-              height: 297mm;
-              margin: 0 auto;
+              width: 100%;
               background: #fff;
-              padding: 10mm 10mm;
+              padding: 0;
               display: flex;
               flex-direction: column;
               gap: 8px;
-              overflow: hidden;
+              page-break-after: always;
+              break-after: page;
             }
             .page-break { }
             .head {
@@ -862,24 +861,23 @@ const AdminFees = () => {
               display: flex;
               gap: 6px;
               justify-content: flex-end;
-              margin-top: 4px;
+              margin-top: 10px;
+              margin-right: -4px;
             }
             .copy-mark {
-              min-width: 92px;
-              border: 1px solid #cbd5e1;
-              border-radius: 999px;
-              padding: 4px 10px;
+              border: none;
+              border-radius: 6px;
+              padding: 4px 12px;
               text-align: center;
-              font-size: 16px;
+              font-size: 15px;
               font-weight: 700;
-              line-height: 1;
+              line-height: 1.2;
               color: #94a3b8;
-              background: #f8fafc;
+              background: transparent;
             }
             .copy-mark--active {
-              border-color: #0c4a6e;
               color: #0c4a6e;
-              background: #eff6ff;
+              background: #dbeafe;
             }
             .box { border: 1px solid #cbd5e1; border-radius: 4px; padding: 10px 12px; }
             .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 10px; word-break: break-word; }
@@ -927,9 +925,9 @@ const AdminFees = () => {
             .sign-wrap img { max-width: 100px; max-height: 36px; object-fit: contain; margin-bottom: 4px; }
             .sign-line { border-top: 1px solid #cbd5e1; margin: 4px 0; }
             @media print {
-              body { background: #fff; margin: 0; padding: 0; }
-              .sheet { margin: 0; box-shadow: none; page-break-after: always; }
-              .sheet:last-child { page-break-after: avoid; }
+              body { background: #fff; }
+              .sheet { page-break-after: always; break-after: page; }
+              .sheet:last-child { page-break-after: avoid; break-after: avoid; }
             }
           </style>
         </head>
@@ -1271,11 +1269,11 @@ const AdminFees = () => {
         </div>
       </div>
 
-      <div className="stats" style={{ gap: '12px' }}>
-        <div className="sc sc-sm" style={{ padding: '12px', flexDirection: 'row', alignItems: 'center', gap: '10px' }}><div className="sc-ico p" style={{ fontSize: '24px' }}>🧾</div><div><div className="sc-v" style={{ fontSize: '14px' }}>{summary.totalInvoiced.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div><div className="sc-l" style={{ fontSize: '11px' }}>ยอดออกใบแจ้งหนี้</div></div></div>
-        <div className="sc sc-sm" style={{ padding: '12px', flexDirection: 'row', alignItems: 'center', gap: '10px' }}><div className="sc-ico a" style={{ fontSize: '24px' }}>✅</div><div><div className="sc-v" style={{ fontSize: '14px' }}>{summary.totalCollected.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div><div className="sc-l" style={{ fontSize: '11px' }}>ยอดชำระแล้ว</div></div></div>
-        <div className="sc sc-sm" style={{ padding: '12px', flexDirection: 'row', alignItems: 'center', gap: '10px' }}><div className="sc-ico d" style={{ fontSize: '24px' }}>⏳</div><div><div className="sc-v" style={{ fontSize: '14px' }}>{summary.totalOutstanding.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div><div className="sc-l" style={{ fontSize: '11px' }}>ยอดค้างชำระ</div></div></div>
-        <div className="sc sc-sm" style={{ padding: '12px', flexDirection: 'row', alignItems: 'center', gap: '10px' }}><div className="sc-ico r" style={{ fontSize: '24px' }}>📊</div><div><div className="sc-v" style={{ fontSize: '14px', fontWeight: '700' }}>{summary.totalInvoiced > 0 ? `${((summary.totalCollected / summary.totalInvoiced) * 100).toFixed(1)}%` : '0%'}</div><div className="sc-l" style={{ fontSize: '11px' }}>% ที่ชำระแล้ว</div></div></div>
+      <div className="stats" style={{ gap: '8px' }}>
+        <div className="sc" style={{ display: 'flex', padding: '8px 10px', flexDirection: 'row', alignItems: 'center', gap: '8px' }}><div className="sc-ico p" style={{ width: '28px', height: '28px', minWidth: '28px', fontSize: '16px', marginBottom: 0 }}>🧾</div><div><div className="sc-v" style={{ fontSize: '12px', fontWeight: 700 }}>{summary.totalInvoiced.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div><div className="sc-l" style={{ fontSize: '10px', marginTop: '1px' }}>ยอดออกใบแจ้งหนี้</div></div></div>
+        <div className="sc" style={{ display: 'flex', padding: '8px 10px', flexDirection: 'row', alignItems: 'center', gap: '8px' }}><div className="sc-ico a" style={{ width: '28px', height: '28px', minWidth: '28px', fontSize: '16px', marginBottom: 0 }}>✅</div><div><div className="sc-v" style={{ fontSize: '12px', fontWeight: 700 }}>{summary.totalCollected.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div><div className="sc-l" style={{ fontSize: '10px', marginTop: '1px' }}>ยอดชำระแล้ว</div></div></div>
+        <div className="sc" style={{ display: 'flex', padding: '8px 10px', flexDirection: 'row', alignItems: 'center', gap: '8px' }}><div className="sc-ico d" style={{ width: '28px', height: '28px', minWidth: '28px', fontSize: '16px', marginBottom: 0 }}>⏳</div><div><div className="sc-v" style={{ fontSize: '12px', fontWeight: 700 }}>{summary.totalOutstanding.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div><div className="sc-l" style={{ fontSize: '10px', marginTop: '1px' }}>ยอดค้างชำระ</div></div></div>
+        <div className="sc" style={{ display: 'flex', padding: '8px 10px', flexDirection: 'row', alignItems: 'center', gap: '8px' }}><div className="sc-ico p" style={{ width: '28px', height: '28px', minWidth: '28px', fontSize: '16px', marginBottom: 0 }}>📊</div><div><div className="sc-v" style={{ fontSize: '12px', fontWeight: 700 }}>{summary.totalInvoiced > 0 ? `${((summary.totalCollected / summary.totalInvoiced) * 100).toFixed(1)}%` : '0%'}</div><div className="sc-l" style={{ fontSize: '10px', marginTop: '1px' }}>% ที่ชำระแล้ว</div></div></div>
       </div>
 
       <div className="card">
