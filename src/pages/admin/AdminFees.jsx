@@ -149,13 +149,13 @@ const AdminFees = () => {
   const yearOptions = useMemo(() => (feeYears.length > 0 ? feeYears : [currentFeeYear]), [feeYears, currentFeeYear])
 
   const yearCards = useMemo(() => {
-    const latestYear = currentFeeYear
+    const currentYear = new Date().getFullYear()
     return [
-      { value: latestYear, label: toBE(latestYear) },
-      { value: latestYear - 1, label: toBE(latestYear - 1) },
-      { value: latestYear - 2, label: toBE(latestYear - 2) },
+      { value: currentYear, label: toBE(currentYear) },
+      { value: currentYear - 1, label: toBE(currentYear - 1) },
+      { value: currentYear - 2, label: toBE(currentYear - 2) },
     ]
-  }, [currentFeeYear])
+  }, [])
 
   const loadFeeData = async (override = {}) => {
     try {
@@ -1271,10 +1271,11 @@ const AdminFees = () => {
         </div>
       </div>
 
-      <div className="stats">
-        <div className="sc"><div className="sc-ico a">💵</div><div><div className="sc-v">{summary.totalCollected.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div><div className="sc-l">รวมเก็บแล้ว</div></div></div>
-        <div className="sc"><div className="sc-ico d">⏳</div><div><div className="sc-v">{summary.totalOutstanding.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div><div className="sc-l">ค้างชำระ</div></div></div>
-        <div className="sc"><div className="sc-ico p">🧾</div><div><div className="sc-v">{summary.totalInvoiced.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div><div className="sc-l">ยอดออกใบแจ้งหนี้</div></div></div>
+      <div className="stats" style={{ gap: '12px' }}>
+        <div className="sc sc-sm" style={{ padding: '12px', flexDirection: 'row', alignItems: 'center', gap: '10px' }}><div className="sc-ico p" style={{ fontSize: '24px' }}>🧾</div><div><div className="sc-v" style={{ fontSize: '14px' }}>{summary.totalInvoiced.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div><div className="sc-l" style={{ fontSize: '11px' }}>ยอดออกใบแจ้งหนี้</div></div></div>
+        <div className="sc sc-sm" style={{ padding: '12px', flexDirection: 'row', alignItems: 'center', gap: '10px' }}><div className="sc-ico a" style={{ fontSize: '24px' }}>✅</div><div><div className="sc-v" style={{ fontSize: '14px' }}>{summary.totalCollected.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div><div className="sc-l" style={{ fontSize: '11px' }}>ยอดชำระแล้ว</div></div></div>
+        <div className="sc sc-sm" style={{ padding: '12px', flexDirection: 'row', alignItems: 'center', gap: '10px' }}><div className="sc-ico d" style={{ fontSize: '24px' }}>⏳</div><div><div className="sc-v" style={{ fontSize: '14px' }}>{summary.totalOutstanding.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div><div className="sc-l" style={{ fontSize: '11px' }}>ยอดค้างชำระ</div></div></div>
+        <div className="sc sc-sm" style={{ padding: '12px', flexDirection: 'row', alignItems: 'center', gap: '10px' }}><div className="sc-ico r" style={{ fontSize: '24px' }}>📊</div><div><div className="sc-v" style={{ fontSize: '14px', fontWeight: '700' }}>{summary.totalInvoiced > 0 ? `${((summary.totalCollected / summary.totalInvoiced) * 100).toFixed(1)}%` : '0%'}</div><div className="sc-l" style={{ fontSize: '11px' }}>% ที่ชำระแล้ว</div></div></div>
       </div>
 
       <div className="card">
