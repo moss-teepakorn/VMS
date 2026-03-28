@@ -370,48 +370,185 @@ const AdminFees = () => {
     const w = window.open('', '_blank', 'width=1200,height=900')
     if (!w) return
 
-    const rows = targetFees.map((fee, idx) => `
-      <tr>
-        <td>${idx + 1}</td>
-        <td>${fee.houses?.house_no || '-'}</td>
-        <td>${fee.houses?.owner_name || '-'}</td>
-        <td>${periodLabel(fee.period)} ${toBE(fee.year)}</td>
-        <td>${fee.invoice_date ? new Date(fee.invoice_date).toLocaleDateString('th-TH') : '-'}</td>
-        <td>${fee.due_date ? new Date(fee.due_date).toLocaleDateString('th-TH') : '-'}</td>
-        <td style="text-align:right;">${Number(fee.total_amount || 0).toLocaleString('th-TH')}</td>
-      </tr>
-    `).join('')
+    const fmtDate = (value) => (value ? new Date(value).toLocaleDateString('th-TH') : '-')
+    const fmtMoney = (value) => Number(value || 0).toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+    const itemRows = (fee) => feeItemDefs
+      .map((item) => ({ ...item, amount: Number(fee[item.key] || 0) }))
+      .filter((item) => item.amount > 0)
+      .map((item, idx) => `
+        <tr>
+          <td class="c">${idx + 1}</td>
+          <td>${item.label}</td>
+          <td class="r">${fmtMoney(item.amount)}</td>
+        </tr>
+      `)
+      .join('') || `
+        <tr>
+          <td class="c">1</td>
+          <td>ค่าส่วนกลาง</td>
+          <td class="r">${fmtMoney(fee.total_amount || 0)}</td>
+        </tr>
+      `
+
+    const copies = ['ต้นฉบับ', 'สำเนา']
+    const totalPages = targetFees.length * copies.length
+    let pageCounter = 0
+    const invoiceBlocks = targetFees.map((fee) => {
+      const invoiceNo = `INV-${String(fee.year || '').slice(-2)}-${String(fee.id || '').slice(0, 8).toUpperCase()}`
+      const periodText = `${periodLabel(fee.period)} ปี ${toBE(fee.year)}`
+      return copies.map((copyType) => {
+        pageCounter += 1
+        const isLastPage = pageCounter === totalPages
+        return `
+          <section class="sheet ${isLastPage ? '' : 'page-break'}">
+            <header class="head">
+              <div>
+                <div class="doc">ใบแจ้งหนี้ค่าส่วนกลาง</div>
+                <div class="village">หมู่บ้านเดอะกรีนฟิลด์</div>
+                <div class="sub">${title}</div>
+              </div>
+              <div class="doc-meta">
+                <div><span>เลขที่เอกสาร:</span> <strong>${invoiceNo}</strong></div>
+                <div><span>วันที่ออกเอกสาร:</span> <strong>${fmtDate(fee.invoice_date)}</strong></div>
+                <div><span>ครบกำหนดชำระ:</span> <strong>${fmtDate(fee.due_date)}</strong></div>
+              </div>
+            </header>
+
+            <section class="box">
+              <div class="grid">
+                <div><span>บ้านเลขที่</span><strong>${fee.houses?.house_no || '-'}</strong></div>
+                <div><span>ชื่อเจ้าของบ้าน</span><strong>${fee.houses?.owner_name || '-'}</strong></div>
+                <div><span>งวดเรียกเก็บ</span><strong>${periodText}</strong></div>
+                <div><span>สถานะใบแจ้งหนี้</span><strong>${fee.status || '-'}</strong></div>
+              </div>
+            </section>
+
+            <section class="box">
+              <table>
+                <thead>
+                  <tr>
+                    <th class="c" style="width:56px;">ลำดับ</th>
+                    <th>รายการ</th>
+                    <th class="r" style="width:180px;">จำนวนเงิน (บาท)</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${itemRows(fee)}
+                </tbody>
+                <tfoot>
+                  <tr>
+                    <td colspan="2" class="r"><strong>รวมทั้งสิ้น</strong></td>
+                    <td class="r"><strong>${fmtMoney(fee.total_amount || 0)}</strong></td>
+                  </tr>
+                </tfoot>
+              </table>
+            </section>
+
+            <section class="foot">
+              <div class="note">
+                หมายเหตุ: กรุณาชำระภายในวันที่ครบกำหนด เพื่อหลีกเลี่ยงค่าปรับ/ค่าทวงถามเพิ่มเติม
+              </div>
+              <div class="sign-wrap">
+                <div class="line"></div>
+                <div>ผู้มีอำนาจลงนาม / นิติบุคคลหมู่บ้าน</div>
+              </div>
+            </section>
+
+            <div class="stamp">${copyType}</div>
+            <div class="page-no">หน้า ${pageCounter}/${totalPages}</div>
+          </section>
+        `
+      }).join('')
+    }).join('')
 
     w.document.write(`
       <html>
         <head>
           <title>${title}</title>
+          <link rel="preconnect" href="https://fonts.googleapis.com">
+          <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+          <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;700&display=swap" rel="stylesheet">
           <style>
-            body { font-family: Arial, sans-serif; padding: 20px; color: #111827; }
-            h1 { margin: 0 0 6px; font-size: 22px; }
-            .sub { color: #6b7280; font-size: 13px; margin-bottom: 16px; }
+            @page { size: A4; margin: 10mm; }
+            * { box-sizing: border-box; }
+            body { font-family: 'Sarabun', 'TH Sarabun New', Tahoma, sans-serif; margin: 0; color: #111827; background: #f8fafc; }
+            .sheet {
+              width: 210mm;
+              min-height: 297mm;
+              margin: 0 auto;
+              background: #fff;
+              padding: 12mm;
+              display: flex;
+              flex-direction: column;
+              gap: 12px;
+            }
+            .page-break { page-break-after: always; }
+            .head {
+              display: flex;
+              justify-content: space-between;
+              gap: 10px;
+              border: 1px solid #d1d5db;
+              border-radius: 10px;
+              padding: 12px;
+              background: linear-gradient(120deg, #f0fdfa 0%, #ffffff 70%);
+            }
+            .doc { font-size: 24px; font-weight: 700; }
+            .village { font-size: 16px; margin-top: 2px; }
+            .sub { font-size: 12px; color: #6b7280; margin-top: 4px; }
+            .doc-meta { font-size: 12px; min-width: 240px; display: flex; flex-direction: column; gap: 4px; }
+            .doc-meta span { color: #6b7280; }
+            .box { border: 1px solid #d1d5db; border-radius: 10px; padding: 10px; }
+            .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 14px; }
+            .grid > div { display: flex; flex-direction: column; gap: 2px; }
+            .grid span { font-size: 11px; color: #6b7280; }
+            .grid strong { font-size: 14px; }
             table { width: 100%; border-collapse: collapse; }
-            th, td { border: 1px solid #d1d5db; padding: 8px; font-size: 12px; }
+            th, td { border: 1px solid #d1d5db; padding: 8px 9px; font-size: 12px; }
             th { background: #f3f4f6; text-align: left; }
+            .c { text-align: center; }
+            .r { text-align: right; }
+            tfoot td { background: #f8fafc; }
+            .foot {
+              margin-top: auto;
+              border: 1px solid #d1d5db;
+              border-radius: 10px;
+              padding: 12px;
+              display: flex;
+              justify-content: space-between;
+              gap: 12px;
+              align-items: flex-end;
+            }
+            .note { font-size: 12px; color: #4b5563; }
+            .sign-wrap { min-width: 220px; text-align: center; font-size: 12px; color: #4b5563; }
+            .line { border-top: 1px solid #6b7280; margin-bottom: 6px; height: 46px; }
+            .stamp {
+              position: absolute;
+              top: 16mm;
+              right: 14mm;
+              font-size: 12px;
+              letter-spacing: .5px;
+              border: 1px solid #0f766e;
+              color: #0f766e;
+              padding: 2px 10px;
+              border-radius: 999px;
+              font-weight: 700;
+              background: #ffffff;
+            }
+            .page-no {
+              position: absolute;
+              bottom: 10mm;
+              right: 14mm;
+              font-size: 12px;
+              color: #6b7280;
+            }
+            @media print {
+              body { background: #fff; }
+              .sheet { margin: 0; box-shadow: none; }
+            }
           </style>
         </head>
         <body>
-          <h1>${title}</h1>
-          <div class="sub">พิมพ์เมื่อ ${new Date().toLocaleString('th-TH')}</div>
-          <table>
-            <thead>
-              <tr>
-                <th style="width:40px;">#</th>
-                <th style="width:90px;">บ้าน</th>
-                <th>เจ้าของ</th>
-                <th style="width:180px;">งวด/ปี</th>
-                <th style="width:120px;">วันที่ออก</th>
-                <th style="width:120px;">ครบกำหนด</th>
-                <th style="width:140px; text-align:right;">ยอดรวม (บาท)</th>
-              </tr>
-            </thead>
-            <tbody>${rows}</tbody>
-          </table>
+          ${invoiceBlocks}
           <script>window.onload = () => window.print();</script>
         </body>
       </html>
