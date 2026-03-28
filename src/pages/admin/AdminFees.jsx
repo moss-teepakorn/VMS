@@ -930,7 +930,7 @@ const AdminFees = () => {
             </div>
           </div>
         </div>
-        <div style={{ marginTop: '10px', display: 'flex', justifyContent: 'flex-end', gap: '8px', flexWrap: 'wrap' }}>
+        <div className="page-filter-row" style={{ justifyContent: 'flex-end' }}>
           <input
             className="page-filter-input"
             placeholder="ค้นหา ซอย / บ้านเลขที่ / เจ้าของ"
@@ -957,6 +957,7 @@ const AdminFees = () => {
             <option value="full_year">ทั้งปี</option>
           </select>
           <button
+            type="button"
             className="btn btn-a btn-sm page-filter-btn"
             onClick={() => {
               setSearchKeyword(searchInput.trim())
