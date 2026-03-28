@@ -38,6 +38,10 @@ const AdminFees = () => {
     village_name: 'The Greenfield',
     village_logo_url: '',
     juristic_name: 'นิติบุคคลหมู่บ้านเดอะกรีนฟิลด์',
+    bank_name: 'กสิกรไทย',
+    bank_account_no: '-',
+    bank_account_name: 'นิติบุคคลหมู่บ้าน เดอะกรีนฟิลด์',
+    invoice_message: 'กรุณาชำระภายในวันที่ครบกำหนด หากพ้นกำหนดจะมีค่าปรับตามประกาศนิติบุคคล',
     fee_rate_per_sqw: 85,
     waste_fee_per_period: 100,
     early_pay_discount_pct: 3,
@@ -376,8 +380,85 @@ const AdminFees = () => {
 
     const fmtDate = (value) => (value ? new Date(value).toLocaleDateString('th-TH') : '-')
     const fmtMoney = (value) => Number(value || 0).toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
-    const itemRows = (fee) => feeItemDefs
-      .map((item) => ({ ...item, amount: Number(fee[item.key] || 0) }))
+
+    const toThaiBahtText = (value) => {
+      const amount = Number(value || 0)
+      if (!Number.isFinite(amount) || amount < 0) return '-'
+      if (amount === 0) return 'ศูนย์บาทถ้วน'
+
+      const numberText = ['ศูนย์', 'หนึ่ง', 'สอง', 'สาม', 'สี่', 'ห้า', 'หก', 'เจ็ด', 'แปด', 'เก้า']
+      const positionText = ['', 'สิบ', 'ร้อย', 'พัน', 'หมื่น', 'แสน', 'ล้าน']
+
+      const convertInteger = (num) => {
+        if (num === 0) return ''
+        let result = ''
+        const digits = String(num).split('').map((d) => Number(d))
+        const len = digits.length
+
+        digits.forEach((digit, idx) => {
+          const pos = len - idx - 1
+          if (digit === 0) return
+
+          if (pos === 0 && digit === 1 && len > 1) {
+            result += 'เอ็ด'
+            return
+          }
+          if (pos === 1 && digit === 1) {
+            result += 'สิบ'
+            return
+          }
+          if (pos === 1 && digit === 2) {
+            result += 'ยี่สิบ'
+            return
+          }
+
+          result += `${numberText[digit]}${positionText[pos]}`
+        })
+
+        return result
+      }
+
+      const [intPartRaw, decPartRaw = '00'] = amount.toFixed(2).split('.')
+      let intPart = Number(intPartRaw)
+      const decPart = Number(decPartRaw)
+
+      const millionChunks = []
+      while (intPart > 0) {
+        millionChunks.unshift(intPart % 1000000)
+        intPart = Math.floor(intPart / 1000000)
+      }
+
+      const bahtText = millionChunks
+        .map((chunk, index) => {
+          const text = convertInteger(chunk)
+          if (!text) return ''
+          const isLast = index === millionChunks.length - 1
+          return isLast ? text : `${text}ล้าน`
+        })
+        .join('') || 'ศูนย์'
+
+      if (decPart === 0) return `${bahtText}บาทถ้วน`
+      return `${bahtText}บาท${convertInteger(decPart)}สตางค์`
+    }
+
+    const itemRows = (fee) => {
+      const fineAndNotice =
+        Number(fee.fee_overdue_fine || 0)
+        + Number(fee.fee_overdue_notice || 0)
+        + Number(fee.fee_fine || 0)
+        + Number(fee.fee_notice || 0)
+
+      const printItems = [
+        { label: 'ค่าส่วนกลาง', amount: Number(fee.fee_common || 0) },
+        { label: 'ค่าจอดรถ', amount: Number(fee.fee_parking || 0) },
+        { label: 'ค่าขยะ', amount: Number(fee.fee_waste || 0) },
+        { label: 'ยอดค้างยกมา', amount: Number(fee.fee_overdue_common || 0) },
+        { label: 'ค่าปรับและค่าทวงถาม', amount: fineAndNotice },
+        { label: 'ค่ากระทำผิด', amount: Number(fee.fee_violation || 0) },
+        { label: 'ค่าอื่นๆ', amount: Number(fee.fee_other || 0) },
+      ]
+
+      return printItems
       .map((item, idx) => `
         <tr>
           <td class="c">${idx + 1}</td>
@@ -386,6 +467,7 @@ const AdminFees = () => {
         </tr>
       `)
       .join('')
+    }
 
     const copies = ['ต้นฉบับ', 'สำเนา']
     const totalPages = targetFees.length * copies.length
@@ -444,6 +526,18 @@ const AdminFees = () => {
                   </tr>
                 </tfoot>
               </table>
+              <div class="amount-text">(${toThaiBahtText(fee.total_amount || 0)})</div>
+            </section>
+
+            <section class="box payment-box">
+              <div class="payment-title">รายละเอียดการชำระเงิน</div>
+              <div class="payment-grid">
+                <div><span>ธนาคาร</span><strong>${setup.bank_name || '-'}</strong></div>
+                <div><span>เลขที่บัญชี</span><strong>${setup.bank_account_no || '-'}</strong></div>
+                <div><span>ชื่อบัญชี</span><strong>${setup.bank_account_name || '-'}</strong></div>
+                <div><span>กำหนดชำระ</span><strong>${fmtDate(fee.due_date)}</strong></div>
+              </div>
+              <div class="payment-note">${setup.invoice_message || 'กรุณาแนบหลักฐานการโอนทุกครั้งหลังชำระ'}</div>
             </section>
 
             <section class="foot">
@@ -519,6 +613,25 @@ const AdminFees = () => {
             .c { text-align: center; }
             .r { text-align: right; }
             tfoot td { background: #f8fafc; }
+            .amount-text {
+              margin-top: 8px;
+              font-size: 13px;
+              color: #374151;
+              font-weight: 500;
+              text-align: right;
+            }
+            .payment-box { display: flex; flex-direction: column; gap: 8px; }
+            .payment-title { font-size: 14px; font-weight: 700; color: #111827; }
+            .payment-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 14px; }
+            .payment-grid > div { display: flex; flex-direction: column; gap: 2px; }
+            .payment-grid span { font-size: 11px; color: #6b7280; }
+            .payment-grid strong { font-size: 13px; }
+            .payment-note {
+              border-top: 1px dashed #d1d5db;
+              padding-top: 8px;
+              font-size: 12px;
+              color: #4b5563;
+            }
             .foot {
               margin-top: auto;
               border: 1px solid #d1d5db;
