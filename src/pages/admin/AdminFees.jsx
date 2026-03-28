@@ -30,6 +30,13 @@ function toBE(yearCE) {
   return year + 543
 }
 
+const houseSorter = new Intl.Collator('th-TH', { numeric: true, sensitivity: 'base' })
+
+function normalizeSoiValue(soi) {
+  const numeric = Number.parseInt(String(soi || '').replace(/[^0-9]/g, ''), 10)
+  return Number.isNaN(numeric) ? Number.MAX_SAFE_INTEGER : numeric
+}
+
 const AdminFees = () => {
   const [fees, setFees] = useState([])
   const [payments, setPayments] = useState([])
@@ -52,6 +59,8 @@ const AdminFees = () => {
   const [statusFilter, setStatusFilter] = useState('all')
   const [yearFilter, setYearFilter] = useState('all')
   const [periodFilter, setPeriodFilter] = useState('all')
+  const [searchInput, setSearchInput] = useState('')
+  const [searchKeyword, setSearchKeyword] = useState('')
   const [loading, setLoading] = useState(false)
   const [showProcessModal, setShowProcessModal] = useState(false)
   const [processing, setProcessing] = useState(false)
@@ -138,7 +147,13 @@ const AdminFees = () => {
         })
         : feeData
 
-      setFees(filteredFees)
+      const sortedFees = [...filteredFees].sort((left, right) => {
+        const soiCompare = normalizeSoiValue(left?.houses?.soi) - normalizeSoiValue(right?.houses?.soi)
+        if (soiCompare !== 0) return soiCompare
+        return houseSorter.compare(left?.houses?.house_no || '', right?.houses?.house_no || '')
+      })
+
+      setFees(sortedFees)
       setPayments(paymentData)
       setHouses(houseData)
     } catch (error) {
@@ -155,6 +170,18 @@ const AdminFees = () => {
   }, [])
 
   const summary = useMemo(() => summarizeFees(fees, payments), [fees, payments])
+
+  const displayFees = useMemo(() => {
+    const keyword = searchKeyword.trim().toLowerCase()
+    if (!keyword) return fees
+    return fees.filter((fee) => {
+      const houseNo = String(fee?.houses?.house_no || '').toLowerCase()
+      const ownerName = String(fee?.houses?.owner_name || '').toLowerCase()
+      const soi = String(fee?.houses?.soi || '').toLowerCase()
+      const period = String(periodLabel(fee?.period || '')).toLowerCase()
+      return houseNo.includes(keyword) || ownerName.includes(keyword) || soi.includes(keyword) || period.includes(keyword)
+    })
+  }, [fees, searchKeyword])
 
   const getApprovedAmountForFee = (fee) => Number(feeApprovedTotals[fee?.id] || 0)
   const getSubmittedAmountForFee = (fee) => Number(feeSubmittedTotals[fee?.id] || 0)
@@ -475,7 +502,7 @@ const AdminFees = () => {
       const invoiceNo = `INV-${String(fee.year || '').slice(-2)}-${String(fee.id || '').slice(0, 8).toUpperCase()}`
       const periodText = `${periodLabel(fee.period)} ปี ${toBE(fee.year)}`
       return copies.map((copyType) => {
-        const logoUrl = setup.village_logo_url || villageLogo
+        const logoUrl = setup.village_logo_url || localStorage.getItem('vms-login-circle-logo-url') || villageLogo
         return `
           <section class="sheet page-break">
             <header class="head">
@@ -501,7 +528,7 @@ const AdminFees = () => {
                 <div><span>บ้านเลขที่</span><strong>${fee.houses?.house_no || '-'}</strong></div>
                 <div><span>ชื่อเจ้าของบ้าน</span><strong>${fee.houses?.owner_name || '-'}</strong></div>
                 <div><span>งวดเรียกเก็บ</span><strong>${periodText}</strong></div>
-                <div><span>สถานะใบแจ้งหนี้</span><strong>${fee.status || '-'}</strong></div>
+                <div><span>ซอย</span><strong>${fee.houses?.soi || '-'}</strong></div>
               </div>
             </section>
 
@@ -553,7 +580,7 @@ const AdminFees = () => {
     w.document.write(`
       <html>
         <head>
-          <title>${title}</title>
+          <title></title>
           <link rel="preconnect" href="https://fonts.googleapis.com">
           <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
           <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;700&display=swap" rel="stylesheet">
@@ -657,7 +684,6 @@ const AdminFees = () => {
         <body>
           ${invoiceBlocks}
           <script>
-            try { window.history.replaceState({}, '', '${window.location.origin}/invoice-print'); } catch (e) {}
             window.onload = () => window.print();
           </script>
         </body>
@@ -667,7 +693,7 @@ const AdminFees = () => {
   }
 
   const handlePrintInvoicesAll = () => {
-    handlePrintInvoices(fees, 'ใบแจ้งหนี้ทั้งหมด')
+    handlePrintInvoices(displayFees, 'ใบแจ้งหนี้ทั้งหมด')
   }
 
   const handlePrintInvoiceByHouse = (fee) => {
@@ -846,7 +872,13 @@ const AdminFees = () => {
       <div className="ph">
         <div className="ph-in">
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <div className="ph-ico">💰</div>
+            <div className="ph-ico">
+              <img
+                className="ph-ico-img"
+                src={setup.village_logo_url || localStorage.getItem('vms-login-circle-logo-url') || villageLogo}
+                alt="village-logo"
+              />
+            </div>
             <div>
               <div className="ph-h1">ค่าส่วนกลาง</div>
               <div className="ph-sub">ออกใบแจ้งหนี้ทุกหลังจาก setup ระบบ และจัดการรายหลัง</div>
@@ -854,6 +886,13 @@ const AdminFees = () => {
           </div>
         </div>
         <div style={{ marginTop: '10px', display: 'flex', justifyContent: 'flex-end', gap: '8px', flexWrap: 'wrap' }}>
+          <input
+            className="page-filter-input"
+            placeholder="ค้นหา ซอย / บ้านเลขที่ / เจ้าของ"
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
+            style={{ minWidth: 240 }}
+          />
           <select className="page-filter-select" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
             <option value="all">ทุกสถานะ</option>
             <option value="unpaid">ยังไม่ชำระ</option>
@@ -872,7 +911,15 @@ const AdminFees = () => {
             <option value="second_half">ครึ่งปีหลัง</option>
             <option value="full_year">ทั้งปี</option>
           </select>
-          <button className="btn btn-a btn-sm page-filter-btn" onClick={() => loadFeeData({ status: statusFilter, year: yearFilter, period: periodFilter })}>ค้นหา</button>
+          <button
+            className="btn btn-a btn-sm page-filter-btn"
+            onClick={() => {
+              setSearchKeyword(searchInput.trim())
+              loadFeeData({ status: statusFilter, year: yearFilter, period: periodFilter })
+            }}
+          >
+            ค้นหา
+          </button>
         </div>
       </div>
 
@@ -884,7 +931,7 @@ const AdminFees = () => {
 
       <div className="card">
         <div className="ch page-list-head">
-          <div className="ct">ใบแจ้งหนี้ล่าสุด</div>
+          <div className="ct">ใบแจ้งหนี้ล่าสุด ({displayFees.length})</div>
           <div className="page-list-actions">
             <button className="btn btn-p btn-sm" onClick={handleOpenProcessModal}>+ สร้างใบแจ้งหนี้</button>
             <button className="btn btn-a btn-sm" onClick={handlePrintInvoicesAll}>🖨 พิมพ์ใบแจ้งหนี้ทั้งหมด</button>
@@ -898,6 +945,7 @@ const AdminFees = () => {
               <table className="tw" style={{ width: '100%', minWidth: '1180px' }}>
                 <thead>
                   <tr>
+                    <th>ซอย</th>
                     <th>บ้าน</th>
                     <th>ปี</th>
                     <th>งวด</th>
@@ -905,20 +953,21 @@ const AdminFees = () => {
                     <th>ยอดรวม</th>
                     <th>ยอดค้างชำระ</th>
                     <th>สถานะ</th>
-                    <th></th>
+                    <th style={{ textAlign: 'right' }}>จัดการ</th>
                   </tr>
                 </thead>
                 <tbody>
                   {loading ? (
-                    <tr><td colSpan="8" style={{ textAlign: 'center', color: 'var(--mu)', padding: '20px' }}>กำลังโหลดข้อมูล...</td></tr>
-                  ) : fees.length === 0 ? (
-                    <tr><td colSpan="8" style={{ textAlign: 'center', color: 'var(--mu)', padding: '20px' }}>ยังไม่มีใบแจ้งหนี้</td></tr>
+                    <tr><td colSpan="9" style={{ textAlign: 'center', color: 'var(--mu)', padding: '20px' }}>กำลังโหลดข้อมูล...</td></tr>
+                  ) : displayFees.length === 0 ? (
+                    <tr><td colSpan="9" style={{ textAlign: 'center', color: 'var(--mu)', padding: '20px' }}>ไม่พบข้อมูลตามเงื่อนไขค้นหา</td></tr>
                   ) : (
-                    fees.map((fee) => {
+                    displayFees.map((fee) => {
                       const badge = getFeeStatusBadge(fee)
                       const outstanding = getOutstandingAmountForFee(fee)
                       return (
                         <tr key={fee.id}>
+                          <td>{fee.houses?.soi || '-'}</td>
                           <td>{fee.houses?.house_no || '-'}<div style={{ fontSize: '11px', color: 'var(--mu)' }}>{fee.houses?.owner_name || '-'}</div></td>
                           <td>{toBE(fee.year)}</td>
                           <td>{periodLabel(fee.period)}</td>
@@ -927,7 +976,7 @@ const AdminFees = () => {
                           <td><strong style={{ color: outstanding > 0 ? '#9a3412' : '#166534' }}>฿{outstanding.toLocaleString('th-TH')}</strong></td>
                           <td><span className={badge.className}>{badge.label}</span></td>
                           <td>
-                            <div className="td-acts">
+                            <div className="td-acts" style={{ justifyContent: 'flex-end' }}>
                               <button className="btn btn-xs btn-a" onClick={() => handleEditFee(fee)}>แก้ไข</button>
                               <button className="btn btn-xs btn-g" onClick={() => handlePrintInvoiceByHouse(fee)}>พิมพ์</button>
                               {!isFeeFullyPaid(fee) && <button className="btn btn-xs btn-o" onClick={() => handleCalculateAnnual(fee)}>คำนวณทั้งปี</button>}
@@ -946,16 +995,16 @@ const AdminFees = () => {
           <div className="mobile-only">
             {loading ? (
               <div className="mcard-empty">กำลังโหลดข้อมูล...</div>
-            ) : fees.length === 0 ? (
+            ) : displayFees.length === 0 ? (
               <div className="mcard-empty">ยังไม่มีใบแจ้งหนี้</div>
-            ) : fees.map((fee) => {
+            ) : displayFees.map((fee) => {
               const badge = getFeeStatusBadge(fee)
               const outstanding = getOutstandingAmountForFee(fee)
               return (
                 <div key={fee.id} className="mcard">
                   <div className="mcard-top">
                     <div className="mcard-title">{fee.houses?.house_no || '-'}</div>
-                    <div className="mcard-sub">{toBE(fee.year)} · {periodLabel(fee.period)}</div>
+                    <div className="mcard-sub">ซอย {fee.houses?.soi || '-'} · {toBE(fee.year)} · {periodLabel(fee.period)}</div>
                     <span className={`${badge.className} mcard-badge`}>{badge.label}</span>
                   </div>
                   <div className="mcard-body">{fee.houses?.owner_name || '-'}</div>
