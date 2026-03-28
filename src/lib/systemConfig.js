@@ -68,9 +68,29 @@ export async function getSystemConfig() {
 
 export async function updateSystemConfig(configId, updates) {
   const { data: authData } = await supabase.auth.getUser()
-  let payload = {
+  const incomingPayload = {
     ...updates,
     updated_by: authData?.user?.id || null,
+  }
+
+  // Fetch row first and keep only columns that really exist in this deployment schema.
+  const { data: currentRow, error: currentError } = await supabase
+    .from('system_config')
+    .select('*')
+    .eq('id', configId)
+    .maybeSingle()
+
+  if (currentError) throw currentError
+
+  const allowedColumns = new Set(Object.keys(currentRow || {}))
+  let payload = Object.entries(incomingPayload).reduce((acc, [key, value]) => {
+    if (allowedColumns.has(key)) acc[key] = value
+    return acc
+  }, {})
+
+  // If nothing is updatable for this schema, treat as no-op and return current data.
+  if (Object.keys(payload).length === 0) {
+    return normalizeConfigRow(currentRow)
   }
 
   let data = null
@@ -92,7 +112,11 @@ export async function updateSystemConfig(configId, updates) {
     if (!error) break
 
     const errorMessage = String(error?.message || '')
-    const matches = [...errorMessage.matchAll(/Could not find the '([^']+)' column/g)]
+    const matches = [
+      ...errorMessage.matchAll(/Could not find the '([^']+)' column/g),
+      ...errorMessage.matchAll(/column\s+"?([a-zA-Z0-9_]+)"?\s+does not exist/g),
+      ...errorMessage.matchAll(/'([a-zA-Z0-9_]+)'\s+column/i),
+    ]
     if (matches.length === 0) break
 
     let removedAny = false
