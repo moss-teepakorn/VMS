@@ -76,7 +76,9 @@ export async function updateSystemConfig(configId, updates) {
   let data = null
   let error = null
 
-  for (let attempt = 0; attempt < 6; attempt += 1) {
+  // Some deployments have very old `system_config` schemas and can miss many columns.
+  // Keep stripping unknown columns from the payload until the update succeeds.
+  for (let attempt = 0; attempt < 30; attempt += 1) {
     const result = await supabase
       .from('system_config')
       .update(payload)
