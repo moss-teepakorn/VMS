@@ -228,6 +228,9 @@ const AdminConfig = () => {
   const handleSave = async () => {
     if (!configId) return
 
+    let uploadedLogo = null
+    let uploadedSignature = null
+
     try {
       setSaving(true)
       const payload = { ...form }
@@ -246,9 +249,6 @@ const AdminConfig = () => {
       const previousSignaturePath = form.juristic_signature_path || extractSystemAssetPath(form.juristic_signature_url)
 
       if (removeSignature) {
-        if (previousSignaturePath) {
-          await deleteSystemAssetByPath(previousSignaturePath)
-        }
         payload.juristic_signature_url = null
         payload.juristic_signature_path = null
       }
@@ -260,44 +260,35 @@ const AdminConfig = () => {
       const shouldRemoveLogo = removeLogo || isJuristicPath
 
       if (shouldRemoveLogo) {
-        if (previousLogoPath) {
-          await deleteSystemAssetByPath(previousLogoPath)
-        }
         if (hasLogoColumns) {
           payload.village_logo_url = null
           payload.village_logo_path = null
         }
-        localStorage.removeItem('vms-login-circle-logo-url')
-        localStorage.removeItem('vms-login-circle-logo-path')
       }
 
       if (logoFile) {
-        if (previousLogoPath) {
-          await deleteSystemAssetByPath(previousLogoPath)
-        }
-        const uploadedLogo = await uploadVillageLogo(logoFile)
+        uploadedLogo = await uploadVillageLogo(logoFile)
         if (hasLogoColumns) {
           payload.village_logo_url = uploadedLogo?.url || null
           payload.village_logo_path = uploadedLogo?.path || null
         }
-        localStorage.setItem('vms-login-circle-logo-url', uploadedLogo?.url || '')
-        localStorage.setItem('vms-login-circle-logo-path', uploadedLogo?.path || '')
-        if (!hasLogoColumns) {
-          localStorage.setItem('vms-login-circle-logo-url', uploadedLogo?.url || '')
-          localStorage.setItem('vms-login-circle-logo-path', uploadedLogo?.path || '')
-        }
       }
 
       if (signatureFile) {
-        if (previousSignaturePath) {
-          await deleteSystemAssetByPath(previousSignaturePath)
-        }
-        const uploaded = await uploadJuristicSignature(signatureFile)
-        payload.juristic_signature_url = uploaded?.url || null
-        payload.juristic_signature_path = uploaded?.path || null
+        uploadedSignature = await uploadJuristicSignature(signatureFile)
+        payload.juristic_signature_url = uploadedSignature?.url || null
+        payload.juristic_signature_path = uploadedSignature?.path || null
       }
 
       const updated = await updateSystemConfig(configId, payload)
+
+      if ((shouldRemoveLogo || logoFile) && previousLogoPath && previousLogoPath !== uploadedLogo?.path) {
+        await deleteSystemAssetByPath(previousLogoPath)
+      }
+      if ((removeSignature || signatureFile) && previousSignaturePath && previousSignaturePath !== uploadedSignature?.path) {
+        await deleteSystemAssetByPath(previousSignaturePath)
+      }
+
       setForm(updated)
       setSignatureFile(null)
       setLogoFile(null)
@@ -314,9 +305,19 @@ const AdminConfig = () => {
       setLogoPreviewUrl(nextLogoUrl)
       if (nextLogoUrl) {
         localStorage.setItem('vms-login-circle-logo-url', nextLogoUrl)
+        localStorage.setItem('vms-login-circle-logo-path', updated.village_logo_path || payload.village_logo_path || '')
+      } else {
+        localStorage.removeItem('vms-login-circle-logo-url')
+        localStorage.removeItem('vms-login-circle-logo-path')
       }
       await Swal.fire({ icon: 'success', title: 'บันทึกสำเร็จ', timer: 1200, showConfirmButton: false })
     } catch (error) {
+      if (uploadedLogo?.path) {
+        await deleteSystemAssetByPath(uploadedLogo.path).catch(() => {})
+      }
+      if (uploadedSignature?.path) {
+        await deleteSystemAssetByPath(uploadedSignature.path).catch(() => {})
+      }
       await Swal.fire({ icon: 'error', title: 'บันทึกไม่สำเร็จ', text: error.message })
     } finally {
       setSaving(false)

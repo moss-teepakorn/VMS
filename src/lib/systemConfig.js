@@ -68,52 +68,41 @@ export async function getSystemConfig() {
 
 export async function updateSystemConfig(configId, updates) {
   const { data: authData } = await supabase.auth.getUser()
-  const payload = {
+  let payload = {
     ...updates,
     updated_by: authData?.user?.id || null,
   }
 
-  let { data, error } = await supabase
-    .from('system_config')
-    .update(payload)
-    .eq('id', configId)
-    .select('*')
-    .single()
+  let data = null
+  let error = null
 
-  const errorMessage = String(error?.message || '')
-  const missingVillageLogoColumn = errorMessage.includes("Could not find the 'village_logo_path' column")
-    || errorMessage.includes("Could not find the 'village_logo_url' column")
-  const missingJuristicAddressColumn = errorMessage.includes("Could not find the 'juristic_address' column")
-
-  if (missingVillageLogoColumn) {
-    const fallbackPayload = { ...payload }
-    delete fallbackPayload.village_logo_url
-    delete fallbackPayload.village_logo_path
-
-    const fallback = await supabase
+  for (let attempt = 0; attempt < 6; attempt += 1) {
+    const result = await supabase
       .from('system_config')
-      .update(fallbackPayload)
+      .update(payload)
       .eq('id', configId)
       .select('*')
       .single()
 
-    data = fallback.data
-    error = fallback.error
-  }
+    data = result.data
+    error = result.error
 
-  if (missingJuristicAddressColumn) {
-    const fallbackPayload = { ...payload }
-    delete fallbackPayload.juristic_address
+    if (!error) break
 
-    const fallback = await supabase
-      .from('system_config')
-      .update(fallbackPayload)
-      .eq('id', configId)
-      .select('*')
-      .single()
+    const errorMessage = String(error?.message || '')
+    const matches = [...errorMessage.matchAll(/Could not find the '([^']+)' column/g)]
+    if (matches.length === 0) break
 
-    data = fallback.data
-    error = fallback.error
+    let removedAny = false
+    for (const match of matches) {
+      const missingColumn = match[1]
+      if (Object.prototype.hasOwnProperty.call(payload, missingColumn)) {
+        delete payload[missingColumn]
+        removedAny = true
+      }
+    }
+
+    if (!removedAny) break
   }
 
   if (error) throw error
