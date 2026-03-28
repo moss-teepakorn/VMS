@@ -193,6 +193,13 @@ const AdminFees = () => {
 
   const summary = useMemo(() => summarizeFees(fees, payments), [fees, payments])
 
+  // Auto-computed total matching the DB trigger: SUM(all fee fields) where fee_other is stored as (fee_other - discount).
+  const editTotal = useMemo(() => {
+    const gross = ['fee_common', 'fee_parking', 'fee_waste', 'fee_overdue_common', 'fee_overdue_fine', 'fee_overdue_notice', 'fee_fine', 'fee_notice', 'fee_violation', 'fee_other']
+      .reduce((acc, k) => acc + Number(editForm[k] || 0), 0)
+    return Math.max(0, gross - Number(editForm.fee_discount || 0))
+  }, [editForm])
+
   const displayFees = useMemo(() => {
     const keyword = searchKeyword.trim().toLowerCase()
     if (!keyword) return fees
@@ -1148,14 +1155,20 @@ const AdminFees = () => {
             <div className="house-md-head">
               <div>
                 <div className="house-md-title">🧾 แก้ไขใบแจ้งหนี้</div>
-                <div className="house-md-sub">{editingFee.houses?.house_no || '-'} · {periodLabel(editingFee.period)} · ปี {toBE(editingFee.year)}</div>
+                <div className="house-md-sub">
+                  {editingFee.houses?.house_no || '-'} · {editingFee.houses?.owner_name || '-'} · {periodLabel(editingFee.period)} · ปี {toBE(editingFee.year)}
+                </div>
+              </div>
+              <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center' }}>
+                <span className="bd b-ok">อนุมัติแล้ว ฿{getApprovedAmountForFee(editingFee).toLocaleString('th-TH')}</span>
+                <span className="bd b-pr">ใบแจ้งหนี้ ฿{Number(editingFee.total_amount || 0).toLocaleString('th-TH')}</span>
               </div>
             </div>
 
             <form onSubmit={handleSubmitEdit}>
               <div className="house-md-body">
-                <section className="house-sec">
-                  <div className="house-sec-title">ข้อมูลใบแจ้งหนี้</div>
+                <section className="house-sec" style={{ paddingTop: 0 }}>
+                  <div className="house-sec-title">ข้อมูลเอกสาร</div>
                   <div className="house-grid house-grid-3">
                     <label className="house-field">
                       <span>สถานะ</span>
@@ -1166,7 +1179,7 @@ const AdminFees = () => {
                         <option value="overdue">ค้างชำระ</option>
                       </select>
                       <small style={{ color: 'var(--mu)' }}>
-                        อนุมัติแล้ว {getApprovedAmountForFee(editingFee).toLocaleString('th-TH')} / {Number(editingFee.total_amount || 0).toLocaleString('th-TH')} บาท
+                        อนุมัติ {getApprovedAmountForFee(editingFee).toLocaleString('th-TH')} / {Number(editingFee.total_amount || 0).toLocaleString('th-TH')} บาท
                       </small>
                     </label>
                     <label className="house-field">
@@ -1174,7 +1187,7 @@ const AdminFees = () => {
                       <input type="date" value={editForm.invoice_date} onChange={(e) => setEditForm((prev) => ({ ...prev, invoice_date: e.target.value }))} />
                     </label>
                     <label className="house-field">
-                      <span>วันที่ครบกำหนด</span>
+                      <span>วันครบกำหนด</span>
                       <input type="date" value={editForm.due_date} onChange={(e) => setEditForm((prev) => ({ ...prev, due_date: e.target.value }))} />
                     </label>
                   </div>
@@ -1182,23 +1195,74 @@ const AdminFees = () => {
 
                 <section className="house-sec">
                   <div className="house-sec-title">รายการค่าใช้จ่าย</div>
-                  <div className="house-grid house-grid-3">
-                    <label className="house-field"><span>ค่าส่วนกลาง</span><input type="number" step="0.01" value={editForm.fee_common} onChange={(e) => setEditForm((prev) => ({ ...prev, fee_common: e.target.value }))} /></label>
-                    <label className="house-field"><span>ค่าจอดรถ</span><input type="number" step="0.01" value={editForm.fee_parking} onChange={(e) => setEditForm((prev) => ({ ...prev, fee_parking: e.target.value }))} /></label>
-                    <label className="house-field"><span>ค่าขยะ</span><input type="number" step="0.01" value={editForm.fee_waste} onChange={(e) => setEditForm((prev) => ({ ...prev, fee_waste: e.target.value }))} /></label>
-                    <label className="house-field"><span>ยอดค้างยกมา</span><input type="number" step="0.01" value={editForm.fee_overdue_common} onChange={(e) => setEditForm((prev) => ({ ...prev, fee_overdue_common: e.target.value }))} /></label>
-                    <label className="house-field"><span>ค่าปรับยอดค้าง</span><input type="number" step="0.01" value={editForm.fee_overdue_fine} onChange={(e) => setEditForm((prev) => ({ ...prev, fee_overdue_fine: e.target.value }))} /></label>
-                    <label className="house-field"><span>ค่าทวงถามยอดค้าง</span><input type="number" step="0.01" value={editForm.fee_overdue_notice} onChange={(e) => setEditForm((prev) => ({ ...prev, fee_overdue_notice: e.target.value }))} /></label>
-                    <label className="house-field"><span>ค่าปรับ</span><input type="number" step="0.01" value={editForm.fee_fine} onChange={(e) => setEditForm((prev) => ({ ...prev, fee_fine: e.target.value }))} /></label>
-                    <label className="house-field"><span>ค่าทวงถาม</span><input type="number" step="0.01" value={editForm.fee_notice} onChange={(e) => setEditForm((prev) => ({ ...prev, fee_notice: e.target.value }))} /></label>
-                    <label className="house-field"><span>ค่ากระทำผิด</span><input type="number" step="0.01" value={editForm.fee_violation} onChange={(e) => setEditForm((prev) => ({ ...prev, fee_violation: e.target.value }))} /></label>
-                    <label className="house-field"><span>ค่าอื่นๆ</span><input type="number" step="0.01" value={editForm.fee_other} onChange={(e) => setEditForm((prev) => ({ ...prev, fee_other: e.target.value }))} /></label>
-                    <label className="house-field"><span>ส่วนลด</span><input type="number" step="0.01" min="0" value={editForm.fee_discount} onChange={(e) => setEditForm((prev) => ({ ...prev, fee_discount: e.target.value }))} /></label>
-                    <label className="house-field house-field-span-3">
-                      <span>หมายเหตุ</span>
-                      <textarea rows="2" value={editForm.note} onChange={(e) => setEditForm((prev) => ({ ...prev, note: e.target.value }))} />
-                    </label>
+                  <div style={{ border: '1px solid var(--bo)', borderRadius: 10, overflow: 'hidden' }}>
+                    {/* Base fees */}
+                    <div style={{ background: '#f0f9ff', padding: '5px 12px', fontSize: 11, fontWeight: 700, color: '#0369a1', letterSpacing: '.03em', borderBottom: '1px solid var(--bo)' }}>
+                      ค่าธรรมเนียมหลัก
+                    </div>
+                    {[
+                      { label: 'ค่าส่วนกลาง', key: 'fee_common' },
+                      { label: 'ค่าจอดรถ', key: 'fee_parking' },
+                      { label: 'ค่าขยะ', key: 'fee_waste' },
+                    ].map((item, i, arr) => (
+                      <div key={item.key} style={{ display: 'flex', alignItems: 'center', padding: '7px 12px', borderBottom: i < arr.length - 1 ? '1px solid var(--bo)' : undefined, gap: 8 }}>
+                        <span style={{ flex: 1, fontSize: 13 }}>{item.label}</span>
+                        <input type="number" step="0.01" value={editForm[item.key]} onChange={(e) => setEditForm((prev) => ({ ...prev, [item.key]: e.target.value }))} style={{ width: 160, textAlign: 'right' }} />
+                      </div>
+                    ))}
+
+                    {/* Overdue / penalty fees */}
+                    <div style={{ background: '#fff7ed', padding: '5px 12px', fontSize: 11, fontWeight: 700, color: '#92400e', letterSpacing: '.03em', borderTop: '1px solid var(--bo)', borderBottom: '1px solid var(--bo)' }}>
+                      ยอดค้างชำระและค่าปรับ
+                    </div>
+                    {[
+                      { label: 'ยอดค้างยกมา', key: 'fee_overdue_common' },
+                      { label: 'ค่าปรับยอดค้าง', key: 'fee_overdue_fine' },
+                      { label: 'ค่าทวงถามยอดค้าง', key: 'fee_overdue_notice' },
+                      { label: 'ค่าปรับ', key: 'fee_fine' },
+                      { label: 'ค่าทวงถาม', key: 'fee_notice' },
+                      { label: 'ค่ากระทำผิด', key: 'fee_violation' },
+                    ].map((item, i, arr) => {
+                      const hasValue = Number(editForm[item.key] || 0) > 0
+                      return (
+                        <div key={item.key} style={{ display: 'flex', alignItems: 'center', padding: '7px 12px', borderBottom: i < arr.length - 1 ? '1px solid var(--bo)' : undefined, gap: 8, background: hasValue ? '#fffbeb' : '#fff' }}>
+                          <span style={{ flex: 1, fontSize: 13, color: hasValue ? '#92400e' : 'inherit' }}>{item.label}</span>
+                          <input type="number" step="0.01" value={editForm[item.key]} onChange={(e) => setEditForm((prev) => ({ ...prev, [item.key]: e.target.value }))} style={{ width: 160, textAlign: 'right', borderColor: hasValue ? '#f59e0b' : undefined }} />
+                        </div>
+                      )
+                    })}
+
+                    {/* Other + discount */}
+                    <div style={{ background: '#f0fdf4', padding: '5px 12px', fontSize: 11, fontWeight: 700, color: '#14532d', letterSpacing: '.03em', borderTop: '1px solid var(--bo)', borderBottom: '1px solid var(--bo)' }}>
+                      ค่าอื่นๆ / ส่วนลด
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', padding: '7px 12px', borderBottom: '1px solid var(--bo)', gap: 8 }}>
+                      <span style={{ flex: 1, fontSize: 13 }}>ค่าอื่นๆ</span>
+                      <input type="number" step="0.01" value={editForm.fee_other} onChange={(e) => setEditForm((prev) => ({ ...prev, fee_other: e.target.value }))} style={{ width: 160, textAlign: 'right' }} />
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', padding: '7px 12px', gap: 8, background: Number(editForm.fee_discount || 0) > 0 ? '#fef2f2' : '#fff' }}>
+                      <span style={{ flex: 1, fontSize: 13, fontWeight: 600, color: '#dc2626' }}>ส่วนลด (−)</span>
+                      <input type="number" step="0.01" min="0" value={editForm.fee_discount} onChange={(e) => setEditForm((prev) => ({ ...prev, fee_discount: e.target.value }))} style={{ width: 160, textAlign: 'right', color: '#dc2626', borderColor: Number(editForm.fee_discount || 0) > 0 ? '#dc2626' : undefined }} />
+                    </div>
                   </div>
+
+                  {/* Running total — read-only */}
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#0c4a6e', color: '#fff', borderRadius: 10, padding: '11px 16px', marginTop: 10 }}>
+                    <span style={{ fontSize: 13, opacity: .85 }}>ยอดรวมใบแจ้งหนี้ (คำนวณอัตโนมัติ)</span>
+                    <span style={{ fontSize: 20, fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>
+                      ฿{editTotal.toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </span>
+                  </div>
+                </section>
+
+                <section className="house-sec" style={{ borderBottom: 0, paddingBottom: 0 }}>
+                  <div className="house-sec-title">หมายเหตุ</div>
+                  <textarea
+                    rows="2"
+                    style={{ width: '100%', borderRadius: 8, border: '1px solid var(--bo)', padding: '7px 10px', fontSize: 13, resize: 'vertical', fontFamily: 'inherit' }}
+                    value={editForm.note}
+                    onChange={(e) => setEditForm((prev) => ({ ...prev, note: e.target.value }))}
+                  />
                 </section>
               </div>
               <div className="house-md-foot">

@@ -295,11 +295,13 @@ export async function calculateFullYearFeeByHouse({ houseId, year, setup }) {
   const parkingMonthly = toAmount(parkingByHouseResp.get(houseId))
   const commonBeforeDiscount = round2(area * 12 * ratePerSqw)
   const discountAmount = round2(commonBeforeDiscount * (discountPct / 100))
-  const feeCommon = Math.ceil(Math.max(0, commonBeforeDiscount - discountAmount))
   const feeParking = round2(parkingMonthly * 12)
   const feeWaste = round2(wastePerPeriod * 2)
 
   const hasSecondHalf = halfYearRows.some((row) => row.period === 'second_half')
+  // Store fee_common as the FULL (pre-discount) amount and put the discount as a negative fee_other.
+  // This follows the same [DISCOUNT:x] note pattern used by the edit modal, so when the admin
+  // opens the edit form they see the discount properly in the "ส่วนลด" field.
   const payload = {
     house_id: houseId,
     year: yearCE,
@@ -307,7 +309,7 @@ export async function calculateFullYearFeeByHouse({ houseId, year, setup }) {
     invoice_date: `${yearCE}-01-01`,
     due_date: `${yearCE + 1}-01-31`,
     status: 'unpaid',
-    fee_common: feeCommon,
+    fee_common: round2(commonBeforeDiscount),
     fee_parking: feeParking,
     fee_waste: feeWaste,
     fee_overdue_common: 0,
@@ -316,8 +318,8 @@ export async function calculateFullYearFeeByHouse({ houseId, year, setup }) {
     fee_fine: 0,
     fee_notice: 0,
     fee_violation: 0,
-    fee_other: 0,
-    note: `คำนวณทั้งปี ลดเฉพาะค่าส่วนกลาง ${discountPct}% (ลด ${discountAmount.toLocaleString('th-TH')} บาท, ปัดขึ้นเป็นจำนวนเต็ม)`,
+    fee_other: round2(-discountAmount),
+    note: `[DISCOUNT:${discountAmount}] คำนวณทั้งปี ลดเฉพาะค่าส่วนกลาง ${discountPct}%`,
   }
 
   if (hasSecondHalf) {
