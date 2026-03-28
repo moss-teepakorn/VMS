@@ -22,7 +22,7 @@ Rule:
 ### Admin
 
 - `AdminLayout` -> Change password modal: `house-md--xs`
-- `AdminAnnouncements` -> Create/Edit announcement: `house-md--md`
+- `AdminAnnouncements` -> Create/Edit announcement: `house-md--lg`
 - `AdminFees` -> Edit invoice: `house-md--lg`
 - `AdminFees` -> Receive payment: `house-md--xl`
 - `AdminFees` -> Process invoices all houses: `house-md--sm`
@@ -32,8 +32,8 @@ Rule:
 - `AdminMarketplace` -> Listing detail view: `house-md--lg`
 - `AdminTechnicians` -> Create/Edit technician: `house-md--md`
 - `AdminUsers` -> Create/Edit user: `house-md--md`
-- `AdminVehicles` -> Create/Edit vehicle: `house-md--md`
-- `AdminViolations` -> Create/Edit violation: `house-md--md`
+- `AdminVehicles` -> Create/Edit vehicle: `house-md--xl`
+- `AdminViolations` -> Create/Edit violation: `house-md--xl`
 - `AdminWorkReportsList` -> Add work report: `house-md--lg`
 - `AdminWorkReportsList` -> Edit work report: `house-md--lg`
 

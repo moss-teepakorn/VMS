@@ -615,7 +615,7 @@ const AdminVehicles = () => {
 
       {showModal && (
         <div className="house-mo">
-          <div className="house-md house-md--md">
+          <div className="house-md house-md--xl">
             <div className="house-md-head">
               <div>
                 <div className="house-md-title">🚗 {editingVehicle ? 'แก้ไขข้อมูลรถ' : 'ลงทะเบียนรถใหม่'}</div>
