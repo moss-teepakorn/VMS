@@ -38,6 +38,13 @@ function halfYearDates(yearCE, period) {
   }
 }
 
+function getNextHalfYearPeriod(yearCE, period) {
+  if (period === 'first_half') {
+    return { year: yearCE, period: 'second_half' }
+  }
+  return { year: yearCE + 1, period: 'first_half' }
+}
+
 async function getParkingMonthlyByHouse() {
   const { data, error } = await supabase
     .from('vehicles')
@@ -196,6 +203,32 @@ export async function processHalfYearFeesAllHouses({ yearBE, period, setup, over
   if (!yearCE) throw new Error('ปีไม่ถูกต้อง')
   if (!['first_half', 'second_half'].includes(period)) {
     throw new Error('งวดไม่ถูกต้อง')
+  }
+
+  // Enforce sequence after the first generation: H1 -> H2 -> next-year H1 -> ...
+  const { data: latestHalfYearFee, error: latestHalfYearError } = await supabase
+    .from('fees')
+    .select('year, period, status')
+    .in('period', ['first_half', 'second_half'])
+    .neq('status', 'cancelled')
+    .order('year', { ascending: false })
+    .order('period', { ascending: false })
+    .limit(1)
+    .maybeSingle()
+
+  if (latestHalfYearError) throw latestHalfYearError
+
+  if (latestHalfYearFee?.year && latestHalfYearFee?.period) {
+    const latestYear = Number(latestHalfYearFee.year)
+    const latestPeriod = latestHalfYearFee.period
+    const sameTarget = latestYear === yearCE && latestPeriod === period
+    const nextExpected = getNextHalfYearPeriod(latestYear, latestPeriod)
+    const isExpectedNext = nextExpected.year === yearCE && nextExpected.period === period
+
+    if (!sameTarget && !isExpectedNext) {
+      const expectedLabel = `${nextExpected.period === 'first_half' ? 'ครึ่งปีแรก' : 'ครึ่งปีหลัง'} ปี ${nextExpected.year + 543}`
+      throw new Error(`สร้างข้ามงวดไม่ได้: ถัดไปต้องเป็น ${expectedLabel}`)
+    }
   }
 
   const ratePerSqw = toAmount(setup?.fee_rate_per_sqw)

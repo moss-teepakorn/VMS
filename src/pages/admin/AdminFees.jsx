@@ -157,6 +157,11 @@ const AdminFees = () => {
     ]
   }, [])
 
+  const processYearOptions = useMemo(() => {
+    const currentBE = new Date().getFullYear() + 543
+    return [currentBE + 1, currentBE, currentBE - 1, currentBE - 2, currentBE - 3]
+  }, [])
+
   const loadFeeData = async (override = {}) => {
     try {
       setLoading(true)
@@ -209,7 +214,7 @@ const AdminFees = () => {
       setCurrentFeeYear(latestYear)
       setYearFilter(latestYear)
       setFeeYears(allYears)
-      setProcessForm((prev) => ({ ...prev, yearBE: String(latestYear + 543) }))
+      setProcessForm((prev) => ({ ...prev, yearBE: String(new Date().getFullYear() + 543) }))
       await Promise.all([
         getSystemConfig().then(setSetup).catch(() => {}),
         loadFeeData({ year: latestYear, status: 'all', period: 'all' }),
@@ -321,7 +326,7 @@ const AdminFees = () => {
 
   const handleOpenProcessModal = () => {
     setProcessForm({
-      yearBE: String(currentFeeYear + 543),
+      yearBE: String(new Date().getFullYear() + 543),
       period: 'first_half',
       overwritePending: false,
     })
@@ -332,6 +337,14 @@ const AdminFees = () => {
     event.preventDefault()
     try {
       setProcessing(true)
+      Swal.fire({
+        title: 'กำลังสร้างใบแจ้งหนี้',
+        text: 'กรุณารอสักครู่ ระบบกำลังประมวลผลข้อมูลทุกหลัง',
+        allowOutsideClick: false,
+        allowEscapeKey: false,
+        didOpen: () => Swal.showLoading(),
+        showConfirmButton: false,
+      })
       const result = await processHalfYearFeesAllHouses({
         yearBE: Number(processForm.yearBE),
         period: processForm.period,
@@ -339,6 +352,7 @@ const AdminFees = () => {
         overwritePending: processForm.overwritePending,
       })
 
+      Swal.close()
       await Swal.fire({
         icon: 'success',
         title: 'Process สำเร็จ',
@@ -347,6 +361,7 @@ const AdminFees = () => {
       setShowProcessModal(false)
       await loadFeeData({ status: statusFilter, year: yearFilter, period: periodFilter })
     } catch (error) {
+      Swal.close()
       await Swal.fire({ icon: 'error', title: 'Process ไม่สำเร็จ', text: error.message })
     } finally {
       setProcessing(false)
@@ -436,11 +451,20 @@ const AdminFees = () => {
 
   const handleCalculateAnnual = async (fee) => {
     try {
+      Swal.fire({
+        title: 'กำลังคำนวณทั้งปี',
+        text: 'ระบบกำลังรวมรายการและคำนวณส่วนลด',
+        allowOutsideClick: false,
+        allowEscapeKey: false,
+        didOpen: () => Swal.showLoading(),
+        showConfirmButton: false,
+      })
       await calculateFullYearFeeByHouse({
         houseId: fee.house_id,
         year: fee.year,
         setup,
       })
+      Swal.close()
       await Swal.fire({
         icon: 'success',
         title: 'คำนวณทั้งปีสำเร็จ',
@@ -450,13 +474,23 @@ const AdminFees = () => {
       })
       await loadFeeData({ status: statusFilter, year: yearFilter })
     } catch (error) {
+      Swal.close()
       await Swal.fire({ icon: 'error', title: 'คำนวณทั้งปีไม่สำเร็จ', text: error.message })
     }
   }
 
   const handleCalculateOverdue = async (fee) => {
     try {
+      Swal.fire({
+        title: 'กำลังคำนวณค่าปรับ',
+        text: 'กำลังคำนวณเบี้ยปรับและค่าทวงถามตาม setup',
+        allowOutsideClick: false,
+        allowEscapeKey: false,
+        didOpen: () => Swal.showLoading(),
+        showConfirmButton: false,
+      })
       await calculateOverdueFeeCharges(fee.id, setup)
+      Swal.close()
       await Swal.fire({
         icon: 'success',
         title: 'คำนวณค่าปรับแล้ว',
@@ -466,6 +500,7 @@ const AdminFees = () => {
       })
       await loadFeeData({ status: statusFilter, year: yearFilter })
     } catch (error) {
+      Swal.close()
       await Swal.fire({ icon: 'warning', title: 'ยังคำนวณไม่ได้', text: error.message })
     }
   }
@@ -508,10 +543,19 @@ const AdminFees = () => {
     if (!result.isConfirmed) return
 
     try {
+      Swal.fire({
+        title: 'กำลังคำนวณค่าปรับทั้งหมด',
+        text: 'ระบบกำลังประมวลผลรายการที่แสดงอยู่',
+        allowOutsideClick: false,
+        allowEscapeKey: false,
+        didOpen: () => Swal.showLoading(),
+        showConfirmButton: false,
+      })
       const summaryResult = await calculateOverdueFeesByIds({
         feeIds: fees.map((item) => item.id),
         setup,
       })
+      Swal.close()
       await Swal.fire({
         icon: 'success',
         title: 'คำนวณค่าปรับสำเร็จ',
@@ -519,6 +563,7 @@ const AdminFees = () => {
       })
       await loadFeeData({ status: statusFilter, year: yearFilter })
     } catch (error) {
+      Swal.close()
       await Swal.fire({ icon: 'error', title: 'คำนวณไม่สำเร็จ', text: error.message })
     }
   }
@@ -1905,12 +1950,14 @@ const AdminFees = () => {
                   <div className="house-grid" style={{ gridTemplateColumns: '1fr' }}>
                     <label className="house-field">
                       <span>ปี (พ.ศ.) *</span>
-                      <input
-                        type="number"
+                      <select
                         value={processForm.yearBE}
                         onChange={(e) => setProcessForm((prev) => ({ ...prev, yearBE: e.target.value }))}
-                        min="2500"
-                      />
+                      >
+                        {processYearOptions.map((yearBE) => (
+                          <option key={yearBE} value={String(yearBE)}>{yearBE}</option>
+                        ))}
+                      </select>
                     </label>
                     <label className="house-field">
                       <span>รอบ *</span>
