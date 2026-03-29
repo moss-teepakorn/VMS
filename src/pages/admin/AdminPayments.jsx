@@ -109,7 +109,7 @@ function compareHouseNo(a, b) {
 }
 
 function openHtmlInWindow(html) {
-  const popup = window.open('', '_blank', 'noopener,noreferrer,width=960,height=1200')
+  const popup = window.open('', '_blank', 'width=1200,height=900')
   if (!popup) return null
   popup.document.open()
   popup.document.write(html)
@@ -603,7 +603,7 @@ export default function AdminPayments() {
     }
   }
 
-  const buildReceiptHtml = (payment, { autoPrint = false } = {}) => {
+  const buildReceiptHtml = (payment, { autoPrint = false, forCapture = false } = {}) => {
     if (!payment?.verified_at) return ''
 
     const receiptNo = buildReceiptNo(payment)
@@ -629,7 +629,7 @@ export default function AdminPayments() {
     `)).join('')
 
     const renderSheet = (copyLabel) => (`
-      <div class="sheet">
+      <div class="sheet page-break">
         <div class="head">
           <div class="brand">
             <img src="${setup.loginCircleLogoUrl || villageLogo}" alt="logo" />
@@ -700,8 +700,17 @@ export default function AdminPayments() {
             @page { size: A4; margin: 0; }
             * { box-sizing: border-box; }
             html, body { font-family: 'Sarabun', 'TH Sarabun New', Tahoma, sans-serif; margin: 0; padding: 0; color: #111827; background: #fff; }
-            .sheet { width: 100%; min-height: 100vh; padding: 24px 28px; display: flex; flex-direction: column; gap: 8px; }
-            .sheet + .sheet { page-break-before: always; }
+            .sheet {
+              position: relative;
+              width: ${forCapture ? '794px' : '100%'};
+              ${forCapture ? 'height: 1122px; overflow: hidden;' : 'page-break-after: always; break-after: page; break-inside: avoid;'}
+              background: #fff;
+              padding: 24px 28px;
+              display: flex;
+              flex-direction: column;
+              gap: 8px;
+            }
+            .page-break {}
             .head {
               display: flex;
               justify-content: space-between;
@@ -774,6 +783,8 @@ export default function AdminPayments() {
             .sign-line { border-top: 1px solid #cbd5e1; margin: 36px 0 4px; }
             @media print {
               html, body { background: #fff; }
+              .sheet { page-break-after: always; break-after: page; break-inside: avoid; }
+              .sheet:last-child { page-break-after: avoid; break-after: avoid; }
             }
           </style>
         </head>
@@ -784,6 +795,26 @@ export default function AdminPayments() {
         </body>
       </html>
     `
+  }
+
+  const renderReceiptsInIframe = async (html, sheetCount = 2) => {
+    const iframe = document.createElement('iframe')
+    iframe.style.cssText = 'position:fixed;left:-9999px;top:0;border:none;'
+    iframe.style.width = '794px'
+    iframe.style.height = `${sheetCount * 1200}px`
+    document.body.appendChild(iframe)
+
+    const doc = iframe.contentDocument
+    doc.open()
+    doc.write(html)
+    doc.close()
+
+    await new Promise((resolve) => setTimeout(resolve, 1000))
+    return {
+      iframe,
+      doc,
+      sheets: Array.from(doc.querySelectorAll('.sheet')),
+    }
   }
 
   const handlePrintReceipt = (payment) => {
@@ -809,37 +840,8 @@ export default function AdminPayments() {
         return
       }
 
-      const html = buildReceiptHtml(target, { autoPrint: false })
-      const iframe = document.createElement('iframe')
-      iframe.style.position = 'fixed'
-      iframe.style.right = '-9999px'
-      iframe.style.bottom = '-9999px'
-      iframe.style.width = '0'
-      iframe.style.height = '0'
-      iframe.style.border = '0'
-      document.body.appendChild(iframe)
-
-      const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document
-      if (!iframeDoc) {
-        document.body.removeChild(iframe)
-        throw new Error('ไม่สามารถเตรียมเอกสารสำหรับบันทึกไฟล์ได้')
-      }
-
-      iframeDoc.open()
-      iframeDoc.write(html)
-      iframeDoc.close()
-
-      await new Promise((resolve) => {
-        const targetWindow = iframe.contentWindow
-        if (!targetWindow) {
-          resolve()
-          return
-        }
-        targetWindow.onload = () => resolve()
-        setTimeout(resolve, 400)
-      })
-
-      const sheets = Array.from(iframeDoc.querySelectorAll('.sheet'))
+      const html = buildReceiptHtml(target, { autoPrint: false, forCapture: true })
+      const { iframe, sheets } = await renderReceiptsInIframe(html, 2)
       if (sheets.length === 0) {
         document.body.removeChild(iframe)
         throw new Error('ไม่พบหน้าสำหรับพิมพ์ใบเสร็จ')
