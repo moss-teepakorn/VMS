@@ -1176,15 +1176,14 @@ export default function AdminPayments() {
                     <th style={{ width: '10%' }}>วิธีชำระ</th>
                     <th style={{ width: '12%' }}>วันที่</th>
                     <th style={{ width: '11%' }}>สถานะ</th>
-                    <th style={{ width: '11%' }}>ผู้ตรวจสอบ</th>
-                    <th style={{ width: '12%' }}></th>
+                    <th style={{ width: '24%' }}></th>
                   </tr>
                 </thead>
                 <tbody>
                   {loading ? (
-                    <tr><td colSpan="9" style={{ textAlign: 'center', color: 'var(--mu)', padding: '20px' }}>กำลังโหลดข้อมูล...</td></tr>
+                    <tr><td colSpan="8" style={{ textAlign: 'center', color: 'var(--mu)', padding: '20px' }}>กำลังโหลดข้อมูล...</td></tr>
                   ) : filtered.length === 0 ? (
-                    <tr><td colSpan="9" style={{ textAlign: 'center', color: 'var(--mu)', padding: '20px' }}>ยังไม่มีรายการชำระเงิน</td></tr>
+                    <tr><td colSpan="8" style={{ textAlign: 'center', color: 'var(--mu)', padding: '20px' }}>ยังไม่มีรายการชำระเงิน</td></tr>
                   ) : (
                     filtered.map((payment) => {
                       const badge = getStatusBadge(payment)
@@ -1197,7 +1196,6 @@ export default function AdminPayments() {
                         <td style={{ whiteSpace: 'nowrap' }}>{formatMethod(payment.payment_method)}</td>
                         <td style={{ whiteSpace: 'nowrap' }}>{formatDateTime(payment.paid_at)}</td>
                         <td><span className={badge.className}>{badge.label}</span></td>
-                        <td style={{ whiteSpace: 'nowrap' }}>{payment.verified_profile?.full_name || '-'}</td>
                         <td>
                           <div className="td-acts payments-row-acts">
                             {payment.slip_url && <button className="btn btn-xs btn-o" onClick={() => handleOpenSlip(payment)}>สลิป</button>}
@@ -1233,7 +1231,6 @@ export default function AdminPayments() {
                   <span><span className="mcard-label">จำนวนเงิน</span> {formatMoney(payment.amount)}</span>
                   <span><span className="mcard-label">วิธีชำระ</span> {formatMethod(payment.payment_method)}</span>
                   <span><span className="mcard-label">วันที่ชำระ</span> {formatDateTime(payment.paid_at)}</span>
-                  <span><span className="mcard-label">ผู้ตรวจสอบ</span> {payment.verified_profile?.full_name || '-'}</span>
                   {getRejectedReason(payment.note) && <span><span className="mcard-label">เหตุผลตีกลับ</span> {getRejectedReason(payment.note)}</span>}
                 </div>
                 <div className="mcard-actions">
