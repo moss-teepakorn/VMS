@@ -13,7 +13,6 @@ export const ModalContext = React.createContext()
 const BUILD_SHA = typeof __BUILD_SHA__ !== 'undefined' ? __BUILD_SHA__ : 'local'
 const BUILD_DATE = typeof __BUILD_DATE__ !== 'undefined' ? __BUILD_DATE__ : '-'
 const APP_VERSION = '1.0.0'
-const RECENT_NAV_STORAGE_KEY = 'vms-recent-admin-nav'
 
 function roleLabel(role) {
   return role === 'admin' ? 'ผู้ดูแลระบบ' : 'ลูกบ้าน'
@@ -32,15 +31,6 @@ const AdminLayout = () => {
     หน้าหลัก: true,
     จัดการ: false,
     ระบบ: false,
-  })
-  const [recentNavIds, setRecentNavIds] = useState(() => {
-    try {
-      const raw = localStorage.getItem(RECENT_NAV_STORAGE_KEY)
-      const parsed = JSON.parse(raw || '[]')
-      return Array.isArray(parsed) ? parsed.filter(Boolean).slice(0, 6) : []
-    } catch {
-      return []
-    }
   })
   const [newPassword, setNewPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
@@ -69,10 +59,6 @@ const AdminLayout = () => {
   useEffect(() => {
     localStorage.setItem('vms-sidebar-collapsed', sidebarCollapsed ? '1' : '0')
   }, [sidebarCollapsed])
-
-  useEffect(() => {
-    localStorage.setItem(RECENT_NAV_STORAGE_KEY, JSON.stringify(recentNavIds.slice(0, 6)))
-  }, [recentNavIds])
 
   useEffect(() => {
     const loadSetup = async () => {
@@ -129,10 +115,6 @@ const AdminLayout = () => {
   ]
 
   const handleNavClick = (path) => {
-    const item = navItems.flatMap((section) => section.items).find((row) => row.path === path)
-    if (item?.id) {
-      setRecentNavIds((prev) => [item.id, ...prev.filter((id) => id !== item.id)].slice(0, 6))
-    }
     navigate(path)
     setSidebarOpen(false)
   }
@@ -179,11 +161,6 @@ const AdminLayout = () => {
   }
 
   const searchKeyword = menuSearch.trim().toLowerCase()
-  const flatNavItems = navItems.flatMap((section) => section.items)
-  const recentItems = recentNavIds
-    .map((id) => flatNavItems.find((item) => item.id === id))
-    .filter(Boolean)
-
   const visibleNavSections = navItems
     .map((section) => {
       if (!searchKeyword) return section
@@ -269,26 +246,6 @@ const AdminLayout = () => {
               onChange={(e) => setMenuSearch(e.target.value)}
             />
           </div>
-
-          {recentItems.length > 0 && !searchKeyword && (
-            <div className="sb-recent-wrap">
-              <div className="sb-sec">เมนูล่าสุด</div>
-              <div className="sb-recent-list">
-                {recentItems.map((item) => (
-                  <button
-                    key={`recent-${item.id}`}
-                    type="button"
-                    className={`sb-recent-item ${isNavItemActive(item.path) ? 'act' : ''}`}
-                    onClick={() => handleNavClick(item.path)}
-                    title={item.label}
-                  >
-                    <span>{item.icon}</span>
-                    <span className="sb-recent-label">{item.label}</span>
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
 
           {/* Menu Sections */}
           <nav className="sb-nav">

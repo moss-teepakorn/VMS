@@ -844,43 +844,6 @@ button, input, select, textarea {
   box-shadow: 0 0 0 2px rgba(110, 231, 183, 0.22);
 }
 
-.sb-recent-wrap {
-  padding: 0 10px 2px;
-  flex-shrink: 0;
-}
-
-.sb-recent-list {
-  display: grid;
-  gap: 6px;
-  margin-top: 4px;
-}
-
-.sb-recent-item {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  border: 1px solid rgba(255, 255, 255, 0.16);
-  background: rgba(255, 255, 255, 0.08);
-  color: rgba(255, 255, 255, 0.88);
-  border-radius: 8px;
-  padding: 6px 8px;
-  font-size: 12px;
-  text-align: left;
-  cursor: pointer;
-}
-
-.sb-recent-item:hover,
-.sb-recent-item.act {
-  background: rgba(255, 255, 255, 0.2);
-  color: #fff;
-}
-
-.sb-recent-label {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
 /* Navigation */
 .sb-nav {
   flex: 1;
@@ -940,32 +903,46 @@ button, input, select, textarea {
   color: var(--sbm);
   text-decoration: none;
   cursor: pointer;
-  transition: background var(--tr), color var(--tr);
+  transition: background var(--tr), color var(--tr), transform var(--tr), box-shadow var(--tr);
   position: relative;
   font-size: 13.5px;
   font-weight: 500;
 }
 
 .sb-item:hover {
-  background: var(--sbhv);
+  background: linear-gradient(90deg, rgba(255,255,255,.26) 0%, rgba(255,255,255,.16) 100%);
   color: var(--sbt);
+  transform: translateY(-1px);
+  box-shadow: 0 7px 16px rgba(0,0,0,.18);
 }
 
 .sb-item.act {
-  background: var(--sbac);
+  background: linear-gradient(90deg, rgba(255,255,255,.34) 0%, rgba(255,255,255,.2) 100%);
   color: var(--sbt);
   font-weight: 700;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.2), 0 8px 18px rgba(0,0,0,.2);
 }
 
-.sb-item.act::before {
+.sb-item::before {
   content: '';
   position: absolute;
   left: 0;
   top: 22%;
   bottom: 22%;
   width: 3px;
-  background: #6EE7B7;
+  background: transparent;
   border-radius: 0 3px 3px 0;
+  transition: background var(--tr), box-shadow var(--tr);
+}
+
+.sb-item:hover::before {
+  background: #7dd3fc;
+  box-shadow: 0 0 8px rgba(125, 211, 252, 0.75);
+}
+
+.sb-item.act::before {
+  background: #6EE7B7;
+  box-shadow: 0 0 8px rgba(110, 231, 183, 0.8);
 }
 
 .sb-ico {
@@ -1092,7 +1069,6 @@ button, input, select, textarea {
   .sidebar.collapsed .sb-logo-name,
   .sidebar.collapsed .sb-role-txt,
   .sidebar.collapsed .sb-search-wrap,
-  .sidebar.collapsed .sb-recent-wrap,
   .sidebar.collapsed .sb-sec,
   .sidebar.collapsed .sb-label,
   .sidebar.collapsed .sb-badge,
