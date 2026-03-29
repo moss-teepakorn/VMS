@@ -929,8 +929,22 @@
   height: 13px;
 }
 
-.payments-compact {
-  gap: 12px;
+.pane.on.houses-compact.payments-compact {
+  gap: 8px !important;
+}
+
+.pane.on.houses-compact.payments-compact .ph {
+  margin-bottom: 0;
+}
+
+.pane.on.houses-compact.payments-compact .stats {
+  margin-top: 0;
+  margin-bottom: 0;
+  gap: 8px;
+}
+
+.pane.on.houses-compact.payments-compact .card {
+  margin-top: 0;
 }
 
 .payments-compact .payments-main-wrap,
