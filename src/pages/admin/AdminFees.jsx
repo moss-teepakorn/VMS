@@ -34,6 +34,10 @@ function toBE(yearCE) {
   return year + 543
 }
 
+function buildInvoiceDocumentNo(fee) {
+  return `INV-${String(fee?.year || '').slice(-2)}-${String(fee?.id || '').slice(0, 8).toUpperCase()}`
+}
+
 function formatDateDMY(value) {
   if (!value) return '-'
   const date = new Date(value)
@@ -45,13 +49,29 @@ function formatDateDMY(value) {
 }
 
 function extractDiscountFromNote(note) {
-  const raw = String(note || '')
+  const raw = String(note || '').replace(/^\[NOTICE_PRINT:[0-9]+\]\s*/, '')
   const match = raw.match(/^\[DISCOUNT:([0-9]+(?:\.[0-9]+)?)\]\s*/)
   return match ? Number(match[1]) : 0
 }
 
 function stripDiscountTag(note) {
-  return String(note || '').replace(/^\[DISCOUNT:[0-9]+(?:\.[0-9]+)?\]\s*/, '')
+  const raw = String(note || '').replace(/^\[NOTICE_PRINT:[0-9]+\]\s*/, '')
+  return raw.replace(/^\[DISCOUNT:[0-9]+(?:\.[0-9]+)?\]\s*/, '')
+}
+
+function extractNoticePrintCount(note) {
+  const raw = String(note || '')
+  const match = raw.match(/^\[NOTICE_PRINT:([0-9]+)\]\s*/)
+  return match ? Number(match[1]) : 0
+}
+
+function stripNoticePrintTag(note) {
+  return String(note || '').replace(/^\[NOTICE_PRINT:[0-9]+\]\s*/, '')
+}
+
+function withNoticePrintTag(note, count) {
+  const clean = stripNoticePrintTag(note || '').trim()
+  return `[NOTICE_PRINT:${Math.max(0, Number(count) || 0)}]${clean ? ` ${clean}` : ''}`
 }
 
 const houseSorter = new Intl.Collator('th-TH', { numeric: true, sensitivity: 'base' })
@@ -117,7 +137,7 @@ const AdminFees = () => {
   const [payingFee, setPayingFee] = useState(null)
   const [showPrintActionModal, setShowPrintActionModal] = useState(false)
   const [runningPrintAction, setRunningPrintAction] = useState(false)
-  const [printPayload, setPrintPayload] = useState({ fees: [], title: '' })
+  const [printPayload, setPrintPayload] = useState({ fees: [], title: '', docType: 'invoice', noticeNoMap: {} })
   const [feeSubmittedTotals, setFeeSubmittedTotals] = useState({})
   const [feeApprovedTotals, setFeeApprovedTotals] = useState({})
   const [paymentForm, setPaymentForm] = useState({
@@ -568,13 +588,34 @@ const AdminFees = () => {
     }
   }
 
-  const openPrintActionModal = (targetFees, title) => {
+  const isNoticePrintable = (fee) => {
+    const penaltyTotal = Number(fee?.fee_fine || 0) + Number(fee?.fee_overdue_fine || 0)
+    return penaltyTotal > 0 && fee?.status !== 'cancelled' && !isFeeFullyPaid(fee) && getOutstandingAmountForFee(fee) > 0
+  }
+
+  const openPrintActionModal = (targetFees, title, options = {}) => {
     if (!targetFees || targetFees.length === 0) {
       Swal.fire({ icon: 'info', title: 'ไม่พบใบแจ้งหนี้สำหรับพิมพ์' })
       return
     }
-    setPrintPayload({ fees: targetFees, title })
+    setPrintPayload({
+      fees: targetFees,
+      title,
+      docType: options.docType || 'invoice',
+      noticeNoMap: options.noticeNoMap || {},
+    })
     setShowPrintActionModal(true)
+  }
+
+  const persistNoticePrintCounts = async () => {
+    if (printPayload.docType !== 'notice') return
+    const noticeNoMap = printPayload.noticeNoMap || {}
+    for (const fee of printPayload.fees || []) {
+      const nextCount = Number(noticeNoMap[fee.id] || 0)
+      if (nextCount <= 0) continue
+      const currentNote = stripNoticePrintTag(String(fee.note || ''))
+      await updateFee(fee.id, { note: withNoticePrintTag(currentNote, nextCount) })
+    }
   }
 
   const resolveImageToDataUrl = async (url, fallback = '') => {
@@ -593,7 +634,12 @@ const AdminFees = () => {
     }
   }
 
-  const buildInvoiceHtml = async (targetFees, title, { autoPrint = false, forCapture = false } = {}) => {
+  const buildInvoiceHtml = async (targetFees, title, {
+    autoPrint = false,
+    forCapture = false,
+    docType = 'invoice',
+    noticeNoMap = {},
+  } = {}) => {
     const freshConfig = await getSystemConfig().catch(() => null)
     const rawLogoUrl = freshConfig?.village_logo_url || setup.village_logo_url || localStorage.getItem('vms-login-circle-logo-url') || ''
     const rawSignatureUrl = freshConfig?.juristic_signature_url || setup.juristic_signature_url || ''
@@ -694,9 +740,18 @@ const AdminFees = () => {
 
     // Two invoice sections per house (original + copy) — separate pages
     const invoiceBlocks = targetFees.flatMap((fee, feeIndex) => {
-      const invoiceNo = `INV-${String(fee.year || '').slice(-2)}-${String(fee.id || '').slice(0, 8).toUpperCase()}`
+      const invoiceNo = buildInvoiceDocumentNo(fee)
       const periodText = `${periodLabel(fee.period)} ปี ${toBE(fee.year)}`
       const isLastFee = feeIndex === targetFees.length - 1
+      const isNotice = docType === 'notice'
+      const noticeNo = Number(noticeNoMap?.[fee.id] || 0)
+      const documentTitle = isNotice ? `ใบแจ้งเตือนค้างชำระ ครั้งที่ ${noticeNo || 1}` : 'ใบแจ้งหนี้ค่าส่วนกลาง'
+      const documentNote = isNotice
+        ? 'หมายเหตุ: เอกสารฉบับนี้เป็นหนังสือแจ้งเตือนเพื่อให้ดำเนินการชำระยอดค้างโดยเร็ว'
+        : 'หมายเหตุ: กรุณาชำระภายในวันที่ครบกำหนด เพื่อหลีกเลี่ยงค่าปรับ/ค่าทวงถามเพิ่มเติม'
+      const reminderRow = isNotice
+        ? `<div><span>อ้างอิงเอกสาร:</span> <strong>${invoiceNo}</strong></div><div><span>แจ้งเตือนครั้งที่:</span> <strong>${noticeNo || 1}</strong></div>`
+        : ''
       
       return [
         // Original page
@@ -706,7 +761,7 @@ const AdminFees = () => {
               <div class="brand">
                 <img src="${printLogoUrl}" alt="village-logo" />
                 <div>
-                  <div class="doc">ใบแจ้งหนี้ค่าส่วนกลาง</div>
+                  <div class="doc">${documentTitle}</div>
                   <div class="village">${setup.village_name || 'The Greenfield'}</div>
                   <div class="sub">${setup.juristic_name || 'นิติบุคคลหมู่บ้านเดอะกรีนฟิลด์'}</div>
                   <div class="sub">${setup.juristic_address || '-'}</div>
@@ -717,6 +772,7 @@ const AdminFees = () => {
                 <div><span>เลขที่เอกสาร:</span> <strong>${invoiceNo}</strong></div>
                 <div><span>วันที่ออกเอกสาร:</span> <strong>${fmtDate(fee.invoice_date)}</strong></div>
                 <div><span>ครบกำหนดชำระ:</span> <strong>${fmtDate(fee.due_date)}</strong></div>
+                ${reminderRow}
                 <div class="copy-mark-row">
                   <div class="copy-mark copy-mark--active">ต้นฉบับ</div>
                 </div>
@@ -769,7 +825,7 @@ const AdminFees = () => {
 
             <section class="foot">
               <div class="note">
-                หมายเหตุ: กรุณาชำระภายในวันที่ครบกำหนด เพื่อหลีกเลี่ยงค่าปรับ/ค่าทวงถามเพิ่มเติม
+                ${documentNote}
               </div>
               <div class="sign-wrap">
                 ${printSignatureUrl ? `<img src="${printSignatureUrl}" alt="juristic-signature" />` : ''}
@@ -786,7 +842,7 @@ const AdminFees = () => {
               <div class="brand">
                 <img src="${printLogoUrl}" alt="village-logo" />
                 <div>
-                  <div class="doc">ใบแจ้งหนี้ค่าส่วนกลาง</div>
+                  <div class="doc">${documentTitle}</div>
                   <div class="village">${setup.village_name || 'The Greenfield'}</div>
                   <div class="sub">${setup.juristic_name || 'นิติบุคคลหมู่บ้านเดอะกรีนฟิลด์'}</div>
                   <div class="sub">${setup.juristic_address || '-'}</div>
@@ -797,6 +853,7 @@ const AdminFees = () => {
                 <div><span>เลขที่เอกสาร:</span> <strong>${invoiceNo}</strong></div>
                 <div><span>วันที่ออกเอกสาร:</span> <strong>${fmtDate(fee.invoice_date)}</strong></div>
                 <div><span>ครบกำหนดชำระ:</span> <strong>${fmtDate(fee.due_date)}</strong></div>
+                ${reminderRow}
                 <div class="copy-mark-row">
                   <div class="copy-mark copy-mark--active">สำเนา</div>
                 </div>
@@ -849,7 +906,7 @@ const AdminFees = () => {
 
             <section class="foot">
               <div class="note">
-                หมายเหตุ: กรุณาชำระภายในวันที่ครบกำหนด เพื่อหลีกเลี่ยงค่าปรับ/ค่าทวงถามเพิ่มเติม
+                ${documentNote}
               </div>
               <div class="sign-wrap">
                 ${printSignatureUrl ? `<img src="${printSignatureUrl}" alt="juristic-signature" />` : ''}
@@ -1027,7 +1084,12 @@ const AdminFees = () => {
       if (mode === 'image' || mode === 'pdf') {
         // forCapture=true → each .sheet is fixed 794×1122px (exact A4 at 96dpi)
         const expectedSheets = printPayload.fees.length * 2 // original + copy per fee
-        const html = await buildInvoiceHtml(printPayload.fees, printPayload.title, { autoPrint: false, forCapture: true })
+        const html = await buildInvoiceHtml(printPayload.fees, printPayload.title, {
+          autoPrint: false,
+          forCapture: true,
+          docType: printPayload.docType,
+          noticeNoMap: printPayload.noticeNoMap,
+        })
         const { iframe, sheets } = await renderInvoicesInIframe(html, expectedSheets)
 
         if (mode === 'image') {
@@ -1064,18 +1126,26 @@ const AdminFees = () => {
           pdf.save(`${printPayload.title || 'invoice'}.pdf`)
         }
 
+        await persistNoticePrintCounts()
         document.body.removeChild(iframe)
         setShowPrintActionModal(false)
+        await loadFeeData({ status: statusFilter, year: yearFilter, period: periodFilter })
         return
       }
 
-      const html = await buildInvoiceHtml(printPayload.fees, printPayload.title, { autoPrint: true })
+      const html = await buildInvoiceHtml(printPayload.fees, printPayload.title, {
+        autoPrint: true,
+        docType: printPayload.docType,
+        noticeNoMap: printPayload.noticeNoMap,
+      })
       const w = openHtmlInWindow(html)
       if (!w) {
         await Swal.fire({ icon: 'warning', title: 'ไม่สามารถเปิดหน้าต่างพิมพ์ได้', text: 'กรุณาอนุญาต popup ของเบราว์เซอร์' })
         return
       }
+      await persistNoticePrintCounts()
       setShowPrintActionModal(false)
+      await loadFeeData({ status: statusFilter, year: yearFilter, period: periodFilter })
     } catch (error) {
       await Swal.fire({ icon: 'error', title: 'ดำเนินการไม่สำเร็จ', text: error.message })
     } finally {
@@ -1084,12 +1154,41 @@ const AdminFees = () => {
   }
 
   const handlePrintInvoicesAll = () => {
-    openPrintActionModal(filteredFees, 'ใบแจ้งหนี้ทั้งหมด')
+    openPrintActionModal(filteredFees, 'ใบแจ้งหนี้ทั้งหมด', { docType: 'invoice' })
   }
 
   const handlePrintInvoiceByHouse = (fee) => {
     const title = `ใบแจ้งหนี้ ${fee.houses?.house_no || '-'} ${periodLabel(fee.period)} ปี ${toBE(fee.year)}`
-    openPrintActionModal([fee], title)
+    openPrintActionModal([fee], title, { docType: 'invoice' })
+  }
+
+  const handlePrintNoticeByHouse = (fee) => {
+    if (!isNoticePrintable(fee)) {
+      Swal.fire({ icon: 'info', title: 'ยังพิมพ์ใบเตือนไม่ได้', text: 'ต้องมีค่าปรับและเป็นรายการค้างชำระก่อน' })
+      return
+    }
+    const nextNoticeNo = extractNoticePrintCount(fee.note) + 1
+    const title = `ใบแจ้งเตือน ${fee.houses?.house_no || '-'} ครั้งที่ ${nextNoticeNo}`
+    openPrintActionModal([fee], title, {
+      docType: 'notice',
+      noticeNoMap: { [fee.id]: nextNoticeNo },
+    })
+  }
+
+  const handlePrintNoticesAll = () => {
+    const noticeFees = filteredFees.filter(isNoticePrintable)
+    if (noticeFees.length === 0) {
+      Swal.fire({ icon: 'info', title: 'ไม่พบรายการที่พิมพ์ใบเตือน', text: 'ต้องมีค่าปรับและยังค้างชำระ' })
+      return
+    }
+    const noticeNoMap = noticeFees.reduce((acc, fee) => {
+      acc[fee.id] = extractNoticePrintCount(fee.note) + 1
+      return acc
+    }, {})
+    openPrintActionModal(noticeFees, `ใบแจ้งเตือนค้างชำระทั้งหมด (${noticeFees.length} หลัง)`, {
+      docType: 'notice',
+      noticeNoMap,
+    })
   }
 
   const handleAddPayment = (fee) => {
@@ -1340,6 +1439,7 @@ const AdminFees = () => {
           <div className="page-list-actions" style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center', width: '100%' }}>
             <button className="btn btn-p btn-sm" onClick={handleOpenProcessModal}>+ สร้างใบแจ้งหนี้</button>
             <button className="btn btn-a btn-sm" onClick={handlePrintInvoicesAll}>🖨 พิมพ์ใบแจ้งหนี้ทั้งหมด</button>
+            <button className="btn btn-o btn-sm" onClick={handlePrintNoticesAll}>🔔 พิมพ์ใบแจ้งเตือนทั้งหมด</button>
             <button className="btn btn-dg btn-sm" onClick={handleBulkOverdue}>⚖ คำนวณค่าปรับทั้งหมด</button>
             <button className="btn btn-g btn-sm" onClick={() => loadFeeData({ year: currentFeeYear, status: 'all', period: 'all' })}>🔄 รีเฟรช</button>
             <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginLeft: 'auto' }}>
@@ -1426,6 +1526,7 @@ const AdminFees = () => {
                             <div className="td-acts" style={{ justifyContent: 'flex-end', display: 'flex', width: '100%' }}>
                               <button className="btn btn-xs btn-a" onClick={() => handleEditFee(fee)}>แก้ไข</button>
                               <button className="btn btn-xs btn-g" onClick={() => handlePrintInvoiceByHouse(fee)}>พิมพ์</button>
+                              {isNoticePrintable(fee) && <button className="btn btn-xs btn-o" onClick={() => handlePrintNoticeByHouse(fee)}>พิมพ์ใบเตือน</button>}
                               {canCalculateAnnualFee(fee) && <button className="btn btn-xs btn-o" onClick={() => handleCalculateAnnual(fee)}>คำนวณทั้งปี</button>}
                               {!isFeeFullyPaid(fee) && <button className="btn btn-xs btn-dg" onClick={() => handleCalculateOverdue(fee)}>คำนวณค่าปรับ</button>}
                               <button className="btn btn-xs btn-dg" onClick={() => handleDeleteFee(fee)}>ลบ</button>
@@ -1463,6 +1564,7 @@ const AdminFees = () => {
                   <div className="mcard-actions">
                     <button className="btn btn-xs btn-a" onClick={() => handleEditFee(fee)}>แก้ไข</button>
                     <button className="btn btn-xs btn-g" onClick={() => handlePrintInvoiceByHouse(fee)}>พิมพ์</button>
+                    {isNoticePrintable(fee) && <button className="btn btn-xs btn-o" onClick={() => handlePrintNoticeByHouse(fee)}>ใบเตือน</button>}
                     {canCalculateAnnualFee(fee) && <button className="btn btn-xs btn-o" onClick={() => handleCalculateAnnual(fee)}>ทั้งปี</button>}
                     {!isFeeFullyPaid(fee) && <button className="btn btn-xs btn-dg" onClick={() => handleCalculateOverdue(fee)}>ค่าปรับ</button>}
                     <button className="btn btn-xs btn-dg" onClick={() => handleDeleteFee(fee)}>ลบ</button>

@@ -45,6 +45,12 @@ function getNextHalfYearPeriod(yearCE, period) {
   return { year: yearCE + 1, period: 'first_half' }
 }
 
+function buildInvoiceDocumentNo(fee) {
+  const yearSuffix = String(Number(fee?.year || 0)).slice(-2)
+  const idPrefix = String(fee?.id || '').slice(0, 8).toUpperCase()
+  return `INV-${yearSuffix}-${idPrefix}`
+}
+
 async function getParkingMonthlyByHouse() {
   const { data, error } = await supabase
     .from('vehicles')
@@ -334,9 +340,10 @@ export async function processHalfYearFeesAllHouses({ yearBE, period, setup, over
       payload.fee_overdue_fine = overdueCommon > 0 ? round2(overdueCommon * (finePct / 100)) : 0
       // fee_overdue_notice สะสม: prev.fee_overdue_notice + notice_fee ต่อครั้งทวงถาม
       payload.fee_overdue_notice = overdueCommon > 0 ? round2(toAmount(prevFee.fee_overdue_notice) + noticeFee) : 0
+      const prevDocNo = buildInvoiceDocumentNo(prevFee)
       payload.note = period === 'second_half'
-        ? `รวมยอดค้างจากครึ่งปีแรก ปี ${yearCE + 543} เลขที่ ${prevFee.id}`
-        : `รวมยอดค้างจากครึ่งปีหลัง ปี ${yearCE - 1 + 543} เลขที่ ${prevFee.id}`
+        ? `รวมยอดค้างจากครึ่งปีแรก ปี ${yearCE + 543} เลขที่เอกสาร ${prevDocNo}`
+        : `รวมยอดค้างจากครึ่งปีหลัง ปี ${yearCE - 1 + 543} เลขที่เอกสาร ${prevDocNo}`
     }
 
     const existing = existingByHouse.get(house.id)
@@ -345,9 +352,10 @@ export async function processHalfYearFeesAllHouses({ yearBE, period, setup, over
       if (error) throw error
 
       if (canCarry) {
+        const insertedDocNo = buildInvoiceDocumentNo({ year: yearCE, id: insertedFee?.id })
         const cancelNote = period === 'second_half'
-          ? `ยกยอดไปใบแจ้งหนี้ครึ่งปีหลัง ปี ${yearCE + 543} เลขที่ ${insertedFee?.id || ''} แล้ว — ระบบยกเลิกอัตโนมัติ ห้ามแก้ไข`
-          : `ยกยอดไปใบแจ้งหนี้ครึ่งปีแรก ปี ${yearCE + 543} เลขที่ ${insertedFee?.id || ''} แล้ว — ระบบยกเลิกอัตโนมัติ ห้ามแก้ไข`
+          ? `ยกยอดไปใบแจ้งหนี้ครึ่งปีหลัง ปี ${yearCE + 543} เลขที่เอกสาร ${insertedDocNo} แล้ว — ระบบยกเลิกอัตโนมัติ ห้ามแก้ไข`
+          : `ยกยอดไปใบแจ้งหนี้ครึ่งปีแรก ปี ${yearCE + 543} เลขที่เอกสาร ${insertedDocNo} แล้ว — ระบบยกเลิกอัตโนมัติ ห้ามแก้ไข`
         const { error: cancelError } = await supabase
           .from('fees')
           .update({ status: 'cancelled', note: cancelNote })
@@ -377,9 +385,10 @@ export async function processHalfYearFeesAllHouses({ yearBE, period, setup, over
     if (error) throw error
 
     if (canCarry) {
+      const existingDocNo = buildInvoiceDocumentNo({ year: yearCE, id: existing.id })
       const cancelNote = period === 'second_half'
-        ? `ยกยอดไปใบแจ้งหนี้ครึ่งปีหลัง ปี ${yearCE + 543} เลขที่ ${existing.id} แล้ว — ระบบยกเลิกอัตโนมัติ ห้ามแก้ไข`
-        : `ยกยอดไปใบแจ้งหนี้ครึ่งปีแรก ปี ${yearCE + 543} เลขที่ ${existing.id} แล้ว — ระบบยกเลิกอัตโนมัติ ห้ามแก้ไข`
+        ? `ยกยอดไปใบแจ้งหนี้ครึ่งปีหลัง ปี ${yearCE + 543} เลขที่เอกสาร ${existingDocNo} แล้ว — ระบบยกเลิกอัตโนมัติ ห้ามแก้ไข`
+        : `ยกยอดไปใบแจ้งหนี้ครึ่งปีแรก ปี ${yearCE + 543} เลขที่เอกสาร ${existingDocNo} แล้ว — ระบบยกเลิกอัตโนมัติ ห้ามแก้ไข`
       const { error: cancelError } = await supabase
         .from('fees')
         .update({ status: 'cancelled', note: cancelNote })
