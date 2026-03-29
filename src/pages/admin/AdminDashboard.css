@@ -401,58 +401,76 @@
   white-space: nowrap;
 }
 
+.btn:focus-visible {
+  outline: 3px solid rgba(59, 130, 246, 0.35);
+  outline-offset: 2px;
+}
+
 .btn-p {
-  background: var(--prb);
+  background: #1d4ed8;
   color: #fff;
-  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.12);
+  border: 1px solid #1e40af;
+  box-shadow: 0 3px 10px rgba(29, 78, 216, 0.25);
 }
 
 .btn-p:hover {
   transform: translateY(-1px);
-  opacity: 0.9;
+  background: #1e40af;
 }
 
 .btn-a {
-  background: var(--acb);
+  background: #0f766e;
   color: #fff;
-  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.12);
+  border: 1px solid #115e59;
+  box-shadow: 0 3px 10px rgba(15, 118, 110, 0.24);
 }
 
 .btn-a:hover {
-  opacity: 0.9;
+  background: #115e59;
 }
 
 .btn-o {
-  background: transparent;
-  color: var(--pr);
-  border: 1.5px solid var(--pr);
+  background: #b45309;
+  color: #fff;
+  border: 1px solid #92400e;
+  box-shadow: 0 3px 10px rgba(180, 83, 9, 0.25);
 }
 
 .btn-o:hover {
-  background: var(--prl);
+  background: #92400e;
 }
 
 .btn-g {
-  background: var(--bg);
-  color: var(--mu);
-  border: 1.5px solid var(--bo);
+  background: #334155;
+  color: #fff;
+  border: 1px solid #1e293b;
+  box-shadow: 0 3px 10px rgba(51, 65, 85, 0.22);
 }
 
 .btn-g:hover {
-  background: var(--prl);
-  color: var(--pr);
-  border-color: var(--pr);
+  background: #1e293b;
 }
 
 .btn-dg {
-  background: #fff;
-  color: var(--dg);
-  border: 1.5px solid #f3b4af;
+  background: #ef4444;
+  color: #fff;
+  border: 1px solid #b91c1c;
+  box-shadow: 0 3px 10px rgba(239, 68, 68, 0.22);
 }
 
 .btn-dg:hover {
-  background: var(--dgl);
-  border-color: var(--dg);
+  background: #dc2626;
+}
+
+.btn-ok {
+  background: #16a34a;
+  color: #fff;
+  border: 1px solid #166534;
+  box-shadow: 0 3px 10px rgba(22, 163, 74, 0.24);
+}
+
+.btn-ok:hover {
+  background: #15803d;
 }
 
 .btn-sm {
