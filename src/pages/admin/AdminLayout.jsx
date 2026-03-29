@@ -29,12 +29,10 @@ const AdminLayout = () => {
   const [setupOpen, setSetupOpen] = useState(false)
   const [menuSearch, setMenuSearch] = useState('')
   const [sectionOpen, setSectionOpen] = useState({
-    หน้าหลัก: true,
     ข้อมูล: false,
     การเงิน: false,
-    งานซ่อม: false,
     การตรวจสอบ: false,
-    อื่นๆ: false,
+    การจัดการ: false,
     รายงาน: false,
     ตั้งค่า: false,
   })
@@ -107,9 +105,7 @@ const AdminLayout = () => {
 
   // Navigation menu items (from concept.html)
   const navItems = [
-    { section: 'หน้าหลัก', tone: 'core', sectionIcon: '🏠', items: [
-      { id: 'dash', label: 'Dashboard', icon: '📊', path: '/admin/dashboard' },
-    ]},
+    { section: 'หน้าหลัก', tone: 'core', sectionIcon: '🏠', skipToggle: true, dashboardLink: '/admin/dashboard' },
     { section: 'ข้อมูล', tone: 'core', sectionIcon: '📋', items: [
       { id: 'houses', label: 'ข้อมูลบ้าน', icon: '🏠', path: '/admin/houses' },
       { id: 'vehicles', label: 'ข้อมูลรถ', icon: '🚗', path: '/admin/vehicles' },
@@ -118,14 +114,12 @@ const AdminLayout = () => {
       { id: 'fees', label: 'ค่าส่วนกลาง', icon: '💵', path: '/admin/fees' },
       { id: 'payments', label: 'ชำระเงิน', icon: '💳', path: '/admin/payments' },
     ]},
-    { section: 'งานซ่อม', tone: 'operation', sectionIcon: '🔧', items: [
-      { id: 'issues', label: 'จัดการปัญหา', icon: '🔧', path: '/admin/issues', badge: '3' },
-    ]},
     { section: 'การตรวจสอบ', tone: 'operation', sectionIcon: '✓', items: [
       { id: 'req', label: 'คำขอแก้ไข', icon: '📝', path: '/admin/requests', badge: '7' },
       { id: 'vio', label: 'กระทำผิด', icon: '⚠️', path: '/admin/violations' },
     ]},
-    { section: 'อื่นๆ', tone: 'operation', sectionIcon: '⭐', items: [
+    { section: 'การจัดการ', tone: 'operation', sectionIcon: '📋', items: [
+      { id: 'issues', label: 'จัดการปัญหา', icon: '🔧', path: '/admin/issues', badge: '3' },
       { id: 'ann', label: 'ประกาศ', icon: '📢', path: '/admin/announcements' },
       { id: 'rep', label: 'ผลงาน', icon: '🏆', path: '/admin/work-reports' },
       { id: 'tech', label: 'ทำเนียบช่าง', icon: '🔨', path: '/admin/technicians' },
@@ -150,6 +144,14 @@ const AdminLayout = () => {
   }
 
   const toggleSection = (sectionName) => {
+    // Check if this is หน้าหลัก and has dashboardLink
+    const section = navItems.find(item => item.section === sectionName)
+    if (section?.skipToggle && section?.dashboardLink) {
+      navigate(section.dashboardLink)
+      setSidebarOpen(false)
+      return
+    }
+
     setSectionOpen((prev) => {
       const next = navItems.reduce((acc, item) => {
         acc[item.section] = false
@@ -303,9 +305,9 @@ const AdminLayout = () => {
                     <span className="sb-sec-ico">{section.sectionIcon || '>'}</span>
                     <span className="sb-sec-title">{section.section}</span>
                   </span>
-                  <span className={`sb-sec-arrow ${expanded ? 'open' : ''}`}>▾</span>
+                  {!section.skipToggle && <span className={`sb-sec-arrow ${expanded ? 'open' : ''}`}>▾</span>}
                 </button>
-                {expanded && (
+                {expanded && section.items && (
                   <div className="sb-submenu-wrap">
                 {section.items.map((item) => (
                   <div
