@@ -880,7 +880,7 @@ button, input, select, textarea {
   letter-spacing: 0;
   text-transform: none;
   color: var(--sbt);
-  padding: 10px 10px;
+  padding: 7px 9px;
 }
 
 .sb-sec-btn {
@@ -893,7 +893,7 @@ button, input, select, textarea {
   justify-content: space-between;
   cursor: pointer;
   transition: all var(--tr);
-  min-height: 42px;
+  min-height: 35px;
 }
 
 .sb-sec-btn.tone-core {
@@ -960,23 +960,23 @@ button, input, select, textarea {
 
 .sb-major-group {
   display: grid;
-  gap: 6px;
-  margin-bottom: 6px;
+  gap: 4px;
+  margin-bottom: 4px;
 }
 
 .sb-submenu-wrap {
   border-left: 2px solid rgba(255,255,255,.2);
-  margin-left: 12px;
-  padding-left: 10px;
+  margin-left: 10px;
+  padding-left: 8px;
   display: grid;
-  gap: 6px;
+  gap: 4px;
 }
 
 .sb-item {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 10px 10px;
+  gap: 10px;
+  padding: 7px 10px;
   border-radius: 12px;
   color: var(--sbm);
   text-decoration: none;
@@ -985,7 +985,7 @@ button, input, select, textarea {
   position: relative;
   font-size: 13px;
   font-weight: 700;
-  min-height: 42px;
+  min-height: 35px;
 }
 
 .sb-item:hover {
