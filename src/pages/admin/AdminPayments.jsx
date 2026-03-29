@@ -397,43 +397,101 @@ export default function AdminPayments() {
     const issueDate = formatDateTime(payment.verified_at)
     const houseNo = payment.houses?.house_no || '-'
     const ownerName = payment.houses?.owner_name || '-'
-    const invoiceLabel = payment.fees ? `${payment.fees.period} ${payment.fees.year}` : '-'
-    const amount = formatMoney(payment.amount)
-    const invoiceAmount = formatMoney(payment.fees?.total_amount)
+    const invoiceLabel = payment.fees ? `${formatPeriod(payment.fees.period)} ปี ${Number(payment.fees.year || 0) + 543}` : '-'
+    const invoiceNo = payment.fees ? `INV-${String(payment.fees.year || '').slice(-2)}-${String(payment.fees.id || '').slice(0, 8).toUpperCase()}` : '-'
+    const amount = Number(payment.amount || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+    const invoiceAmount = Number(payment.fees?.total_amount || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
     const approver = payment.verified_profile?.full_name || profile?.full_name || profile?.username || '-'
+    const paymentDate = formatDateTime(payment.paid_at)
+    const displayNote = getDisplayNote(payment.note)
     const printWindow = window.open('', '_blank', 'width=960,height=1200')
     if (!printWindow) return
 
     printWindow.document.write(`
       <html>
         <head>
-          <title>Receipt ${receiptNo}</title>
+          <title>ใบเสร็จรับเงิน ${receiptNo}</title>
+          <link rel="preconnect" href="https://fonts.googleapis.com">
+          <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+          <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;700&display=swap" rel="stylesheet">
           <style>
-            @page { size: A4; margin: 12mm; }
-            body { font-family: Arial, sans-serif; color: #1f2937; }
-            .sheet { width: 100%; max-width: 760px; margin: 0 auto; border: 1px solid #d1d5db; border-radius: 16px; padding: 28px; }
-            .head { display: flex; justify-content: space-between; gap: 16px; align-items: flex-start; }
-            .brand { display: flex; gap: 14px; align-items: center; }
-            .brand img { width: 56px; height: 56px; border-radius: 50%; object-fit: cover; border: 1px solid #e5e7eb; }
-            .title { font-size: 28px; font-weight: 700; margin: 0; }
-            .sub { color: #6b7280; font-size: 13px; margin-top: 4px; }
-            .receipt-box { text-align: right; }
-            .receipt-no { font-size: 18px; font-weight: 700; color: #0f766e; }
-            .section { margin-top: 20px; border-top: 1px solid #e5e7eb; padding-top: 16px; }
-            .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 18px; }
-            .field { padding: 10px 12px; background: #f8fafc; border-radius: 10px; }
-            .label { font-size: 12px; color: #6b7280; margin-bottom: 4px; }
-            .value { font-size: 15px; font-weight: 600; }
-            table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-            th, td { border-bottom: 1px solid #e5e7eb; padding: 12px 10px; text-align: left; font-size: 14px; }
-            th:last-child, td:last-child { text-align: right; }
-            .total { margin-top: 16px; display: flex; justify-content: flex-end; }
-            .total-box { min-width: 240px; background: #ecfeff; border: 1px solid #99f6e4; border-radius: 12px; padding: 14px 16px; }
-            .total-box strong { font-size: 22px; color: #115e59; }
-            .foot { margin-top: 30px; display: flex; justify-content: space-between; gap: 16px; }
-            .note { color: #6b7280; font-size: 12px; line-height: 1.6; }
-            .sign { min-width: 220px; text-align: center; }
-            .sign-line { margin-top: 56px; border-top: 1px solid #9ca3af; padding-top: 8px; font-size: 13px; }
+            @page { size: A4; margin: 0; }
+            * { box-sizing: border-box; }
+            html, body { font-family: 'Sarabun', 'TH Sarabun New', Tahoma, sans-serif; margin: 0; padding: 0; color: #111827; background: #fff; }
+            .sheet { width: 100%; min-height: 100vh; padding: 24px 28px; display: flex; flex-direction: column; gap: 8px; }
+            .head {
+              display: flex;
+              justify-content: space-between;
+              gap: 12px;
+              border: 1px solid #cbd5e1;
+              border-radius: 4px;
+              padding: 10px 12px;
+              background: #ffffff;
+            }
+            .brand { display: flex; align-items: flex-start; gap: 10px; flex: 1; min-width: 0; }
+            .brand img {
+              width: 48px;
+              height: 48px;
+              border-radius: 6px;
+              object-fit: cover;
+              border: 1px solid #cbd5e1;
+            }
+            .doc { font-size: 16px; font-weight: 700; line-height: 1.3; }
+            .village { font-size: 11px; margin-top: 3px; font-weight: 600; }
+            .sub { font-size: 9px; color: #6b7280; margin-top: 2px; }
+            .doc-meta { font-size: 10px; min-width: 200px; display: flex; flex-direction: column; gap: 2px; word-break: break-word; }
+            .doc-meta span { color: #6b7280; font-weight: 500; }
+            .copy-mark-row {
+              display: flex;
+              justify-content: flex-end;
+              margin-top: 10px;
+            }
+            .copy-mark {
+              border: none;
+              border-radius: 4px;
+              padding: 3px 10px;
+              text-align: center;
+              font-size: 14px;
+              font-weight: 700;
+              line-height: 1.3;
+              color: #0c4a6e;
+              background: transparent;
+            }
+            .box { border: 1px solid #cbd5e1; border-radius: 4px; padding: 10px 12px; }
+            .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 10px; word-break: break-word; }
+            .grid > div { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+            .grid span { font-size: 9px; color: #6b7280; font-weight: 500; }
+            .grid strong { font-size: 11px; font-weight: 600; }
+            table { width: 100%; border-collapse: collapse; table-layout: auto; }
+            th, td { border: 1px solid #cbd5e1; padding: 6px 8px; font-size: 10px; word-wrap: break-word; overflow-wrap: break-word; }
+            th { background: #f1f5f9; text-align: left; font-weight: 600; }
+            .c { text-align: center; }
+            .r { text-align: right; }
+            tfoot td { background: #f1f5f9; font-weight: 600; }
+            .note-box {
+              border-top: 1px dashed #d1d5db;
+              padding-top: 4px;
+              font-size: 10px;
+              color: #4b5563;
+              margin-top: 4px;
+            }
+            .foot {
+              margin-top: 8px;
+              border: 1px solid #cbd5e1;
+              border-radius: 4px;
+              padding: 10px 12px;
+              display: flex;
+              align-items: flex-end;
+              justify-content: space-between;
+              gap: 12px;
+              background: #f9fafb;
+            }
+            .note { font-size: 9px; color: #64748b; line-height: 1.4; }
+            .sign-wrap { min-width: 180px; text-align: center; font-size: 9px; color: #64748b; }
+            .sign-line { border-top: 1px solid #cbd5e1; margin: 36px 0 4px; }
+            @media print {
+              html, body { background: #fff; }
+            }
           </style>
         </head>
         <body>
@@ -442,62 +500,71 @@ export default function AdminPayments() {
               <div class="brand">
                 <img src="${setup.loginCircleLogoUrl || villageLogo}" alt="logo" />
                 <div>
-                  <h1 class="title">ใบเสร็จรับเงิน</h1>
-                  <div>${setup.villageName || 'Village Management System'}</div>
-                  <div class="sub">${setup.address || ''}</div>
+                  <div class="doc">ใบเสร็จรับเงินค่าส่วนกลาง</div>
+                  <div class="village">${setup.villageName || 'Village Management System'}</div>
+                  <div class="sub">${setup.address || '-'}</div>
+                  <div class="sub">อ้างอิงใบแจ้งหนี้ ${invoiceNo}</div>
                 </div>
               </div>
-              <div class="receipt-box">
-                <div class="receipt-no">${receiptNo}</div>
-                <div class="sub">วันที่อนุมัติ ${issueDate}</div>
+              <div class="doc-meta">
+                <div><span>เลขที่ใบเสร็จ:</span> <strong>${receiptNo}</strong></div>
+                <div><span>วันที่รับชำระ:</span> <strong>${paymentDate}</strong></div>
+                <div><span>วันที่อนุมัติ:</span> <strong>${issueDate}</strong></div>
+                <div class="copy-mark-row"><div class="copy-mark">ต้นฉบับ</div></div>
               </div>
             </div>
 
-            <div class="section">
+            <section class="box">
               <div class="grid">
-                <div class="field"><div class="label">บ้านเลขที่</div><div class="value">${houseNo}</div></div>
-                <div class="field"><div class="label">ชื่อเจ้าของ/ผู้ชำระ</div><div class="value">${ownerName}</div></div>
-                <div class="field"><div class="label">รอบใบแจ้งหนี้</div><div class="value">${invoiceLabel}</div></div>
-                <div class="field"><div class="label">วิธีชำระ</div><div class="value">${formatMethod(payment.payment_method)}</div></div>
+                <div><span>บ้านเลขที่</span><strong>${houseNo}</strong></div>
+                <div><span>ชื่อเจ้าของบ้าน</span><strong>${ownerName}</strong></div>
+                <div><span>รอบใบแจ้งหนี้</span><strong>${invoiceLabel}</strong></div>
+                <div><span>วิธีชำระ</span><strong>${formatMethod(payment.payment_method)}</strong></div>
               </div>
-            </div>
+            </section>
 
-            <div class="section">
+            <section class="box">
               <table>
                 <thead>
-                  <tr><th>รายการ</th><th>รายละเอียด</th><th>จำนวนเงิน</th></tr>
+                  <tr>
+                    <th class="c" style="width:56px;">ลำดับ</th>
+                    <th>รายการ</th>
+                    <th class="r" style="width:180px;">จำนวนเงิน (บาท)</th>
+                  </tr>
                 </thead>
                 <tbody>
                   <tr>
-                    <td>ค่าส่วนกลาง</td>
-                    <td>อ้างอิงใบแจ้งหนี้ ${invoiceLabel}</td>
-                    <td>${invoiceAmount}</td>
+                    <td class="c">1</td>
+                    <td>ยอดตามใบแจ้งหนี้ ${invoiceNo}</td>
+                    <td class="r">${invoiceAmount}</td>
                   </tr>
                   <tr>
-                    <td>รับชำระจริง</td>
-                    <td>${payment.note || '-'}</td>
-                    <td>${amount}</td>
+                    <td class="c">2</td>
+                    <td>ยอดรับชำระจริง</td>
+                    <td class="r">${amount}</td>
                   </tr>
                 </tbody>
+                <tfoot>
+                  <tr>
+                    <td colspan="2" class="r"><strong>ยอดรับชำระสุทธิ</strong></td>
+                    <td class="r"><strong>${amount}</strong></td>
+                  </tr>
+                </tfoot>
               </table>
-              <div class="total">
-                <div class="total-box">
-                  <div class="label">ยอดรับชำระสุทธิ</div>
-                  <strong>฿${amount}</strong>
-                </div>
-              </div>
-            </div>
+              <div class="note-box">${displayNote || 'ชำระเรียบร้อยแล้ว ขอบคุณค่ะ/ครับ'}</div>
+            </section>
 
-            <div class="foot">
+            <section class="foot">
               <div class="note">
                 ออกใบเสร็จหลังจากตรวจสอบการชำระเรียบร้อยแล้ว<br />
                 อนุมัติโดย ${approver}<br />
-                ช่องทางชำระอ้างอิงบัญชี ${setup.bankAccountName || '-'} ${setup.bankAccountNo || ''}
+                บัญชีอ้างอิง ${setup.bankAccountName || '-'} ${setup.bankAccountNo || ''}
               </div>
-              <div class="sign">
-                <div class="sign-line">ผู้ตรวจสอบ / ผู้ออกใบเสร็จ</div>
+              <div class="sign-wrap">
+                <div class="sign-line"></div>
+                <div>ผู้ตรวจสอบ / ผู้ออกใบเสร็จ</div>
               </div>
-            </div>
+            </section>
           </div>
           <script>window.onload = () => window.print();</script>
         </body>
