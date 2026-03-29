@@ -79,9 +79,9 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen bg-[linear-gradient(180deg,#f6fafc_0%,#eef4f7_100%)] p-4 sm:p-6 lg:p-8">
-      <div className="mx-auto grid min-h-[calc(100vh-2rem)] w-full max-w-[1180px] grid-cols-1 overflow-hidden rounded-[32px] border border-slate-200/80 bg-white shadow-[0_26px_70px_rgba(15,23,42,0.10)] lg:min-h-[720px] lg:grid-cols-[43%_57%]">
-        <section className="relative hidden overflow-hidden bg-[linear-gradient(160deg,#133b5c_0%,#16536f_60%,#1c6a73_100%)] lg:flex">
-          <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(255,255,255,0.04),transparent_42%)]" />
+      <div className="mx-auto grid min-h-[calc(100vh-2rem)] w-full max-w-[1000px] grid-cols-1 overflow-hidden rounded-[32px] border border-slate-200/80 bg-white shadow-[0_26px_70px_rgba(15,23,42,0.10)] lg:min-h-[620px] lg:grid-cols-[43%_57%]">
+        <section className="relative hidden overflow-hidden bg-[linear-gradient(160deg,#1a4a74_0%,#1f5d7f_60%,#207580_100%)] lg:flex">
+          <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(255,255,255,0.05),transparent_42%)]" />
           <div className="absolute inset-y-10 right-10 w-px bg-white/10" />
 
           <div className="relative z-10 flex h-full w-full flex-col justify-between p-10 xl:p-12">
@@ -96,7 +96,7 @@ export default function LoginPage() {
                   <img src={setup.loginCircleLogoUrl || villageLogo} alt="Village Logo" className="h-16 w-16 rounded-2xl object-cover" />
                 </div>
                 <div>
-                  <div className="text-sm font-semibold uppercase tracking-[0.24em] text-white/60">Village Management System</div>
+                  <div className="text-sm font-semibold uppercase tracking-[0.24em] text-white/75">Village Management System</div>
                   <h1 className="mt-2 text-[32px] font-black leading-tight text-white">{setup.villageName}</h1>
                 </div>
               </div>
@@ -110,21 +110,21 @@ export default function LoginPage() {
                   <span className="mt-1 inline-flex h-6 w-6 items-center justify-center rounded-full bg-white/12 text-xs font-bold">01</span>
                   <div>
                     <div className="text-sm font-semibold text-white">ข้อมูลสำคัญอยู่ในมุมมองเดียว</div>
-                    <div className="mt-1 text-sm leading-6 text-white/70">บ้าน รถ การชำระเงิน และประวัติการใช้งาน ถูกจัดไว้พร้อมใช้งาน</div>
+                    <div className="mt-1 text-sm leading-6 text-white/80">บ้าน รถ การชำระเงิน และประวัติการใช้งาน ถูกจัดไว้พร้อมใช้งาน</div>
                   </div>
                 </div>
                 <div className="flex items-start gap-3 text-white/85">
                   <span className="mt-1 inline-flex h-6 w-6 items-center justify-center rounded-full bg-white/12 text-xs font-bold">02</span>
                   <div>
                     <div className="text-sm font-semibold text-white">รองรับงานประจำวันของเจ้าหน้าที่</div>
-                    <div className="mt-1 text-sm leading-6 text-white/70">ลดขั้นตอนซ้ำซ้อนและช่วยติดตามสถานะงานได้ต่อเนื่อง</div>
+                    <div className="mt-1 text-sm leading-6 text-white/80">ลดขั้นตอนซ้ำซ้อนและช่วยติดตามสถานะงานได้ต่อเนื่อง</div>
                   </div>
                 </div>
                 <div className="flex items-start gap-3 text-white/85">
                   <span className="mt-1 inline-flex h-6 w-6 items-center justify-center rounded-full bg-white/12 text-xs font-bold">03</span>
                   <div>
                     <div className="text-sm font-semibold text-white">ตรวจสอบย้อนหลังได้ชัดเจน</div>
-                    <div className="mt-1 text-sm leading-6 text-white/70">ทุกการใช้งานและรายการสำคัญสามารถติดตามย้อนหลังได้</div>
+                    <div className="mt-1 text-sm leading-6 text-white/80">ทุกการใช้งานและรายการสำคัญสามารถติดตามย้อนหลังได้</div>
                   </div>
                 </div>
               </div>
@@ -133,15 +133,15 @@ export default function LoginPage() {
             <div className="grid grid-cols-3 gap-3 text-white">
               <div className="rounded-2xl border border-white/15 bg-white/10 px-4 py-4">
                 <div className="text-2xl font-black">24/7</div>
-                <div className="mt-1 text-xs text-white/70">Availability</div>
+                <div className="mt-1 text-xs text-white/80">Availability</div>
               </div>
               <div className="rounded-2xl border border-white/15 bg-white/10 px-4 py-4">
                 <div className="text-2xl font-black">1 View</div>
-                <div className="mt-1 text-xs text-white/70">Operations</div>
+                <div className="mt-1 text-xs text-white/80">Operations</div>
               </div>
               <div className="rounded-2xl border border-white/15 bg-white/10 px-4 py-4">
                 <div className="text-2xl font-black">100%</div>
-                <div className="mt-1 text-xs text-white/70">Traceable</div>
+                <div className="mt-1 text-xs text-white/80">Traceable</div>
               </div>
             </div>
           </div>
