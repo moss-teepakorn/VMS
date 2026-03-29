@@ -44,15 +44,8 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    const isDirectOpen = Boolean(
-      window.location.pathname !== '/login'
-      && (!document.referrer || !document.referrer.startsWith(window.location.origin)),
-    )
-
-    if (isDirectOpen) {
-      clearClientStorage()
-    }
-
+    // Keep local auth session across browser refresh/navigation.
+    // Storage cleanup is handled explicitly on logout or when opening login page.
     const raw = localStorage.getItem(SESSION_KEY)
     const session = safeParse(raw)
     if (session?.user && session?.profile) {
