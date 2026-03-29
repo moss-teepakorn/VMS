@@ -116,25 +116,38 @@ export default function AdminReportPayments() {
           </div>
           <form
             className="houses-filter-row"
-            style={{ marginBottom: 0, gap: 12, flexWrap: 'wrap', justifyContent: 'flex-end', alignItems: 'flex-end' }}
+            style={{
+              marginBottom: 0,
+              gap: 12,
+              flexWrap: 'wrap',
+              justifyContent: 'flex-end',
+              alignItems: 'center',
+              display: 'flex',
+              minWidth: 320,
+              width: '100%',
+              maxWidth: 600
+            }}
             onSubmit={e => { e.preventDefault(); handleShowReport(); }}
           >
-            <label style={{ marginBottom: 0 }}>เดือนเริ่มต้น
-              <select value={startMonth} onChange={e => setStartMonth(Number(e.target.value))} className="houses-filter-select">
+            <label style={{ marginBottom: 0, display: 'flex', flexDirection: 'column', fontWeight: 500 }}>
+              เดือนเริ่มต้น
+              <select value={startMonth} onChange={e => setStartMonth(Number(e.target.value))} className="houses-filter-select" style={{ minWidth: 120, height: 36 }}>
                 {monthOptions.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
               </select>
             </label>
-            <label style={{ marginBottom: 0 }}>ถึงเดือน
-              <select value={endMonth} onChange={e => setEndMonth(Number(e.target.value))} className="houses-filter-select">
+            <label style={{ marginBottom: 0, display: 'flex', flexDirection: 'column', fontWeight: 500 }}>
+              ถึงเดือน
+              <select value={endMonth} onChange={e => setEndMonth(Number(e.target.value))} className="houses-filter-select" style={{ minWidth: 120, height: 36 }}>
                 {monthOptions.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
               </select>
             </label>
-            <label style={{ marginBottom: 0 }}>ปี
-              <select value={year} onChange={e => setYear(Number(e.target.value))} className="houses-filter-select">
+            <label style={{ marginBottom: 0, display: 'flex', flexDirection: 'column', fontWeight: 500 }}>
+              ปี
+              <select value={year} onChange={e => setYear(Number(e.target.value))} className="houses-filter-select" style={{ minWidth: 100, height: 36 }}>
                 {yearOptions.map(y => <option key={y} value={y}>{y + 543}</option>)}
               </select>
             </label>
-            <button className="btn btn-p" type="submit" style={{ minWidth: 120 }}>แสดงรายงาน</button>
+            <button className="btn btn-p" type="submit" style={{ minWidth: 120, height: 36, marginTop: 18 }}>แสดงรายงาน</button>
             {touched && error && <span style={{ color: 'red', marginLeft: 8 }}>{error}</span>}
           </form>
         </div>
