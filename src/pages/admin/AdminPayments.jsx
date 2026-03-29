@@ -1072,7 +1072,7 @@ export default function AdminPayments() {
   }
 
   return (
-    <div className="pane on houses-compact payments-compact" style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+    <div className="pane on houses-compact payments-compact">
       <div className="ph houses-ph">
         <div className="ph-in">
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>

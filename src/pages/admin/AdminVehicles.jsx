@@ -484,7 +484,7 @@ const AdminVehicles = () => {
   }
 
   return (
-    <div className="pane on page-compact vehicles-page" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+    <div className="pane on houses-compact vehicles-page">
       <div className="ph">
         <div className="ph-in">
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
