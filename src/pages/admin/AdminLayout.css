@@ -987,6 +987,8 @@ button, input, select, textarea {
   gap: 10px;
   padding: 7px 10px;
   border-radius: 8px;
+  border: none;
+  border-bottom: none;
   color: var(--sbm);
   text-decoration: none;
   cursor: pointer;
@@ -1000,12 +1002,14 @@ button, input, select, textarea {
 .sb-item:hover {
   background: rgba(125, 211, 252, .20);
   color: var(--sbt);
+  border-bottom: none;
 }
 
 .sb-item.act {
   background: rgba(125, 211, 252, .32);
   color: #ffffff;
   font-weight: 800;
+  border-bottom: none;
 }
 
 .sb-item::before {
@@ -1215,8 +1219,7 @@ button, input, select, textarea {
   }
 
   .sidebar.collapsed .sb-item.act::before {
-    top: 16%;
-    bottom: 16%;
+    content: none;
   }
 
   .sidebar.collapsed .sb-foot {
