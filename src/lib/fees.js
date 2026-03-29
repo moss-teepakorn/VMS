@@ -828,7 +828,7 @@ export async function listPaymentTotalsByFeeIds(feeIds = []) {
 
   const { data, error } = await supabase
     .from('payments')
-    .select('fee_id, amount, verified_at')
+    .select('fee_id, amount, verified_at, note')
     .in('fee_id', ids)
 
   if (error) throw error
@@ -838,6 +838,7 @@ export async function listPaymentTotalsByFeeIds(feeIds = []) {
   for (const row of data || []) {
     const feeId = row?.fee_id
     if (!feeId) continue
+    if (isRejectedPaymentNote(row?.note)) continue
 
     const amount = Number(row.amount || 0)
     submitted[feeId] = Number(submitted[feeId] || 0) + amount
@@ -847,6 +848,46 @@ export async function listPaymentTotalsByFeeIds(feeIds = []) {
   }
 
   return { submitted, approved }
+}
+
+export async function listApprovedPaymentItemTotalsByFeeIds(feeIds = []) {
+  const ids = Array.isArray(feeIds) ? feeIds.filter(Boolean) : []
+  if (ids.length === 0) return {}
+
+  const { data: approvedPayments, error: paymentError } = await supabase
+    .from('payments')
+    .select('id, fee_id, note, verified_at')
+    .in('fee_id', ids)
+    .not('verified_at', 'is', null)
+
+  if (paymentError) throw paymentError
+
+  const validPayments = (approvedPayments || []).filter((row) => !isRejectedPaymentNote(row?.note))
+  const paymentIds = validPayments.map((row) => row.id).filter(Boolean)
+  if (paymentIds.length === 0) return {}
+
+  const feeByPaymentId = validPayments.reduce((acc, row) => {
+    acc[row.id] = row.fee_id
+    return acc
+  }, {})
+
+  const { data: itemRows, error: itemError } = await supabase
+    .from('payment_items')
+    .select('payment_id, fee_id, item_key, paid_amount')
+    .in('payment_id', paymentIds)
+
+  if (itemError) throw itemError
+
+  const totals = {}
+  for (const row of itemRows || []) {
+    const feeId = row?.fee_id || feeByPaymentId[row?.payment_id]
+    const itemKey = String(row?.item_key || '').trim()
+    if (!feeId || !itemKey) continue
+    if (!totals[feeId]) totals[feeId] = {}
+    totals[feeId][itemKey] = Number(totals[feeId][itemKey] || 0) + Number(row?.paid_amount || 0)
+  }
+
+  return totals
 }
 
 export async function listNoticePrintCountsByFeeIds(feeIds = []) {

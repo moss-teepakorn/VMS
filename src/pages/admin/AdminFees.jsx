@@ -16,6 +16,7 @@ import {
   getLatestFeeYear,
   listFees,
   listNoticePrintCountsByFeeIds,
+  listApprovedPaymentItemTotalsByFeeIds,
   listPaymentTotalsByFeeIds,
   listPayments,
   processHalfYearFeesAllHouses,
@@ -134,6 +135,7 @@ const AdminFees = () => {
   const [noticePrintCounts, setNoticePrintCounts] = useState({})
   const [feeSubmittedTotals, setFeeSubmittedTotals] = useState({})
   const [feeApprovedTotals, setFeeApprovedTotals] = useState({})
+  const [feeApprovedItemTotals, setFeeApprovedItemTotals] = useState({})
   const [paymentForm, setPaymentForm] = useState({
     payment_method: 'transfer',
     paid_at: new Date().toISOString().slice(0, 16),
@@ -195,8 +197,10 @@ const AdminFees = () => {
       const noticeCounts = await listNoticePrintCountsByFeeIds(feeData.map((row) => row.id))
 
       const paymentTotals = await listPaymentTotalsByFeeIds(feeData.map((row) => row.id))
+      const paymentItemTotals = await listApprovedPaymentItemTotalsByFeeIds(feeData.map((row) => row.id))
       setFeeSubmittedTotals(paymentTotals.submitted || {})
       setFeeApprovedTotals(paymentTotals.approved || {})
+      setFeeApprovedItemTotals(paymentItemTotals || {})
       setNoticePrintCounts(noticeCounts || {})
 
       const filteredFees = effectiveStatus === 'partial'
@@ -281,6 +285,26 @@ const AdminFees = () => {
   const getApprovedAmountForFee = (fee) => Number(feeApprovedTotals[fee?.id] || 0)
   const getSubmittedAmountForFee = (fee) => Number(feeSubmittedTotals[fee?.id] || 0)
 
+  const editApprovedAmount = useMemo(() => (editingFee ? getApprovedAmountForFee(editingFee) : 0), [editingFee, feeApprovedTotals])
+  const editOutstandingAfterChange = useMemo(() => Math.max(0, editTotal - editApprovedAmount), [editTotal, editApprovedAmount])
+
+  const getOutstandingItemRowsForFee = (fee) => {
+    const approvedByItem = feeApprovedItemTotals[fee?.id] || {}
+    return feeItemDefs
+      .map((item) => {
+        const dueAmount = Number(fee?.[item.key] || 0)
+        const approvedAmount = Number(approvedByItem[item.key] || 0)
+        const outstandingAmount = Math.max(0, dueAmount - approvedAmount)
+        return {
+          ...item,
+          dueAmount,
+          approvedAmount,
+          outstandingAmount,
+        }
+      })
+      .filter((row) => row.outstandingAmount > 0)
+  }
+
   const isFeeFullyPaid = (fee) => {
     const approvedAmount = getApprovedAmountForFee(fee)
     return approvedAmount >= Number(fee?.total_amount || 0)
@@ -300,8 +324,7 @@ const AdminFees = () => {
   )
 
   const getOutstandingAmountForFee = (fee) => {
-    const submittedAmount = getSubmittedAmountForFee(fee)
-    return Math.max(0, Number(fee?.total_amount || 0) - submittedAmount)
+    return getOutstandingItemRowsForFee(fee).reduce((sum, row) => sum + Number(row.outstandingAmount || 0), 0)
   }
 
   const getFeeStatusBadge = (fee) => {
@@ -424,12 +447,12 @@ const AdminFees = () => {
 
     try {
       const currentApprovedAmount = getApprovedAmountForFee(editingFee)
-      const currentInvoiceTotal = Number(editingFee.total_amount || 0)
-      if (editForm.status === 'paid' && currentApprovedAmount < currentInvoiceTotal) {
+      const nextInvoiceTotal = Number(editTotal || 0)
+      if (editForm.status === 'paid' && currentApprovedAmount < nextInvoiceTotal) {
         await Swal.fire({
           icon: 'warning',
           title: 'ยังตั้งเป็นชำระแล้วไม่ได้',
-          text: `ยอดอนุมัติ ${currentApprovedAmount.toLocaleString('th-TH')} / ${currentInvoiceTotal.toLocaleString('th-TH')} บาท`,
+          text: `ยอดอนุมัติ ${currentApprovedAmount.toLocaleString('th-TH')} / ยอดรวมใหม่ ${nextInvoiceTotal.toLocaleString('th-TH')} บาท`,
         })
         return
       }
@@ -438,9 +461,12 @@ const AdminFees = () => {
       const discountAmount = Math.max(0, Number(editForm.fee_discount || 0))
       const feeOtherNet = Number(editForm.fee_other || 0) - discountAmount
       const noteValue = `${discountAmount > 0 ? `[DISCOUNT:${discountAmount}] ` : ''}${editForm.note || ''}`.trim() || null
+      const nextStatus = currentApprovedAmount >= nextInvoiceTotal
+        ? 'paid'
+        : editForm.status || 'unpaid'
 
       await updateFee(editingFee.id, {
-        status: editForm.status || 'unpaid',
+        status: nextStatus,
         invoice_date: editForm.invoice_date || null,
         due_date: editForm.due_date || null,
         fee_common: Number(editForm.fee_common || 0),
@@ -713,33 +739,30 @@ const AdminFees = () => {
     }
 
     const itemRows = (fee) => {
-      const discountAmount = extractDiscountFromNote(fee.note)
-      const feeOtherBase = Number(fee.fee_other || 0) + discountAmount
-      const fineTotal = Number(fee.fee_overdue_fine || 0) + Number(fee.fee_fine || 0)
-      const noticeTotal = Number(fee.fee_overdue_notice || 0) + Number(fee.fee_notice || 0)
-
-      const printItems = [
-        { label: 'ค่าส่วนกลาง', amount: Number(fee.fee_common || 0) },
-        { label: 'ค่าจอดรถ', amount: Number(fee.fee_parking || 0) },
-        { label: 'ค่าขยะ', amount: Number(fee.fee_waste || 0) },
-        { label: 'ยอดค้างยกมา', amount: Number(fee.fee_overdue_common || 0) },
-        { label: 'ค่าปรับ', amount: fineTotal },
-        { label: 'ค่าทวงถาม', amount: noticeTotal },
-        { label: 'ค่ากระทำผิด', amount: Number(fee.fee_violation || 0) },
-        { label: 'ค่าอื่นๆ', amount: feeOtherBase },
-        { label: 'ส่วนลด', amount: -discountAmount },
-      ]
+      const printItems = getOutstandingItemRowsForFee(fee)
+      if (printItems.length === 0) {
+        return `
+          <tr>
+            <td class="c">1</td>
+            <td>ไม่มีรายการค้างชำระ</td>
+            <td class="r">0.00</td>
+          </tr>
+        `
+      }
 
       return printItems
-      .map((item, idx) => `
-        <tr>
-          <td class="c">${idx + 1}</td>
-          <td>${item.label}</td>
-          <td class="r">${fmtMoney(item.amount)}</td>
-        </tr>
-      `)
-      .join('')
+        .map((item, idx) => `
+          <tr>
+            <td class="c">${idx + 1}</td>
+            <td>${item.label}</td>
+            <td class="r">${fmtMoney(item.outstandingAmount)}</td>
+          </tr>
+        `)
+        .join('')
     }
+
+    const totalOutstandingForPrint = (fee) => getOutstandingItemRowsForFee(fee)
+      .reduce((sum, item) => sum + Number(item.outstandingAmount || 0), 0)
 
     // Two invoice sections per house (original + copy) — separate pages
     const invoiceBlocks = targetFees.flatMap((fee, feeIndex) => {
@@ -810,11 +833,11 @@ const AdminFees = () => {
                 <tfoot>
                   <tr>
                     <td colspan="2" class="r"><strong>รวมทั้งสิ้น</strong></td>
-                    <td class="r"><strong>${fmtMoney(fee.total_amount || 0)}</strong></td>
+                    <td class="r"><strong>${fmtMoney(totalOutstandingForPrint(fee))}</strong></td>
                   </tr>
                 </tfoot>
               </table>
-              <div class="amount-text">(${toThaiBahtText(fee.total_amount || 0)})</div>
+              <div class="amount-text">(${toThaiBahtText(totalOutstandingForPrint(fee))})</div>
             </section>
 
             <section class="box payment-box">
@@ -893,11 +916,11 @@ const AdminFees = () => {
                 <tfoot>
                   <tr>
                     <td colspan="2" class="r"><strong>รวมทั้งสิ้น</strong></td>
-                    <td class="r"><strong>${fmtMoney(fee.total_amount || 0)}</strong></td>
+                    <td class="r"><strong>${fmtMoney(totalOutstandingForPrint(fee))}</strong></td>
                   </tr>
                 </tfoot>
               </table>
-              <div class="amount-text">(${toThaiBahtText(fee.total_amount || 0)})</div>
+              <div class="amount-text">(${toThaiBahtText(totalOutstandingForPrint(fee))})</div>
             </section>
 
             <section class="box payment-box">
@@ -1215,9 +1238,10 @@ const AdminFees = () => {
   }
 
   const handleAddPayment = (fee) => {
-    const payableItems = feeItemDefs
-      .map((item) => ({ ...item, amount: Number(fee[item.key] || 0) }))
-      .filter((item) => item.amount > 0)
+    const payableItems = getOutstandingItemRowsForFee(fee).map((row) => ({
+      ...row,
+      amount: Number(row.outstandingAmount || 0),
+    }))
 
     const selectedItems = payableItems.map((item) => item.key)
     const itemAmounts = payableItems.reduce((acc, item) => {
@@ -1819,11 +1843,11 @@ const AdminFees = () => {
                       <select value={editForm.status} onChange={(e) => setEditForm((prev) => ({ ...prev, status: e.target.value }))}>
                         <option value="unpaid">ยังไม่ชำระ</option>
                         <option value="pending">รอตรวจสอบ</option>
-                        <option value="paid" disabled={getApprovedAmountForFee(editingFee) < Number(editingFee.total_amount || 0)}>ชำระแล้ว</option>
+                        <option value="paid" disabled={editApprovedAmount < Number(editTotal || 0)}>ชำระแล้ว</option>
                         <option value="overdue">ค้างชำระ</option>
                       </select>
                       <small style={{ color: 'var(--mu)' }}>
-                        อนุมัติ {getApprovedAmountForFee(editingFee).toLocaleString('th-TH')} / {Number(editingFee.total_amount || 0).toLocaleString('th-TH')} บาท
+                        อนุมัติ {editApprovedAmount.toLocaleString('th-TH')} / ยอดรวมใหม่ {Number(editTotal || 0).toLocaleString('th-TH')} บาท
                       </small>
                     </label>
                     <label className="house-field">
@@ -1846,6 +1870,10 @@ const AdminFees = () => {
                       <div style={{ display: 'flex', justifyContent: 'space-between', background: '#0c4a6e', color: '#fff', borderRadius: 10, padding: '12px' }}>
                         <span style={{ opacity: .85 }}>ยอดรวมใหม่</span>
                         <strong style={{ fontSize: 20 }}>{editTotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', background: '#fff7ed', border: '1px solid #fdba74', borderRadius: 10, padding: '10px 12px' }}>
+                        <span style={{ color: '#9a3412' }}>ยอดค้างใหม่ (ยอดรวมใหม่ - อนุมัติแล้ว)</span>
+                        <strong style={{ color: '#9a3412' }}>{editOutstandingAfterChange.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong>
                       </div>
                     </div>
                     <label className="house-field">
@@ -1933,7 +1961,7 @@ const AdminFees = () => {
                 <div className="house-md-sub">{payingFee.houses?.house_no || '-'} · {periodLabel(payingFee.period)} · ปี {toBE(payingFee.year)}</div>
               </div>
               <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                <span className="bd b-pr">ยอดแจ้งหนี้ {paymentInvoiceTotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                <span className="bd b-pr">ยอดคงค้างจริง {paymentInvoiceTotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                 <span className="bd b-ok">เลือกแล้ว {paymentSelectedAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                 <span className="bd b-wn">คงเหลือ {paymentRemaining.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
               </div>
@@ -2046,7 +2074,7 @@ const AdminFees = () => {
                     <div className="house-sec-title">รายละเอียดการรับชำระ</div>
                     <div style={{ display: 'grid', gap: 8, marginBottom: 12 }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', background: '#f8fafc', border: '1px solid var(--bo)', borderRadius: 8, padding: '10px 12px' }}>
-                        <span style={{ color: 'var(--mu)' }}>ยอดใบแจ้งหนี้</span>
+                        <span style={{ color: 'var(--mu)' }}>ยอดคงค้างจริง</span>
                         <strong>{paymentInvoiceTotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong>
                       </div>
                       <div style={{ display: 'flex', justifyContent: 'space-between', background: '#ecfeff', border: '1px solid #99f6e4', borderRadius: 8, padding: '10px 12px' }}>
