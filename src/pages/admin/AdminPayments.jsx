@@ -59,20 +59,59 @@ function parseItemizedRowsFromNote(note) {
   const match = noMeta.match(/ชำระรายการ:\s*([^|\n]+)/)
   if (!match?.[1]) return []
 
-  return match[1]
-    .split(',')
-    .map((chunk) => String(chunk || '').trim())
-    .filter(Boolean)
-    .map((chunk) => {
-      const amountMatch = chunk.match(/^(.*)\s฿?\s*([\d,]+(?:\.\d{1,2})?)$/)
-      if (!amountMatch) return { label: chunk, paidAmount: 0 }
-      const label = String(amountMatch[1] || '').trim()
-      const paidAmount = Number(String(amountMatch[2] || '0').replace(/,/g, ''))
-      return {
-        label,
-        paidAmount: Number.isFinite(paidAmount) ? paidAmount : 0,
+  const section = String(match[1] || '').trim()
+  if (!section) return []
+
+  const rows = []
+  const consumedRanges = []
+
+  const overlaps = (start, end) => consumedRanges.some((r) => !(end <= r.start || start >= r.end))
+  const pushRange = (start, end) => consumedRanges.push({ start, end })
+
+  // Parse by known fee labels first to handle legacy notes with comma thousand separators.
+  for (const def of feeItemDefs) {
+    const escapedLabel = def.label.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+    const regex = new RegExp(`${escapedLabel}\\s*฿?\\s*([\\d,]+(?:\\.\\d{1,2})?)`, 'g')
+    let m = regex.exec(section)
+    while (m) {
+      const full = String(m[0] || '')
+      const amountRaw = String(m[1] || '0')
+      const start = m.index
+      const end = m.index + full.length
+      if (!overlaps(start, end)) {
+        const amount = Number(amountRaw.replace(/,/g, ''))
+        rows.push({
+          key: def.key,
+          label: def.label,
+          paidAmount: Number.isFinite(amount) ? amount : 0,
+        })
+        pushRange(start, end)
       }
-    })
+      m = regex.exec(section)
+    }
+  }
+
+  // Generic fallback for unknown labels.
+  const genericRegex = /([^|]+?)\s*฿?\s*([\d,]+(?:\.\d{1,2})?)(?=\s*,\s*|$)/g
+  let g = genericRegex.exec(section)
+  while (g) {
+    const full = String(g[0] || '')
+    const label = String(g[1] || '').trim()
+    const amountRaw = String(g[2] || '0')
+    const start = g.index
+    const end = g.index + full.length
+    if (label && !overlaps(start, end)) {
+      const amount = Number(amountRaw.replace(/,/g, ''))
+      rows.push({
+        label,
+        paidAmount: Number.isFinite(amount) ? amount : 0,
+      })
+      pushRange(start, end)
+    }
+    g = genericRegex.exec(section)
+  }
+
+  return rows
 }
 
 function formatDateTime(value) {
@@ -224,7 +263,8 @@ function getOutstandingItemsForFee(fee, payments = []) {
 
     const rows = getPaymentItemRows(payment)
     for (const row of rows) {
-      const key = row?.key
+      const keyFromLabel = feeItemDefs.find((def) => def.label === row?.label)?.key
+      const key = row?.key || keyFromLabel
       if (!feeItemDefs.some((def) => def.key === key)) continue
       paidByKey[key] = Number(paidByKey[key] || 0) + Number(row?.paidAmount || 0)
     }
