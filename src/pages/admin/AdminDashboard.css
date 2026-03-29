@@ -681,14 +681,14 @@
 }
 
 .payments-compact .houses-table th {
-  padding: 8px 10px;
+  padding: 6px 8px;
   font-size: 10px;
 }
 
 .payments-compact .houses-table td {
-  padding: 8px 10px;
-  font-size: 11.5px;
-  line-height: 1.25;
+  padding: 5px 7px;
+  font-size: 11px;
+  line-height: 1.15;
 }
 
 .payments-compact .td-acts {
@@ -697,19 +697,29 @@
 }
 
 .payments-compact .payments-row-acts .btn-xs {
-  padding: 2px 7px;
-  font-size: 10px;
-  min-height: 24px;
+  padding: 1px 6px;
+  font-size: 9.5px;
+  min-height: 21px;
 }
 
 .payments-compact .receive-items-table th {
-  padding: 6px 8px;
+  padding: 5px 6px;
   font-size: 10px;
 }
 
 .payments-compact .receive-items-table td {
-  padding: 6px 8px;
-  font-size: 11px;
+  padding: 4px 6px;
+  font-size: 10.5px;
+}
+
+.payments-compact .receive-items-table input[type="checkbox"] {
+  width: 13px;
+  height: 13px;
+}
+
+.payments-compact .payments-main-wrap,
+.payments-compact .payments-receive-wrap {
+  overflow-x: hidden;
 }
 
 .houses-owner-main {

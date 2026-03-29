@@ -995,8 +995,8 @@ export default function AdminPayments() {
           </div>
         </div>
         <div className="cb houses-table-card-body">
-            <div className="houses-table-wrap houses-desktop-only">
-              <table className="tw houses-table" style={{ width: '100%', minWidth: '760px', tableLayout: 'fixed' }}>
+            <div className="houses-table-wrap houses-desktop-only payments-main-wrap">
+              <table className="tw houses-table" style={{ width: '100%', tableLayout: 'fixed' }}>
                 <thead>
                   <tr>
                     <th style={{ width: '9%' }}>ซอย</th>
@@ -1107,11 +1107,11 @@ export default function AdminPayments() {
                         <button type="button" className="btn btn-xs btn-a" onClick={selectAllReceiveItems} style={{ padding: '3px 8px', fontSize: 10 }}>เลือกทั้งหมด</button>
                         <button type="button" className="btn btn-xs btn-g" onClick={clearReceiveItems} style={{ padding: '3px 8px', fontSize: 10 }}>ล้างการเลือก</button>
                       </div>
-                      <div className="houses-table-wrap" style={{ maxHeight: '280px', overflow: 'auto' }}>
-                        <table className="tw receive-items-table" style={{ width: '100%', minWidth: '520px' }}>
+                      <div className="houses-table-wrap payments-receive-wrap" style={{ maxHeight: '280px', overflow: 'auto' }}>
+                        <table className="tw receive-items-table" style={{ width: '100%', tableLayout: 'fixed' }}>
                           <thead>
                             <tr>
-                              <th style={{ width: '52px', textAlign: 'center' }}>เลือก</th>
+                              <th style={{ width: '40px', textAlign: 'center' }}>เลือก</th>
                               <th>รายการ</th>
                               <th style={{ width: '180px' }}>ยอดที่ต้องชำระ</th>
                               <th style={{ width: '180px' }}>ยอดชำระจริง</th>
