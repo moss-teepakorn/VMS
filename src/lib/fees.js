@@ -2,10 +2,93 @@ import { supabase } from './supabase'
 
 const REJECT_PREFIX = '[REJECT] '
 const PAYMENT_SLIP_BUCKET = 'system-assets'
+const PAYMENT_SLIP_TARGET_BYTES = 50 * 1024
+const PAYMENT_SLIP_MAX_UPLOAD_BYTES = 12 * 1024 * 1024
 
 function sanitizeFileName(name) {
   const raw = String(name || 'payment-slip')
   return raw.replace(/[^a-zA-Z0-9._-]+/g, '_')
+}
+
+function buildUniqueSlipName() {
+  const now = new Date()
+  const stamp = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}${String(now.getHours()).padStart(2, '0')}${String(now.getMinutes()).padStart(2, '0')}${String(now.getSeconds()).padStart(2, '0')}`
+  const randomPart = typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
+    ? crypto.randomUUID().replace(/-/g, '').slice(0, 12)
+    : `${Math.random().toString(36).slice(2, 14)}${Date.now().toString(36)}`.slice(0, 12)
+  return `slip_${stamp}_${sanitizeFileName(randomPart)}.jpg`
+}
+
+function readFileAsDataUrl(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => resolve(reader.result)
+    reader.onerror = () => reject(new Error('อ่านไฟล์รูปไม่สำเร็จ'))
+    reader.readAsDataURL(file)
+  })
+}
+
+function loadImage(src) {
+  return new Promise((resolve, reject) => {
+    const image = new Image()
+    image.onload = () => resolve(image)
+    image.onerror = () => reject(new Error('ไม่สามารถเปิดรูปภาพได้'))
+    image.src = src
+  })
+}
+
+function canvasToJpegBlob(canvas, quality) {
+  return new Promise((resolve) => {
+    canvas.toBlob((blob) => resolve(blob), 'image/jpeg', quality)
+  })
+}
+
+async function compressSlipImageToLimit(file, targetBytes = PAYMENT_SLIP_TARGET_BYTES) {
+  if (!String(file?.type || '').startsWith('image/')) {
+    throw new Error('รองรับเฉพาะไฟล์รูปภาพเท่านั้น')
+  }
+
+  if (Number(file.size || 0) > PAYMENT_SLIP_MAX_UPLOAD_BYTES) {
+    throw new Error('ไฟล์รูปใหญ่เกิน 12MB')
+  }
+
+  const dataUrl = await readFileAsDataUrl(file)
+  const image = await loadImage(dataUrl)
+  const baseMax = 1600
+  const baseScale = Math.min(1, baseMax / Math.max(image.naturalWidth, image.naturalHeight))
+  const scales = [baseScale, baseScale * 0.85, baseScale * 0.7, baseScale * 0.58, baseScale * 0.48, baseScale * 0.4, baseScale * 0.32, baseScale * 0.26, baseScale * 0.2]
+  const qualities = [0.86, 0.74, 0.62, 0.5, 0.4, 0.32, 0.25, 0.2, 0.15]
+
+  const canvas = document.createElement('canvas')
+  const ctx = canvas.getContext('2d')
+  if (!ctx) throw new Error('ไม่สามารถเตรียมการย่อรูปได้')
+
+  let bestBlob = null
+
+  for (const rawScale of scales) {
+    const scale = Math.max(0.08, Math.min(1, rawScale))
+    const width = Math.max(1, Math.round(image.naturalWidth * scale))
+    const height = Math.max(1, Math.round(image.naturalHeight * scale))
+    canvas.width = width
+    canvas.height = height
+    ctx.clearRect(0, 0, width, height)
+    ctx.drawImage(image, 0, 0, width, height)
+
+    for (const quality of qualities) {
+      const blob = await canvasToJpegBlob(canvas, quality)
+      if (!blob) continue
+      if (!bestBlob || blob.size < bestBlob.size) bestBlob = blob
+      if (blob.size <= targetBytes) {
+        return new File([blob], buildUniqueSlipName(), { type: 'image/jpeg' })
+      }
+    }
+  }
+
+  if (bestBlob && bestBlob.size <= targetBytes) {
+    return new File([bestBlob], buildUniqueSlipName(), { type: 'image/jpeg' })
+  }
+
+  throw new Error('ไม่สามารถย่อรูปให้เหลือ 50KB ได้ กรุณาเลือกรูปที่ขนาดเล็กลง')
 }
 
 function stripRejectMarker(note) {
@@ -908,13 +991,13 @@ export async function createPayment(payload) {
 export async function uploadPaymentSlip(file, { houseId } = {}) {
   if (!file) throw new Error('ไม่พบไฟล์หลักฐานการชำระ')
 
-  const safeName = sanitizeFileName(file.name)
+  const compressedFile = await compressSlipImageToLimit(file, PAYMENT_SLIP_TARGET_BYTES)
   const folder = String(houseId || 'general').trim()
-  const path = `payment-slips/${folder}/${Date.now()}_${safeName}`
+  const path = `payment-slips/${folder}/${compressedFile.name}`
 
   const { error } = await supabase.storage
     .from(PAYMENT_SLIP_BUCKET)
-    .upload(path, file, { upsert: true, contentType: file.type || 'image/jpeg' })
+    .upload(path, compressedFile, { upsert: true, contentType: 'image/jpeg' })
 
   if (error) throw error
 

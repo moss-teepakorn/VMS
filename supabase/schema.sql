@@ -423,6 +423,16 @@ create policy "resident_own_payment_items" on payment_items
   for select using (
     house_id = (select house_id from profiles where id = auth.uid())
   );
+create policy "resident_insert_own_payment_items" on payment_items
+  for insert with check (
+    house_id = (select house_id from profiles where id = auth.uid())
+    and exists (
+      select 1
+      from payments p
+      where p.id = payment_id
+        and p.house_id = (select house_id from profiles where id = auth.uid())
+    )
+  );
 create policy "resident_own_issues" on issues
   for all using (
     house_id = (select house_id from profiles where id = auth.uid())

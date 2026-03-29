@@ -1262,7 +1262,7 @@ export default function AdminPayments() {
                         accept="image/*"
                         onChange={handleChangeReceiveSlip}
                       />
-                      <div style={{ fontSize: 12, color: 'var(--mu)' }}>รองรับไฟล์รูปภาพไม่เกิน 5MB</div>
+                      <div style={{ fontSize: 12, color: 'var(--mu)' }}>บังคับแนบเฉพาะรูปภาพ ระบบจะย่ออัตโนมัติให้ไม่เกิน 50KB และเปลี่ยนชื่อไฟล์ไม่ซ้ำ</div>
                       {receiveSlipPreview && (
                         <img
                           src={receiveSlipPreview}
