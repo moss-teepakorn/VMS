@@ -819,6 +819,68 @@ button, input, select, textarea {
   color: var(--sbt);
 }
 
+.sb-search-wrap {
+  padding: 0 12px 8px;
+  flex-shrink: 0;
+}
+
+.sb-search-input {
+  width: 100%;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+  border-radius: 9px;
+  padding: 8px 10px;
+  font-size: 12px;
+}
+
+.sb-search-input::placeholder {
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.sb-search-input:focus {
+  outline: none;
+  border-color: rgba(110, 231, 183, 0.8);
+  box-shadow: 0 0 0 2px rgba(110, 231, 183, 0.22);
+}
+
+.sb-recent-wrap {
+  padding: 0 10px 2px;
+  flex-shrink: 0;
+}
+
+.sb-recent-list {
+  display: grid;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.sb-recent-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.88);
+  border-radius: 8px;
+  padding: 6px 8px;
+  font-size: 12px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.sb-recent-item:hover,
+.sb-recent-item.act {
+  background: rgba(255, 255, 255, 0.2);
+  color: #fff;
+}
+
+.sb-recent-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 /* Navigation */
 .sb-nav {
   flex: 1;
@@ -843,6 +905,30 @@ button, input, select, textarea {
   text-transform: uppercase;
   color: var(--sbm);
   padding: 11px 10px 4px;
+}
+
+.sb-sec-btn {
+  width: 100%;
+  border: none;
+  background: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+}
+
+.sb-sec-arrow {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.55);
+  transition: transform .15s ease;
+}
+
+.sb-sec-arrow.open {
+  transform: rotate(0deg);
+}
+
+.sb-sec-arrow:not(.open) {
+  transform: rotate(-90deg);
 }
 
 .sb-item {
@@ -1005,6 +1091,8 @@ button, input, select, textarea {
 
   .sidebar.collapsed .sb-logo-name,
   .sidebar.collapsed .sb-role-txt,
+  .sidebar.collapsed .sb-search-wrap,
+  .sidebar.collapsed .sb-recent-wrap,
   .sidebar.collapsed .sb-sec,
   .sidebar.collapsed .sb-label,
   .sidebar.collapsed .sb-badge,

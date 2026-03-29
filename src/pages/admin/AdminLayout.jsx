@@ -13,6 +13,7 @@ export const ModalContext = React.createContext()
 const BUILD_SHA = typeof __BUILD_SHA__ !== 'undefined' ? __BUILD_SHA__ : 'local'
 const BUILD_DATE = typeof __BUILD_DATE__ !== 'undefined' ? __BUILD_DATE__ : '-'
 const APP_VERSION = '1.0.0'
+const RECENT_NAV_STORAGE_KEY = 'vms-recent-admin-nav'
 
 function roleLabel(role) {
   return role === 'admin' ? 'ผู้ดูแลระบบ' : 'ลูกบ้าน'
@@ -26,6 +27,21 @@ const AdminLayout = () => {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(() => localStorage.getItem('vms-sidebar-collapsed') === '1')
   const [theme, setTheme] = useState(localStorage.getItem('vms-theme') || 'normal')
   const [setupOpen, setSetupOpen] = useState(false)
+  const [menuSearch, setMenuSearch] = useState('')
+  const [sectionOpen, setSectionOpen] = useState({
+    หน้าหลัก: true,
+    จัดการ: false,
+    ระบบ: false,
+  })
+  const [recentNavIds, setRecentNavIds] = useState(() => {
+    try {
+      const raw = localStorage.getItem(RECENT_NAV_STORAGE_KEY)
+      const parsed = JSON.parse(raw || '[]')
+      return Array.isArray(parsed) ? parsed.filter(Boolean).slice(0, 6) : []
+    } catch {
+      return []
+    }
+  })
   const [newPassword, setNewPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [houseNo, setHouseNo] = useState('-')
@@ -53,6 +69,10 @@ const AdminLayout = () => {
   useEffect(() => {
     localStorage.setItem('vms-sidebar-collapsed', sidebarCollapsed ? '1' : '0')
   }, [sidebarCollapsed])
+
+  useEffect(() => {
+    localStorage.setItem(RECENT_NAV_STORAGE_KEY, JSON.stringify(recentNavIds.slice(0, 6)))
+  }, [recentNavIds])
 
   useEffect(() => {
     const loadSetup = async () => {
@@ -109,8 +129,19 @@ const AdminLayout = () => {
   ]
 
   const handleNavClick = (path) => {
+    const item = navItems.flatMap((section) => section.items).find((row) => row.path === path)
+    if (item?.id) {
+      setRecentNavIds((prev) => [item.id, ...prev.filter((id) => id !== item.id)].slice(0, 6))
+    }
     navigate(path)
     setSidebarOpen(false)
+  }
+
+  const toggleSection = (sectionName) => {
+    setSectionOpen((prev) => ({
+      ...prev,
+      [sectionName]: !prev[sectionName],
+    }))
   }
 
   const handleLogout = async () => {
@@ -146,6 +177,26 @@ const AdminLayout = () => {
   const isNavItemActive = (path) => {
     return location.pathname === path
   }
+
+  const searchKeyword = menuSearch.trim().toLowerCase()
+  const flatNavItems = navItems.flatMap((section) => section.items)
+  const recentItems = recentNavIds
+    .map((id) => flatNavItems.find((item) => item.id === id))
+    .filter(Boolean)
+
+  const visibleNavSections = navItems
+    .map((section) => {
+      if (!searchKeyword) return section
+      const matchedItems = section.items.filter((item) => (
+        String(item.label || '').toLowerCase().includes(searchKeyword)
+        || String(item.path || '').toLowerCase().includes(searchKeyword)
+      ))
+      return {
+        ...section,
+        items: matchedItems,
+      }
+    })
+    .filter((section) => section.items.length > 0)
 
   // Modal functions
   const openModal = (title, fields = {}, callback = null) => {
@@ -209,12 +260,54 @@ const AdminLayout = () => {
             <span className="sb-role-txt">{roleLabel(profile?.role)}</span>
           </div>
 
+          <div className="sb-search-wrap">
+            <input
+              className="sb-search-input"
+              type="text"
+              placeholder="ค้นหาเมนู..."
+              value={menuSearch}
+              onChange={(e) => setMenuSearch(e.target.value)}
+            />
+          </div>
+
+          {recentItems.length > 0 && !searchKeyword && (
+            <div className="sb-recent-wrap">
+              <div className="sb-sec">เมนูล่าสุด</div>
+              <div className="sb-recent-list">
+                {recentItems.map((item) => (
+                  <button
+                    key={`recent-${item.id}`}
+                    type="button"
+                    className={`sb-recent-item ${isNavItemActive(item.path) ? 'act' : ''}`}
+                    onClick={() => handleNavClick(item.path)}
+                    title={item.label}
+                  >
+                    <span>{item.icon}</span>
+                    <span className="sb-recent-label">{item.label}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Menu Sections */}
           <nav className="sb-nav">
-            {navItems.map((section) => (
+            {visibleNavSections.map((section) => (
               <div key={section.section}>
-                <div className="sb-sec">{section.section}</div>
-                {section.items.map((item) => (
+                {(() => {
+                  const expanded = sidebarCollapsed || Boolean(searchKeyword) || Boolean(sectionOpen[section.section])
+                  return (
+                <>
+                <button
+                  type="button"
+                  className="sb-sec sb-sec-btn"
+                  onClick={() => toggleSection(section.section)}
+                  aria-expanded={expanded}
+                >
+                  <span>{section.section}</span>
+                  <span className={`sb-sec-arrow ${expanded ? 'open' : ''}`}>▾</span>
+                </button>
+                {expanded && section.items.map((item) => (
                   <div
                     key={item.id}
                     className={`sb-item ${isNavItemActive(item.path) ? 'act' : ''}`}
@@ -225,6 +318,9 @@ const AdminLayout = () => {
                     {item.badge && <span className="sb-badge">{item.badge}</span>}
                   </div>
                 ))}
+                </>
+                  )
+                })()}
               </div>
             ))}
           </nav>
