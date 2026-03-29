@@ -940,7 +940,7 @@
 .pane.on.houses-compact.payments-compact .stats {
   margin-top: 0;
   margin-bottom: 0;
-  gap: 8px;
+  gap: 6px !important;
 }
 
 .pane.on.houses-compact.payments-compact .card {
