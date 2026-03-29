@@ -303,8 +303,8 @@ const AdminHouses = () => {
       </div>
 
       {/* Houses Table */}
-      <div className="card">
-        <div className="ch houses-list-head">
+      <div className="card houses-main-card">
+        <div className="ch houses-list-head houses-main-head">
           <div className="ct">รายการบ้านทั้งหมด ({houses.length} หลัง)</div>
           <div className="houses-list-actions">
             <button className="btn btn-p btn-sm" onClick={openAddModal}>+ เพิ่มบ้าน</button>
@@ -312,10 +312,10 @@ const AdminHouses = () => {
             <button className="btn btn-g btn-sm" onClick={() => loadHouses()}>🔄 รีเฟรช</button>
           </div>
         </div>
-        <div className="cb houses-table-card-body">
+        <div className="cb houses-table-card-body houses-main-body">
           {/* Desktop Table */}
-          <div className="houses-table-wrap houses-desktop-only">
-            <table className="tw houses-table" style={{ width: '100%', minWidth: '540px' }}>
+          <div className="houses-table-wrap houses-desktop-only houses-main-wrap">
+            <table className="tw houses-table houses-main-table" style={{ width: '100%', minWidth: '540px' }}>
               <thead>
                 <tr>
                   <th>เลขที่</th>

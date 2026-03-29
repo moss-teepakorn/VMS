@@ -892,6 +892,34 @@
   padding-bottom: 10px;
 }
 
+.houses-main-card {
+  border-radius: 14px;
+  overflow: hidden;
+}
+
+.houses-main-card .houses-main-head {
+  border-radius: 14px 14px 0 0;
+}
+
+.houses-main-card .houses-main-body {
+  padding: 0 0 12px;
+  border-radius: 0 0 14px 14px;
+}
+
+.houses-main-card .houses-main-wrap {
+  border-radius: 0 0 14px 14px;
+}
+
+.houses-main-card .houses-main-table th:first-child,
+.houses-main-card .houses-main-table td:first-child {
+  padding-left: 16px;
+}
+
+.houses-main-card .houses-main-table th:last-child,
+.houses-main-card .houses-main-table td:last-child {
+  padding-right: 16px;
+}
+
 .payments-compact .houses-table th {
   padding: 6px 8px;
   font-size: 10px;
