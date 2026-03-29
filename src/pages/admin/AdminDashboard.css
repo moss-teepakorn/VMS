@@ -990,7 +990,9 @@
 }
 
 .pane.on.houses-compact.payments-compact {
-  gap: 8px !important;
+  display: flex;
+  flex-direction: column;
+  gap: 12px !important;
 }
 
 .pane.on.houses-compact.payments-compact .ph {
@@ -1000,7 +1002,7 @@
 .pane.on.houses-compact.payments-compact .stats {
   margin-top: 0;
   margin-bottom: 0;
-  gap: 6px !important;
+  gap: 10px !important;
 }
 
 .pane.on.houses-compact.payments-compact .card {
@@ -1008,6 +1010,8 @@
 }
 
 .pane.on.houses-compact.fees-compact {
+  display: flex;
+  flex-direction: column;
   gap: 12px !important;
 }
 
