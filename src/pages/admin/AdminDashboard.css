@@ -17,87 +17,87 @@
 
 /* Dashboard v1 compact mode: reduce card footprint significantly */
 .dashboard-v1 {
-  gap: 9px !important;
+  gap: 14px !important;
 }
 
 .dashboard-v1 .ph {
-  padding: 13px;
-  border-radius: 8px;
+  padding: 16px;
+  border-radius: 10px;
 }
 
 .dashboard-v1 .ph::before {
-  width: 88px;
-  height: 88px;
-  right: -20px;
-  top: -20px;
+  width: 104px;
+  height: 104px;
+  right: -24px;
+  top: -24px;
 }
 
 .dashboard-v1 .ph::after {
-  width: 62px;
-  height: 62px;
-  bottom: -32px;
+  width: 74px;
+  height: 74px;
+  bottom: -38px;
 }
 
 .dashboard-v1 .ph-ico {
-  width: 32px;
-  height: 32px;
-  border-radius: 8px;
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
 }
 
 .dashboard-v1 .ph-ico-img {
-  width: 22px;
-  height: 22px;
+  width: 28px;
+  height: 28px;
 }
 
 .dashboard-v1 .ph-h1 {
-  font-size: 14px;
+  font-size: 16px;
 }
 
 .dashboard-v1 .ph-sub {
-  font-size: 10px;
+  font-size: 11px;
 }
 
 .dashboard-v1 .stats {
-  gap: 6px;
+  gap: 10px;
 }
 
 .dashboard-v1 .sc {
-  padding: 7px;
-  border-radius: 8px;
+  padding: 10px;
+  border-radius: 10px;
 }
 
 .dashboard-v1 .sc::after {
-  width: 32px;
-  height: 32px;
+  width: 44px;
+  height: 44px;
 }
 
 .dashboard-v1 .sc-ico {
-  width: 24px;
-  height: 24px;
-  border-radius: 6px;
-  font-size: 13px;
-  margin-bottom: 4px;
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  font-size: 16px;
+  margin-bottom: 6px;
 }
 
 .dashboard-v1 .sc-v {
-  font-size: 14px;
+  font-size: 18px;
 }
 
 .dashboard-v1 .sc-l {
-  font-size: 10px;
-  margin-top: 1px;
+  font-size: 11px;
+  margin-top: 2px;
 }
 
 .dashboard-v1 .sc-s {
-  font-size: 9px;
-  margin-top: 2px;
+  font-size: 10px;
+  margin-top: 4px;
 }
 
 .dashboard-v1 .g2,
 .dashboard-v1 .g1,
 .dashboard-v1 .g3 {
-  gap: 7px;
-  margin-bottom: 8px;
+  gap: 10px;
+  margin-bottom: 10px;
 }
 
 .dashboard-v1 .g2 > .chart-box,
@@ -107,82 +107,70 @@
 
 .dashboard-v1 .chart-box,
 .dashboard-v1 .card {
-  border-radius: 8px;
+  border-radius: 10px;
 }
 
 .dashboard-v1 .chart-box .ch,
 .dashboard-v1 .card .ch {
-  padding: 7px 10px;
+  padding: 9px 12px;
 }
 
 .dashboard-v1 .chart-box .ch h3,
 .dashboard-v1 .ct {
-  font-size: 11px;
+  font-size: 12px;
 }
 
 .dashboard-v1 .ch-ico {
-  width: 22px;
-  height: 22px;
-  border-radius: 6px;
+  width: 24px;
+  height: 24px;
+  border-radius: 7px;
   font-size: 12px;
 }
 
 .dashboard-v1 .cb {
-  padding: 8px;
-  height: calc(300px - 36px);
+  padding: 10px;
+  height: calc(300px - 43px);
   overflow: auto;
 }
 
 .dashboard-v1 .chart-wrap {
-  padding: 8px;
-  height: calc(300px - 36px);
-  min-height: calc(300px - 36px);
-  max-height: calc(300px - 36px);
-}
-
-.dashboard-v1 .house-status-card {
-  transform-origin: top left;
-}
-
-.dashboard-v1 .house-status-card .ch {
-  padding: 4px 6px;
-}
-
-.dashboard-v1 .house-status-card .ch h3 {
-  font-size: 9px;
+  padding: 10px;
+  height: calc(300px - 43px);
+  min-height: calc(300px - 43px);
+  max-height: calc(300px - 43px);
 }
 
 .dashboard-v1 .house-status-wrap {
-  padding: 4px;
-  height: calc(300px - 30px);
-  min-height: calc(300px - 30px);
-  max-height: calc(300px - 30px);
+  padding: 10px;
+  height: calc(300px - 43px);
+  min-height: calc(300px - 43px);
+  max-height: calc(300px - 43px);
 }
 
 .dashboard-v1 .chart-wrap canvas,
 .dashboard-v1 .house-status-wrap canvas {
-  height: 300px !important;
-  max-height: 300px !important;
+  height: 100% !important;
+  max-height: 100% !important;
 }
 
 .dashboard-v1 .tw th {
-  padding: 6px 8px;
-  font-size: 9px;
-}
-
-.dashboard-v1 .tw td {
-  padding: 7px 8px;
+  padding: 7px 9px;
   font-size: 10px;
 }
 
+.dashboard-v1 .tw td {
+  padding: 8px 9px;
+  font-size: 11px;
+}
+
 .dashboard-v1 .bd {
-  padding: 2px 7px;
-  font-size: 9px;
+  padding: 2px 8px;
+  font-size: 10px;
 }
 
 .dashboard-v1 .btn-xs {
-  padding: 3px 7px;
-  font-size: 9px;
+  padding: 4px 8px;
+  font-size: 10px;
 }
 
 .dashboard-v1 .stats {
