@@ -262,6 +262,8 @@ const AdminDashboard = () => {
 
   const todayLabel = new Date().toLocaleDateString('th-TH', { day: 'numeric', month: 'long', year: 'numeric' })
   const data = dashboard
+  const goToRequests = () => navigate('/admin/requests')
+  const goToViolations = () => navigate('/admin/violations')
 
   return (
     <div className="pane on dashboard dashboard-v1" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
@@ -377,8 +379,8 @@ const AdminDashboard = () => {
         <div className="card">
           <div className="ch">
             <div className="ch-ico">⚡</div>
-            <div className="ct">รายการด่วน — รออนุมัติ</div>
-            <button className="btn btn-xs btn-o">ดูทั้งหมด</button>
+            <div className="ct" style={{ cursor: 'pointer' }} onClick={goToRequests}>รายการด่วน — รออนุมัติ</div>
+            <button className="btn btn-xs btn-o" onClick={goToRequests}>ดูทั้งหมด</button>
           </div>
           <div className="cb">
             <div style={{ overflowX: 'auto' }}>
@@ -399,7 +401,7 @@ const AdminDashboard = () => {
                       <td><span className={`bd ${item.type === 'สลิป' ? 'b-wn' : 'b-pr'}`}>{item.type}</span></td>
                       <td>{item.source}</td>
                       <td style={{ fontSize: '12px' }}>{item.detail}</td>
-                      <td><button className="btn btn-xs btn-a" onClick={() => navigate(item.type === 'สลิป' ? '/admin/fees' : '/admin/vehicles')}>ดู</button></td>
+                      <td><button className="btn btn-xs btn-a" onClick={goToRequests}>ดู</button></td>
                     </tr>
                   ))}
                 </tbody>
@@ -410,19 +412,19 @@ const AdminDashboard = () => {
         <div className="card">
           <div className="ch">
             <div className="ch-ico">⚠️</div>
-            <div className="ct">แจ้งเตือนล่าสุด</div>
+            <div className="ct" style={{ cursor: 'pointer' }} onClick={goToViolations}>แจ้งเตือนล่าสุด</div>
           </div>
           <div className="cb">
             {data.alerts.length === 0 ? (
               <div style={{ color: 'var(--mu)', fontSize: '13px' }}>ยังไม่มีแจ้งเตือนจากฐานข้อมูล</div>
             ) : data.alerts.map((item, index) => item.kind === 'violation' ? (
-              <div key={`alert-${index}`} className="vio">
+              <div key={`alert-${index}`} className="vio" style={{ cursor: 'pointer' }} onClick={goToViolations}>
                 <div className="vio-t">{item.title}</div>
                 <div style={{ fontSize: '12px', marginTop: '3px' }}>{item.meta}</div>
                 <div style={{ marginTop: '6px' }}><span className="bd b-wn">{item.status}</span></div>
               </div>
             ) : (
-              <div key={`alert-${index}`} className="iss">
+              <div key={`alert-${index}`} className="iss" style={{ cursor: 'pointer' }} onClick={goToViolations}>
                 <div className="iss-h">
                   <div className="iss-t">{item.title}</div>
                   <span className={`bd ${item.status === 'resolved' || item.status === 'closed' ? 'b-ok' : 'b-pr'}`}>{item.status}</span>
