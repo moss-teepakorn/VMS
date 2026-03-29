@@ -1781,6 +1781,35 @@
   font-size: 13px;
 }
 
+/* Vehicles page: filter row has 5 controls (input + 3 selects + button). */
+.vehicles-page .houses-filter-row {
+  grid-template-columns: minmax(220px, 1fr) 126px 136px 126px auto;
+}
+
+.vehicles-page .houses-filter-input,
+.vehicles-page .houses-filter-select {
+  min-width: 0;
+}
+
+.vehicles-page .houses-filter-select {
+  width: 100%;
+}
+
+.vehicles-page .houses-filter-btn {
+  width: auto;
+  white-space: nowrap;
+}
+
+@media (max-width: 1060px) {
+  .vehicles-page .houses-filter-row {
+    grid-template-columns: minmax(200px, 1fr) 1fr 1fr auto;
+  }
+
+  .vehicles-page .houses-filter-input {
+    grid-column: 1 / -1;
+  }
+}
+
 /* Vehicles page: wider mobile cards */
 @media (max-width: 700px) {
   .vehicles-page {
