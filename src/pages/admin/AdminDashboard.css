@@ -759,6 +759,31 @@
   border-bottom: none;
 }
 
+/* Shared admin list/table card style across all menu pages */
+.pane.on .card {
+  border-radius: 14px;
+  overflow: hidden;
+}
+
+.pane.on .card > .ch {
+  padding-left: 16px;
+  padding-right: 16px;
+}
+
+.pane.on .card > .cb {
+  border-radius: 0 0 14px 14px;
+}
+
+.pane.on .card .tw th:first-child,
+.pane.on .card .tw td:first-child {
+  padding-left: 16px;
+}
+
+.pane.on .card .tw th:last-child,
+.pane.on .card .tw td:last-child {
+  padding-right: 16px;
+}
+
 .houses-compact {
   font-size: 12px;
   display: flex;
