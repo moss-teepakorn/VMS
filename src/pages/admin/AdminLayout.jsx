@@ -205,6 +205,8 @@ const AdminLayout = () => {
   const visibleNavSections = navItems
     .map((section) => {
       if (!searchKeyword) return section
+      // Skip sections without items (like หน้าหลัก)
+      if (!section.items) return section
       const matchedItems = section.items.filter((item) => (
         String(item.label || '').toLowerCase().includes(searchKeyword)
         || String(item.path || '').toLowerCase().includes(searchKeyword)
@@ -216,7 +218,7 @@ const AdminLayout = () => {
         items: matchedItems,
       }
     })
-    .filter((section) => section.items.length > 0)
+    .filter((section) => !section.items || section.items.length > 0)
 
   // Modal functions
   const openModal = (title, fields = {}, callback = null) => {
