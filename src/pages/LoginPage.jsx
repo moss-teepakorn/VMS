@@ -78,84 +78,96 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,#f2f8fb_0%,#edf3f7_35%,#e6eef3_100%)] p-4 sm:p-6 lg:p-8">
-      <div className="mx-auto grid min-h-[calc(100vh-2rem)] w-full max-w-[1180px] grid-cols-1 overflow-hidden rounded-[32px] border border-white/70 bg-white/70 shadow-[0_30px_80px_rgba(15,23,42,0.14)] backdrop-blur-sm lg:min-h-[720px] lg:grid-cols-[44%_56%]">
-        <section className="relative hidden overflow-hidden bg-[linear-gradient(155deg,#0d3b66_0%,#155e75_55%,#0f766e_100%)] lg:flex">
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(255,255,255,0.14),transparent_32%),radial-gradient(circle_at_bottom_right,rgba(255,255,255,0.16),transparent_26%)]" />
-          <div className="absolute -left-16 top-10 h-44 w-44 rounded-full bg-white/10 blur-2xl" />
-          <div className="absolute bottom-0 right-[-40px] h-56 w-56 rounded-full bg-emerald-200/10 blur-2xl" />
+    <div className="min-h-screen bg-[linear-gradient(180deg,#f6fafc_0%,#eef4f7_100%)] p-4 sm:p-6 lg:p-8">
+      <div className="mx-auto grid min-h-[calc(100vh-2rem)] w-full max-w-[1180px] grid-cols-1 overflow-hidden rounded-[32px] border border-slate-200/80 bg-white shadow-[0_26px_70px_rgba(15,23,42,0.10)] lg:min-h-[720px] lg:grid-cols-[43%_57%]">
+        <section className="relative hidden overflow-hidden bg-[linear-gradient(160deg,#133b5c_0%,#16536f_60%,#1c6a73_100%)] lg:flex">
+          <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(255,255,255,0.04),transparent_42%)]" />
+          <div className="absolute inset-y-10 right-10 w-px bg-white/10" />
 
           <div className="relative z-10 flex h-full w-full flex-col justify-between p-10 xl:p-12">
             <div>
-              <div className="inline-flex items-center gap-3 rounded-full border border-white/20 bg-white/10 px-4 py-2 text-sm font-semibold text-white/90 backdrop-blur-sm">
+              <div className="inline-flex items-center gap-3 rounded-full border border-white/14 bg-white/8 px-4 py-2 text-sm font-semibold text-white/88">
                 <span className="inline-block h-2.5 w-2.5 rounded-full bg-emerald-300" />
-                Secure village operations platform
+                Secure access for village operations
               </div>
 
               <div className="mt-8 flex items-center gap-4">
-                <div className="flex h-20 w-20 items-center justify-center overflow-hidden rounded-[22px] border border-white/25 bg-white/14 shadow-[0_20px_40px_rgba(0,0,0,0.18)] backdrop-blur-sm">
+                <div className="flex h-18 w-18 items-center justify-center overflow-hidden rounded-[22px] border border-white/20 bg-white/10 shadow-[0_16px_30px_rgba(0,0,0,0.14)]">
                   <img src={setup.loginCircleLogoUrl || villageLogo} alt="Village Logo" className="h-16 w-16 rounded-2xl object-cover" />
                 </div>
                 <div>
-                  <div className="text-sm font-semibold uppercase tracking-[0.28em] text-white/65">Village Management</div>
-                  <h1 className="mt-2 text-[34px] font-black leading-tight text-white">{setup.villageName}</h1>
+                  <div className="text-sm font-semibold uppercase tracking-[0.24em] text-white/62">Village Management System</div>
+                  <h1 className="mt-2 text-[32px] font-black leading-tight text-white">{setup.villageName}</h1>
                 </div>
               </div>
 
-              <p className="mt-10 max-w-[420px] text-[16px] leading-7 text-white/82">
-                จัดการข้อมูลลูกบ้าน การเงิน งานแจ้งซ่อม และประกาศสำคัญในระบบเดียวที่ทีมงานใช้งานได้จริงทุกวัน
+              <p className="mt-10 max-w-[430px] text-[16px] leading-7 text-white/80">
+                ระบบกลางสำหรับจัดการข้อมูลลูกบ้าน การเงิน งานบริการ และประกาศสำคัญ ให้ทีมงานทำงานได้เร็ว ชัดเจน และตรวจสอบย้อนหลังได้
               </p>
 
-              <div className="mt-10 grid gap-4">
-                <div className="rounded-2xl border border-white/16 bg-white/10 px-5 py-4 backdrop-blur-sm">
-                  <div className="text-sm font-semibold text-white">ข้อมูลรวมอยู่ในที่เดียว</div>
-                  <div className="mt-1 text-sm leading-6 text-white/72">ตรวจสอบบ้าน รถ การชำระเงิน และประวัติการใช้งานได้รวดเร็ว</div>
+              <div className="mt-10 space-y-4">
+                <div className="flex items-start gap-3 text-white/84">
+                  <span className="mt-1 inline-flex h-6 w-6 items-center justify-center rounded-full bg-white/12 text-xs font-bold">01</span>
+                  <div>
+                    <div className="text-sm font-semibold text-white">ข้อมูลสำคัญอยู่ในมุมมองเดียว</div>
+                    <div className="mt-1 text-sm leading-6 text-white/66">บ้าน รถ การชำระเงิน และประวัติการใช้งาน ถูกจัดไว้พร้อมใช้งาน</div>
+                  </div>
                 </div>
-                <div className="rounded-2xl border border-white/16 bg-white/10 px-5 py-4 backdrop-blur-sm">
-                  <div className="text-sm font-semibold text-white">ออกแบบเพื่อการทำงานจริง</div>
-                  <div className="mt-1 text-sm leading-6 text-white/72">ลดขั้นตอนที่ซ้ำซ้อน ให้เจ้าหน้าที่โฟกัสกับงานบริการมากขึ้น</div>
+                <div className="flex items-start gap-3 text-white/84">
+                  <span className="mt-1 inline-flex h-6 w-6 items-center justify-center rounded-full bg-white/12 text-xs font-bold">02</span>
+                  <div>
+                    <div className="text-sm font-semibold text-white">รองรับงานประจำวันของเจ้าหน้าที่</div>
+                    <div className="mt-1 text-sm leading-6 text-white/66">ลดขั้นตอนซ้ำซ้อนและช่วยติดตามสถานะงานได้ต่อเนื่อง</div>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3 text-white/84">
+                  <span className="mt-1 inline-flex h-6 w-6 items-center justify-center rounded-full bg-white/12 text-xs font-bold">03</span>
+                  <div>
+                    <div className="text-sm font-semibold text-white">ตรวจสอบย้อนหลังได้ชัดเจน</div>
+                    <div className="mt-1 text-sm leading-6 text-white/66">ทุกการใช้งานและรายการสำคัญสามารถติดตามย้อนหลังได้</div>
+                  </div>
                 </div>
               </div>
             </div>
 
             <div className="grid grid-cols-3 gap-3 text-white">
-              <div className="rounded-2xl border border-white/14 bg-white/10 px-4 py-4 backdrop-blur-sm">
+              <div className="rounded-2xl border border-white/12 bg-white/8 px-4 py-4">
                 <div className="text-2xl font-black">24/7</div>
-                <div className="mt-1 text-xs text-white/70">Access</div>
+                <div className="mt-1 text-xs text-white/66">Availability</div>
               </div>
-              <div className="rounded-2xl border border-white/14 bg-white/10 px-4 py-4 backdrop-blur-sm">
+              <div className="rounded-2xl border border-white/12 bg-white/8 px-4 py-4">
                 <div className="text-2xl font-black">1 View</div>
-                <div className="mt-1 text-xs text-white/70">Dashboard</div>
+                <div className="mt-1 text-xs text-white/66">Operations</div>
               </div>
-              <div className="rounded-2xl border border-white/14 bg-white/10 px-4 py-4 backdrop-blur-sm">
+              <div className="rounded-2xl border border-white/12 bg-white/8 px-4 py-4">
                 <div className="text-2xl font-black">100%</div>
-                <div className="mt-1 text-xs text-white/70">Traceable</div>
+                <div className="mt-1 text-xs text-white/66">Traceable</div>
               </div>
             </div>
           </div>
         </section>
 
-        <section className="relative flex items-center justify-center bg-[linear-gradient(180deg,rgba(255,255,255,0.96)_0%,rgba(246,250,252,0.98)_100%)] px-5 py-8 sm:px-8 sm:py-10 lg:px-12">
-          <div className="absolute inset-x-0 top-0 h-32 bg-[radial-gradient(circle_at_top,rgba(13,148,136,0.08),transparent_68%)]" />
+        <section className="relative flex items-center justify-center bg-[linear-gradient(180deg,#ffffff_0%,#f8fbfc_100%)] px-5 py-8 sm:px-8 sm:py-10 lg:px-12">
+          <div className="absolute inset-x-0 top-0 h-32 bg-[radial-gradient(circle_at_top,rgba(15,118,110,0.05),transparent_68%)]" />
           <div className="relative z-10 w-full max-w-[470px]">
             <div className="mb-6 flex items-center gap-4 lg:hidden">
               <div className="flex h-14 w-14 items-center justify-center overflow-hidden rounded-2xl bg-white shadow-[0_12px_28px_rgba(15,23,42,0.12)] ring-1 ring-slate-200">
                 <img src={setup.loginCircleLogoUrl || villageLogo} alt="Village Logo" className="h-11 w-11 rounded-xl object-cover" />
               </div>
               <div>
-                <div className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-400">Village Management</div>
+                <div className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-400">Village Management System</div>
                 <div className="mt-1 text-lg font-extrabold text-slate-900">{setup.villageName}</div>
               </div>
             </div>
 
-            <div className="rounded-[28px] border border-slate-200/80 bg-white px-6 py-7 shadow-[0_22px_60px_rgba(15,23,42,0.10)] sm:px-8 sm:py-9">
+            <div className="rounded-[28px] border border-slate-200 bg-white px-6 py-7 shadow-[0_18px_44px_rgba(15,23,42,0.08)] sm:px-8 sm:py-9">
               <div className="mb-8">
-                <div className="inline-flex items-center rounded-full bg-[#eaf7f6] px-3 py-1 text-xs font-bold uppercase tracking-[0.22em] text-[#0f766e]">
-                  Sign in
+                <div className="inline-flex items-center rounded-full bg-[#edf7f6] px-3 py-1 text-xs font-bold uppercase tracking-[0.22em] text-[#0f766e]">
+                  Secure sign in
                 </div>
                 <h2 className="mt-4 text-[38px] font-black leading-none tracking-tight text-slate-950">เข้าสู่ระบบ</h2>
                 <p className="mt-3 text-[15px] leading-7 text-slate-500">
-                  เข้าสู่ระบบเพื่อจัดการข้อมูลหมู่บ้าน ตรวจสอบรายการล่าสุด และติดตามงานที่สำคัญได้ทันที
+                  เข้าสู่ระบบเพื่อเข้าถึงแดชบอร์ดและจัดการงานประจำวันของหมู่บ้านได้อย่างต่อเนื่อง
                 </p>
               </div>
 
