@@ -86,7 +86,7 @@ export default function LoginPage() {
 
           <div className="relative z-10 flex h-full w-full flex-col justify-between p-10 xl:p-12">
             <div>
-              <div className="inline-flex items-center gap-3 rounded-full border border-white/14 bg-white/8 px-4 py-2 text-sm font-semibold text-white/88">
+              <div className="inline-flex items-center gap-3 rounded-full border border-white/15 bg-white/10 px-4 py-2 text-sm font-semibold text-white/90">
                 <span className="inline-block h-2.5 w-2.5 rounded-full bg-emerald-300" />
                 Secure access for village operations
               </div>
@@ -96,7 +96,7 @@ export default function LoginPage() {
                   <img src={setup.loginCircleLogoUrl || villageLogo} alt="Village Logo" className="h-16 w-16 rounded-2xl object-cover" />
                 </div>
                 <div>
-                  <div className="text-sm font-semibold uppercase tracking-[0.24em] text-white/62">Village Management System</div>
+                  <div className="text-sm font-semibold uppercase tracking-[0.24em] text-white/60">Village Management System</div>
                   <h1 className="mt-2 text-[32px] font-black leading-tight text-white">{setup.villageName}</h1>
                 </div>
               </div>
@@ -106,42 +106,42 @@ export default function LoginPage() {
               </p>
 
               <div className="mt-10 space-y-4">
-                <div className="flex items-start gap-3 text-white/84">
+                <div className="flex items-start gap-3 text-white/85">
                   <span className="mt-1 inline-flex h-6 w-6 items-center justify-center rounded-full bg-white/12 text-xs font-bold">01</span>
                   <div>
                     <div className="text-sm font-semibold text-white">ข้อมูลสำคัญอยู่ในมุมมองเดียว</div>
-                    <div className="mt-1 text-sm leading-6 text-white/66">บ้าน รถ การชำระเงิน และประวัติการใช้งาน ถูกจัดไว้พร้อมใช้งาน</div>
+                    <div className="mt-1 text-sm leading-6 text-white/70">บ้าน รถ การชำระเงิน และประวัติการใช้งาน ถูกจัดไว้พร้อมใช้งาน</div>
                   </div>
                 </div>
-                <div className="flex items-start gap-3 text-white/84">
+                <div className="flex items-start gap-3 text-white/85">
                   <span className="mt-1 inline-flex h-6 w-6 items-center justify-center rounded-full bg-white/12 text-xs font-bold">02</span>
                   <div>
                     <div className="text-sm font-semibold text-white">รองรับงานประจำวันของเจ้าหน้าที่</div>
-                    <div className="mt-1 text-sm leading-6 text-white/66">ลดขั้นตอนซ้ำซ้อนและช่วยติดตามสถานะงานได้ต่อเนื่อง</div>
+                    <div className="mt-1 text-sm leading-6 text-white/70">ลดขั้นตอนซ้ำซ้อนและช่วยติดตามสถานะงานได้ต่อเนื่อง</div>
                   </div>
                 </div>
-                <div className="flex items-start gap-3 text-white/84">
+                <div className="flex items-start gap-3 text-white/85">
                   <span className="mt-1 inline-flex h-6 w-6 items-center justify-center rounded-full bg-white/12 text-xs font-bold">03</span>
                   <div>
                     <div className="text-sm font-semibold text-white">ตรวจสอบย้อนหลังได้ชัดเจน</div>
-                    <div className="mt-1 text-sm leading-6 text-white/66">ทุกการใช้งานและรายการสำคัญสามารถติดตามย้อนหลังได้</div>
+                    <div className="mt-1 text-sm leading-6 text-white/70">ทุกการใช้งานและรายการสำคัญสามารถติดตามย้อนหลังได้</div>
                   </div>
                 </div>
               </div>
             </div>
 
             <div className="grid grid-cols-3 gap-3 text-white">
-              <div className="rounded-2xl border border-white/12 bg-white/8 px-4 py-4">
+              <div className="rounded-2xl border border-white/15 bg-white/10 px-4 py-4">
                 <div className="text-2xl font-black">24/7</div>
-                <div className="mt-1 text-xs text-white/66">Availability</div>
+                <div className="mt-1 text-xs text-white/70">Availability</div>
               </div>
-              <div className="rounded-2xl border border-white/12 bg-white/8 px-4 py-4">
+              <div className="rounded-2xl border border-white/15 bg-white/10 px-4 py-4">
                 <div className="text-2xl font-black">1 View</div>
-                <div className="mt-1 text-xs text-white/66">Operations</div>
+                <div className="mt-1 text-xs text-white/70">Operations</div>
               </div>
-              <div className="rounded-2xl border border-white/12 bg-white/8 px-4 py-4">
+              <div className="rounded-2xl border border-white/15 bg-white/10 px-4 py-4">
                 <div className="text-2xl font-black">100%</div>
-                <div className="mt-1 text-xs text-white/66">Traceable</div>
+                <div className="mt-1 text-xs text-white/70">Traceable</div>
               </div>
             </div>
           </div>
