@@ -30,6 +30,7 @@ const AdminLayout = () => {
   const [sectionOpen, setSectionOpen] = useState({
     หน้าหลัก: true,
     จัดการ: false,
+    รายงาน: false,
     ระบบ: false,
   })
   const [newPassword, setNewPassword] = useState('')
@@ -105,6 +106,13 @@ const AdminLayout = () => {
       { id: 'rep', label: 'ผลงานนิติ', icon: '🏆', path: '/admin/work-reports' },
       { id: 'tech', label: 'ทำเนียบช่าง', icon: '🔨', path: '/admin/technicians' },
       { id: 'market', label: 'ตลาดชุมชน', icon: '🛒', path: '/admin/marketplace' },
+    ]},
+    { section: 'รายงาน', sectionIcon: '>', items: [
+      { id: 'rpt-payments', label: 'รายงานการชำระเงิน', icon: '📄', path: '/admin/reports/payments' },
+      { id: 'rpt-overdue', label: 'รายงานค้างชำระ', icon: '📄', path: '/admin/reports/overdue' },
+      { id: 'rpt-violations', label: 'รายสรุปการกระทำผิด', icon: '📄', path: '/admin/reports/violations-summary' },
+      { id: 'rpt-issues', label: 'รายงานสรุปรับแจ้งปัญหาจากลูกบ้าน', icon: '📄', path: '/admin/reports/issues-summary' },
+      { id: 'rpt-expense', label: 'รายงานการจ่ายเงินออก', icon: '📄', path: '/admin/reports/expense-payments' },
     ]},
     { section: 'ระบบ', sectionIcon: '>', items: [
       { id: 'cfg', label: 'Config ระบบ', icon: '⚙️', path: '/admin/config' },
