@@ -99,6 +99,10 @@ function stripRejectMarker(note) {
   return lines.join('\n').trim()
 }
 
+function isRejectedPaymentNote(note) {
+  return String(note || '').startsWith(REJECT_PREFIX)
+}
+
 function toGregorianYear(yearValue) {
   const year = Number(yearValue)
   if (!Number.isFinite(year) || year <= 0) return null
@@ -932,23 +936,15 @@ export async function createPayment(payload) {
       .from('payment_items')
       .insert(itemRows)
 
-    if (itemError) {
-      const message = String(itemError?.message || '')
-      const isRlsError = /row-level security|policy|unauthorized|401/i.test(message)
-      if (!isRlsError) throw itemError
-      console.warn('payment_items insert blocked by RLS. Payment is saved but item rows were skipped.', itemError)
-      data.payment_items = []
-    }
+    if (itemError) throw itemError
 
-    if (!data.payment_items) {
-      const { data: insertedItems, error: itemReadError } = await supabase
-        .from('payment_items')
-        .select('id, item_key, item_label, due_amount, paid_amount, outstanding_amount')
-        .eq('payment_id', data.id)
+    const { data: insertedItems, error: itemReadError } = await supabase
+      .from('payment_items')
+      .select('id, item_key, item_label, due_amount, paid_amount, outstanding_amount')
+      .eq('payment_id', data.id)
 
-      if (itemReadError) throw itemReadError
-      data.payment_items = insertedItems || []
-    }
+    if (itemReadError) throw itemReadError
+    data.payment_items = insertedItems || []
   }
 
   if (payload.fee_id) {
@@ -963,12 +959,14 @@ export async function createPayment(payload) {
 
       const { data: paymentRows, error: paymentReadError } = await supabase
         .from('payments')
-        .select('amount')
+        .select('amount, note')
         .eq('fee_id', payload.fee_id)
 
       if (paymentReadError) throw paymentReadError
 
-      const submittedTotal = (paymentRows || []).reduce((sum, row) => sum + Number(row.amount || 0), 0)
+      const submittedTotal = (paymentRows || [])
+        .filter((row) => !isRejectedPaymentNote(row.note))
+        .reduce((sum, row) => sum + Number(row.amount || 0), 0)
       const totalAmount = Number(feeRow?.total_amount || 0)
 
       const nextStatus = submittedTotal >= totalAmount

@@ -214,6 +214,37 @@ function getFeeDueItems(fee) {
     .filter((item) => item.dueAmount > 0)
 }
 
+function getOutstandingItemsForFee(fee, payments = []) {
+  if (!fee?.id) return []
+
+  const paidByKey = {}
+  for (const payment of payments) {
+    if (payment?.fee_id !== fee.id) continue
+    if (getRejectedReason(payment?.note)) continue
+
+    const rows = getPaymentItemRows(payment)
+    for (const row of rows) {
+      const key = row?.key
+      if (!feeItemDefs.some((def) => def.key === key)) continue
+      paidByKey[key] = Number(paidByKey[key] || 0) + Number(row?.paidAmount || 0)
+    }
+  }
+
+  return feeItemDefs
+    .map((item) => {
+      const dueAmount = Number(fee?.[item.key] || 0)
+      const paidToDate = Number(paidByKey[item.key] || 0)
+      const amount = Math.max(0, dueAmount - paidToDate)
+      return {
+        ...item,
+        amount,
+        dueAmount,
+        paidToDate,
+      }
+    })
+    .filter((item) => item.amount > 0)
+}
+
 function getPaymentItemRows(payment) {
   if (Array.isArray(payment?.payment_items) && payment.payment_items.length > 0) {
     return payment.payment_items.map((item, index) => ({
@@ -297,10 +328,8 @@ export default function AdminPayments() {
 
   const receivePayableItems = useMemo(() => {
     if (!selectedReceiveFee) return []
-    return feeItemDefs
-      .map((item) => ({ ...item, amount: Number(selectedReceiveFee[item.key] || 0) }))
-      .filter((item) => item.amount > 0)
-  }, [selectedReceiveFee])
+    return getOutstandingItemsForFee(selectedReceiveFee, payments)
+  }, [selectedReceiveFee, payments])
 
   const receiveSelectedAmount = useMemo(() => (
     receiveForm.selectedItems.reduce((sum, key) => sum + Number(receiveForm.itemAmounts?.[key] || 0), 0)
@@ -402,11 +431,13 @@ export default function AdminPayments() {
   const openReceiveModal = async () => {
     try {
       const feeRows = await listFees({ status: 'all' })
-      const candidates = feeRows.filter((fee) => (
+      const baseCandidates = feeRows.filter((fee) => (
         fee.status !== 'paid'
         && fee.status !== 'cancelled'
         && Number(fee.total_amount || 0) > 0
       ))
+
+      const candidates = baseCandidates.filter((fee) => getOutstandingItemsForFee(fee, payments).length > 0)
 
       if (candidates.length === 0) {
         await Swal.fire({ icon: 'info', title: 'ไม่มีใบแจ้งหนี้ที่รับชำระได้' })
@@ -414,9 +445,7 @@ export default function AdminPayments() {
       }
 
       const first = candidates[0]
-      const payableItems = feeItemDefs
-        .map((item) => ({ ...item, amount: Number(first[item.key] || 0) }))
-        .filter((item) => item.amount > 0)
+      const payableItems = getOutstandingItemsForFee(first, payments)
       const selectedItems = payableItems.map((item) => item.key)
       const itemAmounts = payableItems.reduce((acc, item) => {
         acc[item.key] = item.amount
@@ -446,9 +475,7 @@ export default function AdminPayments() {
 
   const handleChangeReceiveFee = (feeId) => {
     const nextFee = feeOptions.find((fee) => fee.id === feeId)
-    const payableItems = feeItemDefs
-      .map((item) => ({ ...item, amount: Number(nextFee?.[item.key] || 0) }))
-      .filter((item) => item.amount > 0)
+    const payableItems = getOutstandingItemsForFee(nextFee, payments)
     const selectedItems = payableItems.map((item) => item.key)
     const itemAmounts = payableItems.reduce((acc, item) => {
       acc[item.key] = item.amount
@@ -593,12 +620,12 @@ export default function AdminPayments() {
       setSavingReceive(true)
       setUploadingSlip(true)
       const uploadedSlip = await uploadPaymentSlip(receiveSlipFile, { houseId: targetFee.house_id })
-      const selectedItemsMeta = feeItemDefs
+      const selectedItemsMeta = receivePayableItems
         .filter((item) => receiveForm.selectedItems.includes(item.key))
         .map((item) => ({
           key: item.key,
           label: item.label,
-          dueAmount: Number(targetFee[item.key] || 0),
+          dueAmount: Number(item.amount || 0),
           paidAmount: Number(receiveForm.itemAmounts?.[item.key] || 0),
         }))
       const selectedLabels = selectedItemsMeta
