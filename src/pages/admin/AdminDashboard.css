@@ -1067,6 +1067,23 @@
   }
 }
 
+.pane.on.reports-compact {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.pane.on.reports-compact .ph,
+.pane.on.reports-compact .stats,
+.pane.on.reports-compact .card {
+  margin-top: 0;
+  margin-bottom: 0;
+}
+
+.pane.on.reports-compact .stats {
+  gap: 10px;
+}
+
 .payments-compact .payments-main-wrap,
 .payments-compact .payments-receive-wrap {
   overflow-x: hidden;

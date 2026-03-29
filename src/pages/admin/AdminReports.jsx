@@ -14,7 +14,7 @@ const AdminReports = () => {
     })
   }
   return (
-    <div className="pane on" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+    <div className="pane on reports-compact">
       <div className="ph">
         <div className="ph-in">
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>

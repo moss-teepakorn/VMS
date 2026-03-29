@@ -15,7 +15,7 @@ export default function ReportMockPage({ icon, title, subtitle, fileName, column
   }
 
   return (
-    <div className="pane on houses-compact">
+    <div className="pane on houses-compact reports-compact">
       <div className="ph">
         <div className="ph-in">
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
