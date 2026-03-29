@@ -288,6 +288,27 @@ const AdminFees = () => {
   const editApprovedAmount = useMemo(() => (editingFee ? getApprovedAmountForFee(editingFee) : 0), [editingFee, feeApprovedTotals])
   const editOutstandingAfterChange = useMemo(() => Math.max(0, editTotal - editApprovedAmount), [editTotal, editApprovedAmount])
 
+  const getEditItemDueAmount = (itemKey) => {
+    if (!editingFee) return 0
+    if (itemKey === 'fee_other') {
+      const feeOtherBase = Number(editForm.fee_other || 0)
+      const discount = Math.max(0, Number(editForm.fee_discount || 0))
+      return Math.max(0, feeOtherBase - discount)
+    }
+    return Math.max(0, Number(editForm[itemKey] || 0))
+  }
+
+  const getEditItemApprovedAmount = (itemKey) => {
+    if (!editingFee) return 0
+    return Number((feeApprovedItemTotals[editingFee.id] || {})[itemKey] || 0)
+  }
+
+  const getEditItemOutstandingAmount = (itemKey) => {
+    const due = getEditItemDueAmount(itemKey)
+    const approved = getEditItemApprovedAmount(itemKey)
+    return Math.max(0, due - approved)
+  }
+
   const getOutstandingItemRowsForFee = (fee) => {
     const approvedByItem = feeApprovedItemTotals[fee?.id] || {}
     return feeItemDefs
@@ -1901,7 +1922,14 @@ const AdminFees = () => {
                       { label: 'ค่าขยะ', key: 'fee_waste' },
                     ].map((item, i, arr) => (
                       <div key={item.key} style={{ display: 'flex', alignItems: 'center', padding: '7px 12px', borderBottom: i < arr.length - 1 ? '1px solid var(--bo)' : undefined, gap: 8 }}>
-                        <span style={{ flex: 1, fontSize: 13 }}>{item.label}</span>
+                        <div style={{ flex: 1, display: 'grid', gap: 3 }}>
+                          <span style={{ fontSize: 13 }}>{item.label}</span>
+                          <div style={{ fontSize: 11, color: '#64748b' }}>
+                            ตั้งใหม่ {getEditItemDueAmount(item.key).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                            {' '}| อนุมัติแล้ว {getEditItemApprovedAmount(item.key).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                            {' '}| คงค้าง {getEditItemOutstandingAmount(item.key).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          </div>
+                        </div>
                         <input type="number" step="0.01" value={editForm[item.key]} onChange={(e) => setEditForm((prev) => ({ ...prev, [item.key]: e.target.value }))} style={{ width: 132, textAlign: 'right' }} />
                       </div>
                     ))}
@@ -1921,7 +1949,14 @@ const AdminFees = () => {
                       const hasValue = Number(editForm[item.key] || 0) > 0
                       return (
                         <div key={item.key} style={{ display: 'flex', alignItems: 'center', padding: '7px 12px', borderBottom: i < arr.length - 1 ? '1px solid var(--bo)' : undefined, gap: 8, background: hasValue ? '#fffbeb' : '#fff' }}>
-                          <span style={{ flex: 1, fontSize: 13, color: hasValue ? '#92400e' : 'inherit' }}>{item.label}</span>
+                          <div style={{ flex: 1, display: 'grid', gap: 3 }}>
+                            <span style={{ fontSize: 13, color: hasValue ? '#92400e' : 'inherit' }}>{item.label}</span>
+                            <div style={{ fontSize: 11, color: '#64748b' }}>
+                              ตั้งใหม่ {getEditItemDueAmount(item.key).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                              {' '}| อนุมัติแล้ว {getEditItemApprovedAmount(item.key).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                              {' '}| คงค้าง {getEditItemOutstandingAmount(item.key).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                            </div>
+                          </div>
                           <input type="number" step="0.01" value={editForm[item.key]} onChange={(e) => setEditForm((prev) => ({ ...prev, [item.key]: e.target.value }))} style={{ width: 132, textAlign: 'right', borderColor: hasValue ? '#f59e0b' : undefined }} />
                         </div>
                       )
@@ -1932,7 +1967,14 @@ const AdminFees = () => {
                       ค่าอื่นๆ / ส่วนลด
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', padding: '7px 12px', borderBottom: '1px solid var(--bo)', gap: 8 }}>
-                      <span style={{ flex: 1, fontSize: 13 }}>ค่าอื่นๆ</span>
+                      <div style={{ flex: 1, display: 'grid', gap: 3 }}>
+                        <span style={{ fontSize: 13 }}>ค่าอื่นๆ</span>
+                        <div style={{ fontSize: 11, color: '#64748b' }}>
+                          ตั้งใหม่ {getEditItemDueAmount('fee_other').toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          {' '}| อนุมัติแล้ว {getEditItemApprovedAmount('fee_other').toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          {' '}| คงค้าง {getEditItemOutstandingAmount('fee_other').toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </div>
+                      </div>
                       <input type="number" step="0.01" value={editForm.fee_other} onChange={(e) => setEditForm((prev) => ({ ...prev, fee_other: e.target.value }))} style={{ width: 132, textAlign: 'right' }} />
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', padding: '7px 12px', gap: 8, background: Number(editForm.fee_discount || 0) > 0 ? '#fef2f2' : '#fff' }}>
