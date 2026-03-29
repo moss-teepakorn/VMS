@@ -1,5 +1,6 @@
-import React, { useEffect, useMemo, useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import Chart from 'chart.js/auto'
 import { getDashboardData } from '../../lib/dashboard'
 import { getSetupConfig } from '../../lib/setup'
 import villageLogo from '../../assets/village-logo.svg'
@@ -9,10 +10,16 @@ const AdminDashboard = () => {
   const navigate = useNavigate()
   const [dashboard, setDashboard] = useState(null)
   const [loading, setLoading] = useState(false)
+  const [themeKey, setThemeKey] = useState(() => document.body.getAttribute('data-theme') || 'normal')
   const [setup, setSetup] = useState({
     villageName: 'The Greenfield',
     loginCircleLogoUrl: '',
   })
+  const paymentChartRef = useRef(null)
+  const houseStatusChartRef = useRef(null)
+  const quarterlyChartRef = useRef(null)
+  const issuesChartRef = useRef(null)
+  const chartInstancesRef = useRef([])
 
   useEffect(() => {
     const loadDashboard = async () => {
@@ -39,20 +46,200 @@ const AdminDashboard = () => {
     loadDashboard()
   }, [])
 
-  const paymentMax = useMemo(() => {
-    if (!dashboard) return 1
-    return Math.max(...dashboard.paymentTrend.flatMap((item) => [item.collected, item.outstanding]), 1)
-  }, [dashboard])
+  useEffect(() => {
+    const observer = new MutationObserver(() => {
+      setThemeKey(document.body.getAttribute('data-theme') || 'normal')
+    })
 
-  const quarterMax = useMemo(() => {
-    if (!dashboard) return 1
-    return Math.max(...dashboard.quarterlyTrend.flatMap((item) => [item.paid, item.outstanding]), 1)
-  }, [dashboard])
+    observer.observe(document.body, { attributes: true, attributeFilter: ['data-theme'] })
 
-  const categoryMax = useMemo(() => {
-    if (!dashboard) return 1
-    return Math.max(...dashboard.issueCategories.map((item) => item.count), 1)
-  }, [dashboard])
+    return () => observer.disconnect()
+  }, [])
+
+  useEffect(() => {
+    if (!dashboard) return
+
+    const styles = getComputedStyle(document.body)
+    const getVar = (name, fallback) => {
+      const value = styles.getPropertyValue(name).trim()
+      return value || fallback
+    }
+
+    const palette = {
+      primary: getVar('--pr', '#1B4F72'),
+      primaryLight: getVar('--prl', '#E8F4F8'),
+      accent: getVar('--ac', '#28B463'),
+      warning: getVar('--wn', '#E67E22'),
+      danger: getVar('--dg', '#C0392B'),
+      border: getVar('--bo', '#D1D5DB'),
+      text: getVar('--tx', '#334155'),
+      muted: getVar('--mu', '#6B7280'),
+      card: getVar('--card', '#FFFFFF'),
+      bg2: getVar('--bg2', '#F1F5F9'),
+    }
+
+    chartInstancesRef.current.forEach((chart) => chart.destroy())
+    chartInstancesRef.current = []
+
+    Chart.defaults.font.family = 'Sarabun, sans-serif'
+    Chart.defaults.color = palette.text
+    Chart.defaults.borderColor = palette.border
+
+    if (paymentChartRef.current) {
+      const paymentChart = new Chart(paymentChartRef.current, {
+        type: 'bar',
+        data: {
+          labels: data.paymentTrend.map((item) => item.label),
+          datasets: [
+            {
+              label: 'ยอดเก็บได้',
+              data: data.paymentTrend.map((item) => item.collected),
+              backgroundColor: palette.accent,
+              borderRadius: 6,
+              maxBarThickness: 26,
+            },
+            {
+              label: 'ยอดค้าง',
+              data: data.paymentTrend.map((item) => item.outstanding),
+              backgroundColor: palette.danger,
+              borderRadius: 6,
+              maxBarThickness: 26,
+            },
+          ],
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          animation: { duration: 900, easing: 'easeOutQuart' },
+          plugins: {
+            legend: { position: 'bottom', labels: { usePointStyle: true, boxWidth: 8 } },
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              ticks: {
+                callback: (value) => `${Number(value).toLocaleString('th-TH')}`,
+              },
+            },
+          },
+        },
+      })
+      chartInstancesRef.current.push(paymentChart)
+    }
+
+    if (houseStatusChartRef.current) {
+      const houseStatusChart = new Chart(houseStatusChartRef.current, {
+        type: 'doughnut',
+        data: {
+          labels: ['ปกติ', 'ค้างชำระ', 'ระงับสิทธิ์', 'ฟ้องร้อง'],
+          datasets: [
+            {
+              data: [
+                data.houseStatus.normal,
+                data.houseStatus.overdue,
+                data.houseStatus.suspended,
+                data.houseStatus.lawsuit,
+              ],
+              backgroundColor: [palette.accent, palette.warning, '#EF4444', '#111827'],
+              borderColor: palette.card,
+              borderWidth: 2,
+            },
+          ],
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          cutout: '62%',
+          animation: { duration: 950, easing: 'easeOutQuart' },
+          plugins: {
+            legend: { position: 'bottom', labels: { usePointStyle: true, boxWidth: 8 } },
+          },
+        },
+      })
+      chartInstancesRef.current.push(houseStatusChart)
+    }
+
+    if (quarterlyChartRef.current) {
+      const quarterlyChart = new Chart(quarterlyChartRef.current, {
+        type: 'line',
+        data: {
+          labels: data.quarterlyTrend.map((item) => item.key),
+          datasets: [
+            {
+              label: 'ยอดเก็บได้',
+              data: data.quarterlyTrend.map((item) => item.paid),
+              borderColor: palette.primary,
+              backgroundColor: palette.primaryLight,
+              pointBackgroundColor: palette.primary,
+              fill: true,
+              tension: 0.28,
+            },
+            {
+              label: 'ยอดค้าง',
+              data: data.quarterlyTrend.map((item) => item.outstanding),
+              borderColor: palette.warning,
+              backgroundColor: 'transparent',
+              pointBackgroundColor: palette.warning,
+              tension: 0.28,
+            },
+          ],
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          animation: { duration: 1000, easing: 'easeOutQuart' },
+          plugins: {
+            legend: { position: 'bottom', labels: { usePointStyle: true, boxWidth: 8 } },
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+            },
+          },
+        },
+      })
+      chartInstancesRef.current.push(quarterlyChart)
+    }
+
+    if (issuesChartRef.current) {
+      const issueData = data.issueCategories.slice(0, 6)
+      const issuesChart = new Chart(issuesChartRef.current, {
+        type: 'pie',
+        data: {
+          labels: issueData.map((item) => item.category),
+          datasets: [
+            {
+              data: issueData.map((item) => item.count),
+              backgroundColor: [
+                palette.warning,
+                palette.danger,
+                palette.primary,
+                '#7C3AED',
+                '#06B6D4',
+                '#4B5563',
+              ],
+              borderColor: palette.card,
+              borderWidth: 2,
+            },
+          ],
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          animation: { duration: 900, easing: 'easeOutQuart' },
+          plugins: {
+            legend: { position: 'bottom', labels: { usePointStyle: true, boxWidth: 8 } },
+          },
+        },
+      })
+      chartInstancesRef.current.push(issuesChart)
+    }
+
+    return () => {
+      chartInstancesRef.current.forEach((chart) => chart.destroy())
+      chartInstancesRef.current = []
+    }
+  }, [dashboard, themeKey])
 
   if (loading && !dashboard) {
     return <div className="pane on"><div className="card"><div className="cb" style={{ padding: '24px', textAlign: 'center', color: 'var(--mu)' }}>กำลังโหลดข้อมูล dashboard...</div></div></div>
@@ -71,7 +258,7 @@ const AdminDashboard = () => {
   }
 
   return (
-    <div className="pane on" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+    <div className="pane on dashboard dashboard-v1" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
       {/* Page Header */}
       <div className="ph">
         <div className="ph-in">
@@ -146,21 +333,7 @@ const AdminDashboard = () => {
             <h3>💰 ยอดชำระ vs ค้าง — 6 เดือน</h3>
           </div>
           <div className="chart-wrap">
-            <svg viewBox="0 0 600 250" style={{ width: '100%', height: '200px' }}>
-              {data.paymentTrend.map((item, index) => {
-                const baseX = 50 + index * 70
-                const collectedHeight = (item.collected / paymentMax) * 120
-                const outstandingHeight = (item.outstanding / paymentMax) * 120
-                return (
-                  <g key={item.key}>
-                    <rect x={baseX} y={220 - collectedHeight} width="30" height={collectedHeight} fill="#28B463" />
-                    <rect x={baseX + 35} y={220 - outstandingHeight} width="20" height={outstandingHeight} fill="#C0392B" />
-                    <text x={baseX} y="240" fontSize="12" fill="#666">{item.label}</text>
-                  </g>
-                )
-              })}
-              <text x="300" y="20" fontSize="14" fontWeight="600" fill="#333">เก็บได้ {data.paymentTrend.reduce((sum, item) => sum + item.collected, 0).toLocaleString('th-TH')} ฿ ค้าง {data.paymentTrend.reduce((sum, item) => sum + item.outstanding, 0).toLocaleString('th-TH')} ฿</text>
-            </svg>
+            <canvas ref={paymentChartRef} />
           </div>
         </div>
         <div className="chart-box">
@@ -168,16 +341,7 @@ const AdminDashboard = () => {
             <h3>🏠 สถานะบ้านทั้งหมด (128 หลัง)</h3>
           </div>
           <div className="chart-wrap">
-            <svg viewBox="0 0 300 250" style={{ width: '100%', height: '200px' }}>
-              <circle cx="120" cy="100" r="70" fill="#28B463" />
-              <circle cx="120" cy="100" r="60" fill="white" />
-              <text x="120" y="105" textAnchor="middle" fontSize="16" fontWeight="700" fill="#333">{data.houseStatus.normal}</text>
-              <text x="120" y="125" textAnchor="middle" fontSize="12" fill="#666">ปกติ</text>
-              <text x="220" y="50" fontSize="12" fill="#333">🟢 ปกติ: {data.houseStatus.normal} หลัง</text>
-              <text x="220" y="70" fontSize="12" fill="#333">🟠 ค้างชำระ: {data.houseStatus.overdue} หลัง</text>
-              <text x="220" y="90" fontSize="12" fill="#333">🔴 ระงับสิทธิ์: {data.houseStatus.suspended} หลัง</text>
-              <text x="220" y="110" fontSize="12" fill="#333">⚫ ฟ้องร้อง: {data.houseStatus.lawsuit} หลัง</text>
-            </svg>
+            <canvas ref={houseStatusChartRef} />
           </div>
         </div>
       </div>
@@ -189,22 +353,7 @@ const AdminDashboard = () => {
             <h3>📈 ยอดเก็บ vs ค้างรายไตรมาส</h3>
           </div>
           <div className="chart-wrap">
-            <svg viewBox="0 0 600 250" style={{ width: '100%', height: '200px' }}>
-              {data.quarterlyTrend.map((item, index) => {
-                const baseX = 60 + index * 80
-                const paidHeight = (item.paid / quarterMax) * 110
-                const outstandingHeight = (item.outstanding / quarterMax) * 110
-                return (
-                  <g key={item.key}>
-                    <rect x={baseX} y={200 - paidHeight} width="50" height={paidHeight} fill="#1B4F72" />
-                    <rect x={baseX + 25} y={200 - outstandingHeight} width="20" height={outstandingHeight} fill="#E67E22" />
-                    <text x={baseX + 5} y="230" fontSize="12" fill="#666">{item.key}</text>
-                  </g>
-                )
-              })}
-              <text x="320" y="40" fontSize="12" fontWeight="600" fill="#333">🟦 เก็บได้</text>
-              <text x="320" y="70" fontSize="12" fontWeight="600" fill="#333">🟧 ค้างชำระ</text>
-            </svg>
+            <canvas ref={quarterlyChartRef} />
           </div>
         </div>
         <div className="chart-box">
@@ -212,19 +361,7 @@ const AdminDashboard = () => {
             <h3>🔧 ปัญหาตามประเภท</h3>
           </div>
           <div className="chart-wrap">
-            <svg viewBox="0 0 400 250" style={{ width: '100%', height: '200px' }}>
-              {data.issueCategories.slice(0, 4).map((item, index) => {
-                const x = 40 + index * 55
-                const height = (item.count / categoryMax) * 100
-                return (
-                  <g key={item.category}>
-                    <rect x={x} y={180 - height} width="40" height={height} fill={['#E67E22', '#C0392B', '#3498DB', '#8E44AD'][index]} />
-                    <text x={x + 20} y="200" textAnchor="middle" fontSize="11" fill="#666">{item.category}</text>
-                    <text x={x + 20} y={165 - height} textAnchor="middle" fontSize="12" fontWeight="600" fill="#333">{item.count}</text>
-                  </g>
-                )
-              })}
-            </svg>
+            <canvas ref={issuesChartRef} />
           </div>
         </div>
       </div>

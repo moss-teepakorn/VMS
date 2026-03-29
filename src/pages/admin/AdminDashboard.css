@@ -8,6 +8,44 @@
   width: 100%;
 }
 
+.dashboard-v1 .ph,
+.dashboard-v1 .stats,
+.dashboard-v1 .chart-box,
+.dashboard-v1 .card {
+  animation: dashFadeUp .45s ease both;
+}
+
+.dashboard-v1 .stats {
+  animation-delay: .06s;
+}
+
+.dashboard-v1 .chart-box:nth-of-type(1) {
+  animation-delay: .1s;
+}
+
+.dashboard-v1 .chart-box:nth-of-type(2) {
+  animation-delay: .15s;
+}
+
+.dashboard-v1 .card:nth-of-type(1) {
+  animation-delay: .2s;
+}
+
+.dashboard-v1 .card:nth-of-type(2) {
+  animation-delay: .24s;
+}
+
+@keyframes dashFadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 /* ═════════════════════════════════════════════════
    PAGE HEADER
 ═════════════════════════════════════════════════ */
@@ -959,7 +997,7 @@
 
 .chart-wrap {
   padding: 16px;
-  min-height: 150px;
+  min-height: 230px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -967,9 +1005,11 @@
   font-size: 12px;
 }
 
-canvas {
+.chart-wrap canvas {
   max-width: 100%;
   max-height: 100%;
+  width: 100% !important;
+  height: 100% !important;
 }
 
 /* ═════════════════════════════════════════════════
