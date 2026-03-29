@@ -139,6 +139,62 @@ function buildReceiptNo(payment) {
   return `RC-${y}${m}${d}-${String(payment.id || '').slice(0, 6).toUpperCase()}`
 }
 
+function toThaiBahtText(value) {
+  const amount = Number(value || 0)
+  if (!Number.isFinite(amount) || amount < 0) return '-'
+
+  const digitsText = ['ศูนย์', 'หนึ่ง', 'สอง', 'สาม', 'สี่', 'ห้า', 'หก', 'เจ็ด', 'แปด', 'เก้า']
+  const unitsText = ['', 'สิบ', 'ร้อย', 'พัน', 'หมื่น', 'แสน', 'ล้าน']
+
+  const convertChunk = (num) => {
+    if (num === 0) return ''
+    const digits = String(num).split('').map((d) => Number(d))
+    const len = digits.length
+    let text = ''
+
+    digits.forEach((digit, i) => {
+      const pos = len - i - 1
+      if (digit === 0) return
+      if (pos === 0 && digit === 1 && len > 1) {
+        text += 'เอ็ด'
+        return
+      }
+      if (pos === 1 && digit === 1) {
+        text += 'สิบ'
+        return
+      }
+      if (pos === 1 && digit === 2) {
+        text += 'ยี่สิบ'
+        return
+      }
+      text += `${digitsText[digit]}${unitsText[pos]}`
+    })
+    return text
+  }
+
+  const [intRaw, satangRaw = '00'] = amount.toFixed(2).split('.')
+  let integer = Number(intRaw)
+  const satang = Number(satangRaw)
+
+  const chunks = []
+  while (integer > 0) {
+    chunks.unshift(integer % 1000000)
+    integer = Math.floor(integer / 1000000)
+  }
+
+  const bahtText = (chunks
+    .map((chunk, idx) => {
+      const chunkText = convertChunk(chunk)
+      if (!chunkText) return ''
+      const isLast = idx === chunks.length - 1
+      return isLast ? chunkText : `${chunkText}ล้าน`
+    })
+    .join('')) || 'ศูนย์'
+
+  if (satang === 0) return `${bahtText}บาทถ้วน`
+  return `${bahtText}บาท${convertChunk(satang)}สตางค์`
+}
+
 const feeItemDefs = [
   { key: 'fee_common', label: 'ค่าส่วนกลาง' },
   { key: 'fee_parking', label: 'ค่าจอดรถ' },
@@ -183,15 +239,8 @@ function getPaymentItemRows(payment) {
     })
   }
 
-  const dueItems = getFeeDueItems(payment?.fees)
-  if (dueItems.length === 0) {
-    return [{ key: 'paid_total', label: 'ยอดชำระที่บันทึก', dueAmount: Number(payment?.fees?.total_amount || 0), paidAmount: Number(payment?.amount || 0) }]
-  }
-
-  return dueItems.map((item) => ({
-    ...item,
-    paidAmount: 0,
-  }))
+  const paidAmount = Number(payment?.amount || 0)
+  return [{ key: 'paid_total', label: 'ยอดชำระที่บันทึก', dueAmount: Number(payment?.fees?.total_amount || paidAmount), paidAmount }]
 }
 
 export default function AdminPayments() {
@@ -613,11 +662,12 @@ export default function AdminPayments() {
     const invoiceLabel = payment.fees ? `${formatPeriod(payment.fees.period)} ปี ${Number(payment.fees.year || 0) + 543}` : '-'
     const invoiceNo = payment.fees ? `INV-${String(payment.fees.year || '').slice(-2)}-${String(payment.fees.id || '').slice(0, 8).toUpperCase()}` : '-'
     const amount = Number(payment.amount || 0)
-    const approver = payment.verified_profile?.full_name || profile?.full_name || profile?.username || '-'
     const paymentDate = formatDateTime(payment.paid_at)
     const displayNote = getDisplayNote(payment.note)
     const itemRows = getPaymentItemRows(payment)
     const totalPaid = itemRows.reduce((sum, row) => sum + Number(row.paidAmount || 0), 0) || amount
+    const totalDue = Number(payment?.fees?.total_amount || itemRows.reduce((sum, row) => sum + Number(row.dueAmount || 0), 0))
+    const totalOutstanding = Math.max(0, totalDue - totalPaid)
     const signatureSource = setup.juristicSignatureUrl || ''
     const renderTableRows = () => itemRows.map((row, index) => (`
       <tr>
@@ -670,14 +720,25 @@ export default function AdminPayments() {
             <tbody>
               ${renderTableRows()}
             </tbody>
+            <tfoot>
+              <tr>
+                <td colspan="2" class="r"><strong>ยอดรวมที่ต้องชำระ</strong></td>
+                <td class="r"><strong>${totalDue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong></td>
+                <td class="r"><strong>${totalPaid.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong></td>
+              </tr>
+              <tr>
+                <td colspan="3" class="r"><strong>ยอดคงค้างหลังชำระ</strong></td>
+                <td class="r"><strong>${totalOutstanding.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong></td>
+              </tr>
+            </tfoot>
           </table>
-          <div class="note-box">${displayNote || `ยอดชำระรวม ${totalPaid.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} บาท`}</div>
+          <div class="note-box">ยอดชำระรวม ${totalPaid.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} บาท (${toThaiBahtText(totalPaid)})</div>
+          ${displayNote ? `<div class="note-box">${displayNote}</div>` : ''}
         </section>
 
         <section class="foot">
           <div class="note">
             ออกใบเสร็จหลังจากตรวจสอบการชำระเรียบร้อยแล้ว<br />
-            อนุมัติโดย ${approver}<br />
             บัญชีอ้างอิง ${setup.bankAccountName || '-'} ${setup.bankAccountNo || ''}
           </div>
           <div class="sign-wrap">
@@ -759,6 +820,7 @@ export default function AdminPayments() {
             th { background: #f1f5f9; text-align: left; font-weight: 600; }
             .c { text-align: center; }
             .r { text-align: right; }
+            tfoot td { background: #f8fafc; font-weight: 700; }
             .note-box {
               border-top: 1px dashed #d1d5db;
               padding-top: 4px;
@@ -1092,7 +1154,7 @@ export default function AdminPayments() {
             <form onSubmit={handleSubmitReceive}>
               <div className="house-md-body">
                 <section className="house-sec">
-                  <div className="house-grid" style={{ gridTemplateColumns: '1fr' }}>
+                  <div className="house-grid" style={{ gridTemplateColumns: '1fr 1fr', gap: 10 }}>
                     <label className="house-field">
                       <span>ใบแจ้งหนี้ *</span>
                       <select value={receiveForm.fee_id} onChange={(e) => handleChangeReceiveFee(e.target.value)}>
@@ -1103,7 +1165,7 @@ export default function AdminPayments() {
                         ))}
                       </select>
                     </label>
-                    <div className="house-field" style={{ gap: 10 }}>
+                    <div className="house-field" style={{ gap: 10, gridColumn: '1 / -1' }}>
                       <span>เลือกรายการรับชำระ</span>
                       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                         <button type="button" className="btn btn-xs btn-a" onClick={selectAllReceiveItems} style={{ padding: '3px 8px', fontSize: 10 }}>เลือกทั้งหมด</button>
@@ -1177,7 +1239,7 @@ export default function AdminPayments() {
                         onChange={(e) => setReceiveForm((prev) => ({ ...prev, paid_at: e.target.value }))}
                       />
                     </label>
-                    <label className="house-field">
+                    <label className="house-field" style={{ gridColumn: '1 / -1' }}>
                       <span>แนบหลักฐานการชำระ (รูปภาพ) *</span>
                       <input
                         type="file"
@@ -1193,13 +1255,14 @@ export default function AdminPayments() {
                         />
                       )}
                     </label>
-                    <label className="house-field">
+                    <label className="house-field" style={{ gridColumn: '1 / -1' }}>
                       <span>หมายเหตุ</span>
                       <textarea
-                        rows="3"
+                        rows="2"
                         value={receiveForm.note}
                         onChange={(e) => setReceiveForm((prev) => ({ ...prev, note: e.target.value }))}
                         placeholder="รายละเอียดเพิ่มเติม"
+                        style={{ minHeight: 60, maxHeight: 60 }}
                       />
                     </label>
                   </div>
