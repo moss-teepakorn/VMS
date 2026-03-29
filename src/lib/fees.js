@@ -204,41 +204,51 @@ export async function processHalfYearFeesAllHouses({ yearBE, period, setup, over
   const noticeFee = round2(toAmount(setup?.notice_fee))
   const dates = halfYearDates(yearCE, period)
 
-  const [housesResp, existingResp, fullYearResp, firstHalfResp, parkingByHouse] = await Promise.all([
+  // Fields required for accurate carry-forward calculation
+  const CARRY_SELECT = 'id, house_id, status, fee_common, fee_overdue_common, fee_overdue_notice, fee_notice, note'
+
+  const [housesResp, existingResp, fullYearResp, sameYearPrevResp, prevYearResp, parkingByHouse] = await Promise.all([
     supabase.from('houses').select('id, area_sqw'),
     supabase.from('fees').select('id, house_id, status').eq('year', yearCE).eq('period', period),
-    // Check which houses already have a full_year invoice for this year — must not create half-year on top
+    // Check which houses already have a full_year invoice for this year
     supabase.from('fees').select('house_id').eq('year', yearCE).eq('period', 'full_year'),
-    supabase
-      .from('fees')
-      .select('id, house_id, status, total_amount, note')
-      .eq('year', yearCE)
-      .eq('period', 'first_half'),
+    // For second_half: carry from first_half of same year (H1 → H2)
+    period === 'second_half'
+      ? supabase.from('fees').select(CARRY_SELECT).eq('year', yearCE).eq('period', 'first_half')
+      : Promise.resolve({ data: [], error: null }),
+    // For first_half: carry from second_half of previous year (H2 prev year → H1 new year)
+    period === 'first_half'
+      ? supabase.from('fees').select(CARRY_SELECT).eq('year', yearCE - 1).eq('period', 'second_half')
+      : Promise.resolve({ data: [], error: null }),
     getParkingMonthlyByHouse(),
   ])
 
   if (housesResp.error) throw housesResp.error
   if (existingResp.error) throw existingResp.error
   if (fullYearResp.error) throw fullYearResp.error
-  if (firstHalfResp.error) throw firstHalfResp.error
+  if (sameYearPrevResp.error) throw sameYearPrevResp.error
+  if (prevYearResp.error) throw prevYearResp.error
 
   const existingByHouse = new Map((existingResp.data || []).map((row) => [row.house_id, row]))
   const fullYearHouseIds = new Set((fullYearResp.data || []).map((row) => row.house_id))
-  const firstHalfByHouse = new Map((firstHalfResp.data || []).map((row) => [row.house_id, row]))
+  // Merge both carry sources — each house can only appear in one of the two queries
+  const prevFeeByHouse = new Map(
+    [...(sameYearPrevResp.data || []), ...(prevYearResp.data || [])].map((row) => [row.house_id, row]),
+  )
   const houses = housesResp.data || []
 
-  const firstHalfIds = (firstHalfResp.data || []).map((row) => row.id)
-  const firstHalfPaymentFeeIds = new Set()
-  if (firstHalfIds.length > 0) {
-    const { data: firstHalfPayments, error: firstHalfPaymentError } = await supabase
+  const prevFeeIds = [...prevFeeByHouse.values()].map((f) => f.id)
+  const prevPaymentFeeIds = new Set()
+  if (prevFeeIds.length > 0) {
+    const { data: prevPayments, error: prevPaymentError } = await supabase
       .from('payments')
       .select('fee_id')
-      .in('fee_id', firstHalfIds)
+      .in('fee_id', prevFeeIds)
       .gt('amount', 0)
 
-    if (firstHalfPaymentError) throw firstHalfPaymentError
-    for (const row of firstHalfPayments || []) {
-      if (row?.fee_id) firstHalfPaymentFeeIds.add(row.fee_id)
+    if (prevPaymentError) throw prevPaymentError
+    for (const row of prevPayments || []) {
+      if (row?.fee_id) prevPaymentFeeIds.add(row.fee_id)
     }
   }
 
@@ -277,20 +287,23 @@ export async function processHalfYearFeesAllHouses({ yearBE, period, setup, over
       note: null,
     }
 
-    const firstHalfFee = period === 'second_half' ? firstHalfByHouse.get(house.id) : null
-    const canCarryFirstHalf = Boolean(
-      firstHalfFee
-      && !firstHalfPaymentFeeIds.has(firstHalfFee.id)
-      && ['unpaid', 'overdue'].includes(String(firstHalfFee.status || ''))
-      && String(firstHalfFee.status || '') !== 'cancelled'
+    const prevFee = prevFeeByHouse.get(house.id)
+    const canCarry = Boolean(
+      prevFee
+      && !prevPaymentFeeIds.has(prevFee.id)
+      && ['unpaid', 'overdue'].includes(String(prevFee.status || ''))
     )
 
-    if (canCarryFirstHalf) {
-      const carryAmount = round2(toAmount(firstHalfFee.total_amount))
-      payload.fee_overdue_common = carryAmount
-      payload.fee_overdue_fine = carryAmount > 0 ? round2(carryAmount * (finePct / 100)) : 0
-      payload.fee_overdue_notice = carryAmount > 0 ? noticeFee : 0
-      payload.note = `รวมยอดค้างจากใบแจ้งหนี้ครึ่งปีแรก เลขที่ ${firstHalfFee.id}`
+    if (canCarry) {
+      // fee_overdue_common = prev.fee_common + prev.fee_overdue_common (ค่าส่วนกลางเท่านั้น)
+      const overdueCommon = round2(toAmount(prevFee.fee_common) + toAmount(prevFee.fee_overdue_common))
+      payload.fee_overdue_common = overdueCommon
+      payload.fee_overdue_fine = overdueCommon > 0 ? round2(overdueCommon * (finePct / 100)) : 0
+      // fee_overdue_notice สะสม: prev.fee_overdue_notice + notice_fee ต่อครั้งทวงถาม
+      payload.fee_overdue_notice = overdueCommon > 0 ? round2(toAmount(prevFee.fee_overdue_notice) + noticeFee) : 0
+      payload.note = period === 'second_half'
+        ? `รวมยอดค้างจากครึ่งปีแรก ปี ${yearCE + 543} เลขที่ ${prevFee.id}`
+        : `รวมยอดค้างจากครึ่งปีหลัง ปี ${yearCE - 1 + 543} เลขที่ ${prevFee.id}`
     }
 
     const existing = existingByHouse.get(house.id)
@@ -298,14 +311,14 @@ export async function processHalfYearFeesAllHouses({ yearBE, period, setup, over
       const { data: insertedFee, error } = await supabase.from('fees').insert([{ house_id: house.id, ...payload }]).select('id').single()
       if (error) throw error
 
-      if (canCarryFirstHalf) {
+      if (canCarry) {
+        const cancelNote = period === 'second_half'
+          ? `ยกยอดไปใบแจ้งหนี้ครึ่งปีหลัง ปี ${yearCE + 543} เลขที่ ${insertedFee?.id || ''} แล้ว — ระบบยกเลิกอัตโนมัติ ห้ามแก้ไข`
+          : `ยกยอดไปใบแจ้งหนี้ครึ่งปีแรก ปี ${yearCE + 543} เลขที่ ${insertedFee?.id || ''} แล้ว — ระบบยกเลิกอัตโนมัติ ห้ามแก้ไข`
         const { error: cancelError } = await supabase
           .from('fees')
-          .update({
-            status: 'cancelled',
-            note: `${String(firstHalfFee.note || '').trim()}${firstHalfFee.note ? '\n' : ''}ยกเลิกหลังรวมยอดไปใบแจ้งหนี้ครึ่งปีหลัง ${insertedFee?.id || ''}`.trim(),
-          })
-          .eq('id', firstHalfFee.id)
+          .update({ status: 'cancelled', note: cancelNote })
+          .eq('id', prevFee.id)
         if (cancelError) throw cancelError
         cancelledFirstHalf += 1
       }
@@ -330,14 +343,14 @@ export async function processHalfYearFeesAllHouses({ yearBE, period, setup, over
       .eq('id', existing.id)
     if (error) throw error
 
-    if (canCarryFirstHalf) {
+    if (canCarry) {
+      const cancelNote = period === 'second_half'
+        ? `ยกยอดไปใบแจ้งหนี้ครึ่งปีหลัง ปี ${yearCE + 543} เลขที่ ${existing.id} แล้ว — ระบบยกเลิกอัตโนมัติ ห้ามแก้ไข`
+        : `ยกยอดไปใบแจ้งหนี้ครึ่งปีแรก ปี ${yearCE + 543} เลขที่ ${existing.id} แล้ว — ระบบยกเลิกอัตโนมัติ ห้ามแก้ไข`
       const { error: cancelError } = await supabase
         .from('fees')
-        .update({
-          status: 'cancelled',
-          note: `${String(firstHalfFee.note || '').trim()}${firstHalfFee.note ? '\n' : ''}ยกเลิกหลังรวมยอดไปใบแจ้งหนี้ครึ่งปีหลัง ${existing.id}`.trim(),
-        })
-        .eq('id', firstHalfFee.id)
+        .update({ status: 'cancelled', note: cancelNote })
+        .eq('id', prevFee.id)
       if (cancelError) throw cancelError
       cancelledFirstHalf += 1
     }

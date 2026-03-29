@@ -354,6 +354,14 @@ const AdminFees = () => {
   }
 
   const handleEditFee = (fee) => {
+    if (fee.status === 'cancelled') {
+      Swal.fire({
+        icon: 'info',
+        title: 'ไม่สามารถแก้ไขได้',
+        text: fee.note || 'รายการนี้ถูกยกเลิกโดยระบบอัตโนมัติหลังจากยกยอดไปใบแจ้งหนี้งวดถัดไปแล้ว',
+      })
+      return
+    }
     const discountAmount = extractDiscountFromNote(fee.note)
     const feeOtherBase = Number(fee.fee_other || 0) + discountAmount
 
