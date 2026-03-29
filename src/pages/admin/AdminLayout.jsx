@@ -28,7 +28,7 @@ const AdminLayout = () => {
   const [setupOpen, setSetupOpen] = useState(false)
   const [menuSearch, setMenuSearch] = useState('')
   const [sectionOpen, setSectionOpen] = useState({
-    หน้าหลัก: true,
+    หน้าหลัก: false,
     จัดการ: false,
     ระบบ: false,
   })
@@ -120,10 +120,18 @@ const AdminLayout = () => {
   }
 
   const toggleSection = (sectionName) => {
-    setSectionOpen((prev) => ({
-      ...prev,
-      [sectionName]: !prev[sectionName],
-    }))
+    setSectionOpen((prev) => {
+      const next = navItems.reduce((acc, item) => {
+        acc[item.section] = false
+        return acc
+      }, {})
+
+      if (!prev[sectionName]) {
+        next[sectionName] = true
+      }
+
+      return next
+    })
   }
 
   const handleLogout = async () => {
