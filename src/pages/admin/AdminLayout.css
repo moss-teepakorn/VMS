@@ -961,7 +961,7 @@ button, input, select, textarea {
 .sb-major-group {
   display: grid;
   gap: 6px;
-  margin-bottom: 14px;
+  margin-bottom: 8px;
 }
 
 .sb-submenu-wrap {
