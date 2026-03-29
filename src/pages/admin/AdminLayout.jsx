@@ -333,7 +333,7 @@ const AdminLayout = () => {
           {/* Account + Logout Card */}
           <div className="sb-foot">
             <div className="sb-account-card">
-              <div className="sb-user" onClick={() => handleNavClick('/admin/settings')} title="โปรไฟล์ผู้ใช้">
+              <div className="sb-user" title="ผู้ดูแลระบบ">
                 <span className="sb-role-dot"></span>
                 <span className="sb-role-txt">{roleLabel(profile?.role)}</span>
               </div>

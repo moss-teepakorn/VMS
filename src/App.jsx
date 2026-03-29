@@ -22,7 +22,6 @@ import AdminResidents from './pages/admin/AdminResidents'
 import AdminUnits from './pages/admin/AdminUnits'
 import AdminPayments from './pages/admin/AdminPayments'
 import AdminMaintenance from './pages/admin/AdminMaintenance'
-import AdminSettings from './pages/admin/AdminSettings'
 import AdminReportPayments from './pages/admin/AdminReportPayments'
 import AdminReportOverdue from './pages/admin/AdminReportOverdue'
 import AdminReportViolationsSummary from './pages/admin/AdminReportViolationsSummary'
@@ -112,7 +111,6 @@ function AppRoutes() {
         <Route path="units" element={<AdminUnits />} />
         <Route path="payments" element={<AdminPayments />} />
         <Route path="maintenance" element={<AdminMaintenance />} />
-        <Route path="settings" element={<AdminSettings />} />
       </Route>
 
       {/* Resident routes */}
