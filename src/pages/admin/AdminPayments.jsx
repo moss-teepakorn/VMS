@@ -541,7 +541,7 @@ export default function AdminPayments() {
       inputPlaceholder: 'เช่น ยอดไม่ตรงกับใบแจ้งหนี้',
       showCancelButton: true,
       confirmButtonText: 'ตีกลับ',
-      cancelButtonText: 'ยกเลิก',
+      cancelButtonText: 'ปิด',
       confirmButtonColor: '#dc2626',
       inputValidator: (value) => (!String(value || '').trim() ? 'กรุณาระบุเหตุผล' : undefined),
     })
