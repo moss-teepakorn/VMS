@@ -265,7 +265,7 @@ const AdminLayout = () => {
               <input
                 className="sb-search-input"
                 type="text"
-                placeholder="ค้นหาเมนู / ลูกบ้าน / บ้านเลขที่..."
+                placeholder="ค้นหาเมนู"
                 value={menuSearch}
                 onChange={(e) => setMenuSearch(e.target.value)}
               />
