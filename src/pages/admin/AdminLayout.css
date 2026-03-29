@@ -1000,17 +1000,17 @@ button, input, select, textarea {
 }
 
 .sb-item:hover {
-  background: linear-gradient(90deg, rgba(255,255,255,.26) 0%, rgba(255,255,255,.16) 100%);
+  background: rgba(125, 211, 252, .20);
   color: var(--sbt);
   transform: translateY(-1px);
-  box-shadow: 0 7px 16px rgba(0,0,0,.18);
+  box-shadow: 0 6px 14px rgba(0,0,0,.16);
 }
 
 .sb-item.act {
-  background: linear-gradient(90deg, rgba(125, 211, 252, .40) 0%, rgba(255,255,255,.20) 100%);
+  background: rgba(125, 211, 252, .32);
   color: #ffffff;
   font-weight: 800;
-  box-shadow: 0 8px 18px rgba(0,0,0,.2);
+  box-shadow: 0 7px 16px rgba(0,0,0,.18);
 }
 
 .sb-item::before {
