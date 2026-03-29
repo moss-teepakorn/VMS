@@ -106,7 +106,7 @@ export default function AdminReportPayments() {
   return (
     <div className="pane on houses-compact reports-compact">
       <div className="ph">
-        <div className="ph-in">
+        <div className="ph-in" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
             <div className="ph-ico">💳</div>
             <div>
@@ -114,26 +114,30 @@ export default function AdminReportPayments() {
               <div className="ph-sub">รายการรับชำระค่าส่วนกลาง (ข้อมูลจริง)</div>
             </div>
           </div>
+          <form
+            className="houses-filter-row"
+            style={{ marginBottom: 0, gap: 12, flexWrap: 'wrap', justifyContent: 'flex-end', alignItems: 'flex-end' }}
+            onSubmit={e => { e.preventDefault(); handleShowReport(); }}
+          >
+            <label style={{ marginBottom: 0 }}>เดือนเริ่มต้น
+              <select value={startMonth} onChange={e => setStartMonth(Number(e.target.value))} className="houses-filter-select">
+                {monthOptions.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+              </select>
+            </label>
+            <label style={{ marginBottom: 0 }}>ถึงเดือน
+              <select value={endMonth} onChange={e => setEndMonth(Number(e.target.value))} className="houses-filter-select">
+                {monthOptions.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+              </select>
+            </label>
+            <label style={{ marginBottom: 0 }}>ปี
+              <select value={year} onChange={e => setYear(Number(e.target.value))} className="houses-filter-select">
+                {yearOptions.map(y => <option key={y} value={y}>{y + 543}</option>)}
+              </select>
+            </label>
+            <button className="btn btn-p" type="submit" style={{ minWidth: 120 }}>แสดงรายงาน</button>
+            {touched && error && <span style={{ color: 'red', marginLeft: 8 }}>{error}</span>}
+          </form>
         </div>
-      </div>
-      <div className="houses-filter-row" style={{ marginBottom: 16 }}>
-        <label>เดือนเริ่มต้น
-          <select value={startMonth} onChange={e => setStartMonth(Number(e.target.value))} className="houses-filter-select">
-            {monthOptions.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
-          </select>
-        </label>
-        <label>ถึงเดือน
-          <select value={endMonth} onChange={e => setEndMonth(Number(e.target.value))} className="houses-filter-select">
-            {monthOptions.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
-          </select>
-        </label>
-        <label>ปี
-          <select value={year} onChange={e => setYear(Number(e.target.value))} className="houses-filter-select">
-            {yearOptions.map(y => <option key={y} value={y}>{y + 543}</option>)}
-          </select>
-        </label>
-        <button className="btn btn-p" onClick={handleShowReport} style={{ minWidth: 120 }}>แสดงรายงาน</button>
-        {touched && error && <span style={{ color: 'red', marginLeft: 8 }}>{error}</span>}
       </div>
       <ReportMockPage
         columns={columns}
