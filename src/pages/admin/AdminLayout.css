@@ -891,12 +891,12 @@ button, input, select, textarea {
   width: 100%;
   border: none;
   background: transparent;
-  border-radius: 0;
+  border-radius: 14px;
   display: flex;
   align-items: center;
   justify-content: space-between;
   cursor: pointer;
-  transition: color var(--tr), background var(--tr);
+  transition: background var(--tr), color var(--tr), box-shadow var(--tr);
   min-height: 35px;
   position: relative;
   color: var(--sbt);
@@ -919,31 +919,15 @@ button, input, select, textarea {
 }
 
 .sb-sec-btn:hover {
-  background: transparent;
-  box-shadow: none;
-}
-
-.sb-sec-btn::after {
-  content: '';
-  position: absolute;
-  left: 10px;
-  right: 10px;
-  bottom: 0;
-  height: 2px;
-  background: transparent;
-  transition: background var(--tr);
-}
-
-.sb-sec-btn:hover::after {
-  background: rgba(255,255,255,.45);
+  background: rgba(255,255,255,.16);
+  color: #ffffff;
+  box-shadow: 0 6px 14px rgba(0,0,0,.14);
 }
 
 .sb-sec-btn[aria-expanded="true"] {
   color: #ffffff;
-}
-
-.sb-sec-btn[aria-expanded="true"]::after {
-  background: rgba(125, 211, 252, .95);
+  background: linear-gradient(90deg, rgba(125, 211, 252, .34) 0%, rgba(255,255,255,.16) 100%);
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.2), 0 8px 18px rgba(0,0,0,.2);
 }
 
 .sb-sec-left {
@@ -1004,11 +988,11 @@ button, input, select, textarea {
   align-items: center;
   gap: 10px;
   padding: 7px 10px;
-  border-radius: 0;
+  border-radius: 12px;
   color: var(--sbm);
   text-decoration: none;
   cursor: pointer;
-  transition: color var(--tr), background var(--tr);
+  transition: background var(--tr), color var(--tr), transform var(--tr), box-shadow var(--tr);
   position: relative;
   font-size: 13px;
   font-weight: 700;
@@ -1016,14 +1000,17 @@ button, input, select, textarea {
 }
 
 .sb-item:hover {
-  background: transparent;
+  background: linear-gradient(90deg, rgba(255,255,255,.26) 0%, rgba(255,255,255,.16) 100%);
   color: var(--sbt);
+  transform: translateY(-1px);
+  box-shadow: 0 7px 16px rgba(0,0,0,.18);
 }
 
 .sb-item.act {
-  background: rgba(125, 211, 252, .18);
+  background: linear-gradient(90deg, rgba(125, 211, 252, .40) 0%, rgba(255,255,255,.20) 100%);
   color: #ffffff;
   font-weight: 800;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.2), 0 8px 18px rgba(0,0,0,.2);
 }
 
 .sb-item::before {
@@ -1031,22 +1018,7 @@ button, input, select, textarea {
 }
 
 .sb-item::after {
-  content: '';
-  position: absolute;
-  left: 10px;
-  right: 10px;
-  bottom: 0;
-  height: 2px;
-  background: transparent;
-  transition: background var(--tr);
-}
-
-.sb-item:hover::after {
-  background: rgba(255,255,255,.45);
-}
-
-.sb-item.act::after {
-  background: transparent;
+  content: none;
 }
 
 .sb-ico {
