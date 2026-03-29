@@ -770,14 +770,6 @@
   padding: 16px;
 }
 
-.pane.on .ph + .card {
-  margin-top: 12px;
-}
-
-.pane.on .ph + .houses-filter-row + .card {
-  margin-top: 12px;
-}
-
 .houses-compact .ph + .card {
   margin-top: 12px;
 }
