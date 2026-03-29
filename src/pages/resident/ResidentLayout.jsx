@@ -176,6 +176,14 @@ export default function ResidentLayout() {
         payment_method: paymentForm.payment_method,
         slip_url: paymentForm.slip_url,
         note: paymentForm.note,
+        payment_items: [
+          {
+            item_key: 'resident_submitted_total',
+            item_label: 'ยอดชำระที่ลูกบ้านส่งมา',
+            due_amount: Number(selectedFee.total_amount || 0),
+            paid_amount: Number(paymentForm.amount || 0),
+          },
+        ],
       })
       await showSwal({
         icon: 'success',

@@ -133,6 +133,24 @@ create table if not exists payments (
   note           text
 );
 
+-- ── 6.1 PAYMENT_ITEMS (รายละเอียดรายการชำระต่อครั้ง) ───────────────
+create table if not exists payment_items (
+  id                 uuid primary key default gen_random_uuid(),
+  payment_id         uuid not null references payments(id) on delete cascade,
+  fee_id             uuid references fees(id) on delete cascade,
+  house_id           uuid references houses(id),
+  item_key           text not null,
+  item_label         text not null,
+  due_amount         numeric default 0,
+  paid_amount        numeric not null default 0,
+  outstanding_amount numeric generated always as (greatest(coalesce(due_amount, 0) - coalesce(paid_amount, 0), 0)) stored,
+  created_at         timestamptz not null default now()
+);
+
+create index if not exists idx_payment_items_payment_id on payment_items (payment_id);
+create index if not exists idx_payment_items_fee_id on payment_items (fee_id);
+create index if not exists idx_payment_items_house_id on payment_items (house_id);
+
 -- ── 7. ISSUES (แจ้งปัญหา) ───────────────────────────────────────────
 create table if not exists issues (
   id          uuid primary key default gen_random_uuid(),
@@ -348,6 +366,7 @@ alter table profiles            enable row level security;
 alter table vehicles            enable row level security;
 alter table fees                enable row level security;
 alter table payments            enable row level security;
+alter table payment_items       enable row level security;
 alter table issues              enable row level security;
 alter table issue_logs          enable row level security;
 alter table violations          enable row level security;
@@ -367,6 +386,8 @@ create policy "admin_all" on vehicles
 create policy "admin_all" on fees
   for all using ((select role from profiles where id = auth.uid()) = 'admin');
 create policy "admin_all" on payments
+  for all using ((select role from profiles where id = auth.uid()) = 'admin');
+create policy "admin_all_payment_items" on payment_items
   for all using ((select role from profiles where id = auth.uid()) = 'admin');
 create policy "admin_all" on issues
   for all using ((select role from profiles where id = auth.uid()) = 'admin');
@@ -395,6 +416,10 @@ create policy "resident_own" on fees
     house_id = (select house_id from profiles where id = auth.uid())
   );
 create policy "resident_own" on payments
+  for select using (
+    house_id = (select house_id from profiles where id = auth.uid())
+  );
+create policy "resident_own_payment_items" on payment_items
   for select using (
     house_id = (select house_id from profiles where id = auth.uid())
   );

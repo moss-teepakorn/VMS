@@ -1352,6 +1352,15 @@ const AdminFees = () => {
 
     try {
       setSavingPayment(true)
+      const selectedItemsMeta = feeItemDefs
+        .filter((item) => paymentForm.selectedItems.includes(item.key))
+        .map((item) => ({
+          item_key: item.key,
+          item_label: item.label,
+          due_amount: Number(payingFee[item.key] || 0),
+          paid_amount: Number(paymentForm.itemAmounts?.[item.key] || 0),
+        }))
+
       const selectedLabels = feeItemDefs
         .filter((item) => paymentForm.selectedItems.includes(item.key))
         .map((item) => `${item.label} ${Number(paymentForm.itemAmounts?.[item.key] || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`)
@@ -1366,6 +1375,7 @@ const AdminFees = () => {
         payment_method: paymentForm.payment_method,
         paid_at: paymentForm.paid_at,
         note: noteParts.join(' | '),
+        payment_items: selectedItemsMeta,
       })
 
       setShowPaymentModal(false)

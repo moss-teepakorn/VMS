@@ -215,6 +215,16 @@ function getFeeDueItems(fee) {
 }
 
 function getPaymentItemRows(payment) {
+  if (Array.isArray(payment?.payment_items) && payment.payment_items.length > 0) {
+    return payment.payment_items.map((item, index) => ({
+      key: item.item_key || `item_${index + 1}`,
+      label: item.item_label || '-',
+      dueAmount: Number(item.due_amount || 0),
+      paidAmount: Number(item.paid_amount || 0),
+      outstandingAmount: Number(item.outstanding_amount || 0),
+    }))
+  }
+
   const parsedMeta = parsePaymentMeta(payment?.note)
   if (parsedMeta?.items?.length) {
     return parsedMeta.items.map((item) => ({
@@ -583,6 +593,12 @@ export default function AdminPayments() {
         slip_url: uploadedSlip?.url || '',
         paid_at: receiveForm.paid_at,
         note: noteParts.join(' | '),
+        payment_items: selectedItemsMeta.map((item) => ({
+          item_key: item.key,
+          item_label: item.label,
+          due_amount: item.dueAmount,
+          paid_amount: item.paidAmount,
+        })),
         setFeeStatusFromAmount: true,
       })
       if (receiveSlipPreview) {

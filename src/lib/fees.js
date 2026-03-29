@@ -705,7 +705,7 @@ export async function deleteFee(id) {
 export async function listPayments({ limit } = {}) {
   let query = supabase
     .from('payments')
-    .select('id, fee_id, house_id, amount, payment_method, slip_url, paid_at, verified_by, verified_at, note, verified_profile:verified_by(full_name), fees(id, year, period, status, total_amount, due_date, invoice_date), houses(id, house_no, soi, owner_name)')
+    .select('id, fee_id, house_id, amount, payment_method, slip_url, paid_at, verified_by, verified_at, note, verified_profile:verified_by(full_name), fees(id, year, period, status, total_amount, due_date, invoice_date), houses(id, house_no, soi, owner_name), payment_items(id, item_key, item_label, due_amount, paid_amount, outstanding_amount)')
     .order('paid_at', { ascending: false })
 
   if (limit) {
@@ -722,7 +722,7 @@ export async function listHousePayments(houseId, { limit } = {}) {
 
   let query = supabase
     .from('payments')
-    .select('id, fee_id, house_id, amount, payment_method, slip_url, paid_at, verified_by, verified_at, note, verified_profile:verified_by(full_name), fees(id, year, period, status, total_amount, due_date, invoice_date)')
+    .select('id, fee_id, house_id, amount, payment_method, slip_url, paid_at, verified_by, verified_at, note, verified_profile:verified_by(full_name), fees(id, year, period, status, total_amount, due_date, invoice_date), payment_items(id, item_key, item_label, due_amount, paid_amount, outstanding_amount)')
     .eq('house_id', houseId)
     .order('paid_at', { ascending: false })
 
@@ -806,6 +806,16 @@ export async function createNoticePrintLogs(rows = []) {
 }
 
 export async function createPayment(payload) {
+  const paymentItems = (Array.isArray(payload.payment_items) ? payload.payment_items : [])
+    .filter((item) => String(item?.item_label || '').trim())
+    .map((item, index) => ({
+      // Normalize data for safe insert and reporting consistency.
+      item_key: String(item?.item_key || item?.key || `item_${index + 1}`).trim(),
+      item_label: String(item?.item_label || item?.label || '-').trim(),
+      due_amount: Number.isFinite(Number(item?.due_amount ?? item?.dueAmount)) ? Number(item?.due_amount ?? item?.dueAmount) : 0,
+      paid_amount: Number.isFinite(Number(item?.paid_amount ?? item?.paidAmount)) ? Number(item?.paid_amount ?? item?.paidAmount) : 0,
+    }))
+
   const payment = {
     fee_id: payload.fee_id || null,
     house_id: payload.house_id || null,
@@ -819,10 +829,36 @@ export async function createPayment(payload) {
   const { data, error } = await supabase
     .from('payments')
     .insert([payment])
-    .select('id, fee_id, house_id, amount, payment_method, slip_url, paid_at, verified_by, verified_at, note, verified_profile:verified_by(full_name), fees(id, year, period, status, total_amount, due_date, invoice_date), houses(id, house_no, soi, owner_name)')
+    .select('id, fee_id, house_id, amount, payment_method, slip_url, paid_at, verified_by, verified_at, note, verified_profile:verified_by(full_name), fees(id, year, period, status, total_amount, due_date, invoice_date), houses(id, house_no, soi, owner_name), payment_items(id, item_key, item_label, due_amount, paid_amount, outstanding_amount)')
     .single()
 
   if (error) throw error
+
+  if (paymentItems.length > 0) {
+    const itemRows = paymentItems.map((item) => ({
+      payment_id: data.id,
+      fee_id: data.fee_id,
+      house_id: data.house_id,
+      item_key: item.item_key,
+      item_label: item.item_label,
+      due_amount: item.due_amount,
+      paid_amount: item.paid_amount,
+    }))
+
+    const { error: itemError } = await supabase
+      .from('payment_items')
+      .insert(itemRows)
+
+    if (itemError) throw itemError
+
+    const { data: insertedItems, error: itemReadError } = await supabase
+      .from('payment_items')
+      .select('id, item_key, item_label, due_amount, paid_amount, outstanding_amount')
+      .eq('payment_id', data.id)
+
+    if (itemReadError) throw itemReadError
+    data.payment_items = insertedItems || []
+  }
 
   if (payload.fee_id) {
     if (payload.setFeeStatusFromAmount) {
@@ -899,7 +935,7 @@ export async function approvePayment(paymentId, approverId) {
     .from('payments')
     .update({ verified_by: approverId || null, verified_at: verifiedAt })
     .eq('id', paymentId)
-    .select('id, fee_id, house_id, amount, payment_method, slip_url, paid_at, verified_by, verified_at, note, verified_profile:verified_by(full_name), fees(id, year, period, status, total_amount, due_date, invoice_date), houses(id, house_no, soi, owner_name)')
+    .select('id, fee_id, house_id, amount, payment_method, slip_url, paid_at, verified_by, verified_at, note, verified_profile:verified_by(full_name), fees(id, year, period, status, total_amount, due_date, invoice_date), houses(id, house_no, soi, owner_name), payment_items(id, item_key, item_label, due_amount, paid_amount, outstanding_amount)')
     .single()
 
   if (error) throw error
@@ -916,7 +952,7 @@ export async function revokePaymentApproval(paymentId) {
     .from('payments')
     .update({ verified_by: null, verified_at: null })
     .eq('id', paymentId)
-    .select('id, fee_id, house_id, amount, payment_method, slip_url, paid_at, verified_by, verified_at, note, verified_profile:verified_by(full_name), fees(id, year, period, status, total_amount, due_date, invoice_date), houses(id, house_no, soi, owner_name)')
+    .select('id, fee_id, house_id, amount, payment_method, slip_url, paid_at, verified_by, verified_at, note, verified_profile:verified_by(full_name), fees(id, year, period, status, total_amount, due_date, invoice_date), houses(id, house_no, soi, owner_name), payment_items(id, item_key, item_label, due_amount, paid_amount, outstanding_amount)')
     .single()
 
   if (error) throw error
