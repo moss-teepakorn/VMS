@@ -961,7 +961,7 @@ button, input, select, textarea {
 .sb-major-group {
   display: grid;
   gap: 6px;
-  margin-bottom: 8px;
+  margin-bottom: 6px;
 }
 
 .sb-submenu-wrap {
@@ -969,7 +969,7 @@ button, input, select, textarea {
   margin-left: 12px;
   padding-left: 10px;
   display: grid;
-  gap: 8px;
+  gap: 6px;
 }
 
 .sb-item {
