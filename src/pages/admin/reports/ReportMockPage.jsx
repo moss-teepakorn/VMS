@@ -2,7 +2,7 @@ import React, { useMemo } from 'react'
 import { exportReportExcel, exportReportPdf } from './reportExport'
 import '../AdminDashboard.css'
 
-export default function ReportMockPage({ icon, title, subtitle, fileName, columns, rows }) {
+export default function ReportMockPage({ icon, title, subtitle, fileName, columns, rows, loading, error }) {
   const totalRows = rows.length
   const preview = useMemo(() => rows.slice(0, 12), [rows])
 
@@ -36,15 +36,15 @@ export default function ReportMockPage({ icon, title, subtitle, fileName, column
         <div className="sc">
           <div className="sc-ico p">📌</div>
           <div>
-            <div className="sc-v">{totalRows}</div>
-            <div className="sc-l">จำนวนรายการ (Mockup)</div>
+            <div className="sc-v">{loading ? '...' : totalRows}</div>
+            <div className="sc-l">จำนวนรายการชำระเงิน</div>
           </div>
         </div>
         <div className="sc">
-          <div className="sc-ico w">🧪</div>
+          <div className="sc-ico w">💾</div>
           <div>
-            <div className="sc-v">DEMO</div>
-            <div className="sc-l">ข้อมูลจำลองพร้อมส่งออก</div>
+            <div className="sc-v">{loading ? '...' : 'ข้อมูลจริง'}</div>
+            <div className="sc-l">พร้อมส่งออกไฟล์</div>
           </div>
         </div>
       </div>
@@ -54,6 +54,7 @@ export default function ReportMockPage({ icon, title, subtitle, fileName, column
           <div className="ct">รายการข้อมูลรายงาน</div>
         </div>
         <div className="cb houses-table-card-body houses-main-body" style={{ overflow: 'auto' }}>
+          {error && <div style={{ color: 'red', padding: 12 }}>{error}</div>}
           <table className="tw houses-table houses-main-table" style={{ minWidth: 860 }}>
             <thead>
               <tr>
