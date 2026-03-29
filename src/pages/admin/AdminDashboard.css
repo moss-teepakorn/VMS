@@ -1011,6 +1011,14 @@
   gap: 0 !important;
 }
 
+.pane.on.houses-compact.fees-compact > * + * {
+  margin-top: 0 !important;
+}
+
+.pane.on.houses-compact.fees-compact .ph {
+  margin-bottom: 0;
+}
+
 .pane.on.houses-compact.fees-compact .stats {
   margin-top: 0;
   margin-bottom: 0;
@@ -1018,6 +1026,36 @@
 
 .pane.on.houses-compact.fees-compact .card {
   margin-top: 0;
+}
+
+.pane.on.houses-compact.fees-compact .houses-filter-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.pane.on.houses-compact.fees-compact .houses-filter-row > :first-child {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.pane.on.houses-compact.fees-compact .houses-filter-row > :last-child {
+  margin-left: auto;
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+@media (max-width: 900px) {
+  .pane.on.houses-compact.fees-compact .houses-filter-row > :last-child {
+    margin-left: 0;
+    width: 100%;
+    justify-content: flex-start;
+  }
 }
 
 .payments-compact .payments-main-wrap,
