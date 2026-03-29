@@ -131,6 +131,23 @@
   min-height: 118px;
 }
 
+.dashboard-v1 .house-status-card {
+  transform-origin: top left;
+}
+
+.dashboard-v1 .house-status-card .ch {
+  padding: 4px 6px;
+}
+
+.dashboard-v1 .house-status-card .ch h3 {
+  font-size: 9px;
+}
+
+.dashboard-v1 .house-status-wrap {
+  padding: 4px;
+  min-height: 59px;
+}
+
 .dashboard-v1 .tw th {
   padding: 6px 8px;
   font-size: 9px;

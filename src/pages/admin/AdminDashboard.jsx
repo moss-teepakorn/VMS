@@ -10,6 +10,7 @@ const AdminDashboard = () => {
   const navigate = useNavigate()
   const [dashboard, setDashboard] = useState(null)
   const [loading, setLoading] = useState(false)
+  const [loadError, setLoadError] = useState('')
   const [themeKey, setThemeKey] = useState(() => document.body.getAttribute('data-theme') || 'normal')
   const [setup, setSetup] = useState({
     villageName: 'The Greenfield',
@@ -25,8 +26,10 @@ const AdminDashboard = () => {
     const loadDashboard = async () => {
       try {
         setLoading(true)
+        setLoadError('')
         setDashboard(await getDashboardData())
       } catch (error) {
+        setLoadError(error?.message || 'ไม่สามารถโหลดข้อมูล dashboard ได้')
         console.error('Error loading dashboard:', error)
       } finally {
         setLoading(false)
@@ -140,7 +143,7 @@ const AdminDashboard = () => {
                 data.houseStatus.suspended,
                 data.houseStatus.lawsuit,
               ],
-              backgroundColor: [palette.accent, palette.warning, '#EF4444', '#111827'],
+              backgroundColor: [palette.accent, palette.warning, '#EF4444', '#A855F7'],
               borderColor: palette.card,
               borderWidth: 2,
             },
@@ -245,17 +248,20 @@ const AdminDashboard = () => {
     return <div className="pane on"><div className="card"><div className="cb" style={{ padding: '24px', textAlign: 'center', color: 'var(--mu)' }}>กำลังโหลดข้อมูล dashboard...</div></div></div>
   }
 
-  const todayLabel = new Date().toLocaleDateString('th-TH', { day: 'numeric', month: 'long', year: 'numeric' })
-  const data = dashboard || {
-    header: { totalHouses: 0, averageRating: 0, totalOutstanding: 0 },
-    kpis: { totalHouses: 0, newHousesThisMonth: 0, overdueCount: 0, overdueAmount: 0, pendingApprovals: 0, openIssues: 0, averageRating: 0 },
-    paymentTrend: [],
-    houseStatus: { normal: 0, overdue: 0, suspended: 0, lawsuit: 0 },
-    quarterlyTrend: [],
-    issueCategories: [],
-    quickApprovals: [],
-    alerts: [],
+  if (!loading && !dashboard) {
+    return (
+      <div className="pane on">
+        <div className="card">
+          <div className="cb" style={{ padding: '24px', textAlign: 'center', color: 'var(--mu)' }}>
+            {loadError || 'ไม่พบข้อมูลจริงสำหรับแสดงผล Dashboard'}
+          </div>
+        </div>
+      </div>
+    )
   }
+
+  const todayLabel = new Date().toLocaleDateString('th-TH', { day: 'numeric', month: 'long', year: 'numeric' })
+  const data = dashboard
 
   return (
     <div className="pane on dashboard dashboard-v1" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
@@ -336,11 +342,11 @@ const AdminDashboard = () => {
             <canvas ref={paymentChartRef} />
           </div>
         </div>
-        <div className="chart-box">
+        <div className="chart-box house-status-card">
           <div className="ch">
-            <h3>🏠 สถานะบ้านทั้งหมด (128 หลัง)</h3>
+            <h3>🏠 สถานะบ้านทั้งหมด ({data.header.totalHouses} หลัง)</h3>
           </div>
-          <div className="chart-wrap">
+          <div className="chart-wrap house-status-wrap">
             <canvas ref={houseStatusChartRef} />
           </div>
         </div>
