@@ -1007,6 +1007,19 @@
   margin-top: 0;
 }
 
+.pane.on.houses-compact.fees-compact {
+  gap: 0 !important;
+}
+
+.pane.on.houses-compact.fees-compact .stats {
+  margin-top: 0;
+  margin-bottom: 0;
+}
+
+.pane.on.houses-compact.fees-compact .card {
+  margin-top: 0;
+}
+
 .payments-compact .payments-main-wrap,
 .payments-compact .payments-receive-wrap {
   overflow-x: hidden;
