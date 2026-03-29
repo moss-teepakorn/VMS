@@ -1481,7 +1481,7 @@ const AdminFees = () => {
             </div>
           </div>
         </div>
-        <div className="page-filter-row" style={{ justifyContent: 'space-between', alignItems: 'center' }}>
+        <div className="houses-filter-row" style={{ justifyContent: 'space-between', alignItems: 'center' }}>
           <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
             {yearCards.map((card) => {
               const active = currentFeeYear === card.value
@@ -1513,7 +1513,7 @@ const AdminFees = () => {
           </div>
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
             <input
-              className="page-filter-input"
+              className="houses-filter-input"
               placeholder="ค้นหา ซอย / บ้านเลขที่ / เจ้าของ"
               value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}
@@ -1521,7 +1521,7 @@ const AdminFees = () => {
             />
             <button
               type="button"
-              className="btn btn-a btn-sm page-filter-btn"
+              className="btn btn-a btn-sm houses-filter-btn"
               onClick={() => {
                 setSearchKeyword(searchInput.trim())
                 loadFeeData({ year: currentFeeYear, status: 'all', period: 'all' })
@@ -1541,9 +1541,9 @@ const AdminFees = () => {
       </div>
 
       <div className="card">
-        <div className="ch page-list-head">
+        <div className="ch houses-list-head">
           <div className="ct">ใบแจ้งหนี้ค้างชำระ ({activeFees.length})</div>
-          <div className="page-list-actions" style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center', width: '100%' }}>
+          <div className="houses-list-actions" style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center', width: '100%' }}>
             <button className="btn btn-p btn-sm" onClick={handleOpenProcessModal}>+ สร้างใบแจ้งหนี้</button>
             <button className="btn btn-a btn-sm" onClick={handlePrintInvoicesAll}>🖨 พิมพ์ใบแจ้งหนี้ทั้งหมด</button>
             <button className="btn btn-o btn-sm" onClick={handlePrintNoticesAll}>🔔 พิมพ์ใบแจ้งเตือนทั้งหมด</button>
@@ -1593,10 +1593,10 @@ const AdminFees = () => {
             </div>
           </div>
         </div>
-        <div className="cb page-table-body">
+        <div className="cb houses-table-card-body">
           <div className="desktop-only">
             <div style={{ overflowX: 'auto' }}>
-              <table className="tw" style={{ width: '100%' }}>
+              <table className="tw houses-table" style={{ width: '100%' }}>
                 <thead>
                   <tr>
                     <th>ซอย</th>
@@ -1684,7 +1684,7 @@ const AdminFees = () => {
       </div>
 
       <div className="card">
-        <div className="ch page-list-head">
+        <div className="ch houses-list-head">
           <div className="ct">ใบแจ้งหนี้ปิดรายการ ({archiveFees.length})</div>
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
             {archiveCards.map((item) => {
@@ -1702,10 +1702,10 @@ const AdminFees = () => {
             })}
           </div>
         </div>
-        <div className="cb page-table-body">
+        <div className="cb houses-table-card-body">
           <div className="desktop-only">
             <div style={{ overflowX: 'auto' }}>
-              <table className="tw" style={{ width: '100%' }}>
+              <table className="tw houses-table" style={{ width: '100%' }}>
                 <thead>
                   <tr>
                     <th>ซอย</th>
@@ -2050,7 +2050,7 @@ const AdminFees = () => {
                     </div>
 
                     <div style={{ border: '1px solid var(--bo)', borderRadius: 10, overflow: 'hidden' }}>
-                      <table className="tw" style={{ width: '100%', minWidth: 420 }}>
+                      <table className="tw houses-table" style={{ width: '100%', minWidth: 420 }}>
                         <thead>
                           <tr>
                             <th>รายการ</th>

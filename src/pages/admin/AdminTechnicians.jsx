@@ -190,36 +190,36 @@ const AdminTechnicians = () => {
             </div>
           </div>
         </div>
-        <div className="page-filter-row">
+        <div className="houses-filter-row">
           <input
-            className="page-filter-input"
+            className="houses-filter-input"
             type="text"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             placeholder="ค้นหา ชื่อ / เบอร์โทร / Line ID / ความเชี่ยวชาญ"
           />
-          <select className="page-filter-select" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
+          <select className="houses-filter-select" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
             <option value="all">ทุกสถานะ</option>
             <option value="pending">รออนุมัติ</option>
             <option value="approved">อนุมัติแล้ว</option>
             <option value="suspended">ระงับ</option>
           </select>
-          <button className="btn btn-a btn-sm page-filter-btn" onClick={() => loadData({ status: statusFilter, search: searchTerm })}>ค้นหา</button>
+          <button className="btn btn-a btn-sm houses-filter-btn" onClick={() => loadData({ status: statusFilter, search: searchTerm })}>ค้นหา</button>
         </div>
       </div>
 
       <div className="card">
-        <div className="ch page-list-head">
+        <div className="ch houses-list-head">
           <div className="ct">รายชื่อช่างทั้งหมด ({technicians.length} คน)</div>
-          <div className="page-list-actions">
+          <div className="houses-list-actions">
             <button className="btn btn-p btn-sm" onClick={openAddModal}>+ เพิ่มช่างใหม่</button>
             <button className="btn btn-g btn-sm" onClick={() => loadData({ status: statusFilter, search: searchTerm })}>🔄 รีเฟรช</button>
           </div>
         </div>
-        <div className="cb page-table-body">
+        <div className="cb houses-table-card-body">
           <div className="desktop-only">
             <div style={{ overflowX: 'auto' }}>
-              <table className="tw" style={{ width: '100%', minWidth: '800px' }}>
+              <table className="tw houses-table" style={{ width: '100%', minWidth: '800px' }}>
                 <thead><tr>
                   <th>ชื่อ-นามสกุล</th>
                   <th>เบอร์โทร</th>

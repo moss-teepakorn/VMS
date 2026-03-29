@@ -296,38 +296,38 @@ const AdminIssues = () => {
             </div>
           </div>
         </div>
-        <div className="page-filter-row">
+        <div className="houses-filter-row">
           <input
-            className="page-filter-input"
+            className="houses-filter-input"
             type="text"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             placeholder="ค้นหา หัวข้อ / รายละเอียด / บ้าน"
           />
-          <select className="page-filter-select" value={categoryFilter} onChange={(e) => setCategoryFilter(e.target.value)}>
+          <select className="houses-filter-select" value={categoryFilter} onChange={(e) => setCategoryFilter(e.target.value)}>
             <option value="all">ทุกหมวด</option>
             {ISSUE_CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
           </select>
-          <select className="page-filter-select" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
+          <select className="houses-filter-select" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
             <option value="all">ทุกสถานะ</option>
             {ISSUE_STATUSES.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
           </select>
-          <button className="btn btn-a btn-sm page-filter-btn" onClick={() => loadData({ status: statusFilter, category: categoryFilter, search: searchTerm })}>ค้นหา</button>
+          <button className="btn btn-a btn-sm houses-filter-btn" onClick={() => loadData({ status: statusFilter, category: categoryFilter, search: searchTerm })}>ค้นหา</button>
         </div>
       </div>
 
       <div className="card">
-        <div className="ch page-list-head">
+        <div className="ch houses-list-head">
           <div className="ct">รายการปัญหาทั้งหมด ({issues.length} รายการ)</div>
-          <div className="page-list-actions">
+          <div className="houses-list-actions">
             <button className="btn btn-p btn-sm" onClick={openAddModal}>+ เพิ่มรายการปัญหา</button>
             <button className="btn btn-g btn-sm" onClick={() => loadData({ status: statusFilter, category: categoryFilter, search: searchTerm })}>🔄 รีเฟรช</button>
           </div>
         </div>
-        <div className="cb page-table-body">
+        <div className="cb houses-table-card-body">
           <div className="desktop-only">
             <div style={{ overflowX: 'auto' }}>
-              <table className="tw" style={{ width: '100%', minWidth: '900px' }}>
+              <table className="tw houses-table" style={{ width: '100%', minWidth: '900px' }}>
                 <thead><tr>
                   <th>ซอย</th>
                   <th>บ้าน / เจ้าของ</th>

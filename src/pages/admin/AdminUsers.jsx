@@ -253,16 +253,16 @@ const AdminUsers = () => {
       </div>
 
       <div className="card">
-        <div className="ch page-list-head">
+        <div className="ch houses-list-head">
           <div className="ct">รายชื่อผู้ใช้งาน ({users.length})</div>
-          <div className="page-list-actions">
+          <div className="houses-list-actions">
             <button className="btn btn-p btn-sm" onClick={openAddModal}>+ เพิ่มผู้ใช้ใหม่</button>
           </div>
         </div>
-        <div className="cb page-table-body">
+        <div className="cb houses-table-card-body">
           <div className="desktop-only">
             <div style={{ overflowX: 'auto' }}>
-              <table className="tw" style={{ width: '100%', minWidth: '1080px' }}>
+              <table className="tw houses-table" style={{ width: '100%', minWidth: '1080px' }}>
                 <thead><tr>
                   <th>บ้านเลขที่</th>
                   <th>username</th>

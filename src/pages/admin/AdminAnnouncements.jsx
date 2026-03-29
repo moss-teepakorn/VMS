@@ -333,34 +333,34 @@ const AdminAnnouncements = () => {
             </div>
           </div>
         </div>
-        <div className="page-filter-row">
+        <div className="houses-filter-row">
           <input
-            className="page-filter-input"
+            className="houses-filter-input"
             type="text"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             placeholder="ค้นหา หัวข้อ / เนื้อหา"
           />
-          <select className="page-filter-select" value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)}>
+          <select className="houses-filter-select" value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)}>
             <option value="all">ทุกประเภท</option>
             {TYPE_OPTIONS.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
           </select>
-          <button className="btn btn-a btn-sm page-filter-btn" onClick={() => loadData({ type: typeFilter, search: searchTerm })}>ค้นหา</button>
+          <button className="btn btn-a btn-sm houses-filter-btn" onClick={() => loadData({ type: typeFilter, search: searchTerm })}>ค้นหา</button>
         </div>
       </div>
 
       <div className="card">
-        <div className="ch page-list-head">
+        <div className="ch houses-list-head">
           <div className="ct">ประกาศทั้งหมด ({announcements.length} รายการ)</div>
-          <div className="page-list-actions">
+          <div className="houses-list-actions">
             <button className="btn btn-p btn-sm" onClick={openAddModal}>+ ประกาศใหม่</button>
             <button className="btn btn-g btn-sm" onClick={() => loadData({ type: typeFilter, search: searchTerm })}>🔄 รีเฟรช</button>
           </div>
         </div>
-        <div className="cb page-table-body">
+        <div className="cb houses-table-card-body">
           <div className="desktop-only">
             <div style={{ overflowX: 'auto' }}>
-              <table className="tw" style={{ width: '100%', minWidth: '700px' }}>
+              <table className="tw houses-table" style={{ width: '100%', minWidth: '700px' }}>
                 <thead><tr>
                   <th>ปักหมุด</th>
                   <th>เลขที่ประกาศ</th>

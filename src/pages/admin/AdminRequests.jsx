@@ -27,11 +27,11 @@ const AdminRequests = () => {
         </div>
       </div>
 
-      <div className="card">
-        <div className="ch"><div className="ct">คำขอลำดับสำคัญ</div></div>
-        <div className="cb">
+      <div className="card houses-main-card">
+        <div className="ch houses-list-head"><div className="ct">คำขอลำดับสำคัญ</div></div>
+        <div className="cb houses-table-card-body">
           <div style={{ overflowX: 'auto' }}>
-            <table className="tw" style={{ width: '100%', minWidth: '600px' }}>
+            <table className="tw houses-table" style={{ width: '100%', minWidth: '600px' }}>
               <thead><tr>
                 <th>วันที่</th><th>ประเภท</th><th>จากเจ้าของ</th><th>รายละเอียด</th><th>สถานะ</th><th/>
               </tr></thead>

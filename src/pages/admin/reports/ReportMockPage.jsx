@@ -49,12 +49,12 @@ export default function ReportMockPage({ icon, title, subtitle, fileName, column
         </div>
       </div>
 
-      <div className="chart-box">
-        <div className="ch">
-          <h3>รายการข้อมูลรายงาน</h3>
+      <div className="card houses-main-card">
+        <div className="ch houses-list-head">
+          <div className="ct">รายการข้อมูลรายงาน</div>
         </div>
-        <div className="cb" style={{ overflow: 'auto' }}>
-          <table className="tw" style={{ minWidth: 860 }}>
+        <div className="cb houses-table-card-body" style={{ overflow: 'auto' }}>
+          <table className="tw houses-table houses-main-table" style={{ minWidth: 860 }}>
             <thead>
               <tr>
                 {columns.map((column) => (

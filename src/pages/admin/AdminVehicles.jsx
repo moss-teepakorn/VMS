@@ -495,44 +495,44 @@ const AdminVehicles = () => {
             </div>
           </div>
         </div>
-        <div className="page-filter-row">
+        <div className="houses-filter-row">
           <input
-            className="page-filter-input"
+            className="houses-filter-input"
             type="text"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             placeholder="ค้นหา ทะเบียน / บ้าน / เจ้าของ / ยี่ห้อ / สี"
           />
-          <select className="page-filter-select" value={soiFilter} onChange={(e) => setSoiFilter(e.target.value)}>
+          <select className="houses-filter-select" value={soiFilter} onChange={(e) => setSoiFilter(e.target.value)}>
             <option value="all">ทุกซอย</option>
             {soiOptions.map((soi) => <option key={soi} value={soi}>{`ซอย ${soi}`}</option>)}
           </select>
-          <select className="page-filter-select" value={vehicleTypeFilter} onChange={(e) => setVehicleTypeFilter(e.target.value)}>
+          <select className="houses-filter-select" value={vehicleTypeFilter} onChange={(e) => setVehicleTypeFilter(e.target.value)}>
             <option value="all">ทุกประเภท</option>
             {VEHICLE_TYPES.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}
           </select>
-          <select className="page-filter-select" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
+          <select className="houses-filter-select" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
             <option value="all">ทั้งหมด</option>
             <option value="active">ใช้งาน</option>
             <option value="pending">รออนุมัติ</option>
             <option value="removed">ยกเลิก</option>
           </select>
-          <button className="btn btn-a btn-sm page-filter-btn" onClick={() => loadVehicles({ status: statusFilter, search: searchTerm, soi: soiFilter, vehicleType: vehicleTypeFilter })}>ค้นหา</button>
+          <button className="btn btn-a btn-sm houses-filter-btn" onClick={() => loadVehicles({ status: statusFilter, search: searchTerm, soi: soiFilter, vehicleType: vehicleTypeFilter })}>ค้นหา</button>
         </div>
       </div>
 
       <div className="card vehicles-list-card">
-        <div className="ch page-list-head">
+        <div className="ch houses-list-head">
           <div className="ct">ยานพาหนะทั้งหมด ({vehicles.length} รายการ)</div>
-          <div className="page-list-actions">
+          <div className="houses-list-actions">
             <button className="btn btn-p btn-sm" onClick={openAddModal}>+ ลงทะเบียนรถใหม่</button>
             <button className="btn btn-g btn-sm" onClick={() => loadVehicles({ status: statusFilter, search: searchTerm, soi: soiFilter, vehicleType: vehicleTypeFilter })}>🔄 รีเฟรช</button>
           </div>
         </div>
-        <div className="cb page-table-body vehicles-page-table-body">
+        <div className="cb houses-table-card-body vehicles-page-table-body">
           <div className="desktop-only">
             <div style={{ overflowX: 'auto' }}>
-              <table className="tw" style={{ width: '100%', minWidth: '1120px' }}>
+              <table className="tw houses-table" style={{ width: '100%', minWidth: '1120px' }}>
                 <thead><tr>
                   <th>ซอย</th>
                   <th>บ้านเลขที่ / เจ้าของบ้าน</th>
