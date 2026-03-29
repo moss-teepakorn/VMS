@@ -60,7 +60,6 @@ const AdminLayout = () => {
       full_name: profile.full_name,
       role: profile.role,
       page_path: location.pathname,
-      function_name: 'navigate_admin_page',
     })
   }, [location.pathname, profile?.id, profile?.username, profile?.full_name, profile?.role])
 

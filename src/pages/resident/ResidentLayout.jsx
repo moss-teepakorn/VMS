@@ -113,7 +113,6 @@ export default function ResidentLayout() {
       full_name: profile.full_name,
       role: profile.role,
       page_path: `/resident/${activeSection}`,
-      function_name: 'navigate_resident_section',
     })
   }, [activeSection, profile?.id, profile?.username, profile?.full_name, profile?.role])
 

@@ -90,7 +90,6 @@ export function AuthProvider({ children }) {
         role: data.role || null,
         event_type: 'login',
         page_path: '/login',
-        function_name: 'signIn',
       })
       return { error: null }
     } catch (error) {

@@ -6,6 +6,41 @@ import villageLogo from '../../assets/village-logo.svg'
 
 const ROLE_LABEL = { admin: 'ผู้ดูแลระบบ', resident: 'ลูกบ้าน' }
 const ROLE_CLASS = { admin: 'b-pr', resident: 'b-a' }
+const EVENT_LABEL = {
+  login: 'เข้าสู่ระบบ',
+  page_view: 'เข้าหน้าจอ',
+}
+
+const PAGE_LABEL = {
+  '/login': 'หน้าเข้าสู่ระบบ',
+  '/admin/dashboard': 'Dashboard',
+  '/admin/houses': 'ข้อมูลบ้าน',
+  '/admin/vehicles': 'ข้อมูลรถ',
+  '/admin/fees': 'ค่าส่วนกลาง',
+  '/admin/payments': 'จ่ายค่าส่วนกลาง',
+  '/admin/requests': 'คำขอแก้ไข',
+  '/admin/issues': 'จัดการปัญหา',
+  '/admin/violations': 'แจ้งกระทำผิด',
+  '/admin/announcements': 'ประกาศ',
+  '/admin/work-reports': 'ผลงานนิติ',
+  '/admin/technicians': 'ทำเนียบช่าง',
+  '/admin/marketplace': 'ตลาดชุมชน',
+  '/admin/reports/payments': 'รายงานการชำระเงิน',
+  '/admin/reports/overdue': 'รายงานค้างชำระ',
+  '/admin/reports/expense-payments': 'รายงานการจ่ายเงินออก',
+  '/admin/reports/violations-summary': 'สรุปการกระทำผิด',
+  '/admin/config': 'ตั้งค่าระบบ',
+  '/admin/users': 'ผู้ใช้งาน',
+  '/admin/login-logs': 'ประวัติการใช้ระบบ',
+  '/admin/residents': 'ลูกบ้าน',
+  '/admin/units': 'ยูนิต',
+  '/admin/maintenance': 'งานซ่อมบำรุง',
+  '/admin/settings': 'ตั้งค่า',
+  '/resident/fees': 'ค่าส่วนกลาง (ลูกบ้าน)',
+  '/resident/violations': 'การแจ้งเตือน (ลูกบ้าน)',
+  '/resident/issues': 'แจ้งปัญหา (ลูกบ้าน)',
+  '/resident/home': 'หน้าแรก (ลูกบ้าน)',
+}
 
 function fmtDatetime(iso) {
   if (!iso) return '-'
@@ -13,6 +48,15 @@ function fmtDatetime(iso) {
     year: 'numeric', month: '2-digit', day: '2-digit',
     hour: '2-digit', minute: '2-digit', second: '2-digit',
   })
+}
+
+function toEventLabel(eventType) {
+  return EVENT_LABEL[eventType] || eventType || '-'
+}
+
+function toPageLabel(path) {
+  if (!path) return '-'
+  return PAGE_LABEL[path] || path
 }
 
 export default function AdminLoginLogs() {
@@ -208,7 +252,6 @@ export default function AdminLoginLogs() {
                   <th>วันที่ / เวลา</th>
                   <th>เหตุการณ์</th>
                   <th>หน้าจอ</th>
-                  <th>Function</th>
                   <th>Browser</th>
                   <th>IP</th>
                   <th>Username</th>
@@ -218,9 +261,9 @@ export default function AdminLoginLogs() {
               </thead>
               <tbody>
                 {loading ? (
-                  <tr><td colSpan="11" style={{ textAlign: 'center', color: 'var(--mu)', padding: '24px' }}>กำลังโหลด...</td></tr>
+                  <tr><td colSpan="10" style={{ textAlign: 'center', color: 'var(--mu)', padding: '24px' }}>กำลังโหลด...</td></tr>
                 ) : filtered.length === 0 ? (
-                  <tr><td colSpan="11" style={{ textAlign: 'center', color: 'var(--mu)', padding: '24px' }}>ไม่มีข้อมูล Log</td></tr>
+                  <tr><td colSpan="10" style={{ textAlign: 'center', color: 'var(--mu)', padding: '24px' }}>ไม่มีข้อมูล Log</td></tr>
                 ) : filtered.map((row, idx) => (
                   <tr
                     key={row.id}
@@ -236,9 +279,8 @@ export default function AdminLoginLogs() {
                     </td>
                     <td style={{ color: 'var(--mu)', textAlign: 'center' }}>{idx + 1}</td>
                     <td style={{ whiteSpace: 'nowrap' }}>{fmtDatetime(row.login_at)}</td>
-                    <td>{row.event_type || '-'}</td>
-                    <td style={{ fontFamily: 'monospace', fontSize: 12 }}>{row.page_path || '-'}</td>
-                    <td style={{ fontFamily: 'monospace', fontSize: 12 }}>{row.function_name || '-'}</td>
+                    <td>{toEventLabel(row.event_type)}</td>
+                    <td>{toPageLabel(row.page_path)}</td>
                     <td>{row.browser || '-'}</td>
                     <td style={{ fontFamily: 'monospace', fontSize: 12 }}>{row.ip_address || '-'}</td>
                     <td style={{ fontFamily: 'monospace', fontWeight: 600 }}>{row.username}</td>
@@ -290,9 +332,8 @@ export default function AdminLoginLogs() {
                     <div className="mcard-meta" style={{ marginTop: 4 }}>
                       <span><span className="mcard-label">ชื่อ</span> {row.full_name || '-'}</span>
                       <span><span className="mcard-label">เวลา</span> {fmtDatetime(row.login_at)}</span>
-                      <span><span className="mcard-label">Event</span> {row.event_type || '-'}</span>
-                      <span><span className="mcard-label">หน้าจอ</span> {row.page_path || '-'}</span>
-                      <span><span className="mcard-label">Function</span> {row.function_name || '-'}</span>
+                      <span><span className="mcard-label">เหตุการณ์</span> {toEventLabel(row.event_type)}</span>
+                      <span><span className="mcard-label">หน้าจอ</span> {toPageLabel(row.page_path)}</span>
                       <span><span className="mcard-label">Browser</span> {row.browser || '-'}</span>
                       <span><span className="mcard-label">IP</span> {row.ip_address || '-'}</span>
                     </div>
