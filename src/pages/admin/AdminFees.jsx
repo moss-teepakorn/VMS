@@ -756,7 +756,7 @@ const AdminFees = () => {
       return [
         // Original page
         `
-          <section class="sheet page-break">
+          <section class="sheet page-break${isNotice ? ' notice-sheet' : ''}">
             <header class="head">
               <div class="brand">
                 <img src="${printLogoUrl}" alt="village-logo" />
@@ -778,6 +778,8 @@ const AdminFees = () => {
                 </div>
               </div>
             </header>
+
+            ${isNotice ? `<section class="notice-alert">เอกสารแจ้งเตือนค้างชำระ: กรุณาดำเนินการชำระยอดคงค้างภายในกำหนดเพื่อหลีกเลี่ยงค่าใช้จ่ายเพิ่มเติม</section>` : ''}
 
             <section class="box">
               <div class="grid">
@@ -837,7 +839,7 @@ const AdminFees = () => {
         `,
         // Copy page
         `
-          <section class="sheet${isLastFee ? '' : ' page-break'}">
+          <section class="sheet${isLastFee ? '' : ' page-break'}${isNotice ? ' notice-sheet' : ''}">
             <header class="head">
               <div class="brand">
                 <img src="${printLogoUrl}" alt="village-logo" />
@@ -859,6 +861,8 @@ const AdminFees = () => {
                 </div>
               </div>
             </header>
+
+            ${isNotice ? `<section class="notice-alert">เอกสารแจ้งเตือนค้างชำระ: กรุณาดำเนินการชำระยอดคงค้างภายในกำหนดเพื่อหลีกเลี่ยงค่าใช้จ่ายเพิ่มเติม</section>` : ''}
 
             <section class="box">
               <div class="grid">
@@ -953,6 +957,10 @@ const AdminFees = () => {
               background: #ffffff;
               margin-bottom: 4px;
             }
+            .notice-sheet .head {
+              border-color: #fdba74;
+              background: #fff7ed;
+            }
             .brand { display: flex; align-items: flex-start; gap: 10px; flex: 1; min-width: 0; }
             .brand img {
               width: 48px;
@@ -962,6 +970,7 @@ const AdminFees = () => {
               border: 1px solid #cbd5e1;
             }
             .doc { font-size: 16px; font-weight: 700; line-height: 1.3; }
+            .notice-sheet .doc { color: #9a3412; }
             .village { font-size: 11px; margin-top: 3px; font-weight: 600; }
             .sub { font-size: 9px; color: #6b7280; margin-top: 2px; }
             .doc-meta { font-size: 10px; min-width: 180px; display: flex; flex-direction: column; gap: 2px; word-break: break-word; }
@@ -987,6 +996,17 @@ const AdminFees = () => {
             .copy-mark--active {
               color: #0c4a6e;
               background: transparent;
+            }
+            .notice-sheet .copy-mark--active { color: #b45309; }
+            .notice-alert {
+              border: 1px dashed #fb923c;
+              background: #fff7ed;
+              color: #9a3412;
+              border-radius: 4px;
+              padding: 7px 10px;
+              font-size: 10px;
+              font-weight: 600;
+              line-height: 1.45;
             }
             .box { border: 1px solid #cbd5e1; border-radius: 4px; padding: 10px 12px; }
             .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 10px; word-break: break-word; }
