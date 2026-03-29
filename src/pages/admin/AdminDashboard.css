@@ -859,7 +859,10 @@
 }
 
 .houses-table-card-body {
-  padding-top: 10px;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 10px 16px 14px;
+  border-radius: 0 0 12px 12px;
 }
 
 .houses-table-wrap {
