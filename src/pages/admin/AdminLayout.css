@@ -1199,18 +1199,31 @@ button, input, select, textarea {
   .sidebar.collapsed .sb-nav {
     padding-left: 6px;
     padding-right: 6px;
+    gap: 6px;
+  }
+
+  .sidebar.collapsed .sb-major-group {
+    gap: 6px;
+    margin-bottom: 6px;
+  }
+
+  .sidebar.collapsed .sb-major-group > .sb-sec-btn:not([data-section="หน้าหลัก"]) {
+    display: none;
   }
 
   .sidebar.collapsed .sb-submenu-wrap {
     border-left: none;
     margin-left: 0;
     padding-left: 0;
+    gap: 6px;
   }
 
   .sidebar.collapsed .sb-sec-btn {
     justify-content: center;
     padding-left: 6px;
     padding-right: 6px;
+    min-height: 40px;
+    border-radius: 12px;
   }
 
   .sidebar.collapsed .sb-sec-arrow {
@@ -1220,11 +1233,20 @@ button, input, select, textarea {
   .sidebar.collapsed .sb-item {
     justify-content: center;
     gap: 0;
-    padding: 8px 6px;
+    padding: 10px 6px;
+    min-height: 40px;
+    border-radius: 12px;
   }
 
   .sidebar.collapsed .sb-item.act::before {
     content: none;
+  }
+
+  .sidebar.collapsed .sb-ico,
+  .sidebar.collapsed .sb-sec-ico {
+    width: 22px;
+    height: 22px;
+    font-size: 14px;
   }
 
   .sidebar.collapsed .sb-foot {
