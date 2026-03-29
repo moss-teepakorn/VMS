@@ -756,6 +756,49 @@ export async function listPaymentTotalsByFeeIds(feeIds = []) {
   return { submitted, approved }
 }
 
+export async function listNoticePrintCountsByFeeIds(feeIds = []) {
+  const ids = Array.isArray(feeIds) ? feeIds.filter(Boolean) : []
+  if (ids.length === 0) return {}
+
+  const { data, error } = await supabase
+    .from('fee_notice_print_logs')
+    .select('fee_id, notice_no')
+    .in('fee_id', ids)
+
+  if (error) throw error
+
+  const counts = {}
+  for (const row of data || []) {
+    const feeId = row?.fee_id
+    if (!feeId) continue
+    const noticeNo = Number(row?.notice_no || 0)
+    counts[feeId] = Math.max(Number(counts[feeId] || 0), noticeNo)
+  }
+  return counts
+}
+
+export async function createNoticePrintLogs(rows = []) {
+  const payload = (Array.isArray(rows) ? rows : [])
+    .filter((row) => row?.fee_id && Number(row?.notice_no || 0) > 0)
+    .map((row) => ({
+      fee_id: row.fee_id,
+      notice_no: Number(row.notice_no),
+      print_mode: row.print_mode || 'paper',
+      printed_by: row.printed_by || null,
+      printed_at: row.printed_at || new Date().toISOString(),
+    }))
+
+  if (payload.length === 0) return []
+
+  const { data, error } = await supabase
+    .from('fee_notice_print_logs')
+    .insert(payload)
+    .select('id, fee_id, notice_no, print_mode, printed_by, printed_at, created_at')
+
+  if (error) throw error
+  return data || []
+}
+
 export async function createPayment(payload) {
   const payment = {
     fee_id: payload.fee_id || null,

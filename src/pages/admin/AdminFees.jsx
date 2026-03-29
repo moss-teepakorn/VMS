@@ -10,10 +10,12 @@ import {
   calculateOverdueFeesByIds,
   calculateOverdueFeeCharges,
   createPayment,
+  createNoticePrintLogs,
   deleteFee,
   getFeeYears,
   getLatestFeeYear,
   listFees,
+  listNoticePrintCountsByFeeIds,
   listPaymentTotalsByFeeIds,
   listPayments,
   processHalfYearFeesAllHouses,
@@ -63,15 +65,6 @@ function extractNoticePrintCount(note) {
   const raw = String(note || '')
   const match = raw.match(/^\[NOTICE_PRINT:([0-9]+)\]\s*/)
   return match ? Number(match[1]) : 0
-}
-
-function stripNoticePrintTag(note) {
-  return String(note || '').replace(/^\[NOTICE_PRINT:[0-9]+\]\s*/, '')
-}
-
-function withNoticePrintTag(note, count) {
-  const clean = stripNoticePrintTag(note || '').trim()
-  return `[NOTICE_PRINT:${Math.max(0, Number(count) || 0)}]${clean ? ` ${clean}` : ''}`
 }
 
 const houseSorter = new Intl.Collator('th-TH', { numeric: true, sensitivity: 'base' })
@@ -138,6 +131,7 @@ const AdminFees = () => {
   const [showPrintActionModal, setShowPrintActionModal] = useState(false)
   const [runningPrintAction, setRunningPrintAction] = useState(false)
   const [printPayload, setPrintPayload] = useState({ fees: [], title: '', docType: 'invoice', noticeNoMap: {} })
+  const [noticePrintCounts, setNoticePrintCounts] = useState({})
   const [feeSubmittedTotals, setFeeSubmittedTotals] = useState({})
   const [feeApprovedTotals, setFeeApprovedTotals] = useState({})
   const [paymentForm, setPaymentForm] = useState({
@@ -198,9 +192,12 @@ const AdminFees = () => {
         houses.length === 0 ? listHouses() : Promise.resolve(houses),
       ])
 
+      const noticeCounts = await listNoticePrintCountsByFeeIds(feeData.map((row) => row.id))
+
       const paymentTotals = await listPaymentTotalsByFeeIds(feeData.map((row) => row.id))
       setFeeSubmittedTotals(paymentTotals.submitted || {})
       setFeeApprovedTotals(paymentTotals.approved || {})
+      setNoticePrintCounts(noticeCounts || {})
 
       const filteredFees = effectiveStatus === 'partial'
         ? feeData.filter((fee) => {
@@ -607,15 +604,21 @@ const AdminFees = () => {
     setShowPrintActionModal(true)
   }
 
-  const persistNoticePrintCounts = async () => {
+  const getNoticeCountForFee = (fee) => {
+    const dbCount = Number(noticePrintCounts[fee?.id] || 0)
+    const legacyCount = extractNoticePrintCount(fee?.note)
+    return Math.max(dbCount, legacyCount)
+  }
+
+  const persistNoticePrintCounts = async (mode) => {
     if (printPayload.docType !== 'notice') return
     const noticeNoMap = printPayload.noticeNoMap || {}
-    for (const fee of printPayload.fees || []) {
-      const nextCount = Number(noticeNoMap[fee.id] || 0)
-      if (nextCount <= 0) continue
-      const currentNote = stripNoticePrintTag(String(fee.note || ''))
-      await updateFee(fee.id, { note: withNoticePrintTag(currentNote, nextCount) })
-    }
+    const rows = (printPayload.fees || []).map((fee) => ({
+      fee_id: fee.id,
+      notice_no: Number(noticeNoMap[fee.id] || 0),
+      print_mode: mode,
+    }))
+    await createNoticePrintLogs(rows)
   }
 
   const resolveImageToDataUrl = async (url, fallback = '') => {
@@ -1146,7 +1149,7 @@ const AdminFees = () => {
           pdf.save(`${printPayload.title || 'invoice'}.pdf`)
         }
 
-        await persistNoticePrintCounts()
+        await persistNoticePrintCounts(mode)
         document.body.removeChild(iframe)
         setShowPrintActionModal(false)
         await loadFeeData({ status: statusFilter, year: yearFilter, period: periodFilter })
@@ -1163,7 +1166,7 @@ const AdminFees = () => {
         await Swal.fire({ icon: 'warning', title: 'ไม่สามารถเปิดหน้าต่างพิมพ์ได้', text: 'กรุณาอนุญาต popup ของเบราว์เซอร์' })
         return
       }
-      await persistNoticePrintCounts()
+      await persistNoticePrintCounts(mode)
       setShowPrintActionModal(false)
       await loadFeeData({ status: statusFilter, year: yearFilter, period: periodFilter })
     } catch (error) {
@@ -1187,7 +1190,7 @@ const AdminFees = () => {
       Swal.fire({ icon: 'info', title: 'ยังพิมพ์ใบเตือนไม่ได้', text: 'ต้องมีค่าปรับและเป็นรายการค้างชำระก่อน' })
       return
     }
-    const nextNoticeNo = extractNoticePrintCount(fee.note) + 1
+    const nextNoticeNo = getNoticeCountForFee(fee) + 1
     const title = `ใบแจ้งเตือน ${fee.houses?.house_no || '-'} ครั้งที่ ${nextNoticeNo}`
     openPrintActionModal([fee], title, {
       docType: 'notice',
@@ -1202,7 +1205,7 @@ const AdminFees = () => {
       return
     }
     const noticeNoMap = noticeFees.reduce((acc, fee) => {
-      acc[fee.id] = extractNoticePrintCount(fee.note) + 1
+      acc[fee.id] = getNoticeCountForFee(fee) + 1
       return acc
     }, {})
     openPrintActionModal(noticeFees, `ใบแจ้งเตือนค้างชำระทั้งหมด (${noticeFees.length} หลัง)`, {
