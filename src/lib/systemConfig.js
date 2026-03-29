@@ -194,30 +194,27 @@ export async function uploadJuristicSignature(file) {
 
 export async function uploadVillageLogo(file) {
   if (!file) return null
-  const extension = String(file.name || 'png').split('.').pop()?.toLowerCase() || 'png'
-  const safeExt = ['png', 'jpg', 'jpeg', 'webp'].includes(extension) ? extension : 'png'
-  const path = `logo/login-circle.${safeExt}`
+  // Fixed filename — always overwrite the same path regardless of input extension
+  const FIXED_PATH = 'logo/vms_logo.png'
 
   const { error } = await supabase.storage
     .from(SYSTEM_ASSET_BUCKET)
-    .upload(path, file, { upsert: true, contentType: file.type || 'image/png' })
+    .upload(FIXED_PATH, file, { upsert: true, contentType: 'image/png' })
 
   if (error) throw error
 
-  const staleLogoVariants = ['png', 'jpg', 'jpeg', 'webp']
-    .map((ext) => `logo/login-circle.${ext}`)
-    .filter((candidate) => candidate !== path)
-
-  if (staleLogoVariants.length > 0) {
-    await supabase.storage
-      .from(SYSTEM_ASSET_BUCKET)
-      .remove(staleLogoVariants)
-      .catch(() => null)
-  }
+  // Clean up any legacy filename variants
+  const legacyPaths = [
+    'logo/login-circle.png',
+    'logo/login-circle.jpg',
+    'logo/login-circle.jpeg',
+    'logo/login-circle.webp',
+  ]
+  await supabase.storage.from(SYSTEM_ASSET_BUCKET).remove(legacyPaths).catch(() => null)
 
   return {
-    path,
-    url: buildSystemAssetPublicUrl(path, { cacheBust: Date.now() }),
+    path: FIXED_PATH,
+    url: buildSystemAssetPublicUrl(FIXED_PATH, { cacheBust: Date.now() }),
   }
 }
 

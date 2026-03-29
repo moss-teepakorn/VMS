@@ -236,16 +236,15 @@ const AdminConfig = () => {
     try {
       setSaving(true)
       const payload = { ...form }
-      const hasLogoColumns = Object.prototype.hasOwnProperty.call(form, 'village_logo_url') && Object.prototype.hasOwnProperty.call(form, 'village_logo_path')
       NUMBER_FIELDS.forEach((field) => {
         payload[field] = Number(payload[field] || 0)
       })
 
       if (!Object.prototype.hasOwnProperty.call(form, 'village_logo_url')) {
-        delete payload.village_logo_url
+        payload.village_logo_url = null
       }
       if (!Object.prototype.hasOwnProperty.call(form, 'village_logo_path')) {
-        delete payload.village_logo_path
+        payload.village_logo_path = null
       }
 
       const previousSignaturePath = form.juristic_signature_path || extractSystemAssetPath(form.juristic_signature_url)
@@ -262,18 +261,14 @@ const AdminConfig = () => {
       const shouldRemoveLogo = removeLogo || isJuristicPath
 
       if (shouldRemoveLogo) {
-        if (hasLogoColumns) {
-          payload.village_logo_url = null
-          payload.village_logo_path = null
-        }
+        payload.village_logo_url = null
+        payload.village_logo_path = null
       }
 
       if (logoFile) {
         uploadedLogo = await uploadVillageLogo(logoFile)
-        if (hasLogoColumns) {
-          payload.village_logo_url = uploadedLogo?.url || null
-          payload.village_logo_path = uploadedLogo?.path || null
-        }
+        payload.village_logo_url = uploadedLogo?.url || null
+        payload.village_logo_path = uploadedLogo?.path || null
       }
 
       if (signatureFile) {
