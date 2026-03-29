@@ -678,7 +678,8 @@ button, input, select, textarea {
   flex: 1;
   overflow-y: auto;
   background: var(--bg2);
-  padding-bottom: 60px;
+  /* Reserve enough space for the fixed footer across dashboard/config long cards */
+  padding-bottom: 96px;
 }
 
 .view {
@@ -888,38 +889,61 @@ button, input, select, textarea {
 
 .sb-sec-btn {
   width: 100%;
-  border: 1px solid rgba(255,255,255,.24);
-  background: rgba(255,255,255,.12);
-  border-radius: 12px;
+  border: none;
+  background: transparent;
+  border-radius: 0;
   display: flex;
   align-items: center;
   justify-content: space-between;
   cursor: pointer;
-  transition: all var(--tr);
+  transition: color var(--tr), background var(--tr);
   min-height: 35px;
+  position: relative;
+  color: var(--sbt);
 }
 
 .sb-sec-btn.tone-core {
-  background: rgba(125, 211, 252, 0.2);
-  border-color: rgba(125, 211, 252, 0.4);
+  background: transparent;
 }
 
 .sb-sec-btn.tone-operation {
-  background: rgba(251, 191, 36, 0.14);
+  background: transparent;
 }
 
 .sb-sec-btn.tone-insight {
-  background: rgba(110, 231, 183, 0.14);
+  background: transparent;
 }
 
 .sb-sec-btn.tone-system {
-  background: rgba(196, 181, 253, 0.14);
+  background: transparent;
 }
 
 .sb-sec-btn:hover {
-  background: rgba(255,255,255,.18);
-  border-color: rgba(255,255,255,.34);
-  box-shadow: 0 6px 14px rgba(0,0,0,.15);
+  background: transparent;
+  box-shadow: none;
+}
+
+.sb-sec-btn::after {
+  content: '';
+  position: absolute;
+  left: 10px;
+  right: 10px;
+  bottom: 0;
+  height: 2px;
+  background: transparent;
+  transition: background var(--tr);
+}
+
+.sb-sec-btn:hover::after {
+  background: rgba(255,255,255,.45);
+}
+
+.sb-sec-btn[aria-expanded="true"] {
+  color: #ffffff;
+}
+
+.sb-sec-btn[aria-expanded="true"]::after {
+  background: rgba(125, 211, 252, .95);
 }
 
 .sb-sec-left {
@@ -984,51 +1008,45 @@ button, input, select, textarea {
   color: var(--sbm);
   text-decoration: none;
   cursor: pointer;
-  transition: all var(--tr);
+  transition: color var(--tr), background var(--tr);
   position: relative;
   font-size: 13px;
   font-weight: 700;
   min-height: 35px;
-  border-bottom: 3px solid transparent;
 }
 
 .sb-item:hover {
   background: transparent;
   color: var(--sbt);
-  transform: none;
-  box-shadow: none;
-  border-bottom-color: rgba(255,255,255,.4);
 }
 
 .sb-item.act {
-  background: transparent;
-  color: var(--sbt);
+  background: rgba(125, 211, 252, .18);
+  color: #ffffff;
   font-weight: 800;
-  box-shadow: none;
-  border-bottom-color: rgba(255,255,255,.8);
 }
 
 .sb-item::before {
+  content: none;
+}
+
+.sb-item::after {
   content: '';
   position: absolute;
-  left: 0;
-  top: 22%;
-  bottom: 22%;
-  width: 3px;
+  left: 10px;
+  right: 10px;
+  bottom: 0;
+  height: 2px;
   background: transparent;
-  border-radius: 0 3px 3px 0;
-  transition: background var(--tr), box-shadow var(--tr);
-  display: none;
+  transition: background var(--tr);
 }
 
-.sb-item:hover::before {
-  background: transparent;
-  box-shadow: none;
+.sb-item:hover::after {
+  background: rgba(255,255,255,.45);
 }
 
-.sb-item.act::before {
-  background: #67e8f9;
-  box-shadow: 0 0 10px rgba(103, 232, 249, 0.9);
+.sb-item.act::after {
+  background: transparent;
 }
 
 .sb-ico {
