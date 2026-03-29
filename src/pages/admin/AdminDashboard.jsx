@@ -390,11 +390,9 @@ const AdminDashboard = () => {
 
       {/* Quick actions */}
       <div className="g2">
-        <div className="card">
+        <div className="chart-box">
           <div className="ch">
-            <div className="ch-ico">⚡</div>
-            <div className="ct" style={{ cursor: 'pointer' }} onClick={goToRequests}>รายการด่วน — รออนุมัติ</div>
-            <button className="btn btn-xs btn-o" onClick={goToRequests}>ดูทั้งหมด</button>
+            <h3 style={{ cursor: 'pointer' }} onClick={goToRequests}>⚡ รายการด่วน — รออนุมัติ</h3>
           </div>
           <div className="cb">
             <div style={{ overflowX: 'auto' }}>
@@ -423,10 +421,9 @@ const AdminDashboard = () => {
             </div>
           </div>
         </div>
-        <div className="card">
+        <div className="chart-box">
           <div className="ch">
-            <div className="ch-ico">⚠️</div>
-            <div className="ct" style={{ cursor: 'pointer' }} onClick={goToViolations}>แจ้งเตือนล่าสุด</div>
+            <h3 style={{ cursor: 'pointer' }} onClick={goToViolations}>⚠️ แจ้งเตือนล่าสุด</h3>
           </div>
           <div className="cb">
             {data.alerts.length === 0 ? (
