@@ -896,7 +896,7 @@ button, input, select, textarea {
   align-items: center;
   justify-content: space-between;
   cursor: pointer;
-  transition: background var(--tr), color var(--tr), box-shadow var(--tr);
+  transition: background var(--tr), color var(--tr);
   min-height: 35px;
   position: relative;
   color: var(--sbt);
@@ -921,13 +921,11 @@ button, input, select, textarea {
 .sb-sec-btn:hover {
   background: rgba(255,255,255,.16);
   color: #ffffff;
-  box-shadow: 0 6px 14px rgba(0,0,0,.14);
 }
 
 .sb-sec-btn[aria-expanded="true"] {
   color: #ffffff;
   background: rgba(255,255,255,.16);
-  box-shadow: 0 6px 14px rgba(0,0,0,.14);
 }
 
 .sb-sec-left {
@@ -992,7 +990,7 @@ button, input, select, textarea {
   color: var(--sbm);
   text-decoration: none;
   cursor: pointer;
-  transition: background var(--tr), color var(--tr), transform var(--tr), box-shadow var(--tr);
+  transition: background var(--tr), color var(--tr);
   position: relative;
   font-size: 13px;
   font-weight: 700;
@@ -1002,15 +1000,12 @@ button, input, select, textarea {
 .sb-item:hover {
   background: rgba(125, 211, 252, .20);
   color: var(--sbt);
-  transform: translateY(-1px);
-  box-shadow: 0 6px 14px rgba(0,0,0,.16);
 }
 
 .sb-item.act {
   background: rgba(125, 211, 252, .32);
   color: #ffffff;
   font-weight: 800;
-  box-shadow: 0 7px 16px rgba(0,0,0,.18);
 }
 
 .sb-item::before {
