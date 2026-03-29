@@ -15,6 +15,142 @@
   animation: dashFadeUp .45s ease both;
 }
 
+/* Dashboard v1 compact mode: reduce card footprint significantly */
+.dashboard-v1 {
+  gap: 9px !important;
+}
+
+.dashboard-v1 .ph {
+  padding: 13px;
+  border-radius: 8px;
+}
+
+.dashboard-v1 .ph::before {
+  width: 88px;
+  height: 88px;
+  right: -20px;
+  top: -20px;
+}
+
+.dashboard-v1 .ph::after {
+  width: 62px;
+  height: 62px;
+  bottom: -32px;
+}
+
+.dashboard-v1 .ph-ico {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+}
+
+.dashboard-v1 .ph-ico-img {
+  width: 22px;
+  height: 22px;
+}
+
+.dashboard-v1 .ph-h1 {
+  font-size: 14px;
+}
+
+.dashboard-v1 .ph-sub {
+  font-size: 10px;
+}
+
+.dashboard-v1 .stats {
+  gap: 6px;
+}
+
+.dashboard-v1 .sc {
+  padding: 7px;
+  border-radius: 8px;
+}
+
+.dashboard-v1 .sc::after {
+  width: 32px;
+  height: 32px;
+}
+
+.dashboard-v1 .sc-ico {
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  font-size: 13px;
+  margin-bottom: 4px;
+}
+
+.dashboard-v1 .sc-v {
+  font-size: 14px;
+}
+
+.dashboard-v1 .sc-l {
+  font-size: 10px;
+  margin-top: 1px;
+}
+
+.dashboard-v1 .sc-s {
+  font-size: 9px;
+  margin-top: 2px;
+}
+
+.dashboard-v1 .g2,
+.dashboard-v1 .g1,
+.dashboard-v1 .g3 {
+  gap: 7px;
+  margin-bottom: 8px;
+}
+
+.dashboard-v1 .chart-box,
+.dashboard-v1 .card {
+  border-radius: 8px;
+}
+
+.dashboard-v1 .chart-box .ch,
+.dashboard-v1 .card .ch {
+  padding: 7px 10px;
+}
+
+.dashboard-v1 .chart-box .ch h3,
+.dashboard-v1 .ct {
+  font-size: 11px;
+}
+
+.dashboard-v1 .ch-ico {
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  font-size: 12px;
+}
+
+.dashboard-v1 .cb {
+  padding: 8px;
+}
+
+.dashboard-v1 .chart-wrap {
+  padding: 8px;
+  min-height: 118px;
+}
+
+.dashboard-v1 .tw th {
+  padding: 6px 8px;
+  font-size: 9px;
+}
+
+.dashboard-v1 .tw td {
+  padding: 7px 8px;
+  font-size: 10px;
+}
+
+.dashboard-v1 .bd {
+  padding: 2px 7px;
+  font-size: 9px;
+}
+
+.dashboard-v1 .btn-xs {
+  padding: 3px 7px;
+  font-size: 9px;
+}
+
 .dashboard-v1 .stats {
   animation-delay: .06s;
 }
