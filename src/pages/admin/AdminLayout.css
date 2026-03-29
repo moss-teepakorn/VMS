@@ -928,6 +928,11 @@ button, input, select, textarea {
   background: rgba(255,255,255,.16);
 }
 
+.sb-sec-btn.sec-act {
+  color: #ffffff;
+  background: rgba(255,255,255,.16);
+}
+
 .sb-sec-left {
   display: inline-flex;
   align-items: center;

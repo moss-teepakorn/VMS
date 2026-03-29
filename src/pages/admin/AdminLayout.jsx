@@ -135,6 +135,48 @@ const AdminLayout = () => {
     ]},
   ]
 
+  const getActiveSectionName = (pathname) => {
+    const currentPath = String(pathname || '')
+    for (const section of navItems) {
+      if (section.skipToggle && section.dashboardLink === currentPath) {
+        return section.section
+      }
+      if (section.items?.some((item) => item.path === currentPath)) {
+        return section.section
+      }
+    }
+    return ''
+  }
+
+  const isSectionCurrent = (section) => {
+    if (!section) return false
+    if (section.skipToggle) {
+      return section.dashboardLink === location.pathname
+    }
+    return Boolean(section.items?.some((item) => item.path === location.pathname))
+  }
+
+  useEffect(() => {
+    const activeSection = getActiveSectionName(location.pathname)
+
+    setSectionOpen(() => {
+      const next = navItems
+        .filter((item) => item.section && item.items)
+        .reduce((acc, item) => {
+          acc[item.section] = item.section === activeSection
+          return acc
+        }, {})
+      return next
+    })
+
+    const timer = window.setTimeout(() => {
+      const activeItem = document.querySelector('.sb-nav .sb-item.act')
+      activeItem?.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
+    }, 40)
+
+    return () => window.clearTimeout(timer)
+  }, [location.pathname])
+
   const handleNavClick = (path) => {
     navigate(path)
     setSidebarOpen(false)
@@ -296,10 +338,11 @@ const AdminLayout = () => {
                 <>
                 <button
                   type="button"
-                  className={`sb-sec sb-sec-btn tone-${section.tone || 'default'}`}
+                  className={`sb-sec sb-sec-btn tone-${section.tone || 'default'} ${isSectionCurrent(section) ? 'sec-act' : ''}`}
                   onClick={() => toggleSection(section.section)}
                   aria-expanded={expanded}
                   title={section.section}
+                  data-section={section.section}
                 >
                   <span className="sb-sec-left">
                     <span className="sb-sec-ico">{section.sectionIcon || '>'}</span>
