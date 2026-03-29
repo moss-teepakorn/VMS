@@ -78,63 +78,108 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[linear-gradient(160deg,#e8eef5_0%,#d9e6ef_45%,#e6f4ef_100%)] flex items-center justify-center p-4 sm:p-8">
-      <div className="w-full max-w-[1100px] rounded-[28px] overflow-hidden bg-white shadow-[0_26px_70px_rgba(15,23,42,0.18)] border border-[#e3e8ee]">
-        <div className="grid grid-cols-1 lg:grid-cols-[40%_60%] min-h-[620px]">
-          <div className="hidden lg:flex relative overflow-hidden bg-[linear-gradient(145deg,#0f3f66_0%,#116d84_45%,#0f9a87_100%)] text-white">
-            <div className="absolute inset-0 opacity-20" style={{ backgroundImage: 'radial-gradient(circle at 2px 2px, rgba(255,255,255,.5) 1px, transparent 0)', backgroundSize: '20px 20px' }} />
-            <div className="absolute -top-10 -right-10 w-56 h-56 rounded-full bg-white/10" />
-            <div className="absolute bottom-[-70px] left-[-40px] w-56 h-56 rounded-full bg-white/10" />
-            <div className="relative z-10 p-10 w-full flex flex-col">
-              <div className="w-20 h-20 rounded-2xl border border-white/35 bg-white/20 flex items-center justify-center overflow-hidden shadow-lg">
-                <img src={setup.loginCircleLogoUrl || villageLogo} alt="setup-logo" className="w-16 h-16 rounded-xl object-cover" />
+    <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,#f2f8fb_0%,#edf3f7_35%,#e6eef3_100%)] p-4 sm:p-6 lg:p-8">
+      <div className="mx-auto grid min-h-[calc(100vh-2rem)] w-full max-w-[1180px] grid-cols-1 overflow-hidden rounded-[32px] border border-white/70 bg-white/70 shadow-[0_30px_80px_rgba(15,23,42,0.14)] backdrop-blur-sm lg:min-h-[720px] lg:grid-cols-[44%_56%]">
+        <section className="relative hidden overflow-hidden bg-[linear-gradient(155deg,#0d3b66_0%,#155e75_55%,#0f766e_100%)] lg:flex">
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(255,255,255,0.14),transparent_32%),radial-gradient(circle_at_bottom_right,rgba(255,255,255,0.16),transparent_26%)]" />
+          <div className="absolute -left-16 top-10 h-44 w-44 rounded-full bg-white/10 blur-2xl" />
+          <div className="absolute bottom-0 right-[-40px] h-56 w-56 rounded-full bg-emerald-200/10 blur-2xl" />
+
+          <div className="relative z-10 flex h-full w-full flex-col justify-between p-10 xl:p-12">
+            <div>
+              <div className="inline-flex items-center gap-3 rounded-full border border-white/20 bg-white/10 px-4 py-2 text-sm font-semibold text-white/90 backdrop-blur-sm">
+                <span className="inline-block h-2.5 w-2.5 rounded-full bg-emerald-300" />
+                Secure village operations platform
               </div>
-              <div className="mt-8">
-                <h1 className="text-3xl font-extrabold leading-tight">{setup.villageName}</h1>
-                <p className="mt-3 text-white/85 text-sm leading-relaxed">ระบบบริหารหมู่บ้านที่ช่วยให้ทีมงานทำงานไวขึ้น โปร่งใสขึ้น และติดตามข้อมูลได้ครบ</p>
+
+              <div className="mt-8 flex items-center gap-4">
+                <div className="flex h-20 w-20 items-center justify-center overflow-hidden rounded-[22px] border border-white/25 bg-white/14 shadow-[0_20px_40px_rgba(0,0,0,0.18)] backdrop-blur-sm">
+                  <img src={setup.loginCircleLogoUrl || villageLogo} alt="Village Logo" className="h-16 w-16 rounded-2xl object-cover" />
+                </div>
+                <div>
+                  <div className="text-sm font-semibold uppercase tracking-[0.28em] text-white/65">Village Management</div>
+                  <h1 className="mt-2 text-[34px] font-black leading-tight text-white">{setup.villageName}</h1>
+                </div>
               </div>
-              <div className="mt-8 space-y-3 text-sm font-medium">
-                <div className="rounded-xl bg-white/15 border border-white/20 px-4 py-3">✔ จัดการข้อมูลลูกบ้านและบ้านเลขที่</div>
-                <div className="rounded-xl bg-white/15 border border-white/20 px-4 py-3">✔ แจ้งซ่อมและติดตามสถานะแบบออนไลน์</div>
-                <div className="rounded-xl bg-white/15 border border-white/20 px-4 py-3">✔ ชำระค่าส่วนกลางและตรวจสอบย้อนหลัง</div>
+
+              <p className="mt-10 max-w-[420px] text-[16px] leading-7 text-white/82">
+                จัดการข้อมูลลูกบ้าน การเงิน งานแจ้งซ่อม และประกาศสำคัญในระบบเดียวที่ทีมงานใช้งานได้จริงทุกวัน
+              </p>
+
+              <div className="mt-10 grid gap-4">
+                <div className="rounded-2xl border border-white/16 bg-white/10 px-5 py-4 backdrop-blur-sm">
+                  <div className="text-sm font-semibold text-white">ข้อมูลรวมอยู่ในที่เดียว</div>
+                  <div className="mt-1 text-sm leading-6 text-white/72">ตรวจสอบบ้าน รถ การชำระเงิน และประวัติการใช้งานได้รวดเร็ว</div>
+                </div>
+                <div className="rounded-2xl border border-white/16 bg-white/10 px-5 py-4 backdrop-blur-sm">
+                  <div className="text-sm font-semibold text-white">ออกแบบเพื่อการทำงานจริง</div>
+                  <div className="mt-1 text-sm leading-6 text-white/72">ลดขั้นตอนที่ซ้ำซ้อน ให้เจ้าหน้าที่โฟกัสกับงานบริการมากขึ้น</div>
+                </div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-3 gap-3 text-white">
+              <div className="rounded-2xl border border-white/14 bg-white/10 px-4 py-4 backdrop-blur-sm">
+                <div className="text-2xl font-black">24/7</div>
+                <div className="mt-1 text-xs text-white/70">Access</div>
+              </div>
+              <div className="rounded-2xl border border-white/14 bg-white/10 px-4 py-4 backdrop-blur-sm">
+                <div className="text-2xl font-black">1 View</div>
+                <div className="mt-1 text-xs text-white/70">Dashboard</div>
+              </div>
+              <div className="rounded-2xl border border-white/14 bg-white/10 px-4 py-4 backdrop-blur-sm">
+                <div className="text-2xl font-black">100%</div>
+                <div className="mt-1 text-xs text-white/70">Traceable</div>
               </div>
             </div>
           </div>
+        </section>
 
-          <div className="bg-white flex items-center justify-center px-6 py-10 sm:px-10">
-            <div className="w-full max-w-[460px]">
-              <div className="text-center lg:hidden mb-8">
-                <img src={setup.loginCircleLogoUrl || villageLogo} alt="Village Logo" className="w-16 h-16 mx-auto rounded-xl object-cover shadow" />
+        <section className="relative flex items-center justify-center bg-[linear-gradient(180deg,rgba(255,255,255,0.96)_0%,rgba(246,250,252,0.98)_100%)] px-5 py-8 sm:px-8 sm:py-10 lg:px-12">
+          <div className="absolute inset-x-0 top-0 h-32 bg-[radial-gradient(circle_at_top,rgba(13,148,136,0.08),transparent_68%)]" />
+          <div className="relative z-10 w-full max-w-[470px]">
+            <div className="mb-6 flex items-center gap-4 lg:hidden">
+              <div className="flex h-14 w-14 items-center justify-center overflow-hidden rounded-2xl bg-white shadow-[0_12px_28px_rgba(15,23,42,0.12)] ring-1 ring-slate-200">
+                <img src={setup.loginCircleLogoUrl || villageLogo} alt="Village Logo" className="h-11 w-11 rounded-xl object-cover" />
               </div>
+              <div>
+                <div className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-400">Village Management</div>
+                <div className="mt-1 text-lg font-extrabold text-slate-900">{setup.villageName}</div>
+              </div>
+            </div>
 
+            <div className="rounded-[28px] border border-slate-200/80 bg-white px-6 py-7 shadow-[0_22px_60px_rgba(15,23,42,0.10)] sm:px-8 sm:py-9">
               <div className="mb-8">
-                <h2 className="text-[42px] font-black text-[#0f172a] leading-none tracking-tight">เข้าสู่ระบบ</h2>
-                <p className="mt-3 text-[15px] text-slate-500">กรุณากรอกข้อมูลเพื่อเข้าใช้งานระบบ</p>
-                <div className="mt-4 h-[4px] w-20 rounded-full bg-gradient-to-r from-[#0f4570] to-[#0d968f]" />
+                <div className="inline-flex items-center rounded-full bg-[#eaf7f6] px-3 py-1 text-xs font-bold uppercase tracking-[0.22em] text-[#0f766e]">
+                  Sign in
+                </div>
+                <h2 className="mt-4 text-[38px] font-black leading-none tracking-tight text-slate-950">เข้าสู่ระบบ</h2>
+                <p className="mt-3 text-[15px] leading-7 text-slate-500">
+                  เข้าสู่ระบบเพื่อจัดการข้อมูลหมู่บ้าน ตรวจสอบรายการล่าสุด และติดตามงานที่สำคัญได้ทันที
+                </p>
               </div>
 
-              <form onSubmit={handleSubmit} className="space-y-4" noValidate>
+              <form onSubmit={handleSubmit} className="space-y-5" noValidate>
                 <div>
                   <label htmlFor="username" className="mb-2 block text-sm font-semibold text-slate-700">ชื่อผู้ใช้</label>
-                  <div className="relative">
-                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500">👤</span>
-                    <input
-                      id="username"
-                      type="text"
-                      value={username}
-                      onChange={e => setUsername(e.target.value)}
-                      required
-                      autoComplete="username"
-                      placeholder="ชื่อผู้ใช้"
-                      className="w-full rounded-[14px] border border-[#cfd9e3] bg-white px-11 py-[13px] text-[15px] text-slate-800 placeholder:text-slate-400 outline-none focus:border-[#0f6a7d] focus:ring-2 focus:ring-[#0f6a7d]/25"
-                    />
-                  </div>
+                  <input
+                    id="username"
+                    type="text"
+                    value={username}
+                    onChange={e => setUsername(e.target.value)}
+                    required
+                    autoComplete="username"
+                    placeholder="กรอกชื่อผู้ใช้"
+                    className="w-full rounded-2xl border border-slate-300 bg-slate-50 px-4 py-[14px] text-[15px] text-slate-900 placeholder:text-slate-400 outline-none transition focus:border-[#0f766e] focus:bg-white focus:ring-4 focus:ring-[#0f766e]/10"
+                  />
                 </div>
 
                 <div>
-                  <label htmlFor="password" className="mb-2 block text-sm font-semibold text-slate-700">รหัสผ่าน</label>
+                  <div className="mb-2 flex items-center justify-between">
+                    <label htmlFor="password" className="block text-sm font-semibold text-slate-700">รหัสผ่าน</label>
+                    <button type="button" className="text-sm font-semibold text-[#0f766e] hover:text-[#0b5b55]" onClick={handleForgotPassword}>ลืมรหัสผ่าน?</button>
+                  </div>
                   <div className="relative">
-                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500">🔒</span>
                     <input
                       id="password"
                       type={showPass ? 'text' : 'password'}
@@ -144,15 +189,15 @@ export default function LoginPage() {
                       onKeyDown={handlePasswordKeyState}
                       required
                       autoComplete="current-password"
-                      placeholder="รหัสผ่าน"
-                      className="w-full rounded-[14px] border border-[#cfd9e3] bg-white px-11 py-[13px] pr-14 text-[15px] text-slate-800 placeholder:text-slate-400 outline-none focus:border-[#0f6a7d] focus:ring-2 focus:ring-[#0f6a7d]/25"
+                      placeholder="กรอกรหัสผ่าน"
+                      className="w-full rounded-2xl border border-slate-300 bg-slate-50 px-4 py-[14px] pr-14 text-[15px] text-slate-900 placeholder:text-slate-400 outline-none transition focus:border-[#0f766e] focus:bg-white focus:ring-4 focus:ring-[#0f766e]/10"
                     />
                     <button
                       type="button"
                       onClick={() => setShowPass(v => !v)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 h-9 w-9 rounded-lg text-lg text-slate-500 hover:bg-slate-100 hover:text-slate-700"
-                      title="แสดงรหัสผ่าน"
-                      aria-label="แสดงรหัสผ่าน"
+                      className="absolute right-3 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-xl text-lg text-slate-500 transition hover:bg-slate-100 hover:text-slate-700"
+                      title={showPass ? 'ซ่อนรหัสผ่าน' : 'แสดงรหัสผ่าน'}
+                      aria-label={showPass ? 'ซ่อนรหัสผ่าน' : 'แสดงรหัสผ่าน'}
                     >
                       {showPass ? '🙈' : '👁️'}
                     </button>
@@ -160,26 +205,23 @@ export default function LoginPage() {
                 </div>
 
                 {capsLockOn && (
-                  <div className="rounded-xl border border-amber-300 bg-amber-50 px-4 py-2 text-sm text-amber-700">
-                    เปิด Caps Lock อยู่ อาจทำให้รหัสผ่านผิด
+                  <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-medium text-amber-800" role="status" aria-live="polite">
+                    เปิด Caps Lock อยู่ อาจทำให้รหัสผ่านไม่ถูกต้อง
                   </div>
                 )}
 
-                <div className="flex items-center justify-between text-sm">
-                  <label className="inline-flex items-center gap-2 text-slate-600 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={rememberMe}
-                      onChange={(e) => setRememberMe(e.target.checked)}
-                      className="h-4 w-4 rounded border-slate-300 text-[#0f6a7d] focus:ring-[#0f6a7d]"
-                    />
-                    Remember me
-                  </label>
-                  <button type="button" className="font-semibold text-[#0f6a7d] hover:text-[#0b5464]" onClick={handleForgotPassword}>Forgot password?</button>
-                </div>
+                <label className="flex items-center gap-3 text-sm text-slate-600 cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={rememberMe}
+                    onChange={(e) => setRememberMe(e.target.checked)}
+                    className="h-4 w-4 rounded border-slate-300 text-[#0f766e] focus:ring-[#0f766e]"
+                  />
+                  จดจำชื่อผู้ใช้ในอุปกรณ์นี้
+                </label>
 
                 {error && (
-                  <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700" role="alert">
+                  <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-medium leading-6 text-rose-700" role="alert">
                     {error}
                   </div>
                 )}
@@ -187,21 +229,19 @@ export default function LoginPage() {
                 <button
                   type="submit"
                   disabled={submitting || !username || !password}
-                  className="mt-2 w-full rounded-[14px] bg-gradient-to-r from-[#0f4570] to-[#0d968f] py-[14px] text-[21px] font-extrabold tracking-tight text-white shadow-[0_12px_24px_rgba(15,106,125,0.35)] transition hover:brightness-110 hover:shadow-[0_16px_28px_rgba(15,106,125,0.42)] disabled:cursor-not-allowed disabled:opacity-50"
+                  className="w-full rounded-2xl bg-[linear-gradient(135deg,#0f3f66_0%,#0f766e_100%)] px-4 py-[15px] text-[19px] font-extrabold tracking-tight text-white shadow-[0_18px_36px_rgba(15,118,110,0.24)] transition hover:-translate-y-0.5 hover:brightness-105 hover:shadow-[0_22px_40px_rgba(15,118,110,0.28)] disabled:translate-y-0 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   {submitting ? 'กำลังเข้าสู่ระบบ...' : 'เข้าสู่ระบบ'}
                 </button>
               </form>
 
-              <div className="mt-8 text-center text-[11px] text-slate-400">
-                © 2026 {setup.villageName} · v{APP_VERSION}
-              </div>
-              <div className="mt-1 text-center text-[10px] text-slate-300">
-                build {BUILD_SHA} · {BUILD_DATE}
+              <div className="mt-8 border-t border-slate-100 pt-5 text-center">
+                <div className="text-[11px] text-slate-400">© 2026 {setup.villageName} · v{APP_VERSION}</div>
+                <div className="mt-1 text-[10px] text-slate-300">build {BUILD_SHA} · {BUILD_DATE}</div>
               </div>
             </div>
           </div>
-        </div>
+        </section>
       </div>
     </div>
   )
