@@ -770,6 +770,14 @@
   padding: 16px;
 }
 
+.houses-compact .ph + .card {
+  margin-top: 12px;
+}
+
+.houses-compact .ph + .houses-filter-row + .card {
+  margin-top: 12px;
+}
+
 .houses-compact .ph-h1 {
   font-size: 20px;
 }
