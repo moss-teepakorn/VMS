@@ -104,20 +104,31 @@ export default function AdminReportPayments() {
   }
 
   return (
-    <div>
-      <div style={{ display: 'flex', gap: 12, alignItems: 'center', marginBottom: 16, flexWrap: 'wrap' }}>
+    <div className="pane on houses-compact reports-compact">
+      <div className="ph">
+        <div className="ph-in">
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <div className="ph-ico">💳</div>
+            <div>
+              <div className="ph-h1">รายงานการชำระเงิน</div>
+              <div className="ph-sub">รายการรับชำระค่าส่วนกลาง (ข้อมูลจริง)</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div className="houses-filter-row" style={{ marginBottom: 16 }}>
         <label>เดือนเริ่มต้น
-          <select value={startMonth} onChange={e => setStartMonth(Number(e.target.value))}>
+          <select value={startMonth} onChange={e => setStartMonth(Number(e.target.value))} className="houses-filter-select">
             {monthOptions.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
           </select>
         </label>
         <label>ถึงเดือน
-          <select value={endMonth} onChange={e => setEndMonth(Number(e.target.value))}>
+          <select value={endMonth} onChange={e => setEndMonth(Number(e.target.value))} className="houses-filter-select">
             {monthOptions.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
           </select>
         </label>
         <label>ปี
-          <select value={year} onChange={e => setYear(Number(e.target.value))}>
+          <select value={year} onChange={e => setYear(Number(e.target.value))} className="houses-filter-select">
             {yearOptions.map(y => <option key={y} value={y}>{y + 543}</option>)}
           </select>
         </label>
@@ -125,10 +136,6 @@ export default function AdminReportPayments() {
         {touched && error && <span style={{ color: 'red', marginLeft: 8 }}>{error}</span>}
       </div>
       <ReportMockPage
-        icon="💳"
-        title="รายงานการชำระเงิน"
-        subtitle="รายการรับชำระค่าส่วนกลาง (ข้อมูลจริง)"
-        fileName="payment-report"
         columns={columns}
         rows={rows}
         loading={loading}
