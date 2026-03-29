@@ -697,18 +697,18 @@ button, input, select, textarea {
 .pane.on {
   width: 100%;
   display: block;
-  padding: 8px;
+  padding: 8px 8px 32px;
 }
 
 @media(min-width: 640px) {
   .pane.on {
-    padding: 10px;
+    padding: 10px 10px 36px;
   }
 }
 
 @media(min-width: 1024px) {
   .pane.on {
-    padding: 12px;
+    padding: 12px 12px 40px;
   }
 }
 
