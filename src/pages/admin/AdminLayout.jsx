@@ -27,7 +27,6 @@ const AdminLayout = () => {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(() => localStorage.getItem('vms-sidebar-collapsed') === '1')
   const [theme, setTheme] = useState(localStorage.getItem('vms-theme') || 'normal')
   const [setupOpen, setSetupOpen] = useState(false)
-  const [menuSearch, setMenuSearch] = useState('')
   const [sectionOpen, setSectionOpen] = useState({
     หน้าหลัก: true,
     จัดการ: false,
@@ -186,20 +185,7 @@ const AdminLayout = () => {
     return location.pathname === path
   }
 
-  const searchKeyword = menuSearch.trim().toLowerCase()
   const visibleNavSections = navItems
-    .map((section) => {
-      if (!searchKeyword) return section
-      const matchedItems = section.items.filter((item) => (
-        String(item.label || '').toLowerCase().includes(searchKeyword)
-        || String(item.path || '').toLowerCase().includes(searchKeyword)
-      ))
-      return {
-        ...section,
-        items: matchedItems,
-      }
-    })
-    .filter((section) => section.items.length > 0)
 
   // Modal functions
   const openModal = (title, fields = {}, callback = null) => {
@@ -257,22 +243,12 @@ const AdminLayout = () => {
 
         {/* Navigation */}
         <div style={{ display: 'flex', flexDirection: 'column', flex: 1, overflow: 'hidden', minHeight: 0 }}>
-          <div className="sb-search-wrap">
-            <input
-              className="sb-search-input"
-              type="text"
-              placeholder="ค้นหาเมนู..."
-              value={menuSearch}
-              onChange={(e) => setMenuSearch(e.target.value)}
-            />
-          </div>
-
           {/* Menu Sections */}
           <nav className="sb-nav">
             {visibleNavSections.map((section) => (
               <div key={section.section} className="sb-major-group">
                 {(() => {
-                  const expanded = sidebarCollapsed || Boolean(searchKeyword) || Boolean(sectionOpen[section.section])
+                  const expanded = sidebarCollapsed || Boolean(sectionOpen[section.section])
                   return (
                 <>
                 <button
