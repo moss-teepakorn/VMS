@@ -81,6 +81,19 @@ const AdminDashboard = () => {
       bg2: getVar('--bg2', '#F1F5F9'),
     }
 
+    const pastel = {
+      mint: '#A8E6CF',
+      peach: '#FFD3B6',
+      rose: '#FFAAA5',
+      lavender: '#D8C4F0',
+      sky: '#BDE0FE',
+      lemon: '#FFF1B6',
+      teal: '#9ADBCB',
+      coral: '#F8B4B4',
+      periwinkle: '#C7CEEA',
+      violet: '#CDB4DB',
+    }
+
     chartInstancesRef.current.forEach((chart) => chart.destroy())
     chartInstancesRef.current = []
 
@@ -97,14 +110,14 @@ const AdminDashboard = () => {
             {
               label: 'ยอดเก็บได้',
               data: data.paymentTrend.map((item) => item.collected),
-              backgroundColor: palette.accent,
+              backgroundColor: pastel.mint,
               borderRadius: 6,
               maxBarThickness: 26,
             },
             {
               label: 'ยอดค้าง',
               data: data.paymentTrend.map((item) => item.outstanding),
-              backgroundColor: palette.danger,
+              backgroundColor: pastel.rose,
               borderRadius: 6,
               maxBarThickness: 26,
             },
@@ -143,7 +156,7 @@ const AdminDashboard = () => {
                 data.houseStatus.suspended,
                 data.houseStatus.lawsuit,
               ],
-              backgroundColor: [palette.accent, palette.warning, '#EF4444', '#A855F7'],
+              backgroundColor: [pastel.mint, pastel.peach, pastel.coral, pastel.violet],
               borderColor: palette.card,
               borderWidth: 2,
             },
@@ -171,18 +184,19 @@ const AdminDashboard = () => {
             {
               label: 'ยอดเก็บได้',
               data: data.quarterlyTrend.map((item) => item.paid),
-              borderColor: palette.primary,
-              backgroundColor: palette.primaryLight,
-              pointBackgroundColor: palette.primary,
+              borderColor: pastel.sky,
+              backgroundColor: pastel.sky,
+              pointBackgroundColor: pastel.sky,
               fill: true,
               tension: 0.28,
             },
             {
               label: 'ยอดค้าง',
               data: data.quarterlyTrend.map((item) => item.outstanding),
-              borderColor: palette.warning,
-              backgroundColor: 'transparent',
-              pointBackgroundColor: palette.warning,
+              borderColor: pastel.peach,
+              backgroundColor: pastel.peach,
+              pointBackgroundColor: pastel.peach,
+              fill: true,
               tension: 0.28,
             },
           ],
@@ -214,12 +228,12 @@ const AdminDashboard = () => {
             {
               data: issueData.map((item) => item.count),
               backgroundColor: [
-                palette.warning,
-                palette.danger,
-                palette.primary,
-                '#7C3AED',
-                '#06B6D4',
-                '#4B5563',
+                pastel.peach,
+                pastel.rose,
+                pastel.sky,
+                pastel.violet,
+                pastel.teal,
+                pastel.periwinkle,
               ],
               borderColor: palette.card,
               borderWidth: 2,
