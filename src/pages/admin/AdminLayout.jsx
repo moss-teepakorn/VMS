@@ -28,7 +28,7 @@ const AdminLayout = () => {
   const [setupOpen, setSetupOpen] = useState(false)
   const [menuSearch, setMenuSearch] = useState('')
   const [sectionOpen, setSectionOpen] = useState({
-    หน้าหลัก: false,
+    หน้าหลัก: true,
     จัดการ: false,
     ระบบ: false,
   })
