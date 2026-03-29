@@ -510,6 +510,10 @@ export async function calculateOverdueFeeCharges(feeId, setup) {
     throw new Error('ใบแจ้งหนี้ชำระแล้ว ไม่สามารถคำนวณค่าปรับได้')
   }
 
+  if (fee.status === 'cancelled') {
+    throw new Error('ใบแจ้งหนี้ถูกยกเลิกโดยระบบ ไม่สามารถคำนวณค่าปรับได้')
+  }
+
   const updatePayload = buildOverdueUpdatePayload(fee, setup)
 
   if (!updatePayload) {
@@ -546,6 +550,11 @@ export async function calculateOverdueFeesBulk({ year, setup } = {}) {
   for (const fee of data || []) {
     if (fee.status === 'paid') {
       skippedPaid += 1
+      continue
+    }
+
+    if (fee.status === 'cancelled') {
+      skippedNotDue += 1
       continue
     }
 
@@ -592,6 +601,11 @@ export async function calculateOverdueFeesByIds({ feeIds, setup } = {}) {
   for (const fee of data || []) {
     if (fee.status === 'paid') {
       skippedPaid += 1
+      continue
+    }
+
+    if (fee.status === 'cancelled') {
+      skippedNotDue += 1
       continue
     }
 
