@@ -244,6 +244,8 @@
   z-index: 1;
   display: flex;
   align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
 }
 
 .ph-ico {
@@ -291,6 +293,9 @@
   gap: 8px;
   flex-wrap: wrap;
   align-items: center;
+  margin-left: auto;
+  justify-content: flex-end;
+  text-align: right;
 }
 
 /* ═════════════════════════════════════════════════
@@ -1735,6 +1740,9 @@
 
   .ph-acts {
     width: 100%;
+    margin-left: 0;
+    justify-content: flex-start;
+    text-align: left;
   }
 
   .stats {
