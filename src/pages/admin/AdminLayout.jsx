@@ -27,6 +27,7 @@ const AdminLayout = () => {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(() => localStorage.getItem('vms-sidebar-collapsed') === '1')
   const [theme, setTheme] = useState(localStorage.getItem('vms-theme') || 'normal')
   const [setupOpen, setSetupOpen] = useState(false)
+  const [menuSearch, setMenuSearch] = useState('')
   const [sectionOpen, setSectionOpen] = useState({
     หน้าหลัก: true,
     จัดการ: false,
@@ -102,14 +103,14 @@ const AdminLayout = () => {
 
   // Navigation menu items (from concept.html)
   const navItems = [
-    { section: 'หน้าหลัก', sectionIcon: '>', items: [
+    { section: 'หน้าหลัก', tone: 'core', sectionIcon: '🏠', items: [
       { id: 'dash', label: 'Dashboard', icon: '📊', path: '/admin/dashboard' },
       { id: 'houses', label: 'ข้อมูลบ้าน', icon: '🏠', path: '/admin/houses' },
       { id: 'vehicles', label: 'ข้อมูลรถ', icon: '🚗', path: '/admin/vehicles' },
       { id: 'fees', label: 'ค่าส่วนกลาง', icon: '💰', path: '/admin/fees' },
       { id: 'payments', label: 'จ่ายค่าส่วนกลาง', icon: '💳', path: '/admin/payments' },
     ]},
-    { section: 'จัดการ', sectionIcon: '>', items: [
+    { section: 'จัดการ', tone: 'operation', sectionIcon: '⚙️', items: [
       { id: 'req', label: 'คำขอแก้ไข', icon: '📝', path: '/admin/requests', badge: '7' },
       { id: 'issues', label: 'จัดการปัญหา', icon: '🔧', path: '/admin/issues', badge: '3' },
       { id: 'vio', label: 'แจ้งกระทำผิด', icon: '⚠️', path: '/admin/violations' },
@@ -118,13 +119,13 @@ const AdminLayout = () => {
       { id: 'tech', label: 'ทำเนียบช่าง', icon: '🔨', path: '/admin/technicians' },
       { id: 'market', label: 'ตลาดชุมชน', icon: '🛒', path: '/admin/marketplace' },
     ]},
-    { section: 'รายงาน', sectionIcon: '>', items: [
+    { section: 'รายงาน', tone: 'insight', sectionIcon: '📊', items: [
       { id: 'rpt-payments', label: 'รายงานการชำระเงิน', icon: '📄', path: '/admin/reports/payments' },
       { id: 'rpt-overdue', label: 'รายงานค้างชำระ', icon: '📄', path: '/admin/reports/overdue' },
       { id: 'rpt-expense', label: 'รายงานการจ่ายเงินออก', icon: '📄', path: '/admin/reports/expense-payments' },
       { id: 'rpt-violations', label: 'สรุปการกระทำผิด', icon: '📄', path: '/admin/reports/violations-summary' },
     ]},
-    { section: 'ตั้งค่าระบบ', sectionIcon: '>', items: [
+    { section: 'ตั้งค่าระบบ', tone: 'system', sectionIcon: '🔧', items: [
       { id: 'cfg', label: 'ตั้งค่าระบบ', icon: '⚙️', path: '/admin/config' },
       { id: 'usr', label: 'ผู้ใช้งาน', icon: '👥', path: '/admin/users' },
       { id: 'login-logs', label: 'ประวัติการใช้ระบบ', icon: '🔐', path: '/admin/login-logs' },
@@ -185,7 +186,22 @@ const AdminLayout = () => {
     return location.pathname === path
   }
 
+  const searchKeyword = menuSearch.trim().toLowerCase()
   const visibleNavSections = navItems
+    .map((section) => {
+      if (!searchKeyword) return section
+      const matchedItems = section.items.filter((item) => (
+        String(item.label || '').toLowerCase().includes(searchKeyword)
+        || String(item.path || '').toLowerCase().includes(searchKeyword)
+      ))
+      const sectionMatch = String(section.section || '').toLowerCase().includes(searchKeyword)
+      if (sectionMatch) return section
+      return {
+        ...section,
+        items: matchedItems,
+      }
+    })
+    .filter((section) => section.items.length > 0)
 
   // Modal functions
   const openModal = (title, fields = {}, callback = null) => {
@@ -243,19 +259,33 @@ const AdminLayout = () => {
 
         {/* Navigation */}
         <div style={{ display: 'flex', flexDirection: 'column', flex: 1, overflow: 'hidden', minHeight: 0 }}>
+          <div className="sb-search-wrap">
+            <div className="sb-search-input-wrap">
+              <span className="sb-search-icon">🔍</span>
+              <input
+                className="sb-search-input"
+                type="text"
+                placeholder="ค้นหาเมนู / ลูกบ้าน / บ้านเลขที่..."
+                value={menuSearch}
+                onChange={(e) => setMenuSearch(e.target.value)}
+              />
+            </div>
+          </div>
+
           {/* Menu Sections */}
           <nav className="sb-nav">
             {visibleNavSections.map((section) => (
-              <div key={section.section} className="sb-major-group">
+              <div key={section.section} className={`sb-major-group tone-${section.tone || 'default'}`}>
                 {(() => {
-                  const expanded = sidebarCollapsed || Boolean(sectionOpen[section.section])
+                  const expanded = sidebarCollapsed || Boolean(searchKeyword) || Boolean(sectionOpen[section.section])
                   return (
                 <>
                 <button
                   type="button"
-                  className="sb-sec sb-sec-btn"
+                  className={`sb-sec sb-sec-btn tone-${section.tone || 'default'}`}
                   onClick={() => toggleSection(section.section)}
                   aria-expanded={expanded}
+                  title={section.section}
                 >
                   <span className="sb-sec-left">
                     <span className="sb-sec-ico">{section.sectionIcon || '>'}</span>
@@ -268,8 +298,9 @@ const AdminLayout = () => {
                 {section.items.map((item) => (
                   <div
                     key={item.id}
-                    className={`sb-item ${isNavItemActive(item.path) ? 'act' : ''}`}
+                    className={`sb-item ${isNavItemActive(item.path) ? 'act' : ''} ${section.tone === 'core' ? 'core-item' : ''}`}
                     onClick={() => handleNavClick(item.path)}
+                    title={item.label}
                   >
                     <span className="sb-ico">{item.icon}</span>
                     <span className="sb-label">{item.label}</span>
@@ -288,11 +319,11 @@ const AdminLayout = () => {
           {/* Account + Logout Card */}
           <div className="sb-foot">
             <div className="sb-account-card">
-              <div className="sb-role">
+              <div className="sb-user" onClick={() => handleNavClick('/admin/settings')} title="โปรไฟล์ผู้ใช้">
                 <span className="sb-role-dot"></span>
                 <span className="sb-role-txt">{roleLabel(profile?.role)}</span>
               </div>
-              <div className="sb-logout" onClick={handleLogout}>
+              <div className="sb-logout sb-logout-danger" onClick={handleLogout} title="ออกจากระบบ">
                 <span style={{ fontSize: '18px' }}>🚪</span>
                 <span className="sb-logout-label">ออกจากระบบ</span>
               </div>

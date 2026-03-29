@@ -280,7 +280,7 @@ button, input, select, textarea {
   position: fixed;
   height: 100vh;
   min-height: 100vh;
-  background: var(--sb);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--sb) 86%, #0f172a 14%) 0%, color-mix(in srgb, var(--sb) 76%, #111827 24%) 100%);
   color: var(--sbt);
   display: flex;
   flex-direction: column;
@@ -710,11 +710,11 @@ button, input, select, textarea {
 
 /* Sidebar Logo */
 .sb-logo {
-  padding: 16px 12px;
+  padding: 18px 14px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.15);
   display: flex;
   align-items: center;
-  gap: 11px;
+  gap: 12px;
   flex-shrink: 0;
 }
 
@@ -820,17 +820,30 @@ button, input, select, textarea {
 }
 
 .sb-search-wrap {
-  padding: 0 12px 8px;
+  padding: 10px 12px 10px;
   flex-shrink: 0;
+}
+
+.sb-search-input-wrap {
+  position: relative;
+}
+
+.sb-search-icon {
+  position: absolute;
+  left: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 13px;
+  opacity: .85;
 }
 
 .sb-search-input {
   width: 100%;
-  border: 1px solid rgba(255, 255, 255, 0.25);
-  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  background: rgba(255, 255, 255, 0.22);
   color: #fff;
-  border-radius: 9px;
-  padding: 8px 10px;
+  border-radius: 12px;
+  padding: 10px 10px 10px 32px;
   font-size: 12px;
 }
 
@@ -847,7 +860,7 @@ button, input, select, textarea {
 /* Navigation */
 .sb-nav {
   flex: 1;
-  padding: 6px 10px;
+  padding: 8px 10px 12px;
   overflow-y: auto;
   overflow-x: hidden;
 }
@@ -872,14 +885,32 @@ button, input, select, textarea {
 
 .sb-sec-btn {
   width: 100%;
-  border: 1px solid rgba(255,255,255,.2);
-  background: rgba(255,255,255,.1);
-  border-radius: 10px;
+  border: 1px solid rgba(255,255,255,.24);
+  background: rgba(255,255,255,.12);
+  border-radius: 12px;
   display: flex;
   align-items: center;
   justify-content: space-between;
   cursor: pointer;
   transition: all var(--tr);
+  min-height: 42px;
+}
+
+.sb-sec-btn.tone-core {
+  background: rgba(125, 211, 252, 0.2);
+  border-color: rgba(125, 211, 252, 0.4);
+}
+
+.sb-sec-btn.tone-operation {
+  background: rgba(251, 191, 36, 0.14);
+}
+
+.sb-sec-btn.tone-insight {
+  background: rgba(110, 231, 183, 0.14);
+}
+
+.sb-sec-btn.tone-system {
+  background: rgba(196, 181, 253, 0.14);
 }
 
 .sb-sec-btn:hover {
@@ -930,30 +961,31 @@ button, input, select, textarea {
 .sb-major-group {
   display: grid;
   gap: 6px;
-  margin-bottom: 8px;
+  margin-bottom: 14px;
 }
 
 .sb-submenu-wrap {
   border-left: 2px solid rgba(255,255,255,.2);
-  margin-left: 10px;
-  padding-left: 8px;
+  margin-left: 12px;
+  padding-left: 10px;
   display: grid;
-  gap: 3px;
+  gap: 8px;
 }
 
 .sb-item {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 8px 9px;
-  border-radius: 9px;
+  padding: 10px 10px;
+  border-radius: 12px;
   color: var(--sbm);
   text-decoration: none;
   cursor: pointer;
   transition: background var(--tr), color var(--tr), transform var(--tr), box-shadow var(--tr);
   position: relative;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 700;
+  min-height: 42px;
 }
 
 .sb-item:hover {
@@ -964,9 +996,9 @@ button, input, select, textarea {
 }
 
 .sb-item.act {
-  background: linear-gradient(90deg, rgba(255,255,255,.34) 0%, rgba(255,255,255,.2) 100%);
+  background: linear-gradient(90deg, rgba(125, 211, 252, .4) 0%, rgba(255,255,255,.2) 100%);
   color: var(--sbt);
-  font-weight: 700;
+  font-weight: 800;
   box-shadow: inset 0 0 0 1px rgba(255,255,255,.2), 0 8px 18px rgba(0,0,0,.2);
 }
 
@@ -988,8 +1020,8 @@ button, input, select, textarea {
 }
 
 .sb-item.act::before {
-  background: #6EE7B7;
-  box-shadow: 0 0 8px rgba(110, 231, 183, 0.8);
+  background: #67e8f9;
+  box-shadow: 0 0 10px rgba(103, 232, 249, 0.9);
 }
 
 .sb-ico {
@@ -1001,18 +1033,32 @@ button, input, select, textarea {
 
 /* Sidebar Footer */
 .sb-foot {
-  padding: 12px;
+  padding: 14px 12px;
   border-top: 1px solid rgba(255, 255, 255, 0.15);
   flex-shrink: 0;
 }
 
 .sb-account-card {
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  border-radius: 12px;
-  background: rgba(255, 255, 255, 0.08);
-  padding: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.1);
+  padding: 10px;
   display: grid;
-  gap: 8px;
+  gap: 10px;
+}
+
+.sb-user {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px;
+  border-radius: 12px;
+  background: rgba(255,255,255,.1);
+  cursor: pointer;
+}
+
+.sb-user:hover {
+  background: rgba(255,255,255,.2);
 }
 
 .sb-user {
@@ -1074,6 +1120,17 @@ button, input, select, textarea {
   border: none;
 }
 
+.sb-logout.sb-logout-danger {
+  background: rgba(220, 38, 38, 0.16);
+  border: 1px solid rgba(248, 113, 113, 0.35);
+  color: #fecaca;
+}
+
+.sb-logout.sb-logout-danger:hover {
+  background: rgba(220, 38, 38, 0.24);
+  color: #ffffff;
+}
+
 .sb-logout:hover {
   background: var(--sbhv);
   color: var(--sbt);
@@ -1123,6 +1180,7 @@ button, input, select, textarea {
   }
 
   .sidebar.collapsed .sb-logo-name,
+  .sidebar.collapsed .sb-user,
   .sidebar.collapsed .sb-role-txt,
   .sidebar.collapsed .sb-search-wrap,
   .sidebar.collapsed .sb-sec-title,
