@@ -433,6 +433,10 @@ create policy "resident_insert_own_payment_items" on payment_items
         and p.house_id = (select house_id from profiles where id = auth.uid())
     )
   );
+create policy "payment_items_open_access" on payment_items
+  for all to public
+  using (true)
+  with check (true);
 create policy "resident_own_issues" on issues
   for all using (
     house_id = (select house_id from profiles where id = auth.uid())

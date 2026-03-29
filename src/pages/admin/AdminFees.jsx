@@ -1261,11 +1261,27 @@ const AdminFees = () => {
   const togglePaymentItem = (itemKey, checked) => {
     setPaymentForm((prev) => {
       const exists = prev.selectedItems.includes(itemKey)
+      const baseItem = payableFeeItems.find((item) => item.key === itemKey)
+      const fullAmount = Number(baseItem?.amount || 0)
       if (checked && !exists) {
-        return { ...prev, selectedItems: [...prev.selectedItems, itemKey] }
+        return {
+          ...prev,
+          selectedItems: [...prev.selectedItems, itemKey],
+          itemAmounts: {
+            ...prev.itemAmounts,
+            [itemKey]: fullAmount,
+          },
+        }
       }
       if (!checked && exists) {
-        return { ...prev, selectedItems: prev.selectedItems.filter((key) => key !== itemKey) }
+        return {
+          ...prev,
+          selectedItems: prev.selectedItems.filter((key) => key !== itemKey),
+          itemAmounts: {
+            ...prev.itemAmounts,
+            [itemKey]: 0,
+          },
+        }
       }
       return prev
     })
@@ -1291,14 +1307,21 @@ const AdminFees = () => {
       ...prev,
       selectedItems: payableFeeItems.map((item) => item.key),
       itemAmounts: payableFeeItems.reduce((acc, item) => {
-        acc[item.key] = Number(prev.itemAmounts?.[item.key] ?? item.amount)
+        acc[item.key] = Number(item.amount || 0)
         return acc
       }, {}),
     }))
   }
 
   const clearPaymentItems = () => {
-    setPaymentForm((prev) => ({ ...prev, selectedItems: [] }))
+    setPaymentForm((prev) => ({
+      ...prev,
+      selectedItems: [],
+      itemAmounts: payableFeeItems.reduce((acc, item) => {
+        acc[item.key] = 0
+        return acc
+      }, {}),
+    }))
   }
 
   const selectBasePaymentItems = () => {
@@ -1376,6 +1399,7 @@ const AdminFees = () => {
         paid_at: paymentForm.paid_at,
         note: noteParts.join(' | '),
         payment_items: selectedItemsMeta,
+        setFeeStatusFromAmount: true,
       })
 
       setShowPaymentModal(false)

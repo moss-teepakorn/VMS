@@ -467,11 +467,27 @@ export default function AdminPayments() {
   const toggleReceiveItem = (itemKey, checked) => {
     setReceiveForm((prev) => {
       const exists = prev.selectedItems.includes(itemKey)
+      const baseItem = receivePayableItems.find((item) => item.key === itemKey)
+      const fullAmount = Number(baseItem?.amount || 0)
       if (checked && !exists) {
-        return { ...prev, selectedItems: [...prev.selectedItems, itemKey] }
+        return {
+          ...prev,
+          selectedItems: [...prev.selectedItems, itemKey],
+          itemAmounts: {
+            ...prev.itemAmounts,
+            [itemKey]: fullAmount,
+          },
+        }
       }
       if (!checked && exists) {
-        return { ...prev, selectedItems: prev.selectedItems.filter((key) => key !== itemKey) }
+        return {
+          ...prev,
+          selectedItems: prev.selectedItems.filter((key) => key !== itemKey),
+          itemAmounts: {
+            ...prev.itemAmounts,
+            [itemKey]: 0,
+          },
+        }
       }
       return prev
     })
@@ -497,14 +513,21 @@ export default function AdminPayments() {
       ...prev,
       selectedItems: receivePayableItems.map((item) => item.key),
       itemAmounts: receivePayableItems.reduce((acc, item) => {
-        acc[item.key] = Number(prev.itemAmounts?.[item.key] ?? item.amount)
+        acc[item.key] = Number(item.amount || 0)
         return acc
       }, {}),
     }))
   }
 
   const clearReceiveItems = () => {
-    setReceiveForm((prev) => ({ ...prev, selectedItems: [] }))
+    setReceiveForm((prev) => ({
+      ...prev,
+      selectedItems: [],
+      itemAmounts: receivePayableItems.reduce((acc, item) => {
+        acc[item.key] = 0
+        return acc
+      }, {}),
+    }))
   }
 
   const handleChangeReceiveSlip = (event) => {

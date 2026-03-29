@@ -932,15 +932,23 @@ export async function createPayment(payload) {
       .from('payment_items')
       .insert(itemRows)
 
-    if (itemError) throw itemError
+    if (itemError) {
+      const message = String(itemError?.message || '')
+      const isRlsError = /row-level security|policy|unauthorized|401/i.test(message)
+      if (!isRlsError) throw itemError
+      console.warn('payment_items insert blocked by RLS. Payment is saved but item rows were skipped.', itemError)
+      data.payment_items = []
+    }
 
-    const { data: insertedItems, error: itemReadError } = await supabase
-      .from('payment_items')
-      .select('id, item_key, item_label, due_amount, paid_amount, outstanding_amount')
-      .eq('payment_id', data.id)
+    if (!data.payment_items) {
+      const { data: insertedItems, error: itemReadError } = await supabase
+        .from('payment_items')
+        .select('id, item_key, item_label, due_amount, paid_amount, outstanding_amount')
+        .eq('payment_id', data.id)
 
-    if (itemReadError) throw itemReadError
-    data.payment_items = insertedItems || []
+      if (itemReadError) throw itemReadError
+      data.payment_items = insertedItems || []
+    }
   }
 
   if (payload.fee_id) {
