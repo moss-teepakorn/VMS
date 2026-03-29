@@ -1,13 +1,14 @@
-import React, { useEffect, useState } from 'react'
+import React, { useState } from 'react'
 import ReportMockPage from './reports/ReportMockPage'
 import { listPayments } from '../../lib/fees'
 
 const columns = [
   { key: 'docNo', label: 'เลขที่เอกสาร' },
   { key: 'houseNo', label: 'บ้านเลขที่' },
+  { key: 'ownerName', label: 'ชื่อ สกุล' },
   { key: 'period', label: 'งวด' },
   { key: 'amount', label: 'ยอดชำระ' },
-  { key: 'method', label: 'ช่องทาง' },
+  { key: 'method', label: 'ช่องทางชำระ' },
   { key: 'paidAt', label: 'วันที่ชำระ' },
 ]
 
@@ -19,49 +20,121 @@ function formatPeriod(period, year) {
   return `${period}/${year + 543}`
 }
 
+function getCurrentMonth() {
+  const now = new Date()
+  return now.getMonth() + 1
+}
+function getCurrentYear() {
+  const now = new Date()
+  return now.getFullYear()
+}
+
+const monthOptions = [
+  { value: 1, label: 'มกราคม' },
+  { value: 2, label: 'กุมภาพันธ์' },
+  { value: 3, label: 'มีนาคม' },
+  { value: 4, label: 'เมษายน' },
+  { value: 5, label: 'พฤษภาคม' },
+  { value: 6, label: 'มิถุนายน' },
+  { value: 7, label: 'กรกฎาคม' },
+  { value: 8, label: 'สิงหาคม' },
+  { value: 9, label: 'กันยายน' },
+  { value: 10, label: 'ตุลาคม' },
+  { value: 11, label: 'พฤศจิกายน' },
+  { value: 12, label: 'ธันวาคม' },
+]
+
 export default function AdminReportPayments() {
   const [rows, setRows] = useState([])
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [startMonth, setStartMonth] = useState(getCurrentMonth())
+  const [endMonth, setEndMonth] = useState(getCurrentMonth())
+  const [year, setYear] = useState(getCurrentYear())
+  const [touched, setTouched] = useState(false)
 
-  useEffect(() => {
-    let mounted = true
-    setLoading(true)
+  const handleShowReport = async () => {
+    setTouched(true)
     setError('')
-    listPayments()
-      .then((data) => {
-        if (!mounted) return
-        setRows(
-          (data || []).map((p) => ({
-            id: p.id,
-            docNo: p.fees?.id ? `PAY-${String(p.fees.id).slice(-6).padStart(6, '0')}` : '-',
-            houseNo: p.houses?.house_no || '-',
-            period: formatPeriod(p.fees?.period, p.fees?.year),
-            amount: Number(p.amount || 0).toLocaleString(),
-            method: p.payment_method || '-',
-            paidAt: p.paid_at ? p.paid_at.slice(0, 10) : '-',
-          }))
+    if (startMonth > endMonth) {
+      setError('เดือนเริ่มต้นต้องไม่มากกว่าเดือนสิ้นสุด')
+      setRows([])
+      return
+    }
+    setLoading(true)
+    try {
+      const data = await listPayments()
+      // Filter by selected month range and year
+      const filtered = (data || []).filter((p) => {
+        if (!p.paid_at) return false
+        const paidDate = new Date(p.paid_at)
+        const paidMonth = paidDate.getMonth() + 1
+        const paidYear = paidDate.getFullYear()
+        return (
+          paidYear === Number(year) &&
+          paidMonth >= Number(startMonth) &&
+          paidMonth <= Number(endMonth)
         )
-        setLoading(false)
       })
-      .catch((err) => {
-        if (!mounted) return
-        setError(err?.message || 'เกิดข้อผิดพลาดในการโหลดข้อมูล')
-        setLoading(false)
-      })
-    return () => { mounted = false }
-  }, [])
+      setRows(
+        filtered.map((p) => ({
+          id: p.id,
+          docNo: p.fees?.id ? `PAY-${String(p.fees.id).slice(-6).padStart(6, '0')}` : '-',
+          houseNo: p.houses?.house_no || '-',
+          ownerName: p.houses?.owner_name || '-',
+          period: formatPeriod(p.fees?.period, p.fees?.year),
+          amount: Number(p.amount || 0).toLocaleString(),
+          amountRaw: Number(p.amount || 0),
+          method: p.payment_method || '-',
+          paidAt: p.paid_at ? p.paid_at.slice(0, 10) : '-',
+        }))
+      )
+    } catch (err) {
+      setError(err?.message || 'เกิดข้อผิดพลาดในการโหลดข้อมูล')
+      setRows([])
+    }
+    setLoading(false)
+  }
+
+  // Generate year options (current year +/- 5)
+  const yearOptions = []
+  const thisYear = getCurrentYear()
+  for (let y = thisYear + 2; y >= thisYear - 5; y--) {
+    yearOptions.push(y)
+  }
 
   return (
-    <ReportMockPage
-      icon="💳"
-      title="รายงานการชำระเงิน"
-      subtitle="รายการรับชำระค่าส่วนกลาง (ข้อมูลจริง)"
-      fileName="payment-report"
-      columns={columns}
-      rows={rows}
-      loading={loading}
-      error={error}
-    />
+    <div>
+      <div style={{ display: 'flex', gap: 12, alignItems: 'center', marginBottom: 16, flexWrap: 'wrap' }}>
+        <label>เดือนเริ่มต้น
+          <select value={startMonth} onChange={e => setStartMonth(Number(e.target.value))}>
+            {monthOptions.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+          </select>
+        </label>
+        <label>ถึงเดือน
+          <select value={endMonth} onChange={e => setEndMonth(Number(e.target.value))}>
+            {monthOptions.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+          </select>
+        </label>
+        <label>ปี
+          <select value={year} onChange={e => setYear(Number(e.target.value))}>
+            {yearOptions.map(y => <option key={y} value={y}>{y + 543}</option>)}
+          </select>
+        </label>
+        <button className="btn btn-p" onClick={handleShowReport} style={{ minWidth: 120 }}>แสดงรายงาน</button>
+        {touched && error && <span style={{ color: 'red', marginLeft: 8 }}>{error}</span>}
+      </div>
+      <ReportMockPage
+        icon="💳"
+        title="รายงานการชำระเงิน"
+        subtitle="รายการรับชำระค่าส่วนกลาง (ข้อมูลจริง)"
+        fileName="payment-report"
+        columns={columns}
+        rows={rows}
+        loading={loading}
+        error={error}
+        sumAmount={rows.reduce((sum, r) => sum + (r.amountRaw || 0), 0)}
+      />
+    </div>
   )
 }

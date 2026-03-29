@@ -2,7 +2,7 @@ import React, { useMemo } from 'react'
 import { exportReportExcel, exportReportPdf } from './reportExport'
 import '../AdminDashboard.css'
 
-export default function ReportMockPage({ icon, title, subtitle, fileName, columns, rows, loading, error }) {
+export default function ReportMockPage({ icon, title, subtitle, fileName, columns, rows, loading, error, sumAmount }) {
   const totalRows = rows.length
   const preview = useMemo(() => rows.slice(0, 12), [rows])
 
@@ -77,6 +77,15 @@ export default function ReportMockPage({ icon, title, subtitle, fileName, column
                 </tr>
               )}
             </tbody>
+            {typeof sumAmount === 'number' && (
+              <tfoot>
+                <tr>
+                  <td colSpan={columns.length - 3} style={{ textAlign: 'right', fontWeight: 'bold' }}>รวมยอดเงินที่ชำระ</td>
+                  <td style={{ fontWeight: 'bold' }}>{sumAmount.toLocaleString()}</td>
+                  <td colSpan={3}></td>
+                </tr>
+              </tfoot>
+            )}
           </table>
         </div>
       </div>
