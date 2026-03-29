@@ -31,7 +31,7 @@ const AdminLayout = () => {
     หน้าหลัก: true,
     จัดการ: false,
     รายงาน: false,
-    ระบบ: false,
+    ตั้งค่าระบบ: false,
   })
   const [newPassword, setNewPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
@@ -110,15 +110,15 @@ const AdminLayout = () => {
     { section: 'รายงาน', sectionIcon: '>', items: [
       { id: 'rpt-payments', label: 'รายงานการชำระเงิน', icon: '📄', path: '/admin/reports/payments' },
       { id: 'rpt-overdue', label: 'รายงานค้างชำระ', icon: '📄', path: '/admin/reports/overdue' },
-      { id: 'rpt-violations', label: 'รายสรุปการกระทำผิด', icon: '📄', path: '/admin/reports/violations-summary' },
-      { id: 'rpt-issues', label: 'รายงานสรุปรับแจ้งปัญหาจากลูกบ้าน', icon: '📄', path: '/admin/reports/issues-summary' },
       { id: 'rpt-expense', label: 'รายงานการจ่ายเงินออก', icon: '📄', path: '/admin/reports/expense-payments' },
+      { id: 'rpt-violations', label: 'สรุปการกระทำผิด', icon: '📄', path: '/admin/reports/violations-summary' },
+      { id: 'rpt-issues', label: 'สรุปปัญหาจากลูกบ้าน', icon: '📄', path: '/admin/reports/issues-summary' },
     ]},
-    { section: 'ระบบ', sectionIcon: '>', items: [
-      { id: 'cfg', label: 'Config ระบบ', icon: '⚙️', path: '/admin/config' },
+    { section: 'ตั้งค่าระบบ', sectionIcon: '>', items: [
+      { id: 'cfg', label: 'ตั้งค่าระบบ', icon: '⚙️', path: '/admin/config' },
       { id: 'usr', label: 'ผู้ใช้งาน', icon: '👥', path: '/admin/users' },
-      { id: 'log', label: 'ข้อมูล Log', icon: '📋', path: '/admin/logs' },
-      { id: 'login-logs', label: 'ข้อมูลการ Login', icon: '🔐', path: '/admin/login-logs' },
+      { id: 'log', label: 'Audit Trail Log', icon: '📋', path: '/admin/logs' },
+      { id: 'login-logs', label: 'Login Log', icon: '🔐', path: '/admin/login-logs' },
     ]},
   ]
 
