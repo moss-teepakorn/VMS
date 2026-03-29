@@ -1017,6 +1017,7 @@
 
 .pane.on.houses-compact.fees-compact .ph {
   margin-bottom: 0;
+  padding-bottom: 8px;
 }
 
 .pane.on.houses-compact.fees-compact .stats {
@@ -1026,6 +1027,14 @@
 
 .pane.on.houses-compact.fees-compact .card {
   margin-top: 0;
+}
+
+.pane.on.houses-compact.fees-compact .houses-main-body {
+  padding-bottom: 0;
+}
+
+.pane.on.houses-compact.fees-compact .houses-main-body .desktop-only {
+  margin-bottom: 0;
 }
 
 .pane.on.houses-compact.fees-compact .houses-filter-row {
