@@ -1464,7 +1464,7 @@ const AdminFees = () => {
   }
 
   return (
-    <div className="pane on houses-compact fees-compact" style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
+    <div className="pane on houses-compact fees-compact" style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
       <div className="ph">
         <div className="ph-in">
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>

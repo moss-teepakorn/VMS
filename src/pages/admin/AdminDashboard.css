@@ -1008,21 +1008,17 @@
 }
 
 .pane.on.houses-compact.fees-compact {
-  gap: 0 !important;
-}
-
-.pane.on.houses-compact.fees-compact > * + * {
-  margin-top: 0 !important;
+  gap: 12px !important;
 }
 
 .pane.on.houses-compact.fees-compact .ph {
   margin-bottom: 0;
-  padding-bottom: 0;
+  padding-bottom: 16px;
 }
 
 .pane.on.houses-compact.fees-compact .stats {
-  margin-top: 0;
-  margin-bottom: 0;
+  margin-top: 2px;
+  margin-bottom: 2px;
 }
 
 .pane.on.houses-compact.fees-compact .card {
