@@ -31,7 +31,6 @@ const AdminLayout = () => {
   const [sectionOpen, setSectionOpen] = useState({
     ข้อมูล: false,
     การเงิน: false,
-    การตรวจสอบ: false,
     การจัดการ: false,
     รายงาน: false,
     ตั้งค่า: false,
@@ -114,12 +113,10 @@ const AdminLayout = () => {
       { id: 'fees', label: 'ค่าส่วนกลาง', icon: '💵', path: '/admin/fees' },
       { id: 'payments', label: 'ชำระเงิน', icon: '💳', path: '/admin/payments' },
     ]},
-    { section: 'การตรวจสอบ', tone: 'operation', sectionIcon: '✓', items: [
-      { id: 'req', label: 'คำขอแก้ไข', icon: '📝', path: '/admin/requests', badge: '7' },
-      { id: 'vio', label: 'กระทำผิด', icon: '⚠️', path: '/admin/violations' },
-    ]},
     { section: 'การจัดการ', tone: 'operation', sectionIcon: '📋', items: [
+      { id: 'req', label: 'คำขอแก้ไข', icon: '📝', path: '/admin/requests', badge: '7' },
       { id: 'issues', label: 'จัดการปัญหา', icon: '🔧', path: '/admin/issues', badge: '3' },
+      { id: 'vio', label: 'แจ้งกระทำผิด', icon: '⚠️', path: '/admin/violations' },
       { id: 'ann', label: 'ประกาศ', icon: '📢', path: '/admin/announcements' },
       { id: 'rep', label: 'ผลงาน', icon: '🏆', path: '/admin/work-reports' },
       { id: 'tech', label: 'ทำเนียบช่าง', icon: '🔨', path: '/admin/technicians' },
