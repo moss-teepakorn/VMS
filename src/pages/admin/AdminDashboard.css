@@ -696,6 +696,22 @@
   flex-wrap: wrap;
 }
 
+.payments-compact .payments-row-acts .btn-xs {
+  padding: 2px 7px;
+  font-size: 10px;
+  min-height: 24px;
+}
+
+.payments-compact .receive-items-table th {
+  padding: 6px 8px;
+  font-size: 10px;
+}
+
+.payments-compact .receive-items-table td {
+  padding: 6px 8px;
+  font-size: 11px;
+}
+
 .houses-owner-main {
   color: var(--tx);
   font-size: 12px;

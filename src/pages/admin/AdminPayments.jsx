@@ -1,4 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react'
+import html2canvas from 'html2canvas'
+import { jsPDF } from 'jspdf'
 import Swal from 'sweetalert2'
 import { useAuth } from '../../contexts/AuthContext'
 import {
@@ -48,6 +50,31 @@ function parsePaymentMeta(note) {
   }
 }
 
+function parseItemizedRowsFromNote(note) {
+  const raw = String(note || '')
+  if (!raw) return []
+  const noMeta = raw.includes(PAYMENT_META_PREFIX)
+    ? raw.slice(0, raw.indexOf(PAYMENT_META_PREFIX)).trim()
+    : raw
+  const match = noMeta.match(/ชำระรายการ:\s*([^|\n]+)/)
+  if (!match?.[1]) return []
+
+  return match[1]
+    .split(',')
+    .map((chunk) => String(chunk || '').trim())
+    .filter(Boolean)
+    .map((chunk) => {
+      const amountMatch = chunk.match(/^(.*)\s฿?\s*([\d,]+(?:\.\d{1,2})?)$/)
+      if (!amountMatch) return { label: chunk, paidAmount: 0 }
+      const label = String(amountMatch[1] || '').trim()
+      const paidAmount = Number(String(amountMatch[2] || '0').replace(/,/g, ''))
+      return {
+        label,
+        paidAmount: Number.isFinite(paidAmount) ? paidAmount : 0,
+      }
+    })
+}
+
 function formatDateTime(value) {
   if (!value) return '-'
   return new Date(value).toLocaleString('th-TH', {
@@ -79,6 +106,15 @@ function normalizeHouseNo(houseNo) {
 
 function compareHouseNo(a, b) {
   return normalizeHouseNo(a).localeCompare(normalizeHouseNo(b), 'th', { numeric: true, sensitivity: 'base' })
+}
+
+function openHtmlInWindow(html) {
+  const popup = window.open('', '_blank', 'noopener,noreferrer,width=960,height=1200')
+  if (!popup) return null
+  popup.document.open()
+  popup.document.write(html)
+  popup.document.close()
+  return popup
 }
 
 function formatMethod(method) {
@@ -133,24 +169,29 @@ function getPaymentItemRows(payment) {
     }))
   }
 
-  const dueItems = getFeeDueItems(payment?.fees)
-  if (dueItems.length === 0) {
-    return [{ key: 'paid_total', label: 'ยอดรับชำระรวม', dueAmount: Number(payment?.fees?.total_amount || 0), paidAmount: Number(payment?.amount || 0) }]
+  const itemizedFromNote = parseItemizedRowsFromNote(payment?.note)
+  if (itemizedFromNote.length > 0) {
+    return itemizedFromNote.map((row, index) => {
+      const matchedDef = feeItemDefs.find((item) => item.label === row.label)
+      const dueAmount = matchedDef ? Number(payment?.fees?.[matchedDef.key] || 0) : Number(row.paidAmount || 0)
+      return {
+        key: matchedDef?.key || `legacy_${index + 1}`,
+        label: row.label || '-',
+        dueAmount,
+        paidAmount: Number(row.paidAmount || 0),
+      }
+    })
   }
 
-  const dueTotal = dueItems.reduce((sum, item) => sum + Number(item.dueAmount || 0), 0)
-  return [
-    ...dueItems.map((item) => ({
-      ...item,
-      paidAmount: 0,
-    })),
-    {
-      key: 'submitted_total',
-      label: 'ยอดชำระรวมที่แจ้งมา',
-      dueAmount: dueTotal,
-      paidAmount: Number(payment?.amount || 0),
-    },
-  ]
+  const dueItems = getFeeDueItems(payment?.fees)
+  if (dueItems.length === 0) {
+    return [{ key: 'paid_total', label: 'ยอดชำระที่บันทึก', dueAmount: Number(payment?.fees?.total_amount || 0), paidAmount: Number(payment?.amount || 0) }]
+  }
+
+  return dueItems.map((item) => ({
+    ...item,
+    paidAmount: 0,
+  }))
 }
 
 export default function AdminPayments() {
@@ -559,8 +600,8 @@ export default function AdminPayments() {
     }
   }
 
-  const handlePrintReceipt = (payment) => {
-    if (!payment.verified_at) return
+  const buildReceiptHtml = (payment, { autoPrint = false } = {}) => {
+    if (!payment?.verified_at) return ''
 
     const receiptNo = buildReceiptNo(payment)
     const issueDate = formatDateTime(payment.verified_at)
@@ -573,12 +614,8 @@ export default function AdminPayments() {
     const paymentDate = formatDateTime(payment.paid_at)
     const displayNote = getDisplayNote(payment.note)
     const itemRows = getPaymentItemRows(payment)
-    const totalDue = itemRows.reduce((sum, row) => sum + Number(row.dueAmount || 0), 0)
     const totalPaid = itemRows.reduce((sum, row) => sum + Number(row.paidAmount || 0), 0) || amount
     const signatureSource = setup.juristicSignatureUrl || ''
-    const printWindow = window.open('', '_blank', 'width=960,height=1200')
-    if (!printWindow) return
-
     const renderTableRows = () => itemRows.map((row, index) => (`
       <tr>
         <td class="c">${index + 1}</td>
@@ -630,15 +667,8 @@ export default function AdminPayments() {
             <tbody>
               ${renderTableRows()}
             </tbody>
-            <tfoot>
-              <tr>
-                <td colspan="2" class="r"><strong>รวม</strong></td>
-                <td class="r"><strong>${totalDue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong></td>
-                <td class="r"><strong>${totalPaid.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong></td>
-              </tr>
-            </tfoot>
           </table>
-          <div class="note-box">${displayNote || 'ชำระเรียบร้อยแล้ว ขอบคุณค่ะ/ครับ'}</div>
+          <div class="note-box">${displayNote || `ยอดชำระรวม ${totalPaid.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} บาท`}</div>
         </section>
 
         <section class="foot">
@@ -656,7 +686,7 @@ export default function AdminPayments() {
       </div>
     `)
 
-    printWindow.document.write(`
+    return `
       <html>
         <head>
           <title>ใบเสร็จรับเงิน ${receiptNo}</title>
@@ -717,7 +747,6 @@ export default function AdminPayments() {
             th { background: #f1f5f9; text-align: left; font-weight: 600; }
             .c { text-align: center; }
             .r { text-align: right; }
-            tfoot td { background: #f1f5f9; font-weight: 600; }
             .note-box {
               border-top: 1px dashed #d1d5db;
               padding-top: 4px;
@@ -748,11 +777,117 @@ export default function AdminPayments() {
         <body>
           ${renderSheet('ต้นฉบับ')}
           ${renderSheet('สำเนา')}
-          <script>window.onload = () => window.print();</script>
+            ${autoPrint ? '<script>window.onload = () => window.print();</script>' : ''}
         </body>
       </html>
-    `)
-    printWindow.document.close()
+    `
+  }
+
+  const handlePrintReceipt = async (payment) => {
+    if (!payment?.verified_at) return
+
+    const { value: mode } = await Swal.fire({
+      icon: 'question',
+      title: 'เลือกรูปแบบพิมพ์ใบเสร็จ',
+      input: 'radio',
+      inputOptions: {
+        paper: 'พิมพ์ออกกระดาษ',
+        pdf: 'บันทึกเป็น PDF',
+        image: 'บันทึกเป็นรูปภาพ (PNG)',
+      },
+      inputValue: 'paper',
+      showCancelButton: true,
+      confirmButtonText: 'ดำเนินการ',
+      cancelButtonText: 'ปิด',
+      inputValidator: (value) => (!value ? 'กรุณาเลือกรูปแบบการพิมพ์' : undefined),
+    })
+
+    if (!mode) return
+
+    try {
+      const fileLabel = `receipt-${buildReceiptNo(payment)}`
+      if (mode === 'paper') {
+        const html = buildReceiptHtml(payment, { autoPrint: true })
+        const popup = openHtmlInWindow(html)
+        if (!popup) {
+          await Swal.fire({ icon: 'warning', title: 'ไม่สามารถเปิดหน้าต่างพิมพ์ได้', text: 'กรุณาอนุญาต popup ของเบราว์เซอร์' })
+        }
+        return
+      }
+
+      const html = buildReceiptHtml(payment, { autoPrint: false })
+      const iframe = document.createElement('iframe')
+      iframe.style.position = 'fixed'
+      iframe.style.right = '-9999px'
+      iframe.style.bottom = '-9999px'
+      iframe.style.width = '0'
+      iframe.style.height = '0'
+      iframe.style.border = '0'
+      document.body.appendChild(iframe)
+
+      const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document
+      if (!iframeDoc) {
+        document.body.removeChild(iframe)
+        throw new Error('ไม่สามารถเตรียมเอกสารสำหรับบันทึกไฟล์ได้')
+      }
+
+      iframeDoc.open()
+      iframeDoc.write(html)
+      iframeDoc.close()
+
+      await new Promise((resolve) => {
+        const targetWindow = iframe.contentWindow
+        if (!targetWindow) {
+          resolve()
+          return
+        }
+        targetWindow.onload = () => resolve()
+        setTimeout(resolve, 400)
+      })
+
+      const sheets = Array.from(iframeDoc.querySelectorAll('.sheet'))
+      if (sheets.length === 0) {
+        document.body.removeChild(iframe)
+        throw new Error('ไม่พบหน้าสำหรับพิมพ์ใบเสร็จ')
+      }
+
+      if (mode === 'image') {
+        for (let i = 0; i < sheets.length; i += 1) {
+          const canvas = await html2canvas(sheets[i], {
+            scale: 2,
+            useCORS: true,
+            backgroundColor: '#ffffff',
+            width: 794,
+            height: 1122,
+          })
+          const link = document.createElement('a')
+          link.href = canvas.toDataURL('image/png')
+          link.download = `${fileLabel}-${i + 1}.png`
+          link.click()
+        }
+      } else {
+        const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' })
+        const A4W = pdf.internal.pageSize.getWidth()
+        const A4H = pdf.internal.pageSize.getHeight()
+        for (let i = 0; i < sheets.length; i += 1) {
+          const canvas = await html2canvas(sheets[i], {
+            scale: 2,
+            useCORS: true,
+            backgroundColor: '#ffffff',
+            width: 794,
+            height: 1122,
+          })
+          const imgData = canvas.toDataURL('image/jpeg', 0.95)
+          if (i > 0) pdf.addPage()
+          pdf.addImage(imgData, 'JPEG', 0, 0, A4W, A4H, undefined, 'FAST')
+        }
+        pdf.save(`${fileLabel}.pdf`)
+      }
+
+      document.body.removeChild(iframe)
+    } catch (error) {
+      await Swal.fire({ icon: 'error', title: 'พิมพ์ใบเสร็จไม่สำเร็จ', text: error.message })
+    }
   }
 
   const handleRejectFromApproveModal = async () => {
@@ -863,13 +998,13 @@ export default function AdminPayments() {
           </div>
         </div>
         <div className="cb houses-table-card-body">
-          <div className="houses-table-wrap houses-desktop-only">
-              <table className="tw houses-table" style={{ width: '100%', minWidth: '900px', tableLayout: 'fixed' }}>
+            <div className="houses-table-wrap houses-desktop-only">
+              <table className="tw houses-table" style={{ width: '100%', minWidth: '760px', tableLayout: 'fixed' }}>
                 <thead>
                   <tr>
                     <th style={{ width: '9%' }}>ซอย</th>
                     <th style={{ width: '9%' }}>บ้าน</th>
-                    <th style={{ width: '14%' }}>งวด</th>
+                    <th style={{ width: '13%' }}>งวด</th>
                     <th style={{ width: '12%' }}>จำนวนเงิน</th>
                     <th style={{ width: '10%' }}>วิธีชำระ</th>
                     <th style={{ width: '12%' }}>วันที่</th>
@@ -897,7 +1032,7 @@ export default function AdminPayments() {
                         <td><span className={badge.className}>{badge.label}</span></td>
                         <td style={{ whiteSpace: 'nowrap' }}>{payment.verified_profile?.full_name || '-'}</td>
                         <td>
-                          <div className="td-acts">
+                          <div className="td-acts payments-row-acts">
                             {payment.slip_url && <button className="btn btn-xs btn-o" onClick={() => handleOpenSlip(payment)}>สลิป</button>}
                             {!payment.verified_at && <button className="btn btn-xs btn-ok" onClick={() => openApproveModal(payment)}>อนุมัติ</button>}
                             {!payment.verified_at && <button className="btn btn-xs btn-dg" onClick={() => handleReject(payment)}>ตีกลับ</button>}
@@ -972,11 +1107,11 @@ export default function AdminPayments() {
                     <div className="house-field" style={{ gap: 10 }}>
                       <span>เลือกรายการรับชำระ</span>
                       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                        <button type="button" className="btn btn-xs btn-a" onClick={selectAllReceiveItems}>เลือกทั้งหมด</button>
-                        <button type="button" className="btn btn-xs btn-g" onClick={clearReceiveItems}>ล้างการเลือก</button>
+                        <button type="button" className="btn btn-xs btn-a" onClick={selectAllReceiveItems} style={{ padding: '3px 8px', fontSize: 10 }}>เลือกทั้งหมด</button>
+                        <button type="button" className="btn btn-xs btn-g" onClick={clearReceiveItems} style={{ padding: '3px 8px', fontSize: 10 }}>ล้างการเลือก</button>
                       </div>
                       <div className="houses-table-wrap" style={{ maxHeight: '280px', overflow: 'auto' }}>
-                        <table className="tw" style={{ width: '100%', minWidth: '620px' }}>
+                        <table className="tw receive-items-table" style={{ width: '100%', minWidth: '520px' }}>
                           <thead>
                             <tr>
                               <th style={{ width: '52px', textAlign: 'center' }}>เลือก</th>
@@ -1072,6 +1207,19 @@ export default function AdminPayments() {
                 </section>
               </div>
               <div className="house-md-foot">
+                <button
+                  className="btn btn-g"
+                  type="button"
+                  onClick={() => {
+                    if (receiveSlipPreview) URL.revokeObjectURL(receiveSlipPreview)
+                    setReceiveSlipPreview('')
+                    setReceiveSlipFile(null)
+                    setShowReceiveModal(false)
+                  }}
+                  disabled={savingReceive || uploadingSlip}
+                >
+                  ปิด
+                </button>
                 <button className="btn btn-p" type="submit" disabled={savingReceive || uploadingSlip}>
                   {savingReceive || uploadingSlip ? 'กำลังบันทึก...' : 'บันทึกรับชำระ'}
                 </button>
