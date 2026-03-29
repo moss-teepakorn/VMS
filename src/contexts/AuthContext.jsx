@@ -11,7 +11,7 @@ const PERSISTENT_BRANDING_KEYS = new Set([
   'vms-setup-village-name',
 ])
 
-function clearClientStorage() {
+export function clearClientStorage() {
   const keysToRemove = []
   for (let i = 0; i < localStorage.length; i += 1) {
     const key = localStorage.key(i)
@@ -21,6 +21,13 @@ function clearClientStorage() {
   }
   keysToRemove.forEach((key) => localStorage.removeItem(key))
   sessionStorage.clear()
+  // Clear all browser cookies for this domain
+  document.cookie.split(';').forEach((cookie) => {
+    const name = cookie.split('=')[0].trim()
+    if (name) {
+      document.cookie = `${name}=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/`
+    }
+  })
 }
 
 function safeParse(value) {

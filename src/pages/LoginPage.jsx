@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
+import { clearClientStorage } from '../contexts/AuthContext'
 import { applyDocumentTitle, getSetupConfig } from '../lib/setup'
 import villageLogo from '../assets/village-logo.svg'
 
@@ -30,6 +31,11 @@ export default function LoginPage() {
       navigate(profile.role === 'admin' ? '/admin/dashboard' : '/resident/home', { replace: true })
     }
   }, [user, profile, loading, navigate])
+
+  // Clear all local state and cookies whenever the login page is mounted (before login)
+  useEffect(() => {
+    clearClientStorage()
+  }, [])
 
   useEffect(() => {
     const loadSetup = async () => {
