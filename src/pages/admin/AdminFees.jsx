@@ -222,6 +222,11 @@ const AdminFees = () => {
       setHouses(houseData)
     } catch (error) {
       console.error('Error loading fees:', error)
+      const message = String(error?.message || error || '')
+      if (/provided callback is no longer runnable/i.test(message)) {
+        // Non-actionable browser/runtime callback cancellation (often after print dialog cancel).
+        return
+      }
       await Swal.fire({ icon: 'error', title: 'โหลดข้อมูลไม่สำเร็จ', text: error.message })
     } finally {
       setLoading(false)
@@ -1210,9 +1215,9 @@ const AdminFees = () => {
         await Swal.fire({ icon: 'warning', title: 'ไม่สามารถเปิดหน้าต่างพิมพ์ได้', text: 'กรุณาอนุญาต popup ของเบราว์เซอร์' })
         return
       }
-      await persistNoticePrintCounts(mode)
       setShowPrintActionModal(false)
-      await loadFeeData({ status: statusFilter, year: yearFilter, period: periodFilter })
+      // Avoid reloading immediately after opening print dialog; canceling print can invalidate callbacks in some runtimes.
+      await persistNoticePrintCounts(mode).catch(() => {})
     } catch (error) {
       await Swal.fire({ icon: 'error', title: 'ดำเนินการไม่สำเร็จ', text: error.message })
     } finally {
