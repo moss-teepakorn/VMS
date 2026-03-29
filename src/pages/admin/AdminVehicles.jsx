@@ -521,18 +521,18 @@ const AdminVehicles = () => {
         </div>
       </div>
 
-      <div className="card vehicles-list-card">
-        <div className="ch houses-list-head">
+      <div className="card vehicles-list-card houses-main-card">
+        <div className="ch houses-list-head houses-main-head">
           <div className="ct">ยานพาหนะทั้งหมด ({vehicles.length} รายการ)</div>
           <div className="houses-list-actions">
             <button className="btn btn-p btn-sm" onClick={openAddModal}>+ ลงทะเบียนรถใหม่</button>
             <button className="btn btn-g btn-sm" onClick={() => loadVehicles({ status: statusFilter, search: searchTerm, soi: soiFilter, vehicleType: vehicleTypeFilter })}>🔄 รีเฟรช</button>
           </div>
         </div>
-        <div className="cb houses-table-card-body vehicles-page-table-body">
+        <div className="cb houses-table-card-body houses-main-body vehicles-page-table-body">
           <div className="desktop-only">
-            <div style={{ overflowX: 'auto' }}>
-              <table className="tw houses-table" style={{ width: '100%', minWidth: '1120px' }}>
+            <div className="houses-main-wrap" style={{ overflowX: 'auto' }}>
+              <table className="tw houses-table houses-main-table" style={{ width: '100%', minWidth: '1120px' }}>
                 <thead><tr>
                   <th>ซอย</th>
                   <th>บ้านเลขที่ / เจ้าของบ้าน</th>
