@@ -50,10 +50,10 @@ export default function ReportMockPage({ icon, title, subtitle, fileName, column
       </div>
 
       <div className="card houses-main-card">
-        <div className="ch houses-list-head">
+        <div className="ch houses-list-head houses-main-head">
           <div className="ct">รายการข้อมูลรายงาน</div>
         </div>
-        <div className="cb houses-table-card-body" style={{ overflow: 'auto' }}>
+        <div className="cb houses-table-card-body houses-main-body" style={{ overflow: 'auto' }}>
           <table className="tw houses-table houses-main-table" style={{ minWidth: 860 }}>
             <thead>
               <tr>

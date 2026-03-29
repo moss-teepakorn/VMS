@@ -350,17 +350,17 @@ const AdminAnnouncements = () => {
       </div>
 
       <div className="card">
-        <div className="ch houses-list-head">
+        <div className="ch houses-list-head houses-main-head">
           <div className="ct">ประกาศทั้งหมด ({announcements.length} รายการ)</div>
           <div className="houses-list-actions">
             <button className="btn btn-p btn-sm" onClick={openAddModal}>+ ประกาศใหม่</button>
             <button className="btn btn-g btn-sm" onClick={() => loadData({ type: typeFilter, search: searchTerm })}>🔄 รีเฟรช</button>
           </div>
         </div>
-        <div className="cb houses-table-card-body">
+        <div className="cb houses-table-card-body houses-main-body">
           <div className="desktop-only">
             <div style={{ overflowX: 'auto' }}>
-              <table className="tw houses-table" style={{ width: '100%', minWidth: '700px' }}>
+              <table className="tw houses-table houses-main-table" style={{ width: '100%', minWidth: '700px' }}>
                 <thead><tr>
                   <th>ปักหมุด</th>
                   <th>เลขที่ประกาศ</th>

@@ -261,16 +261,16 @@ const AdminWorkReportsList = () => {
       </div>
 
       <div className="card">
-        <div className="ch houses-list-head">
+        <div className="ch houses-list-head houses-main-head">
           <div className="ct">รายการผลงานนิติ ({reports.length} รายการ)</div>
           <div className="houses-list-actions">
             <button className="btn btn-p btn-sm" onClick={() => setShowCreateModal(true)}>+ เพิ่มผลงาน</button>
             <button className="btn btn-g btn-sm" onClick={() => loadReports()}>รีเฟรช</button>
           </div>
         </div>
-        <div className="cb houses-table-card-body">
+        <div className="cb houses-table-card-body houses-main-body">
           <div className="houses-table-wrap houses-desktop-only">
-            <table className="tw houses-table" style={{ width: '100%', minWidth: '780px' }}>
+            <table className="tw houses-table houses-main-table" style={{ width: '100%', minWidth: '780px' }}>
               <thead>
                 <tr>
                   <th>เดือน</th>

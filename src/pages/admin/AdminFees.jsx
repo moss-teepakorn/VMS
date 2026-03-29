@@ -1541,7 +1541,7 @@ const AdminFees = () => {
       </div>
 
       <div className="card">
-        <div className="ch houses-list-head">
+        <div className="ch houses-list-head houses-main-head">
           <div className="ct">ใบแจ้งหนี้ค้างชำระ ({activeFees.length})</div>
           <div className="houses-list-actions" style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center', width: '100%' }}>
             <button className="btn btn-p btn-sm" onClick={handleOpenProcessModal}>+ สร้างใบแจ้งหนี้</button>
@@ -1593,10 +1593,10 @@ const AdminFees = () => {
             </div>
           </div>
         </div>
-        <div className="cb houses-table-card-body">
+        <div className="cb houses-table-card-body houses-main-body">
           <div className="desktop-only">
             <div style={{ overflowX: 'auto' }}>
-              <table className="tw houses-table" style={{ width: '100%' }}>
+              <table className="tw houses-table houses-main-table" style={{ width: '100%' }}>
                 <thead>
                   <tr>
                     <th>ซอย</th>
@@ -1684,7 +1684,7 @@ const AdminFees = () => {
       </div>
 
       <div className="card">
-        <div className="ch houses-list-head">
+        <div className="ch houses-list-head houses-main-head">
           <div className="ct">ใบแจ้งหนี้ปิดรายการ ({archiveFees.length})</div>
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
             {archiveCards.map((item) => {
@@ -1702,10 +1702,10 @@ const AdminFees = () => {
             })}
           </div>
         </div>
-        <div className="cb houses-table-card-body">
+        <div className="cb houses-table-card-body houses-main-body">
           <div className="desktop-only">
             <div style={{ overflowX: 'auto' }}>
-              <table className="tw houses-table" style={{ width: '100%' }}>
+              <table className="tw houses-table houses-main-table" style={{ width: '100%' }}>
                 <thead>
                   <tr>
                     <th>ซอย</th>
@@ -2050,7 +2050,7 @@ const AdminFees = () => {
                     </div>
 
                     <div style={{ border: '1px solid var(--bo)', borderRadius: 10, overflow: 'hidden' }}>
-                      <table className="tw houses-table" style={{ width: '100%', minWidth: 420 }}>
+                      <table className="tw houses-table houses-main-table" style={{ width: '100%', minWidth: 420 }}>
                         <thead>
                           <tr>
                             <th>รายการ</th>

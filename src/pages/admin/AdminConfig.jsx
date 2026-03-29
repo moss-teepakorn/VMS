@@ -350,8 +350,8 @@ const AdminConfig = () => {
       </div>
 
       <div className="card houses-main-card">
-        <div className="ch houses-list-head"><div className="ct">ตั้งค่าระบบ (system_config)</div></div>
-        <div className="cb houses-table-card-body" style={{ maxWidth: '1080px', margin: '0 auto', width: '100%' }}>
+        <div className="ch houses-list-head houses-main-head"><div className="ct">ตั้งค่าระบบ (system_config)</div></div>
+        <div className="cb houses-table-card-body houses-main-body" style={{ maxWidth: '1080px', margin: '0 auto', width: '100%' }}>
           {loading ? (
             <div style={{ color: 'var(--mu)' }}>กำลังโหลดข้อมูล...</div>
           ) : (

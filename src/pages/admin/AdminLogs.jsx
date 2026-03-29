@@ -159,7 +159,7 @@ const AdminLogs = () => {
       </div>
 
       <div className="card">
-        <div className="ch houses-list-head">
+        <div className="ch houses-list-head houses-main-head">
           <div className="ct">
             รายการทั้งหมด {logs.length} รายการ
             {selected.size > 0 && (
@@ -189,9 +189,9 @@ const AdminLogs = () => {
           </div>
         </div>
 
-        <div className="cb houses-table-card-body">
+        <div className="cb houses-table-card-body houses-main-body">
           <div className="houses-table-wrap houses-desktop-only">
-            <table className="tw houses-table" style={{ width: '100%', minWidth: '720px' }}>
+            <table className="tw houses-table houses-main-table" style={{ width: '100%', minWidth: '720px' }}>
               <thead><tr>
                 <th style={{ width: 36 }}>
                   <input

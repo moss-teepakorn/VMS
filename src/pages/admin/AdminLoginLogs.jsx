@@ -204,7 +204,7 @@ export default function AdminLoginLogs() {
 
       <div className="card">
         {/* Card header with action buttons */}
-        <div className="ch houses-list-head">
+        <div className="ch houses-list-head houses-main-head">
           <div className="ct">
             รายการทั้งหมด {filtered.length} รายการ
             {selected.size > 0 && (
@@ -234,10 +234,10 @@ export default function AdminLoginLogs() {
           </div>
         </div>
 
-        <div className="cb houses-table-card-body">
+        <div className="cb houses-table-card-body houses-main-body">
           {/* Desktop table */}
           <div className="houses-table-wrap houses-desktop-only">
-            <table className="tw houses-table" style={{ width: '100%', minWidth: 580 }}>
+            <table className="tw houses-table houses-main-table" style={{ width: '100%', minWidth: 580 }}>
               <thead>
                 <tr>
                   <th style={{ width: 36 }}>

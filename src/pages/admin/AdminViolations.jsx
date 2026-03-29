@@ -950,17 +950,17 @@ const AdminViolations = () => {
       </div>
 
       <div className="card">
-        <div className="ch houses-list-head">
+        <div className="ch houses-list-head houses-main-head">
           <div className="ct">รายการทั้งหมด ({violations.length} รายการ)</div>
           <div className="houses-list-actions">
             <button className="btn btn-p btn-sm" onClick={openAddModal}>+ แจ้งกระทำผิดใหม่</button>
             <button className="btn btn-g btn-sm" onClick={() => loadData({ status: statusFilter, search: searchTerm })}>🔄 รีเฟรช</button>
           </div>
         </div>
-        <div className="cb houses-table-card-body">
+        <div className="cb houses-table-card-body houses-main-body">
           <div className="desktop-only">
             <div style={{ overflowX: 'auto' }}>
-              <table className="tw houses-table" style={{ width: '100%', minWidth: '900px' }}>
+              <table className="tw houses-table houses-main-table" style={{ width: '100%', minWidth: '900px' }}>
                 <thead><tr>
                   <th>ซอย</th>
                   <th>บ้าน / เจ้าของ</th>

@@ -1126,7 +1126,7 @@ export default function AdminPayments() {
       </div>
 
       <div className="card">
-        <div className="ch houses-list-head">
+        <div className="ch houses-list-head houses-main-head">
           <div className="ct">รายการชำระเงินทั้งหมด {filtered.length} รายการ</div>
           <div className="houses-list-actions">
             <button className="btn btn-p btn-sm" onClick={openReceiveModal}>+ รับชำระ</button>
@@ -1164,9 +1164,9 @@ export default function AdminPayments() {
             </div>
           </div>
         </div>
-        <div className="cb houses-table-card-body">
+        <div className="cb houses-table-card-body houses-main-body">
             <div className="houses-table-wrap houses-desktop-only payments-main-wrap">
-              <table className="tw houses-table" style={{ width: '100%', tableLayout: 'fixed' }}>
+              <table className="tw houses-table houses-main-table" style={{ width: '100%', tableLayout: 'fixed' }}>
                 <thead>
                   <tr>
                     <th style={{ width: '9%' }}>ซอย</th>

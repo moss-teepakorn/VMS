@@ -489,17 +489,17 @@ const AdminMarketplace = () => {
       </div>
 
       <div className="card">
-        <div className="ch houses-list-head">
+        <div className="ch houses-list-head houses-main-head">
           <div className="ct">รายการทั้งหมด ({items.length} รายการ)</div>
           <div className="houses-list-actions">
             <button className="btn btn-p btn-sm" onClick={openAddModal}>+ โพสต์ใหม่</button>
             <button className="btn btn-g btn-sm" onClick={() => loadData({ status: statusFilter, listing_type: typeFilter, search: searchTerm })}>🔄 รีเฟรช</button>
           </div>
         </div>
-        <div className="cb houses-table-card-body">
+        <div className="cb houses-table-card-body houses-main-body">
           <div className="desktop-only">
             <div style={{ overflowX: 'auto' }}>
-              <table className="tw houses-table" style={{ width: '100%', minWidth: '980px' }}>
+              <table className="tw houses-table houses-main-table" style={{ width: '100%', minWidth: '980px' }}>
                 <thead><tr>
                   <th>บ้าน / เจ้าของ</th>
                   <th>ชื่อสินค้า/บริการ</th>

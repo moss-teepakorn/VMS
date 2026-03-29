@@ -922,26 +922,33 @@
   overflow: hidden;
 }
 
-.houses-main-card .houses-main-head {
+.houses-main-card .houses-main-head,
+.pane.on.houses-compact .card > .houses-main-head {
   border-radius: 14px 14px 0 0;
 }
 
-.houses-main-card .houses-main-body {
+.houses-main-card .houses-main-body,
+.pane.on.houses-compact .card > .houses-main-body {
   padding: 0 0 12px;
   border-radius: 0 0 14px 14px;
 }
 
-.houses-main-card .houses-main-wrap {
+.houses-main-card .houses-main-wrap,
+.pane.on.houses-compact .card .houses-main-wrap {
   border-radius: 0 0 14px 14px;
 }
 
 .houses-main-card .houses-main-table th:first-child,
-.houses-main-card .houses-main-table td:first-child {
+.houses-main-card .houses-main-table td:first-child,
+.pane.on.houses-compact .card .houses-main-table th:first-child,
+.pane.on.houses-compact .card .houses-main-table td:first-child {
   padding-left: 16px;
 }
 
 .houses-main-card .houses-main-table th:last-child,
-.houses-main-card .houses-main-table td:last-child {
+.houses-main-card .houses-main-table td:last-child,
+.pane.on.houses-compact .card .houses-main-table th:last-child,
+.pane.on.houses-compact .card .houses-main-table td:last-child {
   padding-right: 16px;
 }
 
