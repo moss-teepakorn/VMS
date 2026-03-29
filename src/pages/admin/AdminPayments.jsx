@@ -208,6 +208,9 @@ export default function AdminPayments() {
   const [receiveSlipPreview, setReceiveSlipPreview] = useState('')
   const [approveTarget, setApproveTarget] = useState(null)
   const [approving, setApproving] = useState(false)
+  const [showReceiptPrintActionModal, setShowReceiptPrintActionModal] = useState(false)
+  const [runningReceiptPrintAction, setRunningReceiptPrintAction] = useState(false)
+  const [receiptPrintTarget, setReceiptPrintTarget] = useState(null)
   const [feeOptions, setFeeOptions] = useState([])
   const [receiveForm, setReceiveForm] = useState({
     fee_id: '',
@@ -783,39 +786,30 @@ export default function AdminPayments() {
     `
   }
 
-  const handlePrintReceipt = async (payment) => {
+  const handlePrintReceipt = (payment) => {
     if (!payment?.verified_at) return
+    setReceiptPrintTarget(payment)
+    setShowReceiptPrintActionModal(true)
+  }
 
-    const { value: mode } = await Swal.fire({
-      icon: 'question',
-      title: 'เลือกรูปแบบพิมพ์ใบเสร็จ',
-      input: 'radio',
-      inputOptions: {
-        paper: 'พิมพ์ออกกระดาษ',
-        pdf: 'บันทึกเป็น PDF',
-        image: 'บันทึกเป็นรูปภาพ (PNG)',
-      },
-      inputValue: 'paper',
-      showCancelButton: true,
-      confirmButtonText: 'ดำเนินการ',
-      cancelButtonText: 'ปิด',
-      inputValidator: (value) => (!value ? 'กรุณาเลือกรูปแบบการพิมพ์' : undefined),
-    })
-
-    if (!mode) return
+  const runReceiptPrintAction = async (mode) => {
+    if (!receiptPrintTarget) return
+    setRunningReceiptPrintAction(true)
 
     try {
-      const fileLabel = `receipt-${buildReceiptNo(payment)}`
+      const target = receiptPrintTarget
+      const fileLabel = `receipt-${buildReceiptNo(target)}`
       if (mode === 'paper') {
-        const html = buildReceiptHtml(payment, { autoPrint: true })
+        const html = buildReceiptHtml(target, { autoPrint: true })
         const popup = openHtmlInWindow(html)
         if (!popup) {
           await Swal.fire({ icon: 'warning', title: 'ไม่สามารถเปิดหน้าต่างพิมพ์ได้', text: 'กรุณาอนุญาต popup ของเบราว์เซอร์' })
         }
+        setShowReceiptPrintActionModal(false)
         return
       }
 
-      const html = buildReceiptHtml(payment, { autoPrint: false })
+      const html = buildReceiptHtml(target, { autoPrint: false })
       const iframe = document.createElement('iframe')
       iframe.style.position = 'fixed'
       iframe.style.right = '-9999px'
@@ -885,8 +879,11 @@ export default function AdminPayments() {
       }
 
       document.body.removeChild(iframe)
+      setShowReceiptPrintActionModal(false)
     } catch (error) {
       await Swal.fire({ icon: 'error', title: 'พิมพ์ใบเสร็จไม่สำเร็จ', text: error.message })
+    } finally {
+      setRunningReceiptPrintAction(false)
     }
   }
 
@@ -1225,6 +1222,76 @@ export default function AdminPayments() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {showReceiptPrintActionModal && receiptPrintTarget && (
+        <div className="house-mo">
+          <div className="house-md house-md--xs">
+            <div className="house-md-head">
+              <div>
+                <div className="house-md-title">🖨 ตัวเลือกการพิมพ์</div>
+                <div className="house-md-sub">
+                  ใบเสร็จ {receiptPrintTarget.houses?.house_no || '-'} · {formatPeriod(receiptPrintTarget.fees?.period)} ปี {toBE(receiptPrintTarget.fees?.year)}
+                </div>
+              </div>
+            </div>
+            <div className="house-md-body" style={{ display: 'grid', gap: 10 }}>
+              <button
+                className="btn btn-p"
+                type="button"
+                onClick={() => runReceiptPrintAction('paper')}
+                disabled={runningReceiptPrintAction}
+                style={{ justifyContent: 'space-between', padding: '12px 14px', fontFamily: 'inherit', letterSpacing: 0, fontStretch: 'normal' }}
+              >
+                <span style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', lineHeight: 1.25 }}>
+                  <span style={{ fontSize: 15, fontWeight: 700 }}>พิมพ์เอกสาร</span>
+                  <span style={{ fontSize: 12, fontWeight: 500, opacity: 0.88 }}>เปิดหน้าพิมพ์สำหรับใบเสร็จ</span>
+                </span>
+                <span style={{ fontSize: 12, fontWeight: 700 }}>{runningReceiptPrintAction ? 'กำลังดำเนินการ...' : 'Paper'}</span>
+              </button>
+
+              <button
+                className="btn btn-a"
+                type="button"
+                onClick={() => runReceiptPrintAction('pdf')}
+                disabled={runningReceiptPrintAction}
+                style={{ justifyContent: 'space-between', padding: '12px 14px', fontFamily: 'inherit', letterSpacing: 0, fontStretch: 'normal' }}
+              >
+                <span style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', lineHeight: 1.25 }}>
+                  <span style={{ fontSize: 15, fontWeight: 700 }}>Save เป็น PDF</span>
+                  <span style={{ fontSize: 12, fontWeight: 500, opacity: 0.88 }}>ดาวน์โหลดไฟล์ PDF ลงเครื่องทันที</span>
+                </span>
+                <span style={{ fontSize: 12, fontWeight: 700 }}>{runningReceiptPrintAction ? 'กำลังดำเนินการ...' : 'PDF'}</span>
+              </button>
+
+              <button
+                className="btn btn-g"
+                type="button"
+                onClick={() => runReceiptPrintAction('image')}
+                disabled={runningReceiptPrintAction}
+                style={{ justifyContent: 'space-between', padding: '12px 14px', fontFamily: 'inherit', letterSpacing: 0, fontStretch: 'normal' }}
+              >
+                <span style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', lineHeight: 1.25 }}>
+                  <span style={{ fontSize: 15, fontWeight: 700 }}>Save เป็น Image</span>
+                  <span style={{ fontSize: 12, fontWeight: 500, opacity: 0.88 }}>บันทึกเป็นรูปภาพ PNG แยกตามหน้าเอกสาร</span>
+                </span>
+                <span style={{ fontSize: 12, fontWeight: 700 }}>{runningReceiptPrintAction ? 'กำลังดำเนินการ...' : 'PNG'}</span>
+              </button>
+            </div>
+            <div className="house-md-foot">
+              <button
+                className="btn btn-g"
+                type="button"
+                onClick={() => {
+                  if (runningReceiptPrintAction) return
+                  setShowReceiptPrintActionModal(false)
+                }}
+              >
+                ปิด
+              </button>
+            </div>
           </div>
         </div>
       )}
