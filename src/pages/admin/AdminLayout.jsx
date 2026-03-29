@@ -90,14 +90,14 @@ const AdminLayout = () => {
 
   // Navigation menu items (from concept.html)
   const navItems = [
-    { section: 'หน้าหลัก', items: [
+    { section: 'หน้าหลัก', sectionIcon: '>', items: [
       { id: 'dash', label: 'Dashboard', icon: '📊', path: '/admin/dashboard' },
       { id: 'houses', label: 'ข้อมูลบ้าน', icon: '🏠', path: '/admin/houses' },
       { id: 'vehicles', label: 'ข้อมูลรถ', icon: '🚗', path: '/admin/vehicles' },
       { id: 'fees', label: 'ค่าส่วนกลาง', icon: '💰', path: '/admin/fees' },
       { id: 'payments', label: 'จ่ายค่าส่วนกลาง', icon: '💳', path: '/admin/payments' },
     ]},
-    { section: 'จัดการ', items: [
+    { section: 'จัดการ', sectionIcon: '>', items: [
       { id: 'req', label: 'คำขอแก้ไข', icon: '📝', path: '/admin/requests', badge: '7' },
       { id: 'issues', label: 'จัดการปัญหา', icon: '🔧', path: '/admin/issues', badge: '3' },
       { id: 'vio', label: 'แจ้งกระทำผิด', icon: '⚠️', path: '/admin/violations' },
@@ -106,7 +106,7 @@ const AdminLayout = () => {
       { id: 'tech', label: 'ทำเนียบช่าง', icon: '🔨', path: '/admin/technicians' },
       { id: 'market', label: 'ตลาดชุมชน', icon: '🛒', path: '/admin/marketplace' },
     ]},
-    { section: 'ระบบ', items: [
+    { section: 'ระบบ', sectionIcon: '>', items: [
       { id: 'cfg', label: 'Config ระบบ', icon: '⚙️', path: '/admin/config' },
       { id: 'usr', label: 'ผู้ใช้งาน', icon: '👥', path: '/admin/users' },
       { id: 'log', label: 'ข้อมูล Log', icon: '📋', path: '/admin/logs' },
@@ -231,12 +231,6 @@ const AdminLayout = () => {
 
         {/* Navigation */}
         <div style={{ display: 'flex', flexDirection: 'column', flex: 1, overflow: 'hidden', minHeight: 0 }}>
-          {/* Role Badge */}
-          <div className="sb-role">
-            <span className="sb-role-dot"></span>
-            <span className="sb-role-txt">{roleLabel(profile?.role)}</span>
-          </div>
-
           <div className="sb-search-wrap">
             <input
               className="sb-search-input"
@@ -250,7 +244,7 @@ const AdminLayout = () => {
           {/* Menu Sections */}
           <nav className="sb-nav">
             {visibleNavSections.map((section) => (
-              <div key={section.section}>
+              <div key={section.section} className="sb-major-group">
                 {(() => {
                   const expanded = sidebarCollapsed || Boolean(searchKeyword) || Boolean(sectionOpen[section.section])
                   return (
@@ -261,10 +255,15 @@ const AdminLayout = () => {
                   onClick={() => toggleSection(section.section)}
                   aria-expanded={expanded}
                 >
-                  <span>{section.section}</span>
+                  <span className="sb-sec-left">
+                    <span className="sb-sec-ico">{section.sectionIcon || '>'}</span>
+                    <span className="sb-sec-title">{section.section}</span>
+                  </span>
                   <span className={`sb-sec-arrow ${expanded ? 'open' : ''}`}>▾</span>
                 </button>
-                {expanded && section.items.map((item) => (
+                {expanded && (
+                  <div className="sb-submenu-wrap">
+                {section.items.map((item) => (
                   <div
                     key={item.id}
                     className={`sb-item ${isNavItemActive(item.path) ? 'act' : ''}`}
@@ -275,6 +274,8 @@ const AdminLayout = () => {
                     {item.badge && <span className="sb-badge">{item.badge}</span>}
                   </div>
                 ))}
+                  </div>
+                )}
                 </>
                   )
                 })()}
@@ -282,11 +283,17 @@ const AdminLayout = () => {
             ))}
           </nav>
 
-          {/* Logout Button */}
+          {/* Account + Logout Card */}
           <div className="sb-foot">
-            <div className="sb-logout" onClick={handleLogout}>
-              <span style={{ fontSize: '18px' }}>🚪</span>
-              <span className="sb-logout-label">ออกจากระบบ</span>
+            <div className="sb-account-card">
+              <div className="sb-role">
+                <span className="sb-role-dot"></span>
+                <span className="sb-role-txt">{roleLabel(profile?.role)}</span>
+              </div>
+              <div className="sb-logout" onClick={handleLogout}>
+                <span style={{ fontSize: '18px' }}>🚪</span>
+                <span className="sb-logout-label">ออกจากระบบ</span>
+              </div>
             </div>
           </div>
         </div>

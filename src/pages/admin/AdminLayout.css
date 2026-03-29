@@ -789,7 +789,7 @@ button, input, select, textarea {
 /* Role Pill */
 .sb-role {
   padding: 10px 12px;
-  margin: 8px 12px;
+  margin: 0;
   background: rgba(110, 231, 183, 0.15);
   border: 1.5px solid rgba(110, 231, 183, 0.25);
   border-radius: 20px;
@@ -862,27 +862,60 @@ button, input, select, textarea {
 }
 
 .sb-sec {
-  font-size: 9px;
+  font-size: 14px;
   font-weight: 800;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--sbm);
-  padding: 11px 10px 4px;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--sbt);
+  padding: 10px 10px;
 }
 
 .sb-sec-btn {
   width: 100%;
-  border: none;
-  background: transparent;
+  border: 1px solid rgba(255,255,255,.2);
+  background: rgba(255,255,255,.1);
+  border-radius: 10px;
   display: flex;
   align-items: center;
   justify-content: space-between;
   cursor: pointer;
+  transition: all var(--tr);
+}
+
+.sb-sec-btn:hover {
+  background: rgba(255,255,255,.18);
+  border-color: rgba(255,255,255,.34);
+  box-shadow: 0 6px 14px rgba(0,0,0,.15);
+}
+
+.sb-sec-left {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.sb-sec-ico {
+  width: 20px;
+  height: 20px;
+  border-radius: 999px;
+  border: 1px solid rgba(255,255,255,.45);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 900;
+  color: #ffffff;
+  background: rgba(255,255,255,.14);
+}
+
+.sb-sec-title {
+  font-size: 14px;
+  font-weight: 800;
 }
 
 .sb-sec-arrow {
-  font-size: 11px;
-  color: rgba(255, 255, 255, 0.55);
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.9);
   transition: transform .15s ease;
 }
 
@@ -892,6 +925,20 @@ button, input, select, textarea {
 
 .sb-sec-arrow:not(.open) {
   transform: rotate(-90deg);
+}
+
+.sb-major-group {
+  display: grid;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.sb-submenu-wrap {
+  border-left: 2px solid rgba(255,255,255,.2);
+  margin-left: 10px;
+  padding-left: 8px;
+  display: grid;
+  gap: 3px;
 }
 
 .sb-item {
@@ -905,8 +952,8 @@ button, input, select, textarea {
   cursor: pointer;
   transition: background var(--tr), color var(--tr), transform var(--tr), box-shadow var(--tr);
   position: relative;
-  font-size: 13.5px;
-  font-weight: 500;
+  font-size: 14px;
+  font-weight: 700;
 }
 
 .sb-item:hover {
@@ -957,6 +1004,15 @@ button, input, select, textarea {
   padding: 12px;
   border-top: 1px solid rgba(255, 255, 255, 0.15);
   flex-shrink: 0;
+}
+
+.sb-account-card {
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.08);
+  padding: 8px;
+  display: grid;
+  gap: 8px;
 }
 
 .sb-user {
@@ -1013,7 +1069,7 @@ button, input, select, textarea {
   font-size: 13.5px;
   font-weight: 600;
   transition: background var(--tr), color var(--tr);
-  margin-top: 8px;
+  margin-top: 0;
   background: transparent;
   border: none;
 }
@@ -1069,7 +1125,7 @@ button, input, select, textarea {
   .sidebar.collapsed .sb-logo-name,
   .sidebar.collapsed .sb-role-txt,
   .sidebar.collapsed .sb-search-wrap,
-  .sidebar.collapsed .sb-sec,
+  .sidebar.collapsed .sb-sec-title,
   .sidebar.collapsed .sb-label,
   .sidebar.collapsed .sb-badge,
   .sidebar.collapsed .sb-logout-label {
@@ -1078,14 +1134,28 @@ button, input, select, textarea {
 
   .sidebar.collapsed .sb-role {
     justify-content: center;
-    margin-left: 8px;
-    margin-right: 8px;
     padding: 8px;
   }
 
   .sidebar.collapsed .sb-nav {
     padding-left: 6px;
     padding-right: 6px;
+  }
+
+  .sidebar.collapsed .sb-submenu-wrap {
+    border-left: none;
+    margin-left: 0;
+    padding-left: 0;
+  }
+
+  .sidebar.collapsed .sb-sec-btn {
+    justify-content: center;
+    padding-left: 6px;
+    padding-right: 6px;
+  }
+
+  .sidebar.collapsed .sb-sec-arrow {
+    display: none;
   }
 
   .sidebar.collapsed .sb-item {
@@ -1102,6 +1172,10 @@ button, input, select, textarea {
   .sidebar.collapsed .sb-foot {
     padding-left: 8px;
     padding-right: 8px;
+  }
+
+  .sidebar.collapsed .sb-account-card {
+    padding: 6px;
   }
 
   .sidebar.collapsed .sb-logout {
