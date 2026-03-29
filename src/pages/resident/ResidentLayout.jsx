@@ -8,6 +8,7 @@ import {
   uploadViolationImages,
 } from '../../lib/violations'
 import { createPayment, listHouseFees, listHousePayments } from '../../lib/fees'
+import { insertPageViewLog } from '../../lib/loginLogs'
 
 const MAX_ATTACHMENTS = 5
 const MAX_IMAGE_SIZE_BYTES = 100 * 1024
@@ -103,6 +104,18 @@ export default function ResidentLayout() {
   useEffect(() => {
     loadFeeData()
   }, [profile?.house_id])
+
+  useEffect(() => {
+    if (!profile?.id || !profile?.username) return
+    insertPageViewLog({
+      user_id: profile.id,
+      username: profile.username,
+      full_name: profile.full_name,
+      role: profile.role,
+      page_path: `/resident/${activeSection}`,
+      function_name: 'navigate_resident_section',
+    })
+  }, [activeSection, profile?.id, profile?.username, profile?.full_name, profile?.role])
 
   const getFeeStatusBadge = (status) => {
     if (status === 'paid') return { className: 'bd b-ok', label: 'ชำระแล้ว' }

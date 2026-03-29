@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { Outlet, useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext'
+import { insertPageViewLog } from '../../lib/loginLogs'
 import { applyDocumentTitle, getSetupConfig } from '../../lib/setup'
 import { updateUser, getHouseDetail } from '../../lib/users'
 import Swal from 'sweetalert2'
@@ -50,6 +51,18 @@ const AdminLayout = () => {
   const [modalContent, setModalContent] = useState('')
   const [modalFields, setModalFields] = useState({})
   const [modalCallback, setModalCallback] = useState(null)
+
+  useEffect(() => {
+    if (!profile?.id || !location?.pathname) return
+    insertPageViewLog({
+      user_id: profile.id,
+      username: profile.username,
+      full_name: profile.full_name,
+      role: profile.role,
+      page_path: location.pathname,
+      function_name: 'navigate_admin_page',
+    })
+  }, [location.pathname, profile?.id, profile?.username, profile?.full_name, profile?.role])
 
   // Apply theme to document
   useEffect(() => {
@@ -112,13 +125,11 @@ const AdminLayout = () => {
       { id: 'rpt-overdue', label: 'รายงานค้างชำระ', icon: '📄', path: '/admin/reports/overdue' },
       { id: 'rpt-expense', label: 'รายงานการจ่ายเงินออก', icon: '📄', path: '/admin/reports/expense-payments' },
       { id: 'rpt-violations', label: 'สรุปการกระทำผิด', icon: '📄', path: '/admin/reports/violations-summary' },
-      { id: 'rpt-issues', label: 'สรุปปัญหาจากลูกบ้าน', icon: '📄', path: '/admin/reports/issues-summary' },
     ]},
     { section: 'ตั้งค่าระบบ', sectionIcon: '>', items: [
       { id: 'cfg', label: 'ตั้งค่าระบบ', icon: '⚙️', path: '/admin/config' },
       { id: 'usr', label: 'ผู้ใช้งาน', icon: '👥', path: '/admin/users' },
-      { id: 'log', label: 'Audit Trail Log', icon: '📋', path: '/admin/logs' },
-      { id: 'login-logs', label: 'Login Log', icon: '🔐', path: '/admin/login-logs' },
+      { id: 'login-logs', label: 'ประวัติการใช้ระบบ', icon: '🔐', path: '/admin/login-logs' },
     ]},
   ]
 

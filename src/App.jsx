@@ -26,7 +26,6 @@ import AdminSettings from './pages/admin/AdminSettings'
 import AdminReportPayments from './pages/admin/AdminReportPayments'
 import AdminReportOverdue from './pages/admin/AdminReportOverdue'
 import AdminReportViolationsSummary from './pages/admin/AdminReportViolationsSummary'
-import AdminReportIssuesSummary from './pages/admin/AdminReportIssuesSummary'
 import AdminReportExpensePayments from './pages/admin/AdminReportExpensePayments'
 import ResidentLayout from './pages/resident/ResidentLayout'
 
@@ -99,7 +98,6 @@ function AppRoutes() {
         <Route path="reports/payments" element={<AdminReportPayments />} />
         <Route path="reports/overdue" element={<AdminReportOverdue />} />
         <Route path="reports/violations-summary" element={<AdminReportViolationsSummary />} />
-        <Route path="reports/issues-summary" element={<AdminReportIssuesSummary />} />
         <Route path="reports/expense-payments" element={<AdminReportExpensePayments />} />
         <Route path="work-reports" element={<Suspense fallback={<PageLoader />}><AdminWorkReports /></Suspense>} />
         <Route path="work-reports/new" element={<Suspense fallback={<PageLoader />}><AdminWorkReportForm /></Suspense>} />

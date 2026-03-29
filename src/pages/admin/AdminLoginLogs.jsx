@@ -123,8 +123,8 @@ export default function AdminLoginLogs() {
               <img className="ph-ico-img" src={setup.loginCircleLogoUrl || villageLogo} alt="logo" />
             </div>
             <div>
-              <div className="ph-h1">Log การเข้าสู่ระบบ</div>
-              <div className="ph-sub">บันทึกการ Login ของผู้ใช้แต่ละคน · {setup.villageName}</div>
+              <div className="ph-h1">ประวัติการใช้ระบบ</div>
+              <div className="ph-sub">บันทึกการ Login และการเข้าหน้าจอของผู้ใช้ · {setup.villageName}</div>
             </div>
           </div>
         </div>
@@ -133,7 +133,7 @@ export default function AdminLoginLogs() {
             type="text"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            placeholder="ค้นหา username / ชื่อ-นามสกุล..."
+            placeholder="ค้นหา username / ชื่อ / หน้าจอ / browser..."
             className="houses-filter-input"
             style={{ flex: '1 1 180px', minWidth: 0 }}
           />
@@ -206,6 +206,11 @@ export default function AdminLoginLogs() {
                   </th>
                   <th style={{ width: 40 }}>#</th>
                   <th>วันที่ / เวลา</th>
+                  <th>เหตุการณ์</th>
+                  <th>หน้าจอ</th>
+                  <th>Function</th>
+                  <th>Browser</th>
+                  <th>IP</th>
                   <th>Username</th>
                   <th>ชื่อ - นามสกุล</th>
                   <th>บทบาท</th>
@@ -213,9 +218,9 @@ export default function AdminLoginLogs() {
               </thead>
               <tbody>
                 {loading ? (
-                  <tr><td colSpan="6" style={{ textAlign: 'center', color: 'var(--mu)', padding: '24px' }}>กำลังโหลด...</td></tr>
+                  <tr><td colSpan="11" style={{ textAlign: 'center', color: 'var(--mu)', padding: '24px' }}>กำลังโหลด...</td></tr>
                 ) : filtered.length === 0 ? (
-                  <tr><td colSpan="6" style={{ textAlign: 'center', color: 'var(--mu)', padding: '24px' }}>ไม่มีข้อมูล Log</td></tr>
+                  <tr><td colSpan="11" style={{ textAlign: 'center', color: 'var(--mu)', padding: '24px' }}>ไม่มีข้อมูล Log</td></tr>
                 ) : filtered.map((row, idx) => (
                   <tr
                     key={row.id}
@@ -231,6 +236,11 @@ export default function AdminLoginLogs() {
                     </td>
                     <td style={{ color: 'var(--mu)', textAlign: 'center' }}>{idx + 1}</td>
                     <td style={{ whiteSpace: 'nowrap' }}>{fmtDatetime(row.login_at)}</td>
+                    <td>{row.event_type || '-'}</td>
+                    <td style={{ fontFamily: 'monospace', fontSize: 12 }}>{row.page_path || '-'}</td>
+                    <td style={{ fontFamily: 'monospace', fontSize: 12 }}>{row.function_name || '-'}</td>
+                    <td>{row.browser || '-'}</td>
+                    <td style={{ fontFamily: 'monospace', fontSize: 12 }}>{row.ip_address || '-'}</td>
                     <td style={{ fontFamily: 'monospace', fontWeight: 600 }}>{row.username}</td>
                     <td>{row.full_name || '-'}</td>
                     <td>
@@ -280,6 +290,11 @@ export default function AdminLoginLogs() {
                     <div className="mcard-meta" style={{ marginTop: 4 }}>
                       <span><span className="mcard-label">ชื่อ</span> {row.full_name || '-'}</span>
                       <span><span className="mcard-label">เวลา</span> {fmtDatetime(row.login_at)}</span>
+                      <span><span className="mcard-label">Event</span> {row.event_type || '-'}</span>
+                      <span><span className="mcard-label">หน้าจอ</span> {row.page_path || '-'}</span>
+                      <span><span className="mcard-label">Function</span> {row.function_name || '-'}</span>
+                      <span><span className="mcard-label">Browser</span> {row.browser || '-'}</span>
+                      <span><span className="mcard-label">IP</span> {row.ip_address || '-'}</span>
                     </div>
                   </div>
                 ))}

@@ -88,6 +88,9 @@ export function AuthProvider({ children }) {
         username: data.username,
         full_name: data.full_name || null,
         role: data.role || null,
+        event_type: 'login',
+        page_path: '/login',
+        function_name: 'signIn',
       })
       return { error: null }
     } catch (error) {
