@@ -100,6 +100,11 @@
   margin-bottom: 8px;
 }
 
+.dashboard-v1 .g2 > .chart-box,
+.dashboard-v1 .g2 > .card {
+  height: 300px;
+}
+
 .dashboard-v1 .chart-box,
 .dashboard-v1 .card {
   border-radius: 8px;
@@ -124,11 +129,15 @@
 
 .dashboard-v1 .cb {
   padding: 8px;
+  height: calc(300px - 36px);
+  overflow: auto;
 }
 
 .dashboard-v1 .chart-wrap {
   padding: 8px;
-  min-height: 118px;
+  height: calc(300px - 36px);
+  min-height: calc(300px - 36px);
+  max-height: calc(300px - 36px);
 }
 
 .dashboard-v1 .house-status-card {
@@ -145,7 +154,15 @@
 
 .dashboard-v1 .house-status-wrap {
   padding: 4px;
-  min-height: 59px;
+  height: calc(300px - 30px);
+  min-height: calc(300px - 30px);
+  max-height: calc(300px - 30px);
+}
+
+.dashboard-v1 .chart-wrap canvas,
+.dashboard-v1 .house-status-wrap canvas {
+  height: 300px !important;
+  max-height: 300px !important;
 }
 
 .dashboard-v1 .tw th {
