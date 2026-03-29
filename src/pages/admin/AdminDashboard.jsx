@@ -294,18 +294,18 @@ const AdminDashboard = () => {
             </div>
           </div>
           <div className="ph-acts">
-            <div style={{ display: 'flex', gap: '14px' }}>
-              <div style={{ textAlign: 'center' }}>
-                <div style={{ fontSize: '18px', fontWeight: 800, color: '#fff' }}>{data.header.totalHouses}</div>
-                <div style={{ fontSize: '9.5px', color: 'rgba(255,255,255,.75)' }}>บ้านทั้งหมด</div>
+            <div style={{ display: 'flex', gap: '24px' }}>
+              <div style={{ textAlign: 'center', minWidth: '80px' }}>
+                <div style={{ fontSize: '32px', fontWeight: 900, color: '#fff', lineHeight: 1 }}>{data.header.totalHouses}</div>
+                <div style={{ fontSize: '11px', color: 'rgba(255,255,255,.85)', marginTop: '6px', fontWeight: 500 }}>บ้านทั้งหมด</div>
               </div>
-              <div style={{ textAlign: 'center' }}>
-                <div style={{ fontSize: '18px', fontWeight: 800, color: '#fff' }}>⭐{data.header.averageRating.toFixed(1)}</div>
-                <div style={{ fontSize: '9.5px', color: 'rgba(255,255,255,.75)' }}>คะแนนบริการ</div>
+              <div style={{ textAlign: 'center', minWidth: '80px' }}>
+                <div style={{ fontSize: '32px', fontWeight: 900, color: '#fff', lineHeight: 1 }}>⭐{data.header.averageRating.toFixed(1)}</div>
+                <div style={{ fontSize: '11px', color: 'rgba(255,255,255,.85)', marginTop: '6px', fontWeight: 500 }}>คะแนนบริการ</div>
               </div>
-              <div style={{ textAlign: 'center' }}>
-                <div style={{ fontSize: '18px', fontWeight: 800, color: '#fff' }}>฿{Math.round(data.header.totalOutstanding / 1000)}K</div>
-                <div style={{ fontSize: '9.5px', color: 'rgba(255,255,255,.75)' }}>ค้างชำระรวม</div>
+              <div style={{ textAlign: 'center', minWidth: '100px' }}>
+                <div style={{ fontSize: '32px', fontWeight: 900, color: '#fff', lineHeight: 1 }}>฿{Math.round(data.header.totalOutstanding / 1000)}K</div>
+                <div style={{ fontSize: '11px', color: 'rgba(255,255,255,.85)', marginTop: '6px', fontWeight: 500 }}>ค้างชำระรวม</div>
               </div>
             </div>
           </div>
@@ -317,33 +317,33 @@ const AdminDashboard = () => {
         <div className="sc">
           <div className="sc-ico p">🏠</div>
           <div>
-            <div className="sc-v">{data.kpis.totalHouses}</div>
+            <div className="sc-v" style={{ fontSize: '36px', fontWeight: 900, lineHeight: 1 }}>{data.kpis.totalHouses}</div>
             <div className="sc-l">บ้านทั้งหมด</div>
-            <div className="sc-s"><span className="up">↑{data.kpis.newHousesThisMonth}</span> ใหม่เดือนนี้</div>
+            <div className="sc-s"><span className="up" style={{ fontSize: '13px', fontWeight: 700, color: '#18a765' }}>↑ {data.kpis.newHousesThisMonth}</span> หลังใหม่เดือนนี้</div>
           </div>
         </div>
         <div className="sc">
           <div className="sc-ico d">💰</div>
           <div>
-            <div className="sc-v">{data.kpis.overdueCount}</div>
+            <div className="sc-v" style={{ fontSize: '36px', fontWeight: 900, lineHeight: 1, color: '#d32f2f' }}>{data.kpis.overdueCount}</div>
             <div className="sc-l">ค้างชำระ</div>
-            <div className="sc-s"><span className="dn">฿{data.kpis.overdueAmount.toLocaleString('th-TH')}</span></div>
+            <div className="sc-s" style={{ color: '#d32f2f', fontWeight: 600 }}>฿{data.kpis.overdueAmount.toLocaleString('th-TH')}</div>
           </div>
         </div>
         <div className="sc">
           <div className="sc-ico w">📝</div>
           <div>
-            <div className="sc-v">{data.kpis.pendingApprovals}</div>
-            <div className="sc-l">รออนุมัติทั้งหมด</div>
-            <div className="sc-s">จากรถ, ชำระเงิน, ตลาด, ช่าง</div>
+            <div className="sc-v" style={{ fontSize: '36px', fontWeight: 900, lineHeight: 1 }}>{data.kpis.pendingApprovals}</div>
+            <div className="sc-l">รออนุมัติ</div>
+            <div className="sc-s">รถ, ชำระเงิน, ตลาด, ช่าง</div>
           </div>
         </div>
         <div className="sc">
           <div className="sc-ico a">🔧</div>
           <div>
-            <div className="sc-v">{data.kpis.openIssues}</div>
+            <div className="sc-v" style={{ fontSize: '36px', fontWeight: 900, lineHeight: 1 }}>{data.kpis.openIssues}</div>
             <div className="sc-l">ปัญหาค้างอยู่</div>
-            <div className="sc-s"><span className="up">⭐{data.kpis.averageRating.toFixed(1)}</span> คะแนน</div>
+            <div className="sc-s"><span style={{ fontSize: '13px', fontWeight: 700, color: '#e67e22' }}>⭐ {data.kpis.averageRating.toFixed(1)}</span> คะแนน</div>
           </div>
         </div>
       </div>

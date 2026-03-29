@@ -30,9 +30,13 @@ const AdminLayout = () => {
   const [menuSearch, setMenuSearch] = useState('')
   const [sectionOpen, setSectionOpen] = useState({
     หน้าหลัก: true,
-    จัดการ: false,
+    ข้อมูล: false,
+    การเงิน: false,
+    งานซ่อม: false,
+    การตรวจสอบ: false,
+    อื่นๆ: false,
     รายงาน: false,
-    ตั้งค่าระบบ: false,
+    ตั้งค่า: false,
   })
   const [newPassword, setNewPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
@@ -105,17 +109,25 @@ const AdminLayout = () => {
   const navItems = [
     { section: 'หน้าหลัก', tone: 'core', sectionIcon: '🏠', items: [
       { id: 'dash', label: 'Dashboard', icon: '📊', path: '/admin/dashboard' },
+    ]},
+    { section: 'ข้อมูล', tone: 'core', sectionIcon: '📋', items: [
       { id: 'houses', label: 'ข้อมูลบ้าน', icon: '🏠', path: '/admin/houses' },
       { id: 'vehicles', label: 'ข้อมูลรถ', icon: '🚗', path: '/admin/vehicles' },
-      { id: 'fees', label: 'ค่าส่วนกลาง', icon: '💰', path: '/admin/fees' },
-      { id: 'payments', label: 'จ่ายค่าส่วนกลาง', icon: '💳', path: '/admin/payments' },
     ]},
-    { section: 'จัดการ', tone: 'operation', sectionIcon: '⚙️', items: [
-      { id: 'req', label: 'คำขอแก้ไข', icon: '📝', path: '/admin/requests', badge: '7' },
+    { section: 'การเงิน', tone: 'operation', sectionIcon: '💰', items: [
+      { id: 'fees', label: 'ค่าส่วนกลาง', icon: '💵', path: '/admin/fees' },
+      { id: 'payments', label: 'ชำระเงิน', icon: '💳', path: '/admin/payments' },
+    ]},
+    { section: 'งานซ่อม', tone: 'operation', sectionIcon: '🔧', items: [
       { id: 'issues', label: 'จัดการปัญหา', icon: '🔧', path: '/admin/issues', badge: '3' },
-      { id: 'vio', label: 'แจ้งกระทำผิด', icon: '⚠️', path: '/admin/violations' },
+    ]},
+    { section: 'การตรวจสอบ', tone: 'operation', sectionIcon: '✓', items: [
+      { id: 'req', label: 'คำขอแก้ไข', icon: '📝', path: '/admin/requests', badge: '7' },
+      { id: 'vio', label: 'กระทำผิด', icon: '⚠️', path: '/admin/violations' },
+    ]},
+    { section: 'อื่นๆ', tone: 'operation', sectionIcon: '⭐', items: [
       { id: 'ann', label: 'ประกาศ', icon: '📢', path: '/admin/announcements' },
-      { id: 'rep', label: 'ผลงานนิติ', icon: '🏆', path: '/admin/work-reports' },
+      { id: 'rep', label: 'ผลงาน', icon: '🏆', path: '/admin/work-reports' },
       { id: 'tech', label: 'ทำเนียบช่าง', icon: '🔨', path: '/admin/technicians' },
       { id: 'market', label: 'ตลาดชุมชน', icon: '🛒', path: '/admin/marketplace' },
     ]},
@@ -125,7 +137,7 @@ const AdminLayout = () => {
       { id: 'rpt-expense', label: 'รายงานการจ่ายเงินออก', icon: '📄', path: '/admin/reports/expense-payments' },
       { id: 'rpt-violations', label: 'สรุปการกระทำผิด', icon: '📄', path: '/admin/reports/violations-summary' },
     ]},
-    { section: 'ตั้งค่าระบบ', tone: 'system', sectionIcon: '🔧', items: [
+    { section: 'ตั้งค่า', tone: 'system', sectionIcon: '⚙️', items: [
       { id: 'cfg', label: 'ตั้งค่าระบบ', icon: '⚙️', path: '/admin/config' },
       { id: 'usr', label: 'ผู้ใช้งาน', icon: '👥', path: '/admin/users' },
       { id: 'login-logs', label: 'ประวัติการใช้ระบบ', icon: '🔐', path: '/admin/login-logs' },
