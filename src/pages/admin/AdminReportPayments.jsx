@@ -106,51 +106,48 @@ export default function AdminReportPayments() {
   return (
     <div className="pane on houses-compact reports-compact">
       <div className="ph">
-        <div className="ph-in" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <div className="ph-ico">💳</div>
-            <div>
-              <div className="ph-h1">รายงานการชำระเงิน</div>
-              <div className="ph-sub">รายการรับชำระค่าส่วนกลาง (ข้อมูลจริง)</div>
-            </div>
+        <div className="ph-in" style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <div className="ph-ico">💳</div>
+          <div>
+            <div className="ph-h1">รายงานการชำระเงิน</div>
+            <div className="ph-sub">รายการรับชำระค่าส่วนกลาง (ข้อมูลจริง)</div>
           </div>
-          <form
-            className="houses-filter-row"
-            style={{
-              marginBottom: 0,
-              gap: 12,
-              flexWrap: 'wrap',
-              justifyContent: 'flex-end',
-              alignItems: 'center',
-              display: 'flex',
-              minWidth: 320,
-              width: '100%',
-              maxWidth: 600
-            }}
-            onSubmit={e => { e.preventDefault(); handleShowReport(); }}
-          >
-            <label style={{ marginBottom: 0, display: 'flex', flexDirection: 'column', fontWeight: 500 }}>
-              เดือนเริ่มต้น
-              <select value={startMonth} onChange={e => setStartMonth(Number(e.target.value))} className="houses-filter-select" style={{ minWidth: 120, height: 36 }}>
-                {monthOptions.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
-              </select>
-            </label>
-            <label style={{ marginBottom: 0, display: 'flex', flexDirection: 'column', fontWeight: 500 }}>
-              ถึงเดือน
-              <select value={endMonth} onChange={e => setEndMonth(Number(e.target.value))} className="houses-filter-select" style={{ minWidth: 120, height: 36 }}>
-                {monthOptions.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
-              </select>
-            </label>
-            <label style={{ marginBottom: 0, display: 'flex', flexDirection: 'column', fontWeight: 500 }}>
-              ปี
-              <select value={year} onChange={e => setYear(Number(e.target.value))} className="houses-filter-select" style={{ minWidth: 100, height: 36 }}>
-                {yearOptions.map(y => <option key={y} value={y}>{y + 543}</option>)}
-              </select>
-            </label>
-            <button className="btn btn-p" type="submit" style={{ minWidth: 120, height: 36, marginTop: 18 }}>แสดงรายงาน</button>
-            {touched && error && <span style={{ color: 'red', marginLeft: 8 }}>{error}</span>}
-          </form>
         </div>
+      </div>
+      <div style={{ width: '100%', margin: '16px 0 0 0', display: 'flex', justifyContent: 'flex-start' }}>
+        <form
+          className="houses-filter-row"
+          style={{
+            display: 'flex',
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: 20,
+            width: '100%',
+            maxWidth: 700
+          }}
+          onSubmit={e => { e.preventDefault(); handleShowReport(); }}
+        >
+          <label style={{ marginBottom: 0, fontWeight: 500 }}>
+            เดือนเริ่มต้น
+            <select value={startMonth} onChange={e => setStartMonth(Number(e.target.value))} className="houses-filter-select" style={{ minWidth: 120, height: 36, marginLeft: 8 }}>
+              {monthOptions.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+            </select>
+          </label>
+          <label style={{ marginBottom: 0, fontWeight: 500 }}>
+            ถึงเดือน
+            <select value={endMonth} onChange={e => setEndMonth(Number(e.target.value))} className="houses-filter-select" style={{ minWidth: 120, height: 36, marginLeft: 8 }}>
+              {monthOptions.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+            </select>
+          </label>
+          <label style={{ marginBottom: 0, fontWeight: 500 }}>
+            ปี
+            <select value={year} onChange={e => setYear(Number(e.target.value))} className="houses-filter-select" style={{ minWidth: 100, height: 36, marginLeft: 8 }}>
+              {yearOptions.map(y => <option key={y} value={y}>{y + 543}</option>)}
+            </select>
+          </label>
+          <button className="btn btn-p" type="submit" style={{ minWidth: 120, height: 36, marginTop: 18 }}>แสดงรายงาน</button>
+          {touched && error && <span style={{ color: 'red', marginLeft: 8 }}>{error}</span>}
+        </form>
       </div>
       <ReportMockPage
         columns={columns}
