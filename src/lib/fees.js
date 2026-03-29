@@ -1,6 +1,12 @@
 import { supabase } from './supabase'
 
 const REJECT_PREFIX = '[REJECT] '
+const PAYMENT_SLIP_BUCKET = 'system-assets'
+
+function sanitizeFileName(name) {
+  const raw = String(name || 'payment-slip')
+  return raw.replace(/[^a-zA-Z0-9._-]+/g, '_')
+}
 
 function stripRejectMarker(note) {
   const raw = String(note || '')
@@ -699,7 +705,7 @@ export async function deleteFee(id) {
 export async function listPayments({ limit } = {}) {
   let query = supabase
     .from('payments')
-    .select('id, fee_id, house_id, amount, payment_method, slip_url, paid_at, verified_by, verified_at, note, verified_profile:verified_by(full_name), fees(id, year, period, status, total_amount, due_date, invoice_date), houses(id, house_no, owner_name)')
+    .select('id, fee_id, house_id, amount, payment_method, slip_url, paid_at, verified_by, verified_at, note, verified_profile:verified_by(full_name), fees(id, year, period, status, total_amount, due_date, invoice_date), houses(id, house_no, soi, owner_name)')
     .order('paid_at', { ascending: false })
 
   if (limit) {
@@ -813,7 +819,7 @@ export async function createPayment(payload) {
   const { data, error } = await supabase
     .from('payments')
     .insert([payment])
-    .select('id, fee_id, house_id, amount, payment_method, slip_url, paid_at, verified_by, verified_at, note, verified_profile:verified_by(full_name), fees(id, year, period, status, total_amount, due_date, invoice_date), houses(id, house_no, owner_name)')
+    .select('id, fee_id, house_id, amount, payment_method, slip_url, paid_at, verified_by, verified_at, note, verified_profile:verified_by(full_name), fees(id, year, period, status, total_amount, due_date, invoice_date), houses(id, house_no, soi, owner_name)')
     .single()
 
   if (error) throw error
@@ -863,6 +869,29 @@ export async function createPayment(payload) {
   return data
 }
 
+export async function uploadPaymentSlip(file, { houseId } = {}) {
+  if (!file) throw new Error('ไม่พบไฟล์หลักฐานการชำระ')
+
+  const safeName = sanitizeFileName(file.name)
+  const folder = String(houseId || 'general').trim()
+  const path = `payment-slips/${folder}/${Date.now()}_${safeName}`
+
+  const { error } = await supabase.storage
+    .from(PAYMENT_SLIP_BUCKET)
+    .upload(path, file, { upsert: true, contentType: file.type || 'image/jpeg' })
+
+  if (error) throw error
+
+  const { data: publicUrlData } = supabase.storage
+    .from(PAYMENT_SLIP_BUCKET)
+    .getPublicUrl(path)
+
+  return {
+    path,
+    url: publicUrlData?.publicUrl || '',
+  }
+}
+
 export async function approvePayment(paymentId, approverId) {
   const verifiedAt = new Date().toISOString()
 
@@ -870,7 +899,7 @@ export async function approvePayment(paymentId, approverId) {
     .from('payments')
     .update({ verified_by: approverId || null, verified_at: verifiedAt })
     .eq('id', paymentId)
-    .select('id, fee_id, house_id, amount, payment_method, slip_url, paid_at, verified_by, verified_at, note, verified_profile:verified_by(full_name), fees(id, year, period, status, total_amount, due_date, invoice_date), houses(id, house_no, owner_name)')
+    .select('id, fee_id, house_id, amount, payment_method, slip_url, paid_at, verified_by, verified_at, note, verified_profile:verified_by(full_name), fees(id, year, period, status, total_amount, due_date, invoice_date), houses(id, house_no, soi, owner_name)')
     .single()
 
   if (error) throw error
@@ -887,7 +916,7 @@ export async function revokePaymentApproval(paymentId) {
     .from('payments')
     .update({ verified_by: null, verified_at: null })
     .eq('id', paymentId)
-    .select('id, fee_id, house_id, amount, payment_method, slip_url, paid_at, verified_by, verified_at, note, verified_profile:verified_by(full_name), fees(id, year, period, status, total_amount, due_date, invoice_date), houses(id, house_no, owner_name)')
+    .select('id, fee_id, house_id, amount, payment_method, slip_url, paid_at, verified_by, verified_at, note, verified_profile:verified_by(full_name), fees(id, year, period, status, total_amount, due_date, invoice_date), houses(id, house_no, soi, owner_name)')
     .single()
 
   if (error) throw error
@@ -925,7 +954,7 @@ export async function rejectPayment(paymentId, reason, approverId) {
     .from('payments')
     .update({ verified_by: approverId || null, verified_at: null, note: rejectNote })
     .eq('id', paymentId)
-    .select('id, fee_id, house_id, amount, payment_method, slip_url, paid_at, verified_by, verified_at, note, verified_profile:verified_by(full_name), fees(id, year, period, status, total_amount, due_date, invoice_date), houses(id, house_no, owner_name)')
+    .select('id, fee_id, house_id, amount, payment_method, slip_url, paid_at, verified_by, verified_at, note, verified_profile:verified_by(full_name), fees(id, year, period, status, total_amount, due_date, invoice_date), houses(id, house_no, soi, owner_name)')
     .single()
 
   if (error) throw error

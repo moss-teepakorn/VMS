@@ -680,6 +680,22 @@
   padding-bottom: 10px;
 }
 
+.payments-compact .houses-table th {
+  padding: 8px 10px;
+  font-size: 10px;
+}
+
+.payments-compact .houses-table td {
+  padding: 8px 10px;
+  font-size: 11.5px;
+  line-height: 1.25;
+}
+
+.payments-compact .td-acts {
+  gap: 3px;
+  flex-wrap: wrap;
+}
+
 .houses-owner-main {
   color: var(--tx);
   font-size: 12px;

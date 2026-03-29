@@ -8,6 +8,7 @@ const DEFAULT_SETUP = {
   version: 'v12.3',
   address: 'Gusto Suksawat 26 -1',
   loginCircleLogoUrl: '',
+  juristicSignatureUrl: '',
   bankName: '',
   bankAccountNo: '',
   bankAccountName: '',
@@ -20,12 +21,15 @@ function toSetup(row) {
   const address = row?.juristic_address?.trim() || row?.juristic_name?.trim() || DEFAULT_SETUP.address
   const fromLocalLogo = String(localStorage.getItem('vms-login-circle-logo-url') || '').trim()
   const derivedLogoUrl = row?.village_logo_path ? buildSystemAssetPublicUrl(row.village_logo_path) : ''
+  const derivedSignatureUrl = row?.juristic_signature_path ? buildSystemAssetPublicUrl(row.juristic_signature_path) : ''
   const loginCircleLogoUrl = String(row?.village_logo_url || derivedLogoUrl || fromLocalLogo || '').trim()
+  const juristicSignatureUrl = String(row?.juristic_signature_url || derivedSignatureUrl || '').trim()
   return {
     ...DEFAULT_SETUP,
     villageName,
     address,
     loginCircleLogoUrl,
+    juristicSignatureUrl,
     bankName: row?.bank_name?.trim() || DEFAULT_SETUP.bankName,
     bankAccountNo: row?.bank_account_no?.trim() || DEFAULT_SETUP.bankAccountNo,
     bankAccountName: row?.bank_account_name?.trim() || DEFAULT_SETUP.bankAccountName,

@@ -7,12 +7,13 @@ import {
   listFees,
   listPayments,
   rejectPayment,
-  revokePaymentApproval,
+  uploadPaymentSlip,
 } from '../../lib/fees'
 import { getSetupConfig } from '../../lib/setup'
 import villageLogo from '../../assets/village-logo.svg'
 
 const REJECT_PREFIX = '[REJECT] '
+const PAYMENT_META_PREFIX = '[PAYMENT_ITEMS_JSON]'
 
 function getRejectedReason(note) {
   const raw = String(note || '')
@@ -23,10 +24,28 @@ function getRejectedReason(note) {
 
 function getDisplayNote(note) {
   const raw = String(note || '')
-  if (!raw.startsWith(REJECT_PREFIX)) return raw
-  const lines = raw.split('\n')
+  const noMeta = raw.includes(PAYMENT_META_PREFIX)
+    ? raw.slice(0, raw.indexOf(PAYMENT_META_PREFIX)).trim()
+    : raw
+  if (!noMeta.startsWith(REJECT_PREFIX)) return noMeta
+  const lines = noMeta.split('\n')
   lines.shift()
   return lines.join('\n').trim()
+}
+
+function parsePaymentMeta(note) {
+  const raw = String(note || '')
+  const markerIndex = raw.indexOf(PAYMENT_META_PREFIX)
+  if (markerIndex < 0) return null
+  const jsonText = raw.slice(markerIndex + PAYMENT_META_PREFIX.length).trim()
+  if (!jsonText) return null
+  try {
+    const parsed = JSON.parse(jsonText)
+    if (!Array.isArray(parsed?.items)) return null
+    return parsed
+  } catch {
+    return null
+  }
 }
 
 function formatDateTime(value) {
@@ -41,7 +60,25 @@ function formatDateTime(value) {
 }
 
 function formatMoney(value) {
-  return Number(value || 0).toLocaleString('th-TH')
+  return Number(value || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+}
+
+function toBE(year) {
+  const y = Number(year || 0)
+  if (!y) return '-'
+  return y > 2400 ? y : y + 543
+}
+
+function normalizeSoi(soi) {
+  return String(soi || '').trim().toLowerCase()
+}
+
+function normalizeHouseNo(houseNo) {
+  return String(houseNo || '').trim()
+}
+
+function compareHouseNo(a, b) {
+  return normalizeHouseNo(a).localeCompare(normalizeHouseNo(b), 'th', { numeric: true, sensitivity: 'base' })
 }
 
 function formatMethod(method) {
@@ -79,13 +116,57 @@ const feeItemDefs = [
   { key: 'fee_other', label: 'ค่าอื่นๆ' },
 ]
 
+function getFeeDueItems(fee) {
+  return feeItemDefs
+    .map((item) => ({ key: item.key, label: item.label, dueAmount: Number(fee?.[item.key] || 0) }))
+    .filter((item) => item.dueAmount > 0)
+}
+
+function getPaymentItemRows(payment) {
+  const parsedMeta = parsePaymentMeta(payment?.note)
+  if (parsedMeta?.items?.length) {
+    return parsedMeta.items.map((item) => ({
+      key: item.key,
+      label: item.label || '-',
+      dueAmount: Number(item.dueAmount || 0),
+      paidAmount: Number(item.paidAmount || 0),
+    }))
+  }
+
+  const dueItems = getFeeDueItems(payment?.fees)
+  if (dueItems.length === 0) {
+    return [{ key: 'paid_total', label: 'ยอดรับชำระรวม', dueAmount: Number(payment?.fees?.total_amount || 0), paidAmount: Number(payment?.amount || 0) }]
+  }
+
+  const dueTotal = dueItems.reduce((sum, item) => sum + Number(item.dueAmount || 0), 0)
+  return [
+    ...dueItems.map((item) => ({
+      ...item,
+      paidAmount: 0,
+    })),
+    {
+      key: 'submitted_total',
+      label: 'ยอดชำระรวมที่แจ้งมา',
+      dueAmount: dueTotal,
+      paidAmount: Number(payment?.amount || 0),
+    },
+  ]
+}
+
 export default function AdminPayments() {
   const { profile } = useAuth()
   const [payments, setPayments] = useState([])
   const [loading, setLoading] = useState(false)
   const [search, setSearch] = useState('')
+  const [yearFilter, setYearFilter] = useState('all')
+  const [periodFilter, setPeriodFilter] = useState('all')
   const [showReceiveModal, setShowReceiveModal] = useState(false)
   const [savingReceive, setSavingReceive] = useState(false)
+  const [uploadingSlip, setUploadingSlip] = useState(false)
+  const [receiveSlipFile, setReceiveSlipFile] = useState(null)
+  const [receiveSlipPreview, setReceiveSlipPreview] = useState('')
+  const [approveTarget, setApproveTarget] = useState(null)
+  const [approving, setApproving] = useState(false)
   const [feeOptions, setFeeOptions] = useState([])
   const [receiveForm, setReceiveForm] = useState({
     fee_id: '',
@@ -100,6 +181,7 @@ export default function AdminPayments() {
     villageName: 'The Greenfield',
     address: '',
     loginCircleLogoUrl: '',
+    juristicSignatureUrl: '',
     bankName: '',
     bankAccountName: '',
     bankAccountNo: '',
@@ -121,11 +203,26 @@ export default function AdminPayments() {
     receiveForm.selectedItems.reduce((sum, key) => sum + Number(receiveForm.itemAmounts?.[key] || 0), 0)
   ), [receiveForm.selectedItems, receiveForm.itemAmounts])
 
+  const filteredByYear = useMemo(() => {
+    return payments.filter((payment) => {
+      const feeYear = Number(payment.fees?.year || 0)
+      const passYear = yearFilter === 'all' || String(feeYear) === String(yearFilter)
+      return passYear
+    })
+  }, [payments, yearFilter])
+
+  const filteredByYearPeriod = useMemo(() => {
+    return filteredByYear.filter((payment) => {
+      const feePeriod = String(payment.fees?.period || '')
+      return periodFilter === 'all' || feePeriod === periodFilter
+    })
+  }, [filteredByYear, periodFilter])
+
   const summary = useMemo(() => {
-    const totalAmount = payments.reduce((sum, payment) => sum + Number(payment.amount || 0), 0)
-    const approved = payments.filter((payment) => payment.verified_at)
-    const rejected = payments.filter((payment) => !payment.verified_at && getRejectedReason(payment.note))
-    const pending = payments.filter((payment) => !payment.verified_at && !getRejectedReason(payment.note))
+    const totalAmount = filteredByYearPeriod.reduce((sum, payment) => sum + Number(payment.amount || 0), 0)
+    const approved = filteredByYearPeriod.filter((payment) => payment.verified_at)
+    const rejected = filteredByYearPeriod.filter((payment) => !payment.verified_at && getRejectedReason(payment.note))
+    const pending = filteredByYearPeriod.filter((payment) => !payment.verified_at && !getRejectedReason(payment.note))
     return {
       totalAmount,
       approvedAmount: approved.reduce((sum, payment) => sum + Number(payment.amount || 0), 0),
@@ -134,18 +231,48 @@ export default function AdminPayments() {
       pendingCount: pending.length,
       rejectedCount: rejected.length,
     }
+  }, [filteredByYearPeriod])
+
+  const yearCards = useMemo(() => {
+    const counts = new Map()
+    for (const payment of payments) {
+      const y = Number(payment.fees?.year || 0)
+      if (!y) continue
+      counts.set(y, Number(counts.get(y) || 0) + 1)
+    }
+    return [...counts.entries()]
+      .sort((a, b) => b[0] - a[0])
+      .map(([year, count]) => ({ value: String(year), label: String(toBE(year)), count }))
   }, [payments])
+
+  const periodCards = useMemo(() => {
+    const rows = filteredByYear
+    return [
+      { value: 'all', label: 'ทั้งหมด', count: rows.length },
+      { value: 'first_half', label: 'ครึ่งปีแรก', count: rows.filter((p) => p.fees?.period === 'first_half').length },
+      { value: 'second_half', label: 'ครึ่งปีหลัง', count: rows.filter((p) => p.fees?.period === 'second_half').length },
+      { value: 'full_year', label: 'เต็มปี', count: rows.filter((p) => p.fees?.period === 'full_year').length },
+    ]
+  }, [filteredByYear])
 
   const filtered = useMemo(() => {
     const kw = search.trim().toLowerCase()
-    if (!kw) return payments
-    return payments.filter((payment) => (
+    const searched = !kw
+      ? filteredByYearPeriod
+      : filteredByYearPeriod.filter((payment) => (
       (payment.houses?.house_no || '').toLowerCase().includes(kw)
+      || (payment.houses?.soi || '').toLowerCase().includes(kw)
       || (payment.payment_method || '').toLowerCase().includes(kw)
-      || (payment.note || '').toLowerCase().includes(kw)
+      || formatPeriod(payment.fees?.period || '').toLowerCase().includes(kw)
       || (payment.verified_at ? 'อนุมัติแล้ว' : getRejectedReason(payment.note) ? 'ตีกลับ' : 'รอตรวจสอบ').includes(kw)
     ))
-  }, [payments, search])
+
+    return [...searched].sort((a, b) => {
+      const soiCmp = normalizeSoi(a.houses?.soi).localeCompare(normalizeSoi(b.houses?.soi), 'th', { numeric: true, sensitivity: 'base' })
+      if (soiCmp !== 0) return soiCmp
+      return compareHouseNo(a.houses?.house_no, b.houses?.house_no)
+    })
+  }, [filteredByYearPeriod, search])
 
   const loadPayments = async () => {
     try {
@@ -163,10 +290,20 @@ export default function AdminPayments() {
     loadPayments()
   }, [])
 
+  useEffect(() => () => {
+    if (receiveSlipPreview) {
+      URL.revokeObjectURL(receiveSlipPreview)
+    }
+  }, [receiveSlipPreview])
+
   const openReceiveModal = async () => {
     try {
       const feeRows = await listFees({ status: 'all' })
-      const candidates = feeRows.filter((fee) => fee.status !== 'paid')
+      const candidates = feeRows.filter((fee) => (
+        fee.status !== 'paid'
+        && fee.status !== 'cancelled'
+        && Number(fee.total_amount || 0) > 0
+      ))
 
       if (candidates.length === 0) {
         await Swal.fire({ icon: 'info', title: 'ไม่มีใบแจ้งหนี้ที่รับชำระได้' })
@@ -193,6 +330,11 @@ export default function AdminPayments() {
         itemAmounts,
         note: '',
       })
+      if (receiveSlipPreview) {
+        URL.revokeObjectURL(receiveSlipPreview)
+      }
+      setReceiveSlipPreview('')
+      setReceiveSlipFile(null)
       setShowReceiveModal(true)
     } catch (error) {
       await Swal.fire({ icon: 'error', title: 'โหลดใบแจ้งหนี้ไม่สำเร็จ', text: error.message })
@@ -262,6 +404,32 @@ export default function AdminPayments() {
     setReceiveForm((prev) => ({ ...prev, selectedItems: [] }))
   }
 
+  const handleChangeReceiveSlip = (event) => {
+    const file = event.target.files?.[0] || null
+    if (!file) {
+      if (receiveSlipPreview) URL.revokeObjectURL(receiveSlipPreview)
+      setReceiveSlipPreview('')
+      setReceiveSlipFile(null)
+      return
+    }
+
+    if (!String(file.type || '').startsWith('image/')) {
+      Swal.fire({ icon: 'warning', title: 'แนบได้เฉพาะไฟล์รูปภาพ' })
+      event.target.value = ''
+      return
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      Swal.fire({ icon: 'warning', title: 'ไฟล์ใหญ่เกิน 5MB' })
+      event.target.value = ''
+      return
+    }
+
+    if (receiveSlipPreview) URL.revokeObjectURL(receiveSlipPreview)
+    setReceiveSlipFile(file)
+    setReceiveSlipPreview(URL.createObjectURL(file))
+  }
+
   useEffect(() => {
     setReceiveForm((prev) => {
       const nextAmount = String(receiveSelectedAmount)
@@ -290,73 +458,72 @@ export default function AdminPayments() {
       return
     }
 
+    if (!receiveSlipFile) {
+      await Swal.fire({ icon: 'warning', title: 'กรุณาแนบรูปหลักฐานการชำระ' })
+      return
+    }
+
     try {
       setSavingReceive(true)
-      const selectedLabels = feeItemDefs
+      setUploadingSlip(true)
+      const uploadedSlip = await uploadPaymentSlip(receiveSlipFile, { houseId: targetFee.house_id })
+      const selectedItemsMeta = feeItemDefs
         .filter((item) => receiveForm.selectedItems.includes(item.key))
-        .map((item) => `${item.label} ฿${Number(receiveForm.itemAmounts?.[item.key] || 0).toLocaleString('th-TH')}`)
+        .map((item) => ({
+          key: item.key,
+          label: item.label,
+          dueAmount: Number(targetFee[item.key] || 0),
+          paidAmount: Number(receiveForm.itemAmounts?.[item.key] || 0),
+        }))
+      const selectedLabels = selectedItemsMeta
+        .map((item) => `${item.label} ฿${Number(item.paidAmount || 0).toLocaleString('th-TH')}`)
       const noteParts = []
       if (selectedLabels.length > 0) noteParts.push(`ชำระรายการ: ${selectedLabels.join(', ')}`)
       if (receiveForm.note.trim()) noteParts.push(receiveForm.note.trim())
+      noteParts.push(`${PAYMENT_META_PREFIX}${JSON.stringify({ items: selectedItemsMeta })}`)
 
       await createPayment({
         fee_id: targetFee.id,
         house_id: targetFee.house_id,
         amount,
         payment_method: receiveForm.payment_method,
+        slip_url: uploadedSlip?.url || '',
         paid_at: receiveForm.paid_at,
         note: noteParts.join(' | '),
         setFeeStatusFromAmount: true,
       })
+      if (receiveSlipPreview) {
+        URL.revokeObjectURL(receiveSlipPreview)
+      }
+      setReceiveSlipPreview('')
+      setReceiveSlipFile(null)
       setShowReceiveModal(false)
       await loadPayments()
       await Swal.fire({ icon: 'success', title: 'บันทึกรับชำระแล้ว', timer: 1200, showConfirmButton: false })
     } catch (error) {
       await Swal.fire({ icon: 'error', title: 'รับชำระไม่สำเร็จ', text: error.message })
     } finally {
+      setUploadingSlip(false)
       setSavingReceive(false)
     }
   }
 
-  const handleApprove = async (payment) => {
-    const result = await Swal.fire({
-      icon: 'question',
-      title: 'อนุมัติการชำระ?',
-      text: `บ้าน ${payment.houses?.house_no || '-'} จำนวน ฿${formatMoney(payment.amount)}`,
-      showCancelButton: true,
-      confirmButtonText: 'อนุมัติ',
-      cancelButtonText: 'ยกเลิก',
-      confirmButtonColor: '#0f766e',
-    })
-    if (!result.isConfirmed) return
+  const openApproveModal = (payment) => {
+    setApproveTarget(payment)
+  }
 
+  const handleApproveConfirmed = async () => {
+    if (!approveTarget) return
     try {
-      const approved = await approvePayment(payment.id, profile?.id)
+      setApproving(true)
+      const approved = await approvePayment(approveTarget.id, profile?.id)
       setPayments((prev) => prev.map((item) => (item.id === approved.id ? approved : item)))
+      setApproveTarget(null)
       await Swal.fire({ icon: 'success', title: 'อนุมัติแล้ว', timer: 1200, showConfirmButton: false })
     } catch (error) {
       await Swal.fire({ icon: 'error', title: 'อนุมัติไม่สำเร็จ', text: error.message })
-    }
-  }
-
-  const handleRevokeApproval = async (payment) => {
-    const result = await Swal.fire({
-      icon: 'warning',
-      title: 'ยกเลิกการอนุมัติ?',
-      text: `ใบเสร็จของบ้าน ${payment.houses?.house_no || '-'} จะถูกยกเลิก`,
-      showCancelButton: true,
-      confirmButtonText: 'ยกเลิกการอนุมัติ',
-      cancelButtonText: 'ปิด',
-      confirmButtonColor: '#e11d48',
-    })
-    if (!result.isConfirmed) return
-
-    try {
-      const reverted = await revokePaymentApproval(payment.id)
-      setPayments((prev) => prev.map((item) => (item.id === reverted.id ? reverted : item)))
-      await Swal.fire({ icon: 'success', title: 'ยกเลิกการอนุมัติแล้ว', timer: 1200, showConfirmButton: false })
-    } catch (error) {
-      await Swal.fire({ icon: 'error', title: 'ดำเนินการไม่สำเร็จ', text: error.message })
+    } finally {
+      setApproving(false)
     }
   }
 
@@ -379,14 +546,16 @@ export default function AdminPayments() {
       inputValidator: (value) => (!String(value || '').trim() ? 'กรุณาระบุเหตุผล' : undefined),
     })
 
-    if (!reason) return
+    if (!reason) return false
 
     try {
       const rejected = await rejectPayment(payment.id, reason, profile?.id)
       setPayments((prev) => prev.map((item) => (item.id === rejected.id ? rejected : item)))
       await Swal.fire({ icon: 'success', title: 'ตีกลับแล้ว', timer: 1200, showConfirmButton: false })
+      return true
     } catch (error) {
       await Swal.fire({ icon: 'error', title: 'ตีกลับไม่สำเร็จ', text: error.message })
+      return false
     }
   }
 
@@ -399,13 +568,93 @@ export default function AdminPayments() {
     const ownerName = payment.houses?.owner_name || '-'
     const invoiceLabel = payment.fees ? `${formatPeriod(payment.fees.period)} ปี ${Number(payment.fees.year || 0) + 543}` : '-'
     const invoiceNo = payment.fees ? `INV-${String(payment.fees.year || '').slice(-2)}-${String(payment.fees.id || '').slice(0, 8).toUpperCase()}` : '-'
-    const amount = Number(payment.amount || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
-    const invoiceAmount = Number(payment.fees?.total_amount || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+    const amount = Number(payment.amount || 0)
     const approver = payment.verified_profile?.full_name || profile?.full_name || profile?.username || '-'
     const paymentDate = formatDateTime(payment.paid_at)
     const displayNote = getDisplayNote(payment.note)
+    const itemRows = getPaymentItemRows(payment)
+    const totalDue = itemRows.reduce((sum, row) => sum + Number(row.dueAmount || 0), 0)
+    const totalPaid = itemRows.reduce((sum, row) => sum + Number(row.paidAmount || 0), 0) || amount
+    const signatureSource = setup.juristicSignatureUrl || ''
     const printWindow = window.open('', '_blank', 'width=960,height=1200')
     if (!printWindow) return
+
+    const renderTableRows = () => itemRows.map((row, index) => (`
+      <tr>
+        <td class="c">${index + 1}</td>
+        <td>${row.label}</td>
+        <td class="r">${Number(row.dueAmount || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+        <td class="r">${Number(row.paidAmount || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+      </tr>
+    `)).join('')
+
+    const renderSheet = (copyLabel) => (`
+      <div class="sheet">
+        <div class="head">
+          <div class="brand">
+            <img src="${setup.loginCircleLogoUrl || villageLogo}" alt="logo" />
+            <div>
+              <div class="doc">ใบเสร็จรับเงินค่าส่วนกลาง</div>
+              <div class="village">${setup.villageName || 'Village Management System'}</div>
+              <div class="sub">${setup.address || '-'}</div>
+              <div class="sub">อ้างอิงใบแจ้งหนี้ ${invoiceNo}</div>
+            </div>
+          </div>
+          <div class="doc-meta">
+            <div><span>เลขที่ใบเสร็จ:</span> <strong>${receiptNo}</strong></div>
+            <div><span>วันที่รับชำระ:</span> <strong>${paymentDate}</strong></div>
+            <div><span>วันที่อนุมัติ:</span> <strong>${issueDate}</strong></div>
+            <div class="copy-mark-row"><div class="copy-mark">${copyLabel}</div></div>
+          </div>
+        </div>
+
+        <section class="box">
+          <div class="grid">
+            <div><span>บ้านเลขที่</span><strong>${houseNo}</strong></div>
+            <div><span>ชื่อเจ้าของบ้าน</span><strong>${ownerName}</strong></div>
+            <div><span>รอบใบแจ้งหนี้</span><strong>${invoiceLabel}</strong></div>
+            <div><span>วิธีชำระ</span><strong>${formatMethod(payment.payment_method)}</strong></div>
+          </div>
+        </section>
+
+        <section class="box">
+          <table>
+            <thead>
+              <tr>
+                <th class="c" style="width:56px;">ลำดับ</th>
+                <th>รายการ</th>
+                <th class="r" style="width:170px;">ยอดที่ต้องชำระ (บาท)</th>
+                <th class="r" style="width:170px;">ยอดชำระจริง (บาท)</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${renderTableRows()}
+            </tbody>
+            <tfoot>
+              <tr>
+                <td colspan="2" class="r"><strong>รวม</strong></td>
+                <td class="r"><strong>${totalDue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong></td>
+                <td class="r"><strong>${totalPaid.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong></td>
+              </tr>
+            </tfoot>
+          </table>
+          <div class="note-box">${displayNote || 'ชำระเรียบร้อยแล้ว ขอบคุณค่ะ/ครับ'}</div>
+        </section>
+
+        <section class="foot">
+          <div class="note">
+            ออกใบเสร็จหลังจากตรวจสอบการชำระเรียบร้อยแล้ว<br />
+            อนุมัติโดย ${approver}<br />
+            บัญชีอ้างอิง ${setup.bankAccountName || '-'} ${setup.bankAccountNo || ''}
+          </div>
+          <div class="sign-wrap">
+            ${signatureSource ? `<img src="${signatureSource}" alt="juristic-signature" class="sign-img" />` : ''}
+            <div class="sign-line"></div>
+            <div>ผู้ตรวจสอบ / ผู้ออกใบเสร็จ</div>
+          </div>
+        </section>
+      </div>
+    `)
 
     printWindow.document.write(`
       <html>
@@ -419,6 +668,7 @@ export default function AdminPayments() {
             * { box-sizing: border-box; }
             html, body { font-family: 'Sarabun', 'TH Sarabun New', Tahoma, sans-serif; margin: 0; padding: 0; color: #111827; background: #fff; }
             .sheet { width: 100%; min-height: 100vh; padding: 24px 28px; display: flex; flex-direction: column; gap: 8px; }
+            .sheet + .sheet { page-break-before: always; }
             .head {
               display: flex;
               justify-content: space-between;
@@ -488,6 +738,7 @@ export default function AdminPayments() {
             }
             .note { font-size: 9px; color: #64748b; line-height: 1.4; }
             .sign-wrap { min-width: 180px; text-align: center; font-size: 9px; color: #64748b; }
+            .sign-img { max-width: 160px; max-height: 52px; width: auto; height: auto; display: block; margin: 0 auto 6px; object-fit: contain; }
             .sign-line { border-top: 1px solid #cbd5e1; margin: 36px 0 4px; }
             @media print {
               html, body { background: #fff; }
@@ -495,82 +746,21 @@ export default function AdminPayments() {
           </style>
         </head>
         <body>
-          <div class="sheet">
-            <div class="head">
-              <div class="brand">
-                <img src="${setup.loginCircleLogoUrl || villageLogo}" alt="logo" />
-                <div>
-                  <div class="doc">ใบเสร็จรับเงินค่าส่วนกลาง</div>
-                  <div class="village">${setup.villageName || 'Village Management System'}</div>
-                  <div class="sub">${setup.address || '-'}</div>
-                  <div class="sub">อ้างอิงใบแจ้งหนี้ ${invoiceNo}</div>
-                </div>
-              </div>
-              <div class="doc-meta">
-                <div><span>เลขที่ใบเสร็จ:</span> <strong>${receiptNo}</strong></div>
-                <div><span>วันที่รับชำระ:</span> <strong>${paymentDate}</strong></div>
-                <div><span>วันที่อนุมัติ:</span> <strong>${issueDate}</strong></div>
-                <div class="copy-mark-row"><div class="copy-mark">ต้นฉบับ</div></div>
-              </div>
-            </div>
-
-            <section class="box">
-              <div class="grid">
-                <div><span>บ้านเลขที่</span><strong>${houseNo}</strong></div>
-                <div><span>ชื่อเจ้าของบ้าน</span><strong>${ownerName}</strong></div>
-                <div><span>รอบใบแจ้งหนี้</span><strong>${invoiceLabel}</strong></div>
-                <div><span>วิธีชำระ</span><strong>${formatMethod(payment.payment_method)}</strong></div>
-              </div>
-            </section>
-
-            <section class="box">
-              <table>
-                <thead>
-                  <tr>
-                    <th class="c" style="width:56px;">ลำดับ</th>
-                    <th>รายการ</th>
-                    <th class="r" style="width:180px;">จำนวนเงิน (บาท)</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr>
-                    <td class="c">1</td>
-                    <td>ยอดตามใบแจ้งหนี้ ${invoiceNo}</td>
-                    <td class="r">${invoiceAmount}</td>
-                  </tr>
-                  <tr>
-                    <td class="c">2</td>
-                    <td>ยอดรับชำระจริง</td>
-                    <td class="r">${amount}</td>
-                  </tr>
-                </tbody>
-                <tfoot>
-                  <tr>
-                    <td colspan="2" class="r"><strong>ยอดรับชำระสุทธิ</strong></td>
-                    <td class="r"><strong>${amount}</strong></td>
-                  </tr>
-                </tfoot>
-              </table>
-              <div class="note-box">${displayNote || 'ชำระเรียบร้อยแล้ว ขอบคุณค่ะ/ครับ'}</div>
-            </section>
-
-            <section class="foot">
-              <div class="note">
-                ออกใบเสร็จหลังจากตรวจสอบการชำระเรียบร้อยแล้ว<br />
-                อนุมัติโดย ${approver}<br />
-                บัญชีอ้างอิง ${setup.bankAccountName || '-'} ${setup.bankAccountNo || ''}
-              </div>
-              <div class="sign-wrap">
-                <div class="sign-line"></div>
-                <div>ผู้ตรวจสอบ / ผู้ออกใบเสร็จ</div>
-              </div>
-            </section>
-          </div>
+          ${renderSheet('ต้นฉบับ')}
+          ${renderSheet('สำเนา')}
           <script>window.onload = () => window.print();</script>
         </body>
       </html>
     `)
     printWindow.document.close()
+  }
+
+  const handleRejectFromApproveModal = async () => {
+    if (!approveTarget) return
+    const success = await handleReject(approveTarget)
+    if (success) {
+      setApproveTarget(null)
+    }
   }
 
   const getStatusBadge = (payment) => {
@@ -580,7 +770,7 @@ export default function AdminPayments() {
   }
 
   return (
-    <div className="pane on houses-compact">
+    <div className="pane on houses-compact payments-compact">
       <div className="ph houses-ph">
         <div className="ph-in">
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -597,12 +787,32 @@ export default function AdminPayments() {
           <input
             type="text"
             className="houses-filter-input"
-            placeholder="ค้นหา บ้าน / วิธีชำระ / หมายเหตุ / สถานะ"
+            placeholder="ค้นหา ซอย / บ้าน / วิธีชำระ / สถานะ"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             style={{ flex: '1 1 220px', minWidth: 0 }}
           />
           <button className="btn btn-a btn-sm" onClick={loadPayments} disabled={loading} style={{ height: '34px' }}>ค้นหา</button>
+        </div>
+        <div style={{ marginTop: 10, display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center' }}>
+          <span style={{ fontSize: 12, color: '#e2e8f0' }}>ปี:</span>
+          <button
+            type="button"
+            onClick={() => setYearFilter('all')}
+            style={{ border: yearFilter === 'all' ? '2px solid #0c4a6e' : '1px solid rgba(255,255,255,.4)', background: yearFilter === 'all' ? '#eff6ff' : 'rgba(255,255,255,.95)', color: '#0f172a', borderRadius: 8, padding: '7px 12px', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}
+          >
+            ทั้งหมด
+          </button>
+          {yearCards.map((card) => (
+            <button
+              key={card.value}
+              type="button"
+              onClick={() => setYearFilter(card.value)}
+              style={{ border: yearFilter === card.value ? '2px solid #0c4a6e' : '1px solid rgba(255,255,255,.4)', background: yearFilter === card.value ? '#eff6ff' : 'rgba(255,255,255,.95)', color: '#0f172a', borderRadius: 8, padding: '7px 12px', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}
+            >
+              {card.label}
+            </button>
+          ))}
         </div>
       </div>
 
@@ -619,22 +829,53 @@ export default function AdminPayments() {
           <div className="houses-list-actions">
             <button className="btn btn-p btn-sm" onClick={openReceiveModal}>+ รับชำระ</button>
             <button className="btn btn-g btn-sm" onClick={loadPayments} disabled={loading}>🔄 รีเฟรช</button>
+            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginLeft: 'auto' }}>
+              {periodCards.map((item) => {
+                const active = periodFilter === item.value
+                return (
+                  <button
+                    key={item.value}
+                    type="button"
+                    onClick={() => setPeriodFilter(item.value)}
+                    style={{
+                      border: active ? '1px solid #0c4a6e' : '1px solid var(--bo)',
+                      background: active ? '#eff6ff' : '#fff',
+                      color: active ? '#0c4a6e' : '#334155',
+                      borderRadius: 999,
+                      padding: '6px 10px',
+                      minHeight: 34,
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 6,
+                      cursor: 'pointer',
+                      fontSize: 12,
+                      fontWeight: 600,
+                    }}
+                  >
+                    <span>{item.label}</span>
+                    <span style={{ minWidth: 20, height: 20, borderRadius: 999, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', background: active ? '#0c4a6e' : '#e2e8f0', color: active ? '#fff' : '#475569', fontSize: 11, padding: '0 6px' }}>
+                      {item.count}
+                    </span>
+                  </button>
+                )
+              })}
+            </div>
           </div>
         </div>
         <div className="cb houses-table-card-body">
           <div className="houses-table-wrap houses-desktop-only">
-              <table className="tw houses-table" style={{ width: '100%', minWidth: '980px' }}>
+              <table className="tw houses-table" style={{ width: '100%', minWidth: '900px', tableLayout: 'fixed' }}>
                 <thead>
                   <tr>
-                    <th>บ้าน</th>
-                    <th>งวด</th>
-                    <th>จำนวนเงิน</th>
-                    <th>วิธีชำระ</th>
-                    <th>วันที่</th>
-                    <th>สถานะ</th>
-                    <th>ผู้ตรวจสอบ</th>
-                    <th>หมายเหตุ</th>
-                    <th></th>
+                    <th style={{ width: '9%' }}>ซอย</th>
+                    <th style={{ width: '9%' }}>บ้าน</th>
+                    <th style={{ width: '14%' }}>งวด</th>
+                    <th style={{ width: '12%' }}>จำนวนเงิน</th>
+                    <th style={{ width: '10%' }}>วิธีชำระ</th>
+                    <th style={{ width: '12%' }}>วันที่</th>
+                    <th style={{ width: '11%' }}>สถานะ</th>
+                    <th style={{ width: '11%' }}>ผู้ตรวจสอบ</th>
+                    <th style={{ width: '12%' }}></th>
                   </tr>
                 </thead>
                 <tbody>
@@ -647,26 +888,20 @@ export default function AdminPayments() {
                       const badge = getStatusBadge(payment)
                       return (
                       <tr key={payment.id}>
-                        <td>{payment.houses?.house_no || '-'}</td>
-                        <td>{payment.fees ? `${payment.fees.period} ${payment.fees.year}` : '-'}</td>
-                        <td>฿{formatMoney(payment.amount)}</td>
-                        <td>{formatMethod(payment.payment_method)}</td>
-                        <td>{formatDateTime(payment.paid_at)}</td>
+                        <td style={{ whiteSpace: 'nowrap' }}>{payment.houses?.soi || '-'}</td>
+                        <td style={{ whiteSpace: 'nowrap' }}>{payment.houses?.house_no || '-'}</td>
+                        <td style={{ whiteSpace: 'nowrap' }}>{payment.fees ? `${formatPeriod(payment.fees.period)} ${toBE(payment.fees.year)}` : '-'}</td>
+                        <td style={{ whiteSpace: 'nowrap' }}>{formatMoney(payment.amount)}</td>
+                        <td style={{ whiteSpace: 'nowrap' }}>{formatMethod(payment.payment_method)}</td>
+                        <td style={{ whiteSpace: 'nowrap' }}>{formatDateTime(payment.paid_at)}</td>
                         <td><span className={badge.className}>{badge.label}</span></td>
-                        <td>{payment.verified_profile?.full_name || '-'}</td>
-                        <td>
-                          {getRejectedReason(payment.note) && (
-                            <div style={{ color: 'var(--dg)', fontSize: 12, marginBottom: 4 }}>เหตุผล: {getRejectedReason(payment.note)}</div>
-                          )}
-                          {getDisplayNote(payment.note) || '-'}
-                        </td>
+                        <td style={{ whiteSpace: 'nowrap' }}>{payment.verified_profile?.full_name || '-'}</td>
                         <td>
                           <div className="td-acts">
                             {payment.slip_url && <button className="btn btn-xs btn-o" onClick={() => handleOpenSlip(payment)}>สลิป</button>}
-                            {!payment.verified_at && <button className="btn btn-xs btn-ok" onClick={() => handleApprove(payment)}>อนุมัติ</button>}
+                            {!payment.verified_at && <button className="btn btn-xs btn-ok" onClick={() => openApproveModal(payment)}>อนุมัติ</button>}
                             {!payment.verified_at && <button className="btn btn-xs btn-dg" onClick={() => handleReject(payment)}>ตีกลับ</button>}
                             {payment.verified_at && <button className="btn btn-xs btn-a" onClick={() => handlePrintReceipt(payment)}>ใบเสร็จ</button>}
-                            {payment.verified_at && <button className="btn btn-xs btn-dg" onClick={() => handleRevokeApproval(payment)}>ยกเลิก</button>}
                           </div>
                         </td>
                       </tr>
@@ -688,24 +923,22 @@ export default function AdminPayments() {
                 <div className="houses-mcard-top">
                   <div>
                     <div className="houses-mcard-no">{payment.houses?.house_no || '-'}</div>
-                    <div className="mcard-sub">{payment.fees ? `${payment.fees.period} ${payment.fees.year}` : '-'}</div>
+                    <div className="mcard-sub">ซอย {payment.houses?.soi || '-'} · {payment.fees ? `${formatPeriod(payment.fees.period)} ${toBE(payment.fees.year)}` : '-'}</div>
                   </div>
                   <span className={`${badge.className} houses-mcard-badge`}>{badge.label}</span>
                 </div>
                 <div className="mcard-meta" style={{ marginTop: 4 }}>
-                  <span><span className="mcard-label">จำนวนเงิน</span> ฿{formatMoney(payment.amount)}</span>
+                  <span><span className="mcard-label">จำนวนเงิน</span> {formatMoney(payment.amount)}</span>
                   <span><span className="mcard-label">วิธีชำระ</span> {formatMethod(payment.payment_method)}</span>
                   <span><span className="mcard-label">วันที่ชำระ</span> {formatDateTime(payment.paid_at)}</span>
                   <span><span className="mcard-label">ผู้ตรวจสอบ</span> {payment.verified_profile?.full_name || '-'}</span>
                   {getRejectedReason(payment.note) && <span><span className="mcard-label">เหตุผลตีกลับ</span> {getRejectedReason(payment.note)}</span>}
-                  {getDisplayNote(payment.note) && <span><span className="mcard-label">หมายเหตุ</span> {getDisplayNote(payment.note)}</span>}
                 </div>
                 <div className="mcard-actions">
                   {payment.slip_url && <button className="btn btn-xs btn-o" onClick={() => handleOpenSlip(payment)}>สลิป</button>}
-                  {!payment.verified_at && <button className="btn btn-xs btn-ok" onClick={() => handleApprove(payment)}>อนุมัติ</button>}
+                  {!payment.verified_at && <button className="btn btn-xs btn-ok" onClick={() => openApproveModal(payment)}>อนุมัติ</button>}
                   {!payment.verified_at && <button className="btn btn-xs btn-dg" onClick={() => handleReject(payment)}>ตีกลับ</button>}
                   {payment.verified_at && <button className="btn btn-xs btn-a" onClick={() => handlePrintReceipt(payment)}>ใบเสร็จ</button>}
-                  {payment.verified_at && <button className="btn btn-xs btn-dg" onClick={() => handleRevokeApproval(payment)}>ยกเลิก</button>}
                 </div>
               </div>
             )})}
@@ -748,8 +981,8 @@ export default function AdminPayments() {
                             <tr>
                               <th style={{ width: '52px', textAlign: 'center' }}>เลือก</th>
                               <th>รายการ</th>
-                              <th style={{ width: '180px' }}>ยอดเต็ม</th>
-                              <th style={{ width: '180px' }}>ยอดรับชำระ</th>
+                              <th style={{ width: '180px' }}>ยอดที่ต้องชำระ</th>
+                              <th style={{ width: '180px' }}>ยอดชำระจริง</th>
                             </tr>
                           </thead>
                           <tbody>
@@ -811,6 +1044,22 @@ export default function AdminPayments() {
                       />
                     </label>
                     <label className="house-field">
+                      <span>แนบหลักฐานการชำระ (รูปภาพ) *</span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleChangeReceiveSlip}
+                      />
+                      <div style={{ fontSize: 12, color: 'var(--mu)' }}>รองรับไฟล์รูปภาพไม่เกิน 5MB</div>
+                      {receiveSlipPreview && (
+                        <img
+                          src={receiveSlipPreview}
+                          alt="receive-slip-preview"
+                          style={{ width: '100%', maxWidth: '300px', borderRadius: 8, border: '1px solid var(--bo)', marginTop: 6 }}
+                        />
+                      )}
+                    </label>
+                    <label className="house-field">
                       <span>หมายเหตุ</span>
                       <textarea
                         rows="3"
@@ -823,10 +1072,93 @@ export default function AdminPayments() {
                 </section>
               </div>
               <div className="house-md-foot">
-                <button className="btn btn-g" type="button" onClick={() => setShowReceiveModal(false)} disabled={savingReceive}>ยกเลิก</button>
-                <button className="btn btn-p" type="submit" disabled={savingReceive}>{savingReceive ? 'กำลังบันทึก...' : 'บันทึกรับชำระ'}</button>
+                <button className="btn btn-p" type="submit" disabled={savingReceive || uploadingSlip}>
+                  {savingReceive || uploadingSlip ? 'กำลังบันทึก...' : 'บันทึกรับชำระ'}
+                </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {approveTarget && (
+        <div className="house-mo">
+          <div className="house-md house-md--md">
+            <div className="house-md-head">
+              <div>
+                <div className="house-md-title">ตรวจสอบรายการก่อนอนุมัติ</div>
+                <div className="house-md-sub">แสดงข้อมูลที่ลูกบ้านบันทึกมา ก่อนยืนยันอนุมัติ/ไม่อนุมัติ</div>
+              </div>
+            </div>
+            <div className="house-md-body">
+              <section className="house-sec">
+                <div className="house-grid" style={{ gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                  <div className="house-field"><span>บ้านเลขที่</span><strong>{approveTarget.houses?.house_no || '-'}</strong></div>
+                  <div className="house-field"><span>วิธีชำระ</span><strong>{formatMethod(approveTarget.payment_method)}</strong></div>
+                  <div className="house-field"><span>วันที่ชำระ</span><strong>{formatDateTime(approveTarget.paid_at)}</strong></div>
+                  <div className="house-field"><span>ยอดชำระรวม</span><strong>฿{formatMoney(approveTarget.amount)}</strong></div>
+                </div>
+              </section>
+
+              <section className="house-sec">
+                <div className="house-field" style={{ gap: 8 }}>
+                  <span>รายการที่ลูกบ้านแจ้งชำระ</span>
+                  <div className="houses-table-wrap" style={{ maxHeight: 260, overflow: 'auto' }}>
+                    <table className="tw" style={{ width: '100%', minWidth: 560 }}>
+                      <thead>
+                        <tr>
+                          <th style={{ width: 60, textAlign: 'center' }}>ลำดับ</th>
+                          <th>รายการ</th>
+                          <th style={{ width: 170 }}>ยอดที่ต้องชำระ</th>
+                          <th style={{ width: 170 }}>ยอดชำระจริง</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {getPaymentItemRows(approveTarget).map((row, index) => (
+                          <tr key={`${approveTarget.id}-${row.key}-${index}`}>
+                            <td style={{ textAlign: 'center' }}>{index + 1}</td>
+                            <td>{row.label}</td>
+                            <td>฿{Number(row.dueAmount || 0).toLocaleString('th-TH')}</td>
+                            <td>฿{Number(row.paidAmount || 0).toLocaleString('th-TH')}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </section>
+
+              <section className="house-sec">
+                <div className="house-field" style={{ gap: 8 }}>
+                  <span>หลักฐานการชำระ</span>
+                  {approveTarget.slip_url ? (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                      <img
+                        src={approveTarget.slip_url}
+                        alt="submitted-slip"
+                        style={{ width: '100%', maxWidth: 360, borderRadius: 8, border: '1px solid var(--bo)' }}
+                      />
+                      <div>
+                        <button className="btn btn-xs btn-o" onClick={() => handleOpenSlip(approveTarget)}>เปิดรูปเต็ม</button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div style={{ color: 'var(--mu)', fontSize: 13 }}>ไม่พบหลักฐานแนบ</div>
+                  )}
+                </div>
+                {getDisplayNote(approveTarget.note) && (
+                  <div className="house-field" style={{ marginTop: 10 }}>
+                    <span>หมายเหตุจากผู้ชำระ</span>
+                    <div style={{ whiteSpace: 'pre-wrap', fontSize: 13 }}>{getDisplayNote(approveTarget.note)}</div>
+                  </div>
+                )}
+              </section>
+            </div>
+            <div className="house-md-foot">
+              <button className="btn btn-g" type="button" onClick={() => setApproveTarget(null)} disabled={approving}>ปิด</button>
+              <button className="btn btn-dg" type="button" onClick={handleRejectFromApproveModal} disabled={approving}>ไม่อนุมัติ</button>
+              <button className="btn btn-ok" type="button" onClick={handleApproveConfirmed} disabled={approving}>{approving ? 'กำลังอนุมัติ...' : 'ยืนยันอนุมัติ'}</button>
+            </div>
           </div>
         </div>
       )}
