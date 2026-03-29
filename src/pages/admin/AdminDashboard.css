@@ -929,6 +929,10 @@
   height: 13px;
 }
 
+.payments-compact {
+  gap: 12px;
+}
+
 .payments-compact .payments-main-wrap,
 .payments-compact .payments-receive-wrap {
   overflow-x: hidden;
