@@ -153,7 +153,8 @@ const AdminLayout = () => {
     }
 
     setSectionOpen((prev) => {
-      const next = navItems.reduce((acc, item) => {
+      const allSections = navItems.filter(item => item.section && item.items)
+      const next = allSections.reduce((acc, item) => {
         acc[item.section] = false
         return acc
       }, {})
