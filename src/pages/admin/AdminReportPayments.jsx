@@ -114,7 +114,7 @@ export default function AdminReportPayments() {
           <div className="ph-ico">💳</div>
         </div>
       </div>
-      <div style={{ width: '100%', margin: '16px 0 0 0', display: 'flex', justifyContent: 'flex-start' }}>
+      <div style={{ width: '100%', margin: '0px 0px 0px', display: 'flex', justifyContent: 'flex-start' }}>
         <form
           className="houses-filter-row"
           style={{
@@ -129,19 +129,19 @@ export default function AdminReportPayments() {
         >
           <label style={{ marginBottom: 0, fontWeight: 500 }}>
             เดือนเริ่มต้น
-            <select value={startMonth} onChange={e => setStartMonth(Number(e.target.value))} className="houses-filter-select" style={{ minWidth: 120, height: 36, marginLeft: 8 }}>
+            <select value={startMonth} onChange={e => setStartMonth(Number(e.target.value))} className="houses-filter-select" style={{ minWidth: 120, height: 36, marginLeft: 0 }}>
               {monthOptions.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
             </select>
           </label>
           <label style={{ marginBottom: 0, fontWeight: 500 }}>
             ถึงเดือน
-            <select value={endMonth} onChange={e => setEndMonth(Number(e.target.value))} className="houses-filter-select" style={{ minWidth: 120, height: 36, marginLeft: 8 }}>
+            <select value={endMonth} onChange={e => setEndMonth(Number(e.target.value))} className="houses-filter-select" style={{ minWidth: 120, height: 36, marginLeft: 0 }}>
               {monthOptions.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
             </select>
           </label>
           <label style={{ marginBottom: 0, fontWeight: 500 }}>
             ปี
-            <select value={year} onChange={e => setYear(Number(e.target.value))} className="houses-filter-select" style={{ minWidth: 100, height: 36, marginLeft: 8 }}>
+            <select value={year} onChange={e => setYear(Number(e.target.value))} className="houses-filter-select" style={{ minWidth: 100, height: 36, marginLeft: 0 }}>
               {yearOptions.map(y => <option key={y} value={y}>{y + 543}</option>)}
             </select>
           </label>
