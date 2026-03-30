@@ -107,11 +107,11 @@ export default function AdminReportPayments() {
     <div className="pane on houses-compact reports-compact">
       <div className="ph">
         <div className="ph-in" style={{ display: 'flex', alignItems: 'center', gap: 12, margin: 0, padding: 0 }}>
+          <div className="ph-ico">💳</div>
           <div>
             <div className="ph-h1" style={{ margin: 0, padding: 0 }}>รายงานการชำระเงิน</div>
             <div className="ph-sub" style={{ margin: 0, padding: 0 }}>รายการรับชำระค่าส่วนกลาง</div>
           </div>
-          <div className="ph-ico">💳</div>
         </div>
       </div>
       <div style={{ width: '100%', margin: '0px 0px 0px', display: 'flex', justifyContent: 'flex-start' }}>
