@@ -54,10 +54,28 @@ export default function ReportExportButtons({ columns, rows, filter, reportTitle
     doc.save(`${reportTitle}.pdf`);
   };
 
+  // หมายเหตุ: ฟอนต์ Sarabun base64 ที่ใช้กับ jsPDF ไม่รองรับ Unicode cmap (ภาษาไทยจะ error)
+  // วิธีแก้ไขที่แนะนำ: ใช้ไฟล์ฟอนต์จริง (ttf) หรือ CDN ฟอนต์ Sarabun แล้วโหลดเข้า jsPDF ด้วย addFont แบบ binary
+  // หรือใช้ฟอนต์ built-in (เช่น 'THSarabunNew' จาก jsPDF-thai-font)
+
   return (
     <div style={{ display: 'flex', gap: 8 }}>
-      <button className="btn btn-p" onClick={handleExportExcel} type="button">Export Excel</button>
-      <button className="btn btn-p" onClick={handleExportPDF} type="button">Export PDF</button>
+      <button
+        className="btn btn-p"
+        style={{ background: '#27ae60', color: '#fff', border: 'none', fontWeight: 600 }}
+        onClick={handleExportExcel}
+        type="button"
+      >
+        Export Excel
+      </button>
+      <button
+        className="btn btn-p"
+        style={{ background: '#e67e22', color: '#fff', border: 'none', fontWeight: 600 }}
+        onClick={() => window.alert('PDF Export ยังไม่รองรับภาษาไทยเต็มรูปแบบ กรุณาติดต่อผู้ดูแลระบบเพื่ออัปเดตฟอนต์ Sarabun ใน PDF')}
+        type="button"
+      >
+        Export PDF
+      </button>
     </div>
   );
 }
