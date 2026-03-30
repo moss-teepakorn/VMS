@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 import ReportMockPage from './reports/ReportMockPage'
+import ReportExportButtons from './ReportExportButtons'
 import { listPayments } from '../../lib/fees'
 
 const columns = [
@@ -106,11 +107,25 @@ export default function AdminReportPayments() {
   return (
     <div className="pane on houses-compact reports-compact">
       <div className="ph">
-        <div className="ph-in" style={{ display: 'flex', alignItems: 'center', gap: 16, margin: 0, padding: 0, justifyContent: 'flex-start' }}>
-          <div className="ph-ico">💳</div>
-          <div>
-            <div className="ph-h1" style={{ margin: 0, padding: 0 }}>รายงานการชำระเงิน</div>
-            <div className="ph-sub" style={{ margin: 0, padding: 0 }}>รายการรับชำระค่าส่วนกลาง</div>
+        <div className="ph-in" style={{ display: 'flex', alignItems: 'center', gap: 16, margin: 0, padding: 0, justifyContent: 'flex-start', position: 'relative' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+            <div className="ph-ico">💳</div>
+            <div>
+              <div className="ph-h1" style={{ margin: 0, padding: 0 }}>รายงานการชำระเงิน</div>
+              <div className="ph-sub" style={{ margin: 0, padding: 0 }}>รายการรับชำระค่าส่วนกลาง</div>
+            </div>
+          </div>
+          <div style={{ position: 'absolute', right: 24, top: 24 }}>
+            <ReportExportButtons
+              columns={columns}
+              rows={rows}
+              reportTitle="รายงานการชำระเงิน"
+              filter={{
+                startMonthLabel: monthOptions.find(m => m.value === startMonth)?.label,
+                endMonthLabel: monthOptions.find(m => m.value === endMonth)?.label,
+                year
+              }}
+            />
           </div>
         </div>
       </div>
