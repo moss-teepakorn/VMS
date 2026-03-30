@@ -1,7 +1,9 @@
 
 import React from 'react';
 import Swal from 'sweetalert2';
-import { exportReportExcel, exportReportPdf } from '../admin/reports/reportExport';
+
+import { exportReportExcel } from '../admin/reports/reportExport.mjs';
+import { exportPaymentReportPdf } from '../admin/reports/paymentReportExportPdf.js';
 
 
 export default function ReportExportButtons({ columns, rows, filter, reportTitle, sumAmount }) {
@@ -15,10 +17,10 @@ export default function ReportExportButtons({ columns, rows, filter, reportTitle
     }
   };
 
-  // Export PDF (ใช้ฟังก์ชันกลาง)
+  // Export PDF (ใช้ html2canvas + jsPDF แบบหน้า fees)
   const handleExportPDF = async () => {
     try {
-      await exportReportPdf({
+      await exportPaymentReportPdf({
         title: reportTitle,
         fileName: reportTitle,
         columns,

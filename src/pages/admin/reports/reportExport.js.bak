@@ -1,13 +1,11 @@
 import { jsPDF } from 'jspdf'
 import autoTable from 'jspdf-autotable'
 import * as XLSX from 'xlsx'
-import thSarabunNewFont from '../../../lib/thsarabunnew-normal'
 import { getLogoUrl } from '../../../lib/assets'
 
 function safeText(value) {
   if (value === null || value === undefined) return '-'
   return String(value)
-}
 
 export function exportReportExcel({ fileName, columns, rows }) {
   const normalizedRows = rows.map((row) => {
@@ -26,10 +24,7 @@ export function exportReportExcel({ fileName, columns, rows }) {
 
 export async function exportReportPdf({ title, fileName, columns, rows, filter, sumAmount }) {
   const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' })
-  // Add Thai font
-  doc.addFileToVFS('THSarabunNew.ttf', thSarabunNewFont)
-  doc.addFont('THSarabunNew.ttf', 'THSarabunNew', 'normal')
-  doc.setFont('THSarabunNew')
+  doc.setFont('helvetica', 'normal')
   doc.setFontSize(18)
 
   // Logo
@@ -57,23 +52,24 @@ export async function exportReportPdf({ title, fileName, columns, rows, filter, 
     startY: y + 32,
     head: [columns.map(col => col.label)],
     body: rows.map(row => columns.map(col => row[col.key])),
-    styles: { font: 'THSarabunNew', fontSize: 12 },
+    styles: { font: 'helvetica', fontSize: 12 },
     headStyles: { fillColor: [41, 128, 185], textColor: 255, fontStyle: 'bold' },
     bodyStyles: { textColor: 20 },
     margin: { left: 12, right: 12 },
     theme: 'grid',
     didDrawPage: (data) => {
       if (typeof sumAmount === 'number') {
-        doc.setFont('THSarabunNew', 'bold')
+        doc.setFont('helvetica', 'bold')
         doc.setFontSize(13)
         doc.text(
           `รวมยอดเงินที่ชำระ: ${sumAmount.toLocaleString()}`,
           data.settings.margin.left,
           doc.lastAutoTable.finalY + 8
         )
-        doc.setFont('THSarabunNew', 'normal')
+        doc.setFont('helvetica', 'normal')
       }
     }
   })
   doc.save(`${fileName}.pdf`)
+}
 }

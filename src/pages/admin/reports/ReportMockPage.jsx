@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react'
-import { exportReportExcel, exportReportPdf } from './reportExport'
+import { exportReportExcel, exportReportPdf } from './reportExport.mjs'
 import '../AdminDashboard.css'
 
 export default function ReportMockPage({ columns, rows, loading, error, sumAmount }) {
