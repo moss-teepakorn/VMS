@@ -2,7 +2,7 @@
 import React from 'react';
 import Swal from 'sweetalert2';
 
-import { exportReportExcel } from '../admin/reports/reportExport.js';
+import { exportReportExcel } from '../admin/reports/reportExport.mjs';
 import { exportPaymentReportPdf } from '../admin/reports/paymentReportExportPdf.js';
 
 
