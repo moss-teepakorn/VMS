@@ -3,7 +3,8 @@ import React from 'react';
 import Swal from 'sweetalert2';
 import { exportReportExcel, exportReportPdf } from '../admin/reports/reportExport';
 
-export default function ReportExportButtons({ columns, rows, filter, reportTitle }) {
+
+export default function ReportExportButtons({ columns, rows, filter, reportTitle, sumAmount }) {
   // Export Excel (ใช้ฟังก์ชันกลาง)
   const handleExportExcel = () => {
     try {
@@ -15,13 +16,15 @@ export default function ReportExportButtons({ columns, rows, filter, reportTitle
   };
 
   // Export PDF (ใช้ฟังก์ชันกลาง)
-  const handleExportPDF = () => {
+  const handleExportPDF = async () => {
     try {
-      exportReportPdf({
+      await exportReportPdf({
         title: reportTitle,
         fileName: reportTitle,
         columns,
-        rows
+        rows,
+        filter,
+        sumAmount
       });
       Swal.fire({ icon: 'success', title: 'ส่งออก PDF สำเร็จ', timer: 1200, showConfirmButton: false });
     } catch (err) {

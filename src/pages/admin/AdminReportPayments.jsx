@@ -125,6 +125,7 @@ export default function AdminReportPayments() {
                 endMonthLabel: monthOptions.find(m => m.value === endMonth)?.label,
                 year
               }}
+              sumAmount={rows.reduce((sum, r) => sum + (r.amountRaw || 0), 0)}
             />
           </div>
         </div>

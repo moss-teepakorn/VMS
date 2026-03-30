@@ -1,5 +1,8 @@
 import { jsPDF } from 'jspdf'
+import autoTable from 'jspdf-autotable'
 import * as XLSX from 'xlsx'
+import thSarabunNewFont from '../../../lib/thsarabunnew-normal'
+import { getLogoUrl } from '../../../lib/assets'
 
 function safeText(value) {
   if (value === null || value === undefined) return '-'
@@ -21,36 +24,56 @@ export function exportReportExcel({ fileName, columns, rows }) {
   XLSX.writeFile(workbook, `${fileName}.xlsx`)
 }
 
-export function exportReportPdf({ title, fileName, columns, rows }) {
+export async function exportReportPdf({ title, fileName, columns, rows, filter, sumAmount }) {
   const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' })
-  const pageWidth = doc.internal.pageSize.getWidth()
-  const margin = 10
-  const contentWidth = pageWidth - margin * 2
-  const colWidth = contentWidth / Math.max(columns.length, 1)
-  let y = 12
+  // Add Thai font
+  doc.addFileToVFS('THSarabunNew.ttf', thSarabunNewFont)
+  doc.addFont('THSarabunNew.ttf', 'THSarabunNew', 'normal')
+  doc.setFont('THSarabunNew')
+  doc.setFontSize(18)
 
-  doc.setFontSize(12)
-  doc.text(title, margin, y)
-  y += 8
-
-  doc.setFontSize(9)
-  columns.forEach((column, index) => {
-    doc.text(safeText(column.label), margin + index * colWidth, y)
-  })
-  y += 4
-  doc.line(margin, y, margin + contentWidth, y)
-  y += 4
-
-  rows.forEach((row) => {
-    if (y > 282) {
-      doc.addPage()
-      y = 12
+  // Logo
+  let y = 18
+  try {
+    const logoUrl = await getLogoUrl()
+    if (logoUrl) {
+      const img = new window.Image();
+      img.src = logoUrl;
+      await new Promise(res => { img.onload = res; });
+      doc.addImage(img, 'PNG', 12, y, 22, 22)
     }
-    columns.forEach((column, index) => {
-      doc.text(safeText(row[column.key]), margin + index * colWidth, y, { maxWidth: colWidth - 1 })
-    })
-    y += 5
-  })
+  } catch {}
 
+  // Header
+  doc.text(title, 38, y + 8)
+  doc.setFontSize(12)
+  if (filter) {
+    doc.text(`ช่วงเดือน: ${filter.startMonthLabel} ถึง ${filter.endMonthLabel} ปี ${filter.year + 543}`, 38, y + 18)
+  }
+  doc.text(`วันที่พิมพ์: ${new Date().toLocaleDateString('th-TH')}`, 38, y + 26)
+
+  // Table
+  autoTable(doc, {
+    startY: y + 32,
+    head: [columns.map(col => col.label)],
+    body: rows.map(row => columns.map(col => row[col.key])),
+    styles: { font: 'THSarabunNew', fontSize: 12 },
+    headStyles: { fillColor: [41, 128, 185], textColor: 255, fontStyle: 'bold' },
+    bodyStyles: { textColor: 20 },
+    margin: { left: 12, right: 12 },
+    theme: 'grid',
+    didDrawPage: (data) => {
+      if (typeof sumAmount === 'number') {
+        doc.setFont('THSarabunNew', 'bold')
+        doc.setFontSize(13)
+        doc.text(
+          `รวมยอดเงินที่ชำระ: ${sumAmount.toLocaleString()}`,
+          data.settings.margin.left,
+          doc.lastAutoTable.finalY + 8
+        )
+        doc.setFont('THSarabunNew', 'normal')
+      }
+    }
+  })
   doc.save(`${fileName}.pdf`)
 }
