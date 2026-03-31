@@ -34,17 +34,24 @@ export function buildPaymentReportHtml({ title, columns, rows, filter, sumAmount
             gap: 24px;
             margin-bottom: 12px;
           }
-          .report-logo {
-            width: 64px; height: 64px; border-radius: 12px; background: #f1f5f9; border: 1.5px solid #cbd5e1; object-fit: contain;
+          .brand { display: flex; align-items: flex-start; gap: 10px; flex: 1; min-width: 0; }
+          .brand img {
+            width: 48px;
+            height: 48px;
+            border-radius: 6px;
+            object-fit: cover;
+            border: 1px solid #cbd5e1;
+            background: #f8fafc;
           }
           .report-title-block {
             flex: 1;
             display: flex;
             flex-direction: column;
             gap: 4px;
+            min-width: 0;
           }
           .report-title {
-            font-size: 26px; font-weight: 700; color: #0d9488; margin-bottom: 0;
+            font-size: 26px; font-weight: 700; color: #0d9488; margin-bottom: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
           }
           .report-meta {
             font-size: 14px; color: #64748b; margin-bottom: 0; font-weight: 500;
@@ -60,12 +67,14 @@ export function buildPaymentReportHtml({ title, columns, rows, filter, sumAmount
       <body>
         <div class="report-wrap">
           <div class="report-header">
-            <img class="report-logo" src="${logoUrl || '/assets/village-logo.svg'}" alt="logo" />
-            <div class="report-title-block">
-              <div class="report-title">${title}</div>
-              <div class="report-meta">
-                ${filter ? `ช่วงเดือน: ${filter.startMonthLabel} ถึง ${filter.endMonthLabel} ปี ${filter.year + 543}` : ''}
-                <br/>วันที่พิมพ์: ${printDate}
+            <div class="brand">
+              <img src="${logoUrl || '/assets/village-logo.svg'}" alt="village-logo" />
+              <div class="report-title-block">
+                <div class="report-title">${title}</div>
+                <div class="report-meta">
+                  ${filter ? `ช่วงเดือน: ${filter.startMonthLabel} ถึง ${filter.endMonthLabel} ปี ${filter.year + 543}` : ''}
+                  <br/>วันที่พิมพ์: ${printDate}
+                </div>
               </div>
             </div>
           </div>
