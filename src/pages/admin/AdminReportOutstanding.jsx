@@ -9,7 +9,11 @@ const columns = [
   { key: 'houseNo', label: 'บ้านเลขที่' },
   { key: 'ownerName', label: 'ชื่อ-สกุล' },
   { key: 'period', label: 'งวด' },
-  { key: 'outstanding', label: 'ยอดค้าง (บาท)' },
+  { key: 'commonOutstanding', label: 'ค่าส่วนกลางค้างชำระ' },
+  { key: 'fineOutstanding', label: 'ค่าปรับค้างชำระ' },
+  { key: 'noticeOutstanding', label: 'ค่าทวงถามค้างชำระ' },
+  { key: 'otherOutstanding', label: 'อื่นๆ' },
+  { key: 'outstanding', label: 'ยอดค้างรวม (บาท)' },
 ]
 
 function formatPeriod(period, year) {
@@ -56,12 +60,41 @@ export default function AdminReportOutstanding() {
         const total = Number(f.total_amount || 0)
         const appr = Number(approved[f.id] || 0)
         const outstanding = Math.max(0, total - appr)
+
+        // compute requested breakdowns from fee fields
+        const common = Number(f.fee_common || 0) + Number(f.fee_overdue_common || 0)
+        const fine = Number(f.fee_fine || 0) + Number(f.fee_overdue_fine || 0)
+        const notice = Number(f.fee_notice || 0) + Number(f.fee_overdue_notice || 0)
+
+        // other = sum of all fee_* fields except the ones used above
+        const exclude = new Set([
+          'fee_common', 'fee_overdue_common',
+          'fee_fine', 'fee_overdue_fine',
+          'fee_notice', 'fee_overdue_notice',
+        ])
+        let other = 0
+        for (const k of Object.keys(f)) {
+          if (!k.startsWith('fee_')) continue
+          if (exclude.has(k)) continue
+          // skip total_amount-like fields
+          if (k === 'fee_total' || k === 'fee_amount' || k === 'fee_sum') continue
+          other += Number(f[k] || 0)
+        }
+
         return {
           id: f.id,
           soi,
           houseNo,
           ownerName: owner,
           period: formatPeriod(f.period, f.year),
+          commonOutstanding: common.toLocaleString(),
+          commonOutstandingRaw: common,
+          fineOutstanding: fine.toLocaleString(),
+          fineOutstandingRaw: fine,
+          noticeOutstanding: notice.toLocaleString(),
+          noticeOutstandingRaw: notice,
+          otherOutstanding: other.toLocaleString(),
+          otherOutstandingRaw: other,
           outstanding: outstanding.toLocaleString(),
           outstandingRaw: outstanding,
         }
