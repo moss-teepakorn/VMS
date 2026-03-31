@@ -333,6 +333,27 @@ export async function syncPublicSetupConfig(updates) {
     }
 
     if (error) throw error
+    // If public_config update failed due to view constraints (no id / requires WHERE),
+    // attempt to persist the incoming public setup into the canonical `system_config`
+    // row so the public view will reflect the change.
+    if (error) {
+      const em = String(error?.message || '')
+      const code = String(error?.code || '')
+      const isViewError = /public_config\.id\s+does not exist/i.test(em) || /UPDATE requires a WHERE clause/i.test(em) || code === '21000' || code === '42703'
+      if (isViewError) {
+        try {
+          const sys = await getSystemConfig()
+          if (sys && sys.id) {
+            await updateSystemConfig(sys.id, incomingPayload)
+            const refreshed = await getSystemConfig()
+            return refreshed || currentRow
+          }
+        } catch (fallbackError) {
+          console.warn('syncPublicSetupConfig fallback to system_config failed:', fallbackError)
+        }
+      }
+      throw error
+    }
     return data || currentRow
   } catch (error) {
     console.warn('syncPublicSetupConfig fallback:', error)
