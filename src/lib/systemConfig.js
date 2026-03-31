@@ -272,6 +272,26 @@ export async function syncPublicSetupConfig(updates) {
       return inserted || null
     }
 
+    // If the public_config row exists but does not expose an `id` column
+    // (common when `public_config` is a VIEW), avoid calling `.eq('id', ...)`
+    // which would produce `id=eq.undefined` in the REST call. Instead,
+    // short-circuit to persisting into `system_config` so the public view
+    // reflects the change.
+    if (!Object.prototype.hasOwnProperty.call(currentRow, 'id') || currentRow.id == null) {
+      try {
+        const sys = await getSystemConfig()
+        if (sys && sys.id) {
+          await updateSystemConfig(sys.id, incomingPayload)
+          const refreshed = await getSystemConfig()
+          return refreshed || currentRow
+        }
+      } catch (fallbackError) {
+        console.warn('syncPublicSetupConfig early fallback to system_config failed:', fallbackError)
+      }
+      // Nothing else we can do here against the public view; return currentRow
+      return currentRow
+    }
+
     let payload = filterPayloadByColumns(incomingPayload, Object.keys(currentRow))
     if (Object.keys(payload).length === 0) return currentRow
 
