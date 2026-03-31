@@ -14,7 +14,8 @@ export async function exportPaymentReportPdf({ title, fileName, columns, rows, f
   // 1. แปลงโลโก้เป็น Data URL ก่อน (เหมือนใบแจ้งหนี้)
   // prefer latest setup logo (like fees): try fetching fresh system config first
   const freshConfig = await getSystemConfig().catch(() => null);
-  const rawLogoUrl = freshConfig?.village_logo_url || logoUrl || localStorage.getItem('vms-login-circle-logo-url') || '';
+  // Prefer the login-circle logo if configured, then fall back to village logo.
+  const rawLogoUrl = freshConfig?.login_circle_logo_url || freshConfig?.village_logo_url || logoUrl || localStorage.getItem('vms-login-circle-logo-url') || '';
   const fallbackLogo = `${window.location.origin}${villageLogo}`;
   let printLogoUrl = await resolveImageToDataUrl(rawLogoUrl, fallbackLogo);
   // Normalize accidental concatenation like "<origin>data:image..." -> keep only data URL portion
