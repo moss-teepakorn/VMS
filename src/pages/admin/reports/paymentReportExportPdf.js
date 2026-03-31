@@ -11,6 +11,8 @@ async function resolveImageToDataUrl(url, fallback = '') {
   if (!raw) return fallback;
   try {
     const r = await fetch(raw);
+    const contentType = r.headers.get('Content-Type') || '';
+    if (!contentType.startsWith('image/')) return fallback;
     const blob = await r.blob();
     return await new Promise((res) => {
       const reader = new FileReader();
