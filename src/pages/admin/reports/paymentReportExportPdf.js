@@ -16,7 +16,12 @@ export async function exportPaymentReportPdf({ title, fileName, columns, rows, f
   const freshConfig = await getSystemConfig().catch(() => null);
   const rawLogoUrl = freshConfig?.village_logo_url || logoUrl || localStorage.getItem('vms-login-circle-logo-url') || '';
   const fallbackLogo = `${window.location.origin}${villageLogo}`;
-  const printLogoUrl = await resolveImageToDataUrl(rawLogoUrl, fallbackLogo);
+  let printLogoUrl = await resolveImageToDataUrl(rawLogoUrl, fallbackLogo);
+  // Normalize accidental concatenation like "<origin>data:image..." -> keep only data URL portion
+  if (typeof printLogoUrl === 'string') {
+    const idx = printLogoUrl.indexOf('data:image');
+    if (idx > 0) printLogoUrl = printLogoUrl.slice(idx);
+  }
   // 2. สร้าง HTML
   const html = buildPaymentReportHtml({ title, columns, rows, filter, sumAmount, logoUrl: printLogoUrl });
   // 3. สร้าง iframe ซ่อน
