@@ -1,0 +1,22 @@
+Timestamp: 2026-03-31T00:00:00Z
+
+Console error observed:
+
+PATCH https://oojwewofdjeejaklvcdq.supabase.co/rest/v1/public_config?id=eq.undefined&select=* 400 (Bad Request)
+syncPublicSetupConfig fallback: TypeError: String.prototype.matchAll called with a non-global RegExp argument
+    at String.matchAll
+    at J$ (index-LOBDPnoB.js)
+    at async j (index-LOBDPnoB.js)
+
+Notes:
+- The built bundle in `dist/assets/index-*.js` still contains code that uses `matchAll` without global flags and updates `public_config` with `.eq('id', n.id)` causing id=undefined in some runtimes.
+- Source fixes were applied to `src/lib/systemConfig.js` (added global/insensitive flags and robust update logic), but the deployed bundle appears to be older than the source changes.
+- Action plan: perform a local `npm run build`, then `vercel --prod --yes` to redeploy, and inspect deploy logs for any runtime build or runtime errors.
+
+Files of interest:
+- src/lib/systemConfig.js
+- src/pages/admin/AdminConfig.jsx
+- migrations/2026-03-31-add-login-circle-logo.sql
+- dist/assets/index-*.js (bundled output containing the faulty code)
+
+Saved by assistant.
