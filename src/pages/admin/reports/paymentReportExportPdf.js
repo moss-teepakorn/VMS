@@ -4,6 +4,7 @@ import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
 
 import { buildPaymentReportHtml } from './PaymentReportExportHtml';
+import villageLogo from '../../assets/village-logo.svg';
 
 // ฟังก์ชันแปลง image url เป็น data url (base64) แบบเดียวกับใบแจ้งหนี้
 async function resolveImageToDataUrl(url, fallback = '') {
@@ -26,7 +27,8 @@ async function resolveImageToDataUrl(url, fallback = '') {
 
 export async function exportPaymentReportPdf({ title, fileName, columns, rows, filter, sumAmount, logoUrl }) {
   // 1. แปลงโลโก้เป็น Data URL ก่อน (เหมือนใบแจ้งหนี้)
-  const printLogoUrl = await resolveImageToDataUrl(logoUrl, '/assets/village-logo.svg');
+  const fallbackLogo = `${window.location.origin}${villageLogo}`;
+  const printLogoUrl = await resolveImageToDataUrl(logoUrl, fallbackLogo);
   // 2. สร้าง HTML
   const html = buildPaymentReportHtml({ title, columns, rows, filter, sumAmount, logoUrl: printLogoUrl });
   // 3. สร้าง iframe ซ่อน
