@@ -2,12 +2,32 @@
 // ใช้ html2canvas + jsPDF export PDF แบบเดียวกับหน้า fees
 import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
+
 import { buildPaymentReportHtml } from './PaymentReportExportHtml';
 
+// ฟังก์ชันแปลง image url เป็น data url (base64) แบบเดียวกับใบแจ้งหนี้
+async function resolveImageToDataUrl(url, fallback = '') {
+  const raw = String(url || '').trim();
+  if (!raw) return fallback;
+  try {
+    const r = await fetch(raw);
+    const blob = await r.blob();
+    return await new Promise((res) => {
+      const reader = new FileReader();
+      reader.onloadend = () => res(String(reader.result || fallback || raw));
+      reader.readAsDataURL(blob);
+    });
+  } catch {
+    return raw || fallback;
+  }
+}
+
 export async function exportPaymentReportPdf({ title, fileName, columns, rows, filter, sumAmount, logoUrl }) {
-  // 1. สร้าง HTML
-  const html = buildPaymentReportHtml({ title, columns, rows, filter, sumAmount, logoUrl });
-  // 2. สร้าง iframe ซ่อน
+  // 1. แปลงโลโก้เป็น Data URL ก่อน (เหมือนใบแจ้งหนี้)
+  const printLogoUrl = await resolveImageToDataUrl(logoUrl, '/assets/village-logo.svg');
+  // 2. สร้าง HTML
+  const html = buildPaymentReportHtml({ title, columns, rows, filter, sumAmount, logoUrl: printLogoUrl });
+  // 3. สร้าง iframe ซ่อน
   const iframe = document.createElement('iframe');
   iframe.style.cssText = 'position:fixed;left:-9999px;top:0;border:none;width:1122px;height:793px;'; // A4 landscape
   document.body.appendChild(iframe);
@@ -15,7 +35,7 @@ export async function exportPaymentReportPdf({ title, fileName, columns, rows, f
   doc.open();
   doc.write(html);
   doc.close();
-  // 3. รอโหลดฟอนต์ Sarabun จาก Google Fonts ให้แน่ใจก่อน (สำคัญมากสำหรับ html2canvas)
+  // 4. รอโหลดฟอนต์ Sarabun จาก Google Fonts ให้แน่ใจก่อน (สำคัญมากสำหรับ html2canvas)
   const fontReady = () => {
     if (doc.fonts && doc.fonts.check) {
       return doc.fonts.load('1em Sarabun');
@@ -24,15 +44,15 @@ export async function exportPaymentReportPdf({ title, fileName, columns, rows, f
   };
   await fontReady();
   await new Promise(res => setTimeout(res, 500)); // เผื่อฟอนต์โหลดช้า
-  // 4. แปลงเป็น canvas
+  // 5. แปลงเป็น canvas
   const el = doc.body.querySelector('.report-wrap');
   const canvas = await html2canvas(el, { scale: 2, useCORS: true, backgroundColor: '#fff', width: 1122, height: 793 });
-  // 5. ใส่ลง jsPDF (landscape)
+  // 6. ใส่ลง jsPDF (landscape)
   const pdf = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
   const A4W = pdf.internal.pageSize.getWidth();
   const A4H = pdf.internal.pageSize.getHeight();
   pdf.addImage(canvas.toDataURL('image/jpeg', 0.95), 'JPEG', 0, 0, A4W, A4H, undefined, 'FAST');
   pdf.save(`${fileName}.pdf`);
-  // 6. ลบ iframe
+  // 7. ลบ iframe
   document.body.removeChild(iframe);
 }
