@@ -3,7 +3,7 @@
 import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
 import { buildPaymentReportHtml } from './PaymentReportExportHtml';
-import sarabunFont from '../../lib/sarabun-base64.js';
+import sarabunFont from '../../../lib/sarabun-base64.js';
 
 export async function exportPaymentReportPdf({ title, fileName, columns, rows, filter, sumAmount }) {
   // 1. สร้าง HTML
