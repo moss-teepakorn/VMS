@@ -17,16 +17,25 @@ export default function ReportMockPage({ columns, rows, loading, error, sumAmoun
           <thead>
             <tr>
               {columns.map((column) => (
-                <th key={column.key}>{column.label}</th>
+                <th key={column.key} style={{ textAlign: column.type === 'number' ? 'right' : undefined }}>{column.label}</th>
               ))}
             </tr>
           </thead>
           <tbody>
             {preview.map((row, index) => (
               <tr key={`${row.id || index}-${index}`}>
-                {columns.map((column) => (
-                  <td key={column.key}>{row[column.key] ?? '-'}</td>
-                ))}
+                {columns.map((column) => {
+                  if (column.type === 'number') {
+                    const rawKey = `${column.key}Raw`
+                    const raw = Object.prototype.hasOwnProperty.call(row, rawKey) ? row[rawKey] : row[column.key]
+                    const num = Number(raw)
+                    const formatted = Number.isFinite(num)
+                      ? num.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+                      : '-'
+                    return <td key={column.key} style={{ textAlign: 'right' }}>{formatted}</td>
+                  }
+                  return <td key={column.key}>{row[column.key] ?? '-'}</td>
+                })}
               </tr>
             ))}
             {preview.length === 0 && (
@@ -39,7 +48,7 @@ export default function ReportMockPage({ columns, rows, loading, error, sumAmoun
             <tfoot>
               <tr>
                 <td colSpan={columns.length - 3} style={{ textAlign: 'right', fontWeight: 'bold' }}>รวมยอดเงินที่ชำระ</td>
-                <td style={{ fontWeight: 'bold' }}>{sumAmount.toLocaleString()}</td>
+                <td style={{ fontWeight: 'bold', textAlign: 'right' }}>{sumAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
                 <td colSpan={3}></td>
               </tr>
             </tfoot>

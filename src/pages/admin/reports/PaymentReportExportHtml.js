@@ -4,9 +4,22 @@
 export function buildPaymentReportHtml({ title, columns, rows, filter, sumAmount, logoUrl, footerLabel }) {
   const today = new Date();
   const printDate = today.toLocaleDateString('th-TH');
-  const tableHead = `<tr>${columns.map(col => `<th>${col.label}</th>`).join('')}</tr>`;
+  const fmtNumber = (v) => {
+    const n = Number(v)
+    if (!Number.isFinite(n)) return '-'
+    return n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+  }
+
+  const tableHead = `<tr>${columns.map(col => `<th style="text-align:${col.type === 'number' ? 'right' : 'left'}">${col.label}</th>`).join('')}</tr>`;
   const tableBody = rows.map((row, idx) =>
-    `<tr>${columns.map(col => `<td>${row[col.key] ?? '-'}</td>`).join('')}</tr>`
+    `<tr>${columns.map(col => {
+      if (col.type === 'number') {
+        const rawKey = `${col.key}Raw`
+        const val = Object.prototype.hasOwnProperty.call(row, rawKey) ? row[rawKey] : row[col.key]
+        return `<td style="text-align:right">${fmtNumber(val)}</td>`
+      }
+      return `<td>${row[col.key] ?? '-'}</td>`
+    }).join('')}</tr>`
   ).join('');
   return `
     <html>
@@ -78,7 +91,7 @@ export function buildPaymentReportHtml({ title, columns, rows, filter, sumAmount
             <table>
               <thead>${tableHead}</thead>
               <tbody>${tableBody}</tbody>
-              <tfoot><tr class="sum-row"><td colspan="${columns.length - 1}" style="text-align:right;">${footerLabel || 'รวมยอดเงินที่ชำระ'}</td><td>${(typeof sumAmount === 'number') ? sumAmount.toLocaleString() : (sumAmount ?? '-')}</td></tr></tfoot>
+              <tfoot><tr class="sum-row"><td colspan="${columns.length - 1}" style="text-align:right;">${footerLabel || 'รวมยอดเงินที่ชำระ'}</td><td style="text-align:right">${(typeof sumAmount === 'number') ? sumAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : (sumAmount ?? '-')}</td></tr></tfoot>
             </table>
           </div>
         </div>

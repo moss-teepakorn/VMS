@@ -9,11 +9,11 @@ const columns = [
   { key: 'houseNo', label: 'บ้านเลขที่' },
   { key: 'ownerName', label: 'ชื่อ-สกุล' },
   { key: 'period', label: 'งวด' },
-  { key: 'commonOutstanding', label: 'ค่าส่วนกลางค้างชำระ' },
-  { key: 'fineOutstanding', label: 'ค่าปรับค้างชำระ' },
-  { key: 'noticeOutstanding', label: 'ค่าทวงถามค้างชำระ' },
-  { key: 'otherOutstanding', label: 'อื่นๆ' },
-  { key: 'outstanding', label: 'ยอดค้างรวม (บาท)' },
+  { key: 'commonOutstanding', label: 'ค่าส่วนกลางค้างชำระ', type: 'number' },
+  { key: 'fineOutstanding', label: 'ค่าปรับค้างชำระ', type: 'number' },
+  { key: 'noticeOutstanding', label: 'ค่าทวงถามค้างชำระ', type: 'number' },
+  { key: 'otherOutstanding', label: 'อื่นๆ', type: 'number' },
+  { key: 'outstanding', label: 'ยอดค้างรวม (บาท)', type: 'number' },
 ]
 
 function formatPeriod(period, year) {

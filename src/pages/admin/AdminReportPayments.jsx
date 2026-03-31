@@ -9,7 +9,7 @@ const columns = [
   { key: 'houseNo', label: 'บ้านเลขที่' },
   { key: 'ownerName', label: 'ชื่อ สกุล' },
   { key: 'period', label: 'งวด' },
-  { key: 'amount', label: 'ยอดชำระ' },
+  { key: 'amount', label: 'ยอดชำระ', type: 'number' },
   { key: 'method', label: 'ช่องทางชำระ' },
   { key: 'paidAt', label: 'วันที่ชำระ' },
 ]
