@@ -5,6 +5,9 @@ const PUBLIC_SETUP_FIELDS = [
   'village_name',
   'village_logo_url',
   'village_logo_path',
+  // new public exposure for the login-circle logo
+  'login_circle_logo_url',
+  'login_circle_logo_path',
   'juristic_name',
   'juristic_address',
   'bank_name',
@@ -22,6 +25,9 @@ const DEFAULT_SYSTEM_CONFIG = {
   juristic_email: 'niti@greenfield.co.th',
   juristic_signature_url: '',
   juristic_signature_path: '',
+  // login circle logo (separate from village_logo fields)
+  login_circle_logo_url: '',
+  login_circle_logo_path: '',
   bank_name: 'กสิกรไทย',
   bank_account_no: '',
   bank_account_name: 'นิติบุคคลหมู่บ้าน เดอะกรีนฟิลด์',
@@ -125,7 +131,7 @@ export async function updateSystemConfig(configId, updates) {
     const matches = [
       ...errorMessage.matchAll(/Could not find the '([^']+)' column/g),
       ...errorMessage.matchAll(/column\s+"?([a-zA-Z0-9_]+)"?\s+does not exist/g),
-      ...errorMessage.matchAll(/'([a-zA-Z0-9_]+)'\s+column/i),
+      ...errorMessage.matchAll(/'([a-zA-Z0-9_]+)'\s+column/gi),
     ]
     if (matches.length === 0) break
 
@@ -266,6 +272,26 @@ export async function syncPublicSetupConfig(updates) {
       return inserted || null
     }
 
+    // If the public_config row exists but does not expose an `id` column
+    // (common when `public_config` is a VIEW), avoid calling `.eq('id', ...)`
+    // which would produce `id=eq.undefined` in the REST call. Instead,
+    // short-circuit to persisting into `system_config` so the public view
+    // reflects the change.
+    if (!Object.prototype.hasOwnProperty.call(currentRow, 'id') || currentRow.id == null) {
+      try {
+        const sys = await getSystemConfig()
+        if (sys && sys.id) {
+          await updateSystemConfig(sys.id, incomingPayload)
+          const refreshed = await getSystemConfig()
+          return refreshed || currentRow
+        }
+      } catch (fallbackError) {
+        console.warn('syncPublicSetupConfig early fallback to system_config failed:', fallbackError)
+      }
+      // Nothing else we can do here against the public view; return currentRow
+      return currentRow
+    }
+
     let payload = filterPayloadByColumns(incomingPayload, Object.keys(currentRow))
     if (Object.keys(payload).length === 0) return currentRow
 
@@ -285,10 +311,32 @@ export async function syncPublicSetupConfig(updates) {
       if (!error) break
 
       const errorMessage = String(error?.message || '')
+
+      // Special-case: some deployments expose `public_config` as a VIEW without
+      // an `id` column. When we attempted `.eq('id', currentRow.id)` the
+      // database can error with "column public_config.id does not exist".
+      // Detect that and retry the update WITHOUT the `.eq(...)` filter.
+      if (/public_config\.id\s+does not exist/i.test(errorMessage) || /column\s+"?public_config\.id"?\s+does not exist/i.test(errorMessage)) {
+        try {
+          const retry = await supabase
+            .from('public_config')
+            .update(payload)
+            .select('*')
+            .maybeSingle()
+
+          data = retry.data
+          error = retry.error
+          if (!error) break
+        } catch (retryErr) {
+          // fall through to normal handling
+          error = retryErr || error
+        }
+      }
+
       const matches = [
         ...errorMessage.matchAll(/Could not find the '([^']+)' column/g),
         ...errorMessage.matchAll(/column\s+"?([a-zA-Z0-9_]+)"?\s+does not exist/g),
-        ...errorMessage.matchAll(/'([a-zA-Z0-9_]+)'\s+column/i),
+        ...errorMessage.matchAll(/'([a-zA-Z0-9_]+)'\s+column/gi),
       ]
       if (matches.length === 0) break
 
@@ -305,6 +353,27 @@ export async function syncPublicSetupConfig(updates) {
     }
 
     if (error) throw error
+    // If public_config update failed due to view constraints (no id / requires WHERE),
+    // attempt to persist the incoming public setup into the canonical `system_config`
+    // row so the public view will reflect the change.
+    if (error) {
+      const em = String(error?.message || '')
+      const code = String(error?.code || '')
+      const isViewError = /public_config\.id\s+does not exist/i.test(em) || /UPDATE requires a WHERE clause/i.test(em) || code === '21000' || code === '42703'
+      if (isViewError) {
+        try {
+          const sys = await getSystemConfig()
+          if (sys && sys.id) {
+            await updateSystemConfig(sys.id, incomingPayload)
+            const refreshed = await getSystemConfig()
+            return refreshed || currentRow
+          }
+        } catch (fallbackError) {
+          console.warn('syncPublicSetupConfig fallback to system_config failed:', fallbackError)
+        }
+      }
+      throw error
+    }
     return data || currentRow
   } catch (error) {
     console.warn('syncPublicSetupConfig fallback:', error)

@@ -34,17 +34,20 @@ export function buildPaymentReportHtml({ title, columns, rows, filter, sumAmount
             gap: 24px;
             margin-bottom: 12px;
           }
-          .report-logo {
-            width: 64px; height: 64px; border-radius: 12px; background: #f1f5f9; border: 1.5px solid #cbd5e1; object-fit: contain;
-          }
+          .brand { display: flex; align-items: flex-start; gap: 12px; flex: 1; min-width: 0; }
+          .logo-wrap { width: 64px; height: 64px; border-radius: 12px; background: #f1f5f9; border: 1.5px solid #cbd5e1; padding: 6px; box-sizing: border-box; display: flex; align-items: center; justify-content: center; }
+          .logo-wrap img { width: 100%; height: 100%; display: block; object-fit: contain; border-radius: 8px; }
           .report-title-block {
             flex: 1;
             display: flex;
             flex-direction: column;
             gap: 4px;
+            min-width: 0;
           }
           .report-title {
-            font-size: 26px; font-weight: 700; color: #0d9488; margin-bottom: 0;
+            font-size: 26px; font-weight: 700; color: #0d9488; margin-bottom: 0; line-height: 1.15;
+            /* allow wrapping so long titles show like fees page */
+            white-space: normal; overflow: visible; text-overflow: unset;
           }
           .report-meta {
             font-size: 14px; color: #64748b; margin-bottom: 0; font-weight: 500;
@@ -60,12 +63,14 @@ export function buildPaymentReportHtml({ title, columns, rows, filter, sumAmount
       <body>
         <div class="report-wrap">
           <div class="report-header">
-            <img class="report-logo" src="${logoUrl || '/assets/village-logo.svg'}" alt="logo" />
-            <div class="report-title-block">
-              <div class="report-title">${title}</div>
-              <div class="report-meta">
-                ${filter ? `ช่วงเดือน: ${filter.startMonthLabel} ถึง ${filter.endMonthLabel} ปี ${filter.year + 543}` : ''}
-                <br/>วันที่พิมพ์: ${printDate}
+            <div class="brand">
+              <div class="logo-wrap"><img src="${logoUrl || '/assets/village-logo.svg'}" alt="village-logo" /></div>
+              <div class="report-title-block">
+                <div class="report-title">${title}</div>
+                <div class="report-meta">
+                  ${filter ? `ช่วงเดือน: ${filter.startMonthLabel} ถึง ${filter.endMonthLabel} ปี ${filter.year + 543}` : ''}
+                  <br/>วันที่พิมพ์: ${printDate}
+                </div>
               </div>
             </div>
           </div>

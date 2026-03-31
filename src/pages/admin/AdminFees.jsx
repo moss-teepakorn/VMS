@@ -5,6 +5,7 @@ import Swal from 'sweetalert2'
 import { listHouses } from '../../lib/houses'
 import { getSystemConfig } from '../../lib/systemConfig'
 import villageLogo from '../../assets/village-logo.svg'
+import { resolveImageToDataUrl, DEFAULT_LOGO_DATAURL } from '../../lib/logoUtils'
 import {
   calculateFullYearFeeByHouse,
   calculateOverdueFeesByIds,
@@ -673,21 +674,7 @@ const AdminFees = () => {
     await createNoticePrintLogs(rows)
   }
 
-  const resolveImageToDataUrl = async (url, fallback = '') => {
-    const raw = String(url || '').trim()
-    if (!raw) return fallback
-    try {
-      const r = await fetch(raw)
-      const blob = await r.blob()
-      return await new Promise((res) => {
-        const reader = new FileReader()
-        reader.onloadend = () => res(String(reader.result || fallback || raw))
-        reader.readAsDataURL(blob)
-      })
-    } catch {
-      return raw || fallback
-    }
-  }
+  // use shared resolveImageToDataUrl from lib/logoUtils
 
   const buildInvoiceHtml = async (targetFees, title, {
     autoPrint = false,
@@ -698,7 +685,7 @@ const AdminFees = () => {
     const freshConfig = await getSystemConfig().catch(() => null)
     const rawLogoUrl = freshConfig?.village_logo_url || setup.village_logo_url || localStorage.getItem('vms-login-circle-logo-url') || ''
     const rawSignatureUrl = freshConfig?.juristic_signature_url || setup.juristic_signature_url || ''
-    const printLogoUrl = await resolveImageToDataUrl(rawLogoUrl, `${window.location.origin}${villageLogo}`)
+    const printLogoUrl = await resolveImageToDataUrl(rawLogoUrl, DEFAULT_LOGO_DATAURL)
     const printSignatureUrl = await resolveImageToDataUrl(rawSignatureUrl, '')
 
     const fmtDate = (value) => formatDateDMY(value)
@@ -811,7 +798,7 @@ const AdminFees = () => {
           <section class="sheet page-break${isNotice ? ' notice-sheet' : ''}">
             <header class="head">
               <div class="brand">
-                <img src="${printLogoUrl}" alt="village-logo" />
+                <div class="logo-wrap"><img src="${printLogoUrl}" alt="village-logo" /></div>
                 <div>
                   <div class="doc">${documentTitle}</div>
                   <div class="village">${setup.village_name || 'The Greenfield'}</div>
@@ -894,7 +881,7 @@ const AdminFees = () => {
           <section class="sheet${isLastFee ? '' : ' page-break'}${isNotice ? ' notice-sheet' : ''}">
             <header class="head">
               <div class="brand">
-                <img src="${printLogoUrl}" alt="village-logo" />
+                <div class="logo-wrap"><img src="${printLogoUrl}" alt="village-logo" /></div>
                 <div>
                   <div class="doc">${documentTitle}</div>
                   <div class="village">${setup.village_name || 'The Greenfield'}</div>
@@ -1014,13 +1001,8 @@ const AdminFees = () => {
               background: #fff7ed;
             }
             .brand { display: flex; align-items: flex-start; gap: 10px; flex: 1; min-width: 0; }
-            .brand img {
-              width: 48px;
-              height: 48px;
-              border-radius: 6px;
-              object-fit: cover;
-              border: 1px solid #cbd5e1;
-            }
+            .logo-wrap { width: 64px; height: 64px; border-radius: 12px; background: #f1f5f9; border: 1.5px solid #cbd5e1; padding: 6px; box-sizing: border-box; display: flex; align-items: center; justify-content: center; }
+            .logo-wrap img { width: 100%; height: 100%; display: block; object-fit: contain; border-radius: 8px; }
             .doc { font-size: 16px; font-weight: 700; line-height: 1.3; }
             .notice-sheet .doc { color: #9a3412; }
             .village { font-size: 11px; margin-top: 3px; font-weight: 600; }
