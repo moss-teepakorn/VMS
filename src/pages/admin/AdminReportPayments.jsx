@@ -132,6 +132,7 @@ export default function AdminReportPayments() {
               }}
               sumAmount={rows.reduce((sum, r) => sum + (r.amountRaw || 0), 0)}
               logoUrl={setup.village_logo_url || '/assets/village-logo.svg'}
+              footerLabel="ยอดชำระรวม"
             />
           </div>
         </div>
