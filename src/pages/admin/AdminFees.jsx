@@ -798,7 +798,7 @@ const AdminFees = () => {
           <section class="sheet page-break${isNotice ? ' notice-sheet' : ''}">
             <header class="head">
               <div class="brand">
-                <img src="${printLogoUrl}" alt="village-logo" />
+                <div class="logo-wrap"><img src="${printLogoUrl}" alt="village-logo" /></div>
                 <div>
                   <div class="doc">${documentTitle}</div>
                   <div class="village">${setup.village_name || 'The Greenfield'}</div>
@@ -881,7 +881,7 @@ const AdminFees = () => {
           <section class="sheet${isLastFee ? '' : ' page-break'}${isNotice ? ' notice-sheet' : ''}">
             <header class="head">
               <div class="brand">
-                <img src="${printLogoUrl}" alt="village-logo" />
+                <div class="logo-wrap"><img src="${printLogoUrl}" alt="village-logo" /></div>
                 <div>
                   <div class="doc">${documentTitle}</div>
                   <div class="village">${setup.village_name || 'The Greenfield'}</div>
@@ -1001,16 +1001,8 @@ const AdminFees = () => {
               background: #fff7ed;
             }
             .brand { display: flex; align-items: flex-start; gap: 10px; flex: 1; min-width: 0; }
-            .brand img {
-              width: 64px;
-              height: 64px;
-              border-radius: 12px;
-              object-fit: contain;
-              border: 1.5px solid #cbd5e1;
-              background: #f1f5f9;
-              padding: 6px;
-              box-sizing: border-box;
-            }
+            .logo-wrap { width: 64px; height: 64px; border-radius: 12px; background: #f1f5f9; border: 1.5px solid #cbd5e1; padding: 6px; box-sizing: border-box; display: flex; align-items: center; justify-content: center; }
+            .logo-wrap img { width: 100%; height: 100%; display: block; object-fit: contain; border-radius: 8px; }
             .doc { font-size: 16px; font-weight: 700; line-height: 1.3; }
             .notice-sheet .doc { color: #9a3412; }
             .village { font-size: 11px; margin-top: 3px; font-weight: 600; }

@@ -34,17 +34,9 @@ export function buildPaymentReportHtml({ title, columns, rows, filter, sumAmount
             gap: 24px;
             margin-bottom: 12px;
           }
-          .brand { display: flex; align-items: flex-start; gap: 10px; flex: 1; min-width: 0; }
-          .brand img {
-            width: 64px;
-            height: 64px;
-            border-radius: 12px;
-            object-fit: contain;
-            border: 1.5px solid #cbd5e1;
-            background: #f1f5f9;
-            padding: 6px;
-            box-sizing: border-box;
-          }
+          .brand { display: flex; align-items: flex-start; gap: 12px; flex: 1; min-width: 0; }
+          .logo-wrap { width: 64px; height: 64px; border-radius: 12px; background: #f1f5f9; border: 1.5px solid #cbd5e1; padding: 6px; box-sizing: border-box; display: flex; align-items: center; justify-content: center; }
+          .logo-wrap img { width: 100%; height: 100%; display: block; object-fit: contain; border-radius: 8px; }
           .report-title-block {
             flex: 1;
             display: flex;
@@ -72,7 +64,7 @@ export function buildPaymentReportHtml({ title, columns, rows, filter, sumAmount
         <div class="report-wrap">
           <div class="report-header">
             <div class="brand">
-              <img src="${logoUrl || '/assets/village-logo.svg'}" alt="village-logo" />
+              <div class="logo-wrap"><img src="${logoUrl || '/assets/village-logo.svg'}" alt="village-logo" /></div>
               <div class="report-title-block">
                 <div class="report-title">${title}</div>
                 <div class="report-meta">
