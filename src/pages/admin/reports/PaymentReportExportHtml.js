@@ -36,12 +36,14 @@ export function buildPaymentReportHtml({ title, columns, rows, filter, sumAmount
           }
           .brand { display: flex; align-items: flex-start; gap: 10px; flex: 1; min-width: 0; }
           .brand img {
-            width: 48px;
-            height: 48px;
-            border-radius: 6px;
-            object-fit: cover;
-            border: 1px solid #cbd5e1;
-            background: #f8fafc;
+            width: 64px;
+            height: 64px;
+            border-radius: 12px;
+            object-fit: contain;
+            border: 1.5px solid #cbd5e1;
+            background: #f1f5f9;
+            padding: 6px;
+            box-sizing: border-box;
           }
           .report-title-block {
             flex: 1;
