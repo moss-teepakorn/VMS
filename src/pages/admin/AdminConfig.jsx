@@ -107,35 +107,35 @@ const AdminConfig = () => {
         setRemoveSignature(false)
         setRemoveLogo(false)
         setSignaturePreviewUrl(config.juristic_signature_url || '')
-        
-        // Check if village_logo_url contains juristic path and auto-clean
-        const logoUrl = config.village_logo_url || ''
-        const logoPath = config.village_logo_path || extractSystemAssetPath(logoUrl)
-        const isJuristicLogo = logoPath.includes('juristic/')
-        
-        if (isJuristicLogo && logoPath) {
+
+        // Prefer the explicit login-circle fields, fallback to village_logo
+        const loginLogoUrl = config.login_circle_logo_url || config.village_logo_url || ''
+        const loginLogoPath = config.login_circle_logo_path || config.village_logo_path || extractSystemAssetPath(loginLogoUrl)
+        const isJuristicLogo = loginLogoPath.includes('juristic/')
+
+        if (isJuristicLogo && loginLogoPath) {
           // Auto-delete old juristic file
           try {
-            await deleteSystemAssetByPath(logoPath)
+            await deleteSystemAssetByPath(loginLogoPath)
           } catch (deleteError) {
             console.warn('Could not delete old juristic logo:', deleteError)
           }
           
           // Clear the fields
-          const cleanedConfig = { ...config, village_logo_url: null, village_logo_path: null }
+          const cleanedConfig = { ...config, village_logo_url: null, village_logo_path: null, login_circle_logo_url: null, login_circle_logo_path: null }
           setForm(cleanedConfig)
           setLogoPreviewUrl('')
           setAutoCleanedJuristicLogo(true)
-          
+
           // Auto-save cleanup
           try {
-            await updateSystemConfig(config.id, { village_logo_url: null, village_logo_path: null })
+            await updateSystemConfig(config.id, { village_logo_url: null, village_logo_path: null, login_circle_logo_url: null, login_circle_logo_path: null })
           } catch (updateError) {
             console.warn('Could not update config to clear juristic logo:', updateError)
           }
         } else {
           setForm(config)
-          setLogoPreviewUrl(logoUrl || localStorage.getItem('vms-login-circle-logo-url') || '')
+          setLogoPreviewUrl(loginLogoUrl || localStorage.getItem('vms-login-circle-logo-url') || '')
           setAutoCleanedJuristicLogo(false)
         }
       } catch (error) {
@@ -246,6 +246,13 @@ const AdminConfig = () => {
       if (!Object.prototype.hasOwnProperty.call(form, 'village_logo_path')) {
         payload.village_logo_path = null
       }
+      // Ensure login-circle fields exist in payload for newer schema
+      if (!Object.prototype.hasOwnProperty.call(form, 'login_circle_logo_url')) {
+        payload.login_circle_logo_url = null
+      }
+      if (!Object.prototype.hasOwnProperty.call(form, 'login_circle_logo_path')) {
+        payload.login_circle_logo_path = null
+      }
 
       const previousSignaturePath = form.juristic_signature_path || extractSystemAssetPath(form.juristic_signature_url)
 
@@ -254,7 +261,7 @@ const AdminConfig = () => {
         payload.juristic_signature_path = null
       }
 
-      const previousLogoPath = form.village_logo_path || extractSystemAssetPath(form.village_logo_url)
+      const previousLogoPath = form.login_circle_logo_path || form.village_logo_path || extractSystemAssetPath(form.login_circle_logo_url || form.village_logo_url)
       const isJuristicPath = previousLogoPath.includes('juristic/')
 
       // Auto-clean if logo path is from juristic
@@ -263,12 +270,17 @@ const AdminConfig = () => {
       if (shouldRemoveLogo) {
         payload.village_logo_url = null
         payload.village_logo_path = null
+        payload.login_circle_logo_url = null
+        payload.login_circle_logo_path = null
       }
 
       if (logoFile) {
         uploadedLogo = await uploadVillageLogo(logoFile)
         payload.village_logo_url = uploadedLogo?.url || null
         payload.village_logo_path = uploadedLogo?.path || null
+        // also store separately as login circle logo
+        payload.login_circle_logo_url = uploadedLogo?.url || null
+        payload.login_circle_logo_path = uploadedLogo?.path || null
       }
 
       if (signatureFile) {
@@ -279,12 +291,14 @@ const AdminConfig = () => {
 
       const updated = await updateSystemConfig(configId, payload)
 
-      const nextLogoPath = updated.village_logo_path || payload.village_logo_path || ''
-      const nextLogoUrl = updated.village_logo_url || payload.village_logo_url || buildSystemAssetPublicUrl(nextLogoPath, { cacheBust: Date.now() }) || ''
+      const nextLogoPath = updated.login_circle_logo_path || updated.village_logo_path || payload.login_circle_logo_path || payload.village_logo_path || ''
+      const nextLogoUrl = updated.login_circle_logo_url || updated.village_logo_url || payload.login_circle_logo_url || payload.village_logo_url || buildSystemAssetPublicUrl(nextLogoPath, { cacheBust: Date.now() }) || ''
       const nextPublicSetup = {
         village_name: updated.village_name || payload.village_name || '',
         village_logo_url: nextLogoUrl || null,
         village_logo_path: nextLogoPath || null,
+        login_circle_logo_url: nextLogoUrl || null,
+        login_circle_logo_path: nextLogoPath || null,
         juristic_name: updated.juristic_name || payload.juristic_name || '',
         juristic_address: updated.juristic_address || payload.juristic_address || '',
         bank_name: updated.bank_name || payload.bank_name || '',

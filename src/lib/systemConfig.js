@@ -5,6 +5,9 @@ const PUBLIC_SETUP_FIELDS = [
   'village_name',
   'village_logo_url',
   'village_logo_path',
+  // new public exposure for the login-circle logo
+  'login_circle_logo_url',
+  'login_circle_logo_path',
   'juristic_name',
   'juristic_address',
   'bank_name',
@@ -22,6 +25,9 @@ const DEFAULT_SYSTEM_CONFIG = {
   juristic_email: 'niti@greenfield.co.th',
   juristic_signature_url: '',
   juristic_signature_path: '',
+  // login circle logo (separate from village_logo fields)
+  login_circle_logo_url: '',
+  login_circle_logo_path: '',
   bank_name: 'กสิกรไทย',
   bank_account_no: '',
   bank_account_name: 'นิติบุคคลหมู่บ้าน เดอะกรีนฟิลด์',
