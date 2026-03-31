@@ -9,11 +9,13 @@ if (!supabaseUrl || !supabaseAnonKey) {
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   headers: {
-    'Accept': 'application/json'
+    'Accept': 'application/json',
+    'apikey': supabaseAnonKey
   },
   global: {
     headers: {
-      'Accept': 'application/json'
+      'Accept': 'application/json',
+      'apikey': supabaseAnonKey
     }
   }
 })
