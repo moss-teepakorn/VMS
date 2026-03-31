@@ -5,6 +5,10 @@ import { jsPDF } from 'jspdf';
 
 import { buildPaymentReportHtml } from './PaymentReportExportHtml';
 
+// Inline default SVG (fallback) to avoid runtime 404 on asset path
+const DEFAULT_LOGO_SVG = `<svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="bgGradient" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" style="stop-color:#0d9488;stop-opacity:1" /><stop offset="100%" style="stop-color:#059669;stop-opacity:1" /></linearGradient></defs><rect width="200" height="200" rx="36" fill="url(#bgGradient)"/><circle cx="40" cy="30" r="35" fill="white" opacity="0.08"/><circle cx="160" cy="80" r="50" fill="white" opacity="0.06"/><g transform="translate(100, 85)"><polygon points="0,-35 35,0 35,30 -35,30 -35,0" fill="white" opacity="0.15" stroke="white" stroke-width="2.5"/><polygon points="0,-35 -40,5 40,5" fill="none" stroke="white" stroke-width="2.5"/><rect x="-8" y="10" width="16" height="20" fill="none" stroke="white" stroke-width="1.5" opacity="0.8"/><circle cx="6" cy="20" r="1.5" fill="white" opacity="0.8"/><rect x="-20" y="0" width="8" height="8" fill="none" stroke="white" stroke-width="1.2" opacity="0.6"/><rect x="12" y="0" width="8" height="8" fill="none" stroke="white" stroke-width="1.2" opacity="0.6"/></g><circle cx="155" cy="155" r="22" fill="white" stroke="#0d9488" stroke-width="2"/><text x="155" y="165" font-family="Arial, sans-serif" font-size="18" font-weight="bold" fill="#0d9488" text-anchor="middle" dominant-baseline="middle">GF</text></svg>`;
+const DEFAULT_LOGO_DATAURL = `data:image/svg+xml;utf8,${encodeURIComponent(DEFAULT_LOGO_SVG)}`;
+
 // ฟังก์ชันแปลง image url เป็น data url (base64) แบบเดียวกับใบแจ้งหนี้
 async function resolveImageToDataUrl(url, fallback = '') {
   const raw = String(url || '').trim();
@@ -26,8 +30,7 @@ async function resolveImageToDataUrl(url, fallback = '') {
 
 export async function exportPaymentReportPdf({ title, fileName, columns, rows, filter, sumAmount, logoUrl }) {
   // 1. แปลงโลโก้เป็น Data URL ก่อน (เหมือนใบแจ้งหนี้)
-  const fallbackLogo = `${window.location.origin}/src/assets/village-logo.svg`;
-  const printLogoUrl = await resolveImageToDataUrl(logoUrl, fallbackLogo);
+  const printLogoUrl = await resolveImageToDataUrl(logoUrl, DEFAULT_LOGO_DATAURL);
   // 2. สร้าง HTML
   const html = buildPaymentReportHtml({ title, columns, rows, filter, sumAmount, logoUrl: printLogoUrl });
   // 3. สร้าง iframe ซ่อน
