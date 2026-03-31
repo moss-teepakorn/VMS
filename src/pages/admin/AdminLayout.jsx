@@ -114,6 +114,7 @@ const AdminLayout = () => {
       { id: 'payments', label: 'ชำระเงิน', icon: '💳', path: '/admin/payments' },
       { id: 'receive-payments', label: 'รับชำระเงิน (Feature)', icon: '💳', path: '/admin/receive-payments' },
       { id: 'disbursements', label: 'การจ่ายเงิน (Feature)', icon: '📤', path: '/admin/disbursements' },
+      { id: 'payments-setup', label: 'ตั้งค่ารายการรับชำระ', icon: '⚙️', path: '/admin/payments/setup' },
     ]},
     { section: 'การจัดการ', tone: 'operation', sectionIcon: '📋', items: [
       { id: 'req', label: 'คำขอแก้ไข', icon: '📝', path: '/admin/requests', badge: '7' },
