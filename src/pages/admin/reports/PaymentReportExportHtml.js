@@ -53,7 +53,9 @@ export function buildPaymentReportHtml({ title, columns, rows, filter, sumAmount
             min-width: 0;
           }
           .report-title {
-            font-size: 26px; font-weight: 700; color: #0d9488; margin-bottom: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+            font-size: 26px; font-weight: 700; color: #0d9488; margin-bottom: 0; line-height: 1.15;
+            /* allow wrapping so long titles show like fees page */
+            white-space: normal; overflow: visible; text-overflow: unset;
           }
           .report-meta {
             font-size: 14px; color: #64748b; margin-bottom: 0; font-weight: 500;
