@@ -4,7 +4,7 @@ import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
 
 import { buildPaymentReportHtml } from './PaymentReportExportHtml';
-import { resolveImageToDataUrl, DEFAULT_LOGO_DATAURL } from '../../lib/logoUtils';
+import { resolveImageToDataUrl, DEFAULT_LOGO_DATAURL } from '../../../lib/logoUtils';
 
 // use shared `resolveImageToDataUrl` from lib/logoUtils
 
