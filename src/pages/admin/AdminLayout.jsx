@@ -124,7 +124,7 @@ const AdminLayout = () => {
     ]},
     { section: 'รายงาน', tone: 'insight', sectionIcon: '📊', items: [
       { id: 'rpt-payments', label: 'รายงานการชำระเงิน', icon: '📄', path: '/admin/reports/payments' },
-      { id: 'rpt-overdue', label: 'รายงานค้างชำระ', icon: '📄', path: '/admin/reports/overdue' },
+      { id: 'rpt-overdue', label: 'รายงานค้างชำระ', icon: '📄', path: '/admin/reports/outstanding' },
       { id: 'rpt-expense', label: 'รายงานการจ่ายเงินออก', icon: '📄', path: '/admin/reports/expense-payments' },
       { id: 'rpt-violations', label: 'สรุปการกระทำผิด', icon: '📄', path: '/admin/reports/violations-summary' },
     ]},
