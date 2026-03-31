@@ -150,6 +150,7 @@ export default function AdminReportOutstanding() {
               filter={{ year }}
               sumAmount={rows.reduce((s, r) => s + (r.outstandingRaw || 0), 0)}
               logoUrl={setup.village_logo_url || '/assets/village-logo.svg'}
+              footerLabel="ยอดค้างรวม"
             />
           </div>
         </div>

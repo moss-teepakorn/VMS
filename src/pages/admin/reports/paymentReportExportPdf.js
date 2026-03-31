@@ -10,7 +10,7 @@ import { getSystemConfig } from '../../../lib/systemConfig';
 
 // use shared `resolveImageToDataUrl` from lib/logoUtils
 
-export async function exportPaymentReportPdf({ title, fileName, columns, rows, filter, sumAmount, logoUrl }) {
+export async function exportPaymentReportPdf({ title, fileName, columns, rows, filter, sumAmount, logoUrl, footerLabel }) {
   // 1. แปลงโลโก้เป็น Data URL ก่อน (เหมือนใบแจ้งหนี้)
   // prefer latest setup logo (like fees): try fetching fresh system config first
   const freshConfig = await getSystemConfig().catch(() => null);
@@ -24,7 +24,7 @@ export async function exportPaymentReportPdf({ title, fileName, columns, rows, f
     if (idx > 0) printLogoUrl = printLogoUrl.slice(idx);
   }
   // 2. สร้าง HTML
-  const html = buildPaymentReportHtml({ title, columns, rows, filter, sumAmount, logoUrl: printLogoUrl });
+  const html = buildPaymentReportHtml({ title, columns, rows, filter, sumAmount, logoUrl: printLogoUrl, footerLabel });
   // 3. สร้าง iframe ซ่อน
   const iframe = document.createElement('iframe');
   iframe.style.cssText = 'position:fixed;left:-9999px;top:0;border:none;width:1122px;height:793px;'; // A4 landscape

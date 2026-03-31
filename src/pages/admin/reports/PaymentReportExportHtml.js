@@ -1,7 +1,7 @@
 // PaymentReportExportHtml.js
 // สร้าง HTML สำหรับ export PDF แบบเดียวกับหน้า fees (ใช้ Sarabun, layout เดียวกัน)
 
-export function buildPaymentReportHtml({ title, columns, rows, filter, sumAmount, logoUrl }) {
+export function buildPaymentReportHtml({ title, columns, rows, filter, sumAmount, logoUrl, footerLabel }) {
   const today = new Date();
   const printDate = today.toLocaleDateString('th-TH');
   const tableHead = `<tr>${columns.map(col => `<th>${col.label}</th>`).join('')}</tr>`;
@@ -78,7 +78,7 @@ export function buildPaymentReportHtml({ title, columns, rows, filter, sumAmount
             <table>
               <thead>${tableHead}</thead>
               <tbody>${tableBody}</tbody>
-              <tfoot><tr class="sum-row"><td colspan="${columns.length - 1}" style="text-align:right;">รวมยอดเงินที่ชำระ</td><td>${sumAmount?.toLocaleString() ?? '-'}</td></tr></tfoot>
+              <tfoot><tr class="sum-row"><td colspan="${columns.length - 1}" style="text-align:right;">${footerLabel || 'รวมยอดเงินที่ชำระ'}</td><td>${(typeof sumAmount === 'number') ? sumAmount.toLocaleString() : (sumAmount ?? '-')}</td></tr></tfoot>
             </table>
           </div>
         </div>
