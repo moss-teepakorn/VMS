@@ -59,7 +59,7 @@ export function buildPaymentReportHtml({ title, columns, rows, filter, sumAmount
       <body>
         <div class="report-wrap">
           <div class="report-header">
-            <img class="report-logo" src="/src/assets/village-logo.svg" alt="logo" />
+              <img class="report-logo" src="/assets/village-logo.svg" alt="logo" />
             <div class="report-title-block">
               <div class="report-title">${title}</div>
               <div class="report-meta">
