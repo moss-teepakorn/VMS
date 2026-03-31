@@ -23,6 +23,7 @@ import AdminUnits from './pages/admin/AdminUnits'
 import AdminPayments from './pages/admin/AdminPayments'
 import AdminMaintenance from './pages/admin/AdminMaintenance'
 import AdminReportPayments from './pages/admin/AdminReportPayments'
+import AdminReportOutstanding from './pages/admin/AdminReportOutstanding'
 import AdminReportOverdue from './pages/admin/AdminReportOverdue'
 import AdminReportViolationsSummary from './pages/admin/AdminReportViolationsSummary'
 import AdminReportExpensePayments from './pages/admin/AdminReportExpensePayments'
@@ -95,6 +96,7 @@ function AppRoutes() {
         <Route path="announcements" element={<AdminAnnouncements />} />
         <Route path="reports" element={<AdminReports />} />
         <Route path="reports/payments" element={<AdminReportPayments />} />
+        <Route path="reports/outstanding" element={<AdminReportOutstanding />} />
         <Route path="reports/overdue" element={<AdminReportOverdue />} />
         <Route path="reports/violations-summary" element={<AdminReportViolationsSummary />} />
         <Route path="reports/expense-payments" element={<AdminReportExpensePayments />} />
