@@ -5,6 +5,7 @@ import Swal from 'sweetalert2'
 import { listHouses } from '../../lib/houses'
 import { getSystemConfig } from '../../lib/systemConfig'
 import villageLogo from '../../assets/village-logo.svg'
+import { resolveImageToDataUrl, DEFAULT_LOGO_DATAURL } from '../../lib/logoUtils'
 import {
   calculateFullYearFeeByHouse,
   calculateOverdueFeesByIds,
@@ -673,21 +674,7 @@ const AdminFees = () => {
     await createNoticePrintLogs(rows)
   }
 
-  const resolveImageToDataUrl = async (url, fallback = '') => {
-    const raw = String(url || '').trim()
-    if (!raw) return fallback
-    try {
-      const r = await fetch(raw)
-      const blob = await r.blob()
-      return await new Promise((res) => {
-        const reader = new FileReader()
-        reader.onloadend = () => res(String(reader.result || fallback || raw))
-        reader.readAsDataURL(blob)
-      })
-    } catch {
-      return raw || fallback
-    }
-  }
+  // use shared resolveImageToDataUrl from lib/logoUtils
 
   const buildInvoiceHtml = async (targetFees, title, {
     autoPrint = false,
@@ -698,7 +685,7 @@ const AdminFees = () => {
     const freshConfig = await getSystemConfig().catch(() => null)
     const rawLogoUrl = freshConfig?.village_logo_url || setup.village_logo_url || localStorage.getItem('vms-login-circle-logo-url') || ''
     const rawSignatureUrl = freshConfig?.juristic_signature_url || setup.juristic_signature_url || ''
-    const printLogoUrl = await resolveImageToDataUrl(rawLogoUrl, `${window.location.origin}${villageLogo}`)
+    const printLogoUrl = await resolveImageToDataUrl(rawLogoUrl, DEFAULT_LOGO_DATAURL)
     const printSignatureUrl = await resolveImageToDataUrl(rawSignatureUrl, '')
 
     const fmtDate = (value) => formatDateDMY(value)
