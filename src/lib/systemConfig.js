@@ -131,7 +131,7 @@ export async function updateSystemConfig(configId, updates) {
     const matches = [
       ...errorMessage.matchAll(/Could not find the '([^']+)' column/g),
       ...errorMessage.matchAll(/column\s+"?([a-zA-Z0-9_]+)"?\s+does not exist/g),
-      ...errorMessage.matchAll(/'([a-zA-Z0-9_]+)'\s+column/i),
+      ...errorMessage.matchAll(/'([a-zA-Z0-9_]+)'\s+column/gi),
     ]
     if (matches.length === 0) break
 
@@ -294,7 +294,7 @@ export async function syncPublicSetupConfig(updates) {
       const matches = [
         ...errorMessage.matchAll(/Could not find the '([^']+)' column/g),
         ...errorMessage.matchAll(/column\s+"?([a-zA-Z0-9_]+)"?\s+does not exist/g),
-        ...errorMessage.matchAll(/'([a-zA-Z0-9_]+)'\s+column/i),
+        ...errorMessage.matchAll(/'([a-zA-Z0-9_]+)'\s+column/gi),
       ]
       if (matches.length === 0) break
 
