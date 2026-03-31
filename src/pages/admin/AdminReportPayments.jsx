@@ -1,9 +1,5 @@
 import React, { useState, useEffect } from 'react'
 import { getSystemConfig } from '../../lib/systemConfig'
-  const [setup, setSetup] = useState({})
-  useEffect(() => {
-    getSystemConfig().then(setSetup).catch(() => {})
-  }, [])
 import ReportMockPage from './reports/ReportMockPage'
 import ReportExportButtons from './ReportExportButtons'
 import { listPayments } from '../../lib/fees'
@@ -58,6 +54,10 @@ export default function AdminReportPayments() {
   const [endMonth, setEndMonth] = useState(getCurrentMonth())
   const [year, setYear] = useState(getCurrentYear())
   const [touched, setTouched] = useState(false)
+  const [setup, setSetup] = useState({})
+  useEffect(() => {
+    getSystemConfig().then(setSetup).catch(() => {})
+  }, [])
 
   const handleShowReport = async () => {
     setTouched(true)
