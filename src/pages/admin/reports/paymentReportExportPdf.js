@@ -4,9 +4,9 @@ import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
 import { buildPaymentReportHtml } from './PaymentReportExportHtml';
 
-export async function exportPaymentReportPdf({ title, fileName, columns, rows, filter, sumAmount }) {
+export async function exportPaymentReportPdf({ title, fileName, columns, rows, filter, sumAmount, logoUrl }) {
   // 1. สร้าง HTML
-  const html = buildPaymentReportHtml({ title, columns, rows, filter, sumAmount });
+  const html = buildPaymentReportHtml({ title, columns, rows, filter, sumAmount, logoUrl });
   // 2. สร้าง iframe ซ่อน
   const iframe = document.createElement('iframe');
   iframe.style.cssText = 'position:fixed;left:-9999px;top:0;border:none;width:1122px;height:793px;'; // A4 landscape

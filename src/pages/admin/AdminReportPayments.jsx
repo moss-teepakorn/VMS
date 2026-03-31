@@ -1,4 +1,9 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
+import { getSystemConfig } from '../../lib/systemConfig'
+  const [setup, setSetup] = useState({})
+  useEffect(() => {
+    getSystemConfig().then(setSetup).catch(() => {})
+  }, [])
 import ReportMockPage from './reports/ReportMockPage'
 import ReportExportButtons from './ReportExportButtons'
 import { listPayments } from '../../lib/fees'
@@ -126,6 +131,7 @@ export default function AdminReportPayments() {
                 year
               }}
               sumAmount={rows.reduce((sum, r) => sum + (r.amountRaw || 0), 0)}
+              logoUrl={setup.village_logo_url || '/assets/village-logo.svg'}
             />
           </div>
         </div>

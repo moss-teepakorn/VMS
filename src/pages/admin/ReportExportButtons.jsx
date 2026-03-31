@@ -6,7 +6,7 @@ import { exportReportExcel } from '../admin/reports/reportExport.mjs';
 import { exportPaymentReportPdf } from '../admin/reports/paymentReportExportPdf.js';
 
 
-export default function ReportExportButtons({ columns, rows, filter, reportTitle, sumAmount }) {
+export default function ReportExportButtons({ columns, rows, filter, reportTitle, sumAmount, logoUrl }) {
   // Export Excel (ใช้ฟังก์ชันกลาง)
   const handleExportExcel = () => {
     try {
@@ -26,7 +26,8 @@ export default function ReportExportButtons({ columns, rows, filter, reportTitle
         columns,
         rows,
         filter,
-        sumAmount
+        sumAmount,
+        logoUrl
       });
       Swal.fire({ icon: 'success', title: 'ส่งออก PDF สำเร็จ', timer: 1200, showConfirmButton: false });
     } catch (err) {
