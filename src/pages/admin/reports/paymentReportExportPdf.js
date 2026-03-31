@@ -5,12 +5,15 @@ import { jsPDF } from 'jspdf';
 
 import { buildPaymentReportHtml } from './PaymentReportExportHtml';
 import { resolveImageToDataUrl, DEFAULT_LOGO_DATAURL } from '../../../lib/logoUtils';
+import villageLogo from '../../../assets/village-logo.svg';
 
 // use shared `resolveImageToDataUrl` from lib/logoUtils
 
 export async function exportPaymentReportPdf({ title, fileName, columns, rows, filter, sumAmount, logoUrl }) {
   // 1. แปลงโลโก้เป็น Data URL ก่อน (เหมือนใบแจ้งหนี้)
-  const printLogoUrl = await resolveImageToDataUrl(logoUrl, DEFAULT_LOGO_DATAURL);
+  // prefer setup logo, otherwise fallback to the same compiled asset used by fees page
+  const fallbackLogo = `${window.location.origin}${villageLogo}`;
+  const printLogoUrl = await resolveImageToDataUrl(logoUrl, fallbackLogo);
   // 2. สร้าง HTML
   const html = buildPaymentReportHtml({ title, columns, rows, filter, sumAmount, logoUrl: printLogoUrl });
   // 3. สร้าง iframe ซ่อน
