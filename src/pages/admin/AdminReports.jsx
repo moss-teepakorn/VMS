@@ -1,5 +1,6 @@
 import React, { useContext } from 'react'
 import { ModalContext } from './AdminLayout'
+import { Link } from 'react-router-dom'
 
 const AdminReports = () => {
   const { openModal } = useContext(ModalContext)
@@ -24,6 +25,18 @@ const AdminReports = () => {
               <div className="ph-sub">รายงานประวัติและประสิทธิภาพ</div>
             </div>
           </div>
+            <div style={{ marginTop: 16 }}>
+              <div className="card">
+                <div className="ch"><div className="ct">รายงาน</div></div>
+                <div className="cb">
+                  <ul style={{ display: 'flex', gap: 12, flexWrap: 'wrap', padding: 0, margin: 0, listStyle: 'none' }}>
+                    <li><Link to="/admin/reports/payments" className="btn">รายงานการชำระเงิน</Link></li>
+                    <li><Link to="/admin/reports/outstanding" className="btn">รายงานค่างชำระ</Link></li>
+                    <li><Link to="/admin/reports/overdue" className="btn">สรุปค้างชำระ</Link></li>
+                  </ul>
+                </div>
+              </div>
+            </div>
           <div className="ph-acts">
             <button className="btn btn-p btn-sm">📄 ออกรายงาน</button>
           </div>
