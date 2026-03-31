@@ -291,6 +291,28 @@ export async function syncPublicSetupConfig(updates) {
       if (!error) break
 
       const errorMessage = String(error?.message || '')
+
+      // Special-case: some deployments expose `public_config` as a VIEW without
+      // an `id` column. When we attempted `.eq('id', currentRow.id)` the
+      // database can error with "column public_config.id does not exist".
+      // Detect that and retry the update WITHOUT the `.eq(...)` filter.
+      if (/public_config\.id\s+does not exist/i.test(errorMessage) || /column\s+"?public_config\.id"?\s+does not exist/i.test(errorMessage)) {
+        try {
+          const retry = await supabase
+            .from('public_config')
+            .update(payload)
+            .select('*')
+            .maybeSingle()
+
+          data = retry.data
+          error = retry.error
+          if (!error) break
+        } catch (retryErr) {
+          // fall through to normal handling
+          error = retryErr || error
+        }
+      }
+
       const matches = [
         ...errorMessage.matchAll(/Could not find the '([^']+)' column/g),
         ...errorMessage.matchAll(/column\s+"?([a-zA-Z0-9_]+)"?\s+does not exist/g),
