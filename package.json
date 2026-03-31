@@ -7,7 +7,9 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "lint:modal-size": "node scripts/check-modal-size.mjs"
+    "lint:modal-size": "node scripts/check-modal-size.mjs",
+    "migrate:local": "bash scripts/run_migrations.sh",
+    "backup:system-config": "bash scripts/backup_system_config.sh"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.43.0",

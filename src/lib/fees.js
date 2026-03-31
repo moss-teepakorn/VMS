@@ -951,22 +951,52 @@ export async function createPayment(payload) {
     payment_method: payload.payment_method || 'transfer',
     slip_url: payload.slip_url?.trim() || null,
     note: payload.note?.trim() || null,
+    payer_type: payload.payer_type || null,
+    payer_name: payload.payer_name?.trim() || null,
+    payer_contact: payload.payer_contact?.trim() || null,
     paid_at: payload.paid_at || new Date().toISOString(),
   }
-
-  const { data, error } = await supabase
+  // Insert payment (including payer fields if provided)
+  const { data: insertedPayment, error: insertError } = await supabase
     .from('payments')
     .insert([payment])
-    .select('id, fee_id, house_id, amount, payment_method, slip_url, paid_at, verified_by, verified_at, note, verified_profile:verified_by(full_name), fees(id, year, period, status, total_amount, due_date, invoice_date), houses(id, house_no, soi, owner_name), payment_items(id, item_key, item_label, due_amount, paid_amount, outstanding_amount)')
+    .select('id, fee_id, house_id, amount, payment_method, slip_url, paid_at, verified_by, verified_at, note, payer_type, payer_name, payer_contact, receipt_no')
     .single()
 
-  if (error) throw error
+  if (insertError) throw insertError
 
+  // Ensure a receipt_no exists. If caller provided one in payload, persist it; otherwise generate.
+  if (!insertedPayment.receipt_no) {
+    const paidAt = new Date(insertedPayment.paid_at || new Date().toISOString()).toISOString()
+    const datePart = paidAt.slice(0, 10).replace(/-/g, '')
+    const generated = `RCT-${datePart}-${String(insertedPayment.id).padStart(6, '0')}`
+
+    const { data: updated, error: updErr } = await supabase
+      .from('payments')
+      .update({ receipt_no: generated })
+      .eq('id', insertedPayment.id)
+      .select('receipt_no')
+      .single()
+
+    if (updErr) throw updErr
+    insertedPayment.receipt_no = updated.receipt_no
+  } else if (payload.receipt_no) {
+    // Persist provided receipt_no (overwrite if necessary)
+    const { error: providedErr } = await supabase
+      .from('payments')
+      .update({ receipt_no: String(payload.receipt_no).trim() })
+      .eq('id', insertedPayment.id)
+
+    if (providedErr) throw providedErr
+    insertedPayment.receipt_no = String(payload.receipt_no).trim()
+  }
+
+  // Insert payment items if any
   if (paymentItems.length > 0) {
     const itemRows = paymentItems.map((item) => ({
-      payment_id: data.id,
-      fee_id: data.fee_id,
-      house_id: data.house_id,
+      payment_id: insertedPayment.id,
+      fee_id: insertedPayment.fee_id,
+      house_id: insertedPayment.house_id,
       item_key: item.item_key,
       item_label: item.item_label,
       due_amount: item.due_amount,
@@ -982,12 +1012,13 @@ export async function createPayment(payload) {
     const { data: insertedItems, error: itemReadError } = await supabase
       .from('payment_items')
       .select('id, item_key, item_label, due_amount, paid_amount, outstanding_amount')
-      .eq('payment_id', data.id)
+      .eq('payment_id', insertedPayment.id)
 
     if (itemReadError) throw itemReadError
-    data.payment_items = insertedItems || []
+    insertedPayment.payment_items = insertedItems || []
   }
 
+  // If fee_id provided, possibly update fee status
   if (payload.fee_id) {
     if (payload.setFeeStatusFromAmount) {
       const { data: feeRow, error: feeReadError } = await supabase
@@ -1032,7 +1063,8 @@ export async function createPayment(payload) {
     }
   }
 
-  return data
+  // Return the inserted payment (with items attached where applicable)
+  return insertedPayment
 }
 
 export async function uploadPaymentSlip(file, { houseId } = {}) {
