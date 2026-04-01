@@ -792,7 +792,7 @@ export async function deleteFee(id) {
 export async function listPayments({ limit } = {}) {
   let query = supabase
     .from('payments')
-    .select('id, fee_id, house_id, amount, payment_method, slip_url, paid_at, verified_by, verified_at, note, verified_profile:verified_by(full_name), fees(id, year, period, status, total_amount, due_date, invoice_date), houses(id, house_no, soi, owner_name), payment_items(id, item_key, item_label, due_amount, paid_amount, outstanding_amount)')
+    .select('id, fee_id, house_id, amount, payment_method, slip_url, paid_at, verified_by, verified_at, note, payer_type, payer_name, payer_contact, payer_tax_id, payer_address, partner_id, receipt_no, verified_profile:verified_by(full_name), fees(id, year, period, status, total_amount, due_date, invoice_date), houses(id, house_no, soi, owner_name), partners(id, name, tax_id, address, phone), payment_items(id, item_key, item_label, due_amount, paid_amount, outstanding_amount)')
     .order('paid_at', { ascending: false })
 
   if (limit) {
@@ -802,6 +802,54 @@ export async function listPayments({ limit } = {}) {
   const { data, error } = await query
   if (error) throw error
   return data ?? []
+}
+
+export async function listPaymentMonthOptions() {
+  const { data, error } = await supabase
+    .from('payments')
+    .select('paid_at')
+    .not('paid_at', 'is', null)
+    .order('paid_at', { ascending: false })
+
+  if (error) throw error
+
+  const seen = new Set()
+  const options = []
+  for (const row of data || []) {
+    const paidAt = row?.paid_at
+    if (!paidAt) continue
+    const d = new Date(paidAt)
+    if (Number.isNaN(d.getTime())) continue
+    const year = d.getFullYear()
+    const month = d.getMonth() + 1
+    const key = `${year}-${String(month).padStart(2, '0')}`
+    if (seen.has(key)) continue
+    seen.add(key)
+    options.push({ key, year, month })
+  }
+
+  return options
+}
+
+export async function listPaymentsByMonth({ year, month } = {}) {
+  const y = Number(year)
+  const m = Number(month)
+  if (!Number.isFinite(y) || !Number.isFinite(m) || m < 1 || m > 12) {
+    throw new Error('เดือน/ปีไม่ถูกต้อง')
+  }
+
+  const start = new Date(Date.UTC(y, m - 1, 1, 0, 0, 0)).toISOString()
+  const end = new Date(Date.UTC(y, m, 1, 0, 0, 0)).toISOString()
+
+  const { data, error } = await supabase
+    .from('payments')
+    .select('id, fee_id, house_id, amount, payment_method, slip_url, paid_at, verified_by, verified_at, note, payer_type, payer_name, payer_contact, payer_tax_id, payer_address, partner_id, receipt_no, verified_profile:verified_by(full_name), fees(id, year, period, status, total_amount, due_date, invoice_date), houses(id, house_no, soi, owner_name), partners(id, name, tax_id, address, phone), payment_items(id, item_key, item_label, due_amount, paid_amount, outstanding_amount)')
+    .gte('paid_at', start)
+    .lt('paid_at', end)
+    .order('paid_at', { ascending: false })
+
+  if (error) throw error
+  return data || []
 }
 
 export async function listHousePayments(houseId, { limit } = {}) {
@@ -954,13 +1002,16 @@ export async function createPayment(payload) {
     payer_type: payload.payer_type || null,
     payer_name: payload.payer_name?.trim() || null,
     payer_contact: payload.payer_contact?.trim() || null,
+    payer_tax_id: payload.payer_tax_id?.trim() || null,
+    payer_address: payload.payer_address?.trim() || null,
+    partner_id: payload.partner_id || null,
     paid_at: payload.paid_at || new Date().toISOString(),
   }
   // Insert payment (including payer fields if provided)
   const { data: insertedPayment, error: insertError } = await supabase
     .from('payments')
     .insert([payment])
-    .select('id, fee_id, house_id, amount, payment_method, slip_url, paid_at, verified_by, verified_at, note, payer_type, payer_name, payer_contact, receipt_no')
+    .select('id, fee_id, house_id, amount, payment_method, slip_url, paid_at, verified_by, verified_at, note, payer_type, payer_name, payer_contact, payer_tax_id, payer_address, partner_id, receipt_no, partners(id, name, tax_id, address, phone)')
     .single()
 
   if (insertError) throw insertError

@@ -1,12 +1,13 @@
-import React, { useEffect, useState, useRef } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
+import html2canvas from 'html2canvas'
+import { jsPDF } from 'jspdf'
 import Swal from 'sweetalert2'
 import { listPaymentItemTypes } from '../../lib/paymentItemTypes'
 import { listHouses } from '../../lib/houses'
-import { createPayment } from '../../lib/fees'
-import { getSystemConfig } from '../../lib/systemConfig'
+import { createPayment, listPaymentsByMonth, listPaymentMonthOptions } from '../../lib/fees'
+import { listPartners } from '../../lib/partners'
+import { getSetupConfig } from '../../lib/setup'
 import villageLogo from '../../assets/village-logo.svg'
-import html2canvas from 'html2canvas'
-import { jsPDF } from 'jspdf'
 
 function fmtCurrency(v) {
   const n = Number(v || 0)
@@ -14,26 +15,95 @@ function fmtCurrency(v) {
   return n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 }
 
+function formatDateTime(value) {
+  if (!value) return '-'
+  return new Date(value).toLocaleString('th-TH', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+  })
+}
+
+function formatMethod(method) {
+  if (method === 'transfer') return 'โอนเงิน'
+  if (method === 'cash') return 'เงินสด'
+  if (method === 'qr') return 'QR'
+  return method || '-'
+}
+
+function buildMonthLabel(year, month) {
+  const d = new Date(year, month - 1, 1)
+  return d.toLocaleString('th-TH', { month: 'long', year: 'numeric' })
+}
+
+function buildMonthTimeline(currentYear, currentMonth, earliestYear, earliestMonth) {
+  const out = []
+  let y = currentYear
+  let m = currentMonth
+
+  while (y > earliestYear || (y === earliestYear && m >= earliestMonth)) {
+    out.push({ key: `${y}-${String(m).padStart(2, '0')}`, year: y, month: m })
+    m -= 1
+    if (m <= 0) {
+      m = 12
+      y -= 1
+    }
+  }
+  return out
+}
+
 export default function AdminFeatureReceivePayment() {
-  const [items, setItems] = useState([]) // master items
+  const [items, setItems] = useState([])
   const [houses, setHouses] = useState([])
-  const [selected, setSelected] = useState([]) // selected payment items
+  const [partners, setPartners] = useState([])
+  const [payments, setPayments] = useState([])
+  const [monthOptions, setMonthOptions] = useState([])
+  const [selectedMonthKey, setSelectedMonthKey] = useState('')
+  const [selected, setSelected] = useState([])
   const [payerType, setPayerType] = useState('resident')
   const [selectedHouseId, setSelectedHouseId] = useState('')
-  const [externalName, setExternalName] = useState('')
-  const [externalContact, setExternalContact] = useState('')
+  const [selectedPartnerId, setSelectedPartnerId] = useState('')
   const [method, setMethod] = useState('transfer')
+  const [paidAt, setPaidAt] = useState(() => new Date().toISOString().slice(0, 16))
+  const [note, setNote] = useState('')
   const [loading, setLoading] = useState(false)
-  const [setup, setSetup] = useState({})
-  const receiptRef = useRef(null)
+  const [loadingTable, setLoadingTable] = useState(false)
+  const [setup, setSetup] = useState({ villageName: 'The Greenfield' })
+  const [detailPayment, setDetailPayment] = useState(null)
+  const [receiptTarget, setReceiptTarget] = useState(null)
+  const [showReceiptActionModal, setShowReceiptActionModal] = useState(false)
+  const [runningReceiptAction, setRunningReceiptAction] = useState(false)
 
   useEffect(() => {
     (async () => {
       try {
-        const [it, hs, cfg] = await Promise.all([listPaymentItemTypes({ onlyActive: true }), listHouses({ status: 'normal' }), getSystemConfig().catch(() => ({}))])
+        const [it, hs, ps, cfg, monthRows] = await Promise.all([
+          listPaymentItemTypes({ onlyActive: true }),
+          listHouses({ status: 'normal' }),
+          listPartners({ onlyActive: true }),
+          getSetupConfig().catch(() => ({})),
+          listPaymentMonthOptions().catch(() => []),
+        ])
         setItems(it || [])
         setHouses(hs || [])
+        setPartners(ps || [])
         setSetup(cfg || {})
+
+        const now = new Date()
+        const currentYear = now.getFullYear()
+        const currentMonth = now.getMonth() + 1
+        const earliest = (monthRows || []).slice().sort((a, b) => {
+          if (a.year !== b.year) return a.year - b.year
+          return a.month - b.month
+        })[0]
+        const earliestYear = earliest?.year || currentYear
+        const earliestMonth = earliest?.month || currentMonth
+
+        const currentKey = `${currentYear}-${String(currentMonth).padStart(2, '0')}`
+        setMonthOptions(buildMonthTimeline(currentYear, currentMonth, earliestYear, earliestMonth))
+        setSelectedMonthKey(currentKey)
       } catch (err) {
         console.error(err)
         Swal.fire({ icon: 'error', title: 'ไม่สามารถโหลดข้อมูล', text: err.message })
@@ -41,8 +111,38 @@ export default function AdminFeatureReceivePayment() {
     })()
   }, [])
 
+  useEffect(() => {
+    if (!selectedMonthKey) return
+    const [y, m] = selectedMonthKey.split('-')
+    const year = Number(y)
+    const month = Number(m)
+    if (!year || !month) return
+
+    ;(async () => {
+      try {
+        setLoadingTable(true)
+        const rows = await listPaymentsByMonth({ year, month })
+        setPayments(rows || [])
+      } catch (err) {
+        Swal.fire({ icon: 'error', title: 'โหลดรายการรับชำระไม่สำเร็จ', text: err.message })
+      } finally {
+        setLoadingTable(false)
+      }
+    })()
+  }, [selectedMonthKey])
+
   const addItem = (item) => {
-    setSelected((cur) => [...cur, { item_type_id: item.id, code: item.code, label: item.label, due_amount: Number(item.default_amount || 0), paid_amount: Number(item.default_amount || 0) }])
+    setSelected((cur) => {
+      const exists = cur.some((row) => row.item_type_id === item.id)
+      if (exists) return cur
+      return [...cur, {
+        item_type_id: item.id,
+        code: item.code,
+        label: item.label,
+        due_amount: Number(item.default_amount || 0),
+        paid_amount: Number(item.default_amount || 0),
+      }]
+    })
   }
 
   const removeItem = (index) => setSelected((cur) => cur.filter((_, i) => i !== index))
@@ -53,19 +153,29 @@ export default function AdminFeatureReceivePayment() {
 
   const total = selected.reduce((s, r) => s + Number(r.paid_amount || 0), 0)
 
+  const selectedPartner = useMemo(
+    () => partners.find((p) => p.id === selectedPartnerId) || null,
+    [partners, selectedPartnerId],
+  )
+
   const handleSubmit = async () => {
     if (selected.length === 0) return Swal.fire({ icon: 'warning', title: 'ไม่มีรายการ', text: 'กรุณาเพิ่มรายการก่อนรับชำระ' })
     if (payerType === 'resident' && !selectedHouseId) return Swal.fire({ icon: 'warning', title: 'เลือกบ้าน', text: 'กรุณาเลือกบ้านผู้ชำระ' })
-    if (payerType === 'external' && !externalName) return Swal.fire({ icon: 'warning', title: 'กรอกชื่อผู้ชำระ', text: 'กรุณากรอกชื่อผู้ชำระ' })
+    if (payerType === 'external' && !selectedPartnerId) return Swal.fire({ icon: 'warning', title: 'เลือกคู่ค้า', text: 'กรุณาเลือกคู่ค้าภายนอกจาก Setup' })
 
     const payload = {
       fee_id: null,
       house_id: payerType === 'resident' ? selectedHouseId : null,
       amount: total,
       payment_method: method,
+      paid_at: paidAt ? new Date(paidAt).toISOString() : new Date().toISOString(),
+      note: note?.trim() || null,
       payer_type: payerType === 'resident' ? 'resident' : 'external',
-      payer_name: payerType === 'external' ? externalName : undefined,
-      payer_contact: externalContact || undefined,
+      payer_name: payerType === 'external' ? selectedPartner?.name : undefined,
+      payer_contact: payerType === 'external' ? selectedPartner?.phone : undefined,
+      payer_tax_id: payerType === 'external' ? selectedPartner?.tax_id : undefined,
+      payer_address: payerType === 'external' ? selectedPartner?.address : undefined,
+      partner_id: payerType === 'external' ? selectedPartner?.id : undefined,
       payment_items: selected.map((s, idx) => ({ item_key: `item_${idx+1}`, item_label: s.label, due_amount: Number(s.due_amount || 0), paid_amount: Number(s.paid_amount || 0) })),
     }
 
@@ -74,88 +184,239 @@ export default function AdminFeatureReceivePayment() {
       const data = await createPayment(payload)
       setLoading(false)
       Swal.fire({ icon: 'success', title: 'บันทึกการรับชำระแล้ว' })
-      // show receipt popup (new window with toolbar)
-      openReceiptWindow(data)
-      // reset form
+      await refreshCurrentMonth()
+      setReceiptTarget(data)
+      setShowReceiptActionModal(true)
       setSelected([])
-      setExternalName('')
-      setExternalContact('')
+      setSelectedPartnerId('')
+      setNote('')
     } catch (err) {
       setLoading(false)
       Swal.fire({ icon: 'error', title: 'ผิดพลาด', text: err.message })
     }
   }
 
-  const openReceiptWindow = (payment) => {
-    const html = buildReceiptHtml(payment)
-    const w = window.open('', '_blank', 'width=800,height=900')
-    if (!w) return
-    w.document.open()
-    w.document.write(html)
-    w.document.close()
+  const refreshCurrentMonth = async () => {
+    if (!selectedMonthKey) return
+    const [y, m] = selectedMonthKey.split('-')
+    const rows = await listPaymentsByMonth({ year: Number(y), month: Number(m) })
+    setPayments(rows || [])
   }
 
-  const buildReceiptHtml = (payment) => {
-    const logo = setup.login_circle_logo_url || setup.village_logo_url || villageLogo
-    const itemsHtml = (payment.payment_items || []).map(i => `<tr><td>${i.item_label}</td><td style="text-align:right">${fmtCurrency(i.paid_amount)}</td></tr>`).join('')
-    const payer = (payment.payer_name || '') || (payment.houses?.owner_name || '')
-    // inject toolbar and include html2canvas + jspdf via CDN so the popup can export
+  const buildReceiptHtml = (payment, { autoPrint = false, forCapture = false } = {}) => {
+    const logo = setup.loginCircleLogoUrl || villageLogo
+    const itemRows = (payment.payment_items || []).map((i, index) => `
+      <tr>
+        <td class="c">${index + 1}</td>
+        <td>${i.item_label || '-'}</td>
+        <td class="r">${fmtCurrency(i.due_amount)}</td>
+        <td class="r">${fmtCurrency(i.paid_amount)}</td>
+      </tr>
+    `).join('')
+    const payer = payment.payer_name || payment.houses?.owner_name || '-'
+    const receiptNo = payment.receipt_no || payment.id
+    const totalPaid = Number(payment.amount || 0)
+    const paidDate = formatDateTime(payment.paid_at)
+
+    const renderSheet = (copyLabel) => `
+      <div class="sheet page-break">
+        <div class="head">
+          <div class="brand">
+            <img src="${logo}" alt="logo" />
+            <div>
+              <div class="doc">ใบเสร็จรับเงิน</div>
+              <div class="village">${setup.villageName || 'Village Management System'}</div>
+              <div class="sub">${setup.address || '-'}</div>
+            </div>
+          </div>
+          <div class="doc-meta">
+            <div><span>เลขที่ใบเสร็จ:</span> <strong>${receiptNo}</strong></div>
+            <div><span>วันที่รับชำระ:</span> <strong>${paidDate}</strong></div>
+            <div class="copy-mark-row"><div class="copy-mark">${copyLabel}</div></div>
+          </div>
+        </div>
+
+        <section class="box">
+          <div class="grid">
+            <div><span>ผู้ชำระ</span><strong>${payer}</strong></div>
+            <div><span>ประเภทผู้ชำระ</span><strong>${payment.payer_type === 'external' ? 'บุคคลภายนอก' : 'ลูกบ้าน'}</strong></div>
+            <div><span>วิธีชำระ</span><strong>${formatMethod(payment.payment_method)}</strong></div>
+            <div><span>ติดต่อ</span><strong>${payment.payer_contact || '-'}</strong></div>
+          </div>
+        </section>
+
+        <section class="box">
+          <table>
+            <thead>
+              <tr>
+                <th class="c" style="width:56px;">ลำดับ</th>
+                <th>รายการ</th>
+                <th class="r" style="width:170px;">ยอดที่ต้องชำระ (บาท)</th>
+                <th class="r" style="width:170px;">ยอดชำระจริง (บาท)</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${itemRows}
+            </tbody>
+            <tfoot>
+              <tr>
+                <td colspan="3" class="r"><strong>รวมชำระ</strong></td>
+                <td class="r"><strong>${fmtCurrency(totalPaid)}</strong></td>
+              </tr>
+            </tfoot>
+          </table>
+          ${payment.note ? `<div class="note-box">หมายเหตุ: ${payment.note}</div>` : ''}
+        </section>
+      </div>
+    `
+
     return `
       <html>
       <head>
         <meta charset="utf-8" />
-        <title>ใบเสร็จ ${payment.id}</title>
-        <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;700&display=swap" rel="stylesheet">
-        <style>body{font-family:'Sarabun',sans-serif;padding:20px} .logo{width:64px;height:64px} table{width:100%;border-collapse:collapse} td,th{padding:6px;border-bottom:1px solid #eee} .toolbar{position:fixed;right:20px;top:20px;display:flex;gap:8px;z-index:999}</style>
+        <title>ใบเสร็จ ${receiptNo}</title>
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;700&display=swap" rel="stylesheet">
+        <style>
+          @page { size: A4; margin: 0; }
+          * { box-sizing: border-box; }
+          html, body { font-family: 'Sarabun', 'TH Sarabun New', Tahoma, sans-serif; margin: 0; padding: 0; color: #111827; background: #fff; }
+          .sheet {
+            position: relative;
+            width: ${forCapture ? '794px' : '100%'};
+            ${forCapture ? 'height: 1122px; overflow: hidden;' : 'page-break-after: always; break-after: page; break-inside: avoid;'}
+            background: #fff;
+            padding: 24px 28px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+          }
+          .head { display: flex; justify-content: space-between; gap: 12px; border: 1px solid #cbd5e1; border-radius: 4px; padding: 10px 12px; background: #ffffff; }
+          .brand { display: flex; align-items: flex-start; gap: 10px; flex: 1; min-width: 0; }
+          .brand img { width: 48px; height: 48px; border-radius: 6px; object-fit: cover; border: 1px solid #cbd5e1; }
+          .doc { font-size: 16px; font-weight: 700; line-height: 1.3; }
+          .village { font-size: 11px; margin-top: 3px; font-weight: 600; }
+          .sub { font-size: 9px; color: #6b7280; margin-top: 2px; }
+          .doc-meta { font-size: 10px; min-width: 200px; display: flex; flex-direction: column; gap: 2px; word-break: break-word; }
+          .doc-meta span { color: #6b7280; font-weight: 500; }
+          .copy-mark-row { display: flex; justify-content: flex-end; margin-top: 10px; }
+          .copy-mark { border: none; border-radius: 4px; padding: 3px 10px; text-align: center; font-size: 14px; font-weight: 700; line-height: 1.3; color: #0c4a6e; background: transparent; }
+          .box { border: 1px solid #cbd5e1; border-radius: 4px; padding: 10px 12px; }
+          .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 10px; word-break: break-word; }
+          .grid > div { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+          .grid span { font-size: 9px; color: #6b7280; font-weight: 500; }
+          .grid strong { font-size: 11px; font-weight: 600; }
+          table { width: 100%; border-collapse: collapse; table-layout: auto; }
+          th, td { border: 1px solid #cbd5e1; padding: 6px 8px; font-size: 10px; word-wrap: break-word; overflow-wrap: break-word; }
+          th { background: #f1f5f9; text-align: left; font-weight: 600; }
+          .c { text-align: center; }
+          .r { text-align: right; }
+          tfoot td { background: #f8fafc; font-weight: 700; }
+          .note-box { border-top: 1px dashed #d1d5db; padding-top: 4px; font-size: 10px; color: #4b5563; margin-top: 4px; }
+          @media print {
+            html, body { background: #fff; }
+            .sheet { page-break-after: always; break-after: page; break-inside: avoid; }
+            .sheet:last-child { page-break-after: avoid; break-after: avoid; }
+          }
+        </style>
       </head>
       <body>
-        <div class="toolbar">
-          <button id="btn-print">พิมพ์</button>
-          <button id="btn-pdf">ดาวน์โหลด PDF</button>
-          <button id="btn-png">ดาวน์โหลด PNG</button>
-        </div>
-        <div style="display:flex;gap:12px;align-items:center">
-          <img src="${logo}" style="width:64px;height:64px;object-fit:contain" />
-          <div><h2>ใบเสร็จรับเงิน</h2><div>เลขที่: ${payment.receipt_no || payment.id}</div></div>
-        </div>
-        <hr/>
-        <div>ผู้ชำระ: ${payer || '-'}</div>
-        <div>วิธีการชำระ: ${payment.payment_method || '-'}</div>
-        <table style="margin-top:12px">
-          <thead><tr><th>รายการ</th><th style="text-align:right">จำนวนเงิน</th></tr></thead>
-          <tbody>${itemsHtml}</tbody>
-        </table>
-        <div style="text-align:right;font-weight:700;margin-top:8px">รวมทั้งสิ้น: ${fmtCurrency(payment.amount)}</div>
-
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-        <script>
-          async function capture() {
-            const el = document.body
-            const canvas = await html2canvas(el, { scale: 2 })
-            return canvas
-          }
-          document.getElementById('btn-print').addEventListener('click', function(){ window.print(); })
-          document.getElementById('btn-pdf').addEventListener('click', async function(){
-            const canvas = await capture();
-            const img = canvas.toDataURL('image/jpeg', 0.95);
-            const { jsPDF } = window.jspdf;
-            const pdf = new jsPDF({ unit: 'pt', format: [canvas.width, canvas.height] });
-            pdf.addImage(img, 'JPEG', 0, 0, canvas.width, canvas.height);
-            pdf.save('receipt-${payment.id}.pdf');
-          })
-          document.getElementById('btn-png').addEventListener('click', async function(){
-            const canvas = await capture();
-            const a = document.createElement('a');
-            a.href = canvas.toDataURL('image/png');
-            a.download = 'receipt-${payment.id}.png';
-            a.click();
-          })
-        </script>
+        ${renderSheet('ต้นฉบับ')}
+        ${renderSheet('สำเนา')}
+        ${autoPrint ? '<script>window.onload = () => window.print();</script>' : ''}
       </body>
       </html>
     `
   }
+
+  const renderReceiptsInIframe = async (html, sheetCount = 2) => {
+    const iframe = document.createElement('iframe')
+    iframe.style.cssText = 'position:fixed;left:-9999px;top:0;border:none;'
+    iframe.style.width = '794px'
+    iframe.style.height = `${sheetCount * 1200}px`
+    document.body.appendChild(iframe)
+
+    const doc = iframe.contentDocument
+    doc.open()
+    doc.write(html)
+    doc.close()
+
+    await new Promise((resolve) => setTimeout(resolve, 1000))
+    return {
+      iframe,
+      sheets: Array.from(doc.querySelectorAll('.sheet')),
+    }
+  }
+
+  const runReceiptAction = async (mode) => {
+    if (!receiptTarget) return
+    setRunningReceiptAction(true)
+
+    try {
+      const target = receiptTarget
+      const fileLabel = `receipt-${target.receipt_no || target.id}`
+
+      if (mode === 'paper') {
+        const popup = window.open('', '_blank', 'width=1200,height=900')
+        if (!popup) throw new Error('กรุณาอนุญาต popup ของเบราว์เซอร์')
+        popup.document.open()
+        popup.document.write(buildReceiptHtml(target, { autoPrint: true }))
+        popup.document.close()
+        setShowReceiptActionModal(false)
+        return
+      }
+
+      const html = buildReceiptHtml(target, { forCapture: true })
+      const { iframe, sheets } = await renderReceiptsInIframe(html, 2)
+      if (sheets.length === 0) {
+        document.body.removeChild(iframe)
+        throw new Error('ไม่พบหน้าสำหรับพิมพ์ใบเสร็จ')
+      }
+
+      if (mode === 'image') {
+        for (let i = 0; i < sheets.length; i += 1) {
+          const canvas = await html2canvas(sheets[i], {
+            scale: 2,
+            useCORS: true,
+            backgroundColor: '#ffffff',
+            width: 794,
+            height: 1122,
+          })
+          const link = document.createElement('a')
+          link.href = canvas.toDataURL('image/png')
+          link.download = `${fileLabel}-${i + 1}.png`
+          link.click()
+        }
+      } else {
+        const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' })
+        const w = pdf.internal.pageSize.getWidth()
+        const h = pdf.internal.pageSize.getHeight()
+        for (let i = 0; i < sheets.length; i += 1) {
+          const canvas = await html2canvas(sheets[i], {
+            scale: 2,
+            useCORS: true,
+            backgroundColor: '#ffffff',
+            width: 794,
+            height: 1122,
+          })
+          const imgData = canvas.toDataURL('image/jpeg', 0.95)
+          if (i > 0) pdf.addPage()
+          pdf.addImage(imgData, 'JPEG', 0, 0, w, h, undefined, 'FAST')
+        }
+        pdf.save(`${fileLabel}.pdf`)
+      }
+
+      document.body.removeChild(iframe)
+      setShowReceiptActionModal(false)
+    } catch (err) {
+      Swal.fire({ icon: 'error', title: 'พิมพ์ใบเสร็จไม่สำเร็จ', text: err.message })
+    } finally {
+      setRunningReceiptAction(false)
+    }
+  }
+
+  const summaryTotal = payments.reduce((sum, p) => sum + Number(p.amount || 0), 0)
 
   return (
     <div className="pane on houses-compact reports-compact">
@@ -163,14 +424,14 @@ export default function AdminFeatureReceivePayment() {
         <div className="ph-in" style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
           <div className="ph-ico">💳</div>
           <div>
-            <div className="ph-h1">รับชำระเงิน (รายการทั่วไป)</div>
-            <div className="ph-sub">สร้างการรับชำระสำหรับรายการที่ไม่ใช่ค่าส่วนกลาง</div>
+            <div className="ph-h1">รับชำระเงิน</div>
+            <div className="ph-sub">บันทึกรับชำระทีละหลายค่าในใบเดียว พร้อมตารางตามเลขที่ใบรับชำระ</div>
           </div>
         </div>
       </div>
 
       <div className="card">
-        <div className="ch"><div className="ct">เลือกรายการรับชำระ</div></div>
+        <div className="ch"><div className="ct">เพิ่มการรับชำระ</div></div>
         <div className="cb" style={{ display: 'flex', gap: 12 }}>
           <div style={{ flex: 1 }}>
             <div style={{ marginBottom: 8 }}>
@@ -214,8 +475,17 @@ export default function AdminFeatureReceivePayment() {
               </div>
             ) : (
               <div>
-                <input placeholder="ชื่อนามสกุล" value={externalName} onChange={e => setExternalName(e.target.value)} style={{ width: '100%', marginBottom: 8 }} />
-                <input placeholder="ข้อมูลติดต่อ (โทร/อีเมล)" value={externalContact} onChange={e => setExternalContact(e.target.value)} style={{ width: '100%' }} />
+                <select value={selectedPartnerId} onChange={(e) => setSelectedPartnerId(e.target.value)} style={{ width: '100%', marginBottom: 8 }}>
+                  <option value="">-- เลือกคู่ค้า --</option>
+                  {partners.map((p) => <option key={p.id} value={p.id}>{p.name} {p.tax_id ? `(${p.tax_id})` : ''}</option>)}
+                </select>
+                {selectedPartner && (
+                  <div style={{ fontSize: 12, color: 'var(--mu)', background: '#f8fafc', padding: 8, borderRadius: 8 }}>
+                    <div>ผู้เสียภาษี: {selectedPartner.tax_id || '-'}</div>
+                    <div>ที่อยู่: {selectedPartner.address || '-'}</div>
+                    <div>โทร: {selectedPartner.phone || '-'}</div>
+                  </div>
+                )}
               </div>
             )}
 
@@ -226,6 +496,16 @@ export default function AdminFeatureReceivePayment() {
                 <option value="cash">เงินสด</option>
                 <option value="qr">QR</option>
               </select>
+            </div>
+
+            <div style={{ marginTop: 12 }}>
+              <div style={{ fontWeight: 600 }}>วันเวลาชำระ</div>
+              <input type="datetime-local" value={paidAt} onChange={(e) => setPaidAt(e.target.value)} style={{ width: '100%' }} />
+            </div>
+
+            <div style={{ marginTop: 12 }}>
+              <div style={{ fontWeight: 600 }}>หมายเหตุ</div>
+              <textarea value={note} onChange={(e) => setNote(e.target.value)} style={{ width: '100%', minHeight: 70 }} />
             </div>
 
             <div style={{ marginTop: 12 }}>
@@ -241,6 +521,128 @@ export default function AdminFeatureReceivePayment() {
           </div>
         </div>
       </div>
+
+      <div className="card" style={{ marginTop: 16 }}>
+        <div className="ch" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
+          <div className="ct">รายการรับชำระตามเลขที่ใบรับชำระ</div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <select value={selectedMonthKey} onChange={(e) => setSelectedMonthKey(e.target.value)}>
+              {monthOptions.map((opt) => (
+                <option key={opt.key} value={opt.key}>{buildMonthLabel(opt.year, opt.month)}</option>
+              ))}
+            </select>
+            <button className="btn btn-g" onClick={refreshCurrentMonth}>รีเฟรช</button>
+          </div>
+        </div>
+        <div className="cb">
+          <div style={{ marginBottom: 10, display: 'flex', justifyContent: 'space-between', color: 'var(--mu)' }}>
+            <div>ทั้งหมด {payments.length} รายการ</div>
+            <div>รวมยอดรับชำระ ฿{fmtCurrency(summaryTotal)}</div>
+          </div>
+          <div style={{ overflow: 'auto' }}>
+            <table className="tw" style={{ width: '100%', minWidth: 980 }}>
+              <thead>
+                <tr>
+                  <th>เลขที่ใบรับชำระ</th>
+                  <th>วันที่รับชำระ</th>
+                  <th>ผู้ชำระ</th>
+                  <th>ประเภท</th>
+                  <th style={{ textAlign: 'right' }}>จำนวนเงิน</th>
+                  <th>วิธีชำระ</th>
+                  <th>สถานะ</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {payments.map((p) => (
+                  <tr key={p.id}>
+                    <td>{p.receipt_no || p.id}</td>
+                    <td>{formatDateTime(p.paid_at)}</td>
+                    <td>{p.payer_name || p.houses?.owner_name || '-'}</td>
+                    <td>{p.payer_type === 'external' ? 'บุคคลภายนอก' : 'ลูกบ้าน'}</td>
+                    <td style={{ textAlign: 'right' }}>{fmtCurrency(p.amount)}</td>
+                    <td>{formatMethod(p.payment_method)}</td>
+                    <td>{p.verified_at ? 'อนุมัติแล้ว' : 'รอตรวจสอบ'}</td>
+                    <td style={{ whiteSpace: 'nowrap' }}>
+                      <button className="btn btn-xs btn-o" onClick={() => setDetailPayment(p)}>ดูรายละเอียด</button>
+                      <button className="btn btn-xs btn-p" style={{ marginLeft: 8 }} onClick={() => { setReceiptTarget(p); setShowReceiptActionModal(true) }}>ออกรายงาน</button>
+                    </td>
+                  </tr>
+                ))}
+                {payments.length === 0 && (
+                  <tr><td colSpan={8} style={{ textAlign: 'center', color: 'var(--mu)' }}>{loadingTable ? 'กำลังโหลด...' : 'ไม่พบข้อมูลของเดือนที่เลือก'}</td></tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      {detailPayment && (
+        <div className="modal-root"><div className="modal" style={{ maxWidth: 920 }}>
+          <div className="modal-head"><div className="modal-title">รายละเอียดการรับชำระ #{detailPayment.receipt_no || detailPayment.id}</div></div>
+          <div className="modal-body">
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0,1fr))', gap: 10, marginBottom: 12 }}>
+              <div><strong>ผู้ชำระ:</strong> {detailPayment.payer_name || detailPayment.houses?.owner_name || '-'}</div>
+              <div><strong>ประเภทผู้ชำระ:</strong> {detailPayment.payer_type === 'external' ? 'บุคคลภายนอก' : 'ลูกบ้าน'}</div>
+              <div><strong>วิธีชำระ:</strong> {formatMethod(detailPayment.payment_method)}</div>
+              <div><strong>วันที่ชำระ:</strong> {formatDateTime(detailPayment.paid_at)}</div>
+              <div><strong>ติดต่อ:</strong> {detailPayment.payer_contact || '-'}</div>
+              <div><strong>เลขผู้เสียภาษี:</strong> {detailPayment.payer_tax_id || '-'}</div>
+            </div>
+
+            <table className="tw" style={{ width: '100%' }}>
+              <thead>
+                <tr>
+                  <th>รายการ</th>
+                  <th style={{ textAlign: 'right' }}>ยอดที่ต้องชำระ</th>
+                  <th style={{ textAlign: 'right' }}>ยอดชำระจริง</th>
+                </tr>
+              </thead>
+              <tbody>
+                {(detailPayment.payment_items || []).map((item) => (
+                  <tr key={item.id || `${item.item_key}-${item.item_label}`}>
+                    <td>{item.item_label || '-'}</td>
+                    <td style={{ textAlign: 'right' }}>{fmtCurrency(item.due_amount)}</td>
+                    <td style={{ textAlign: 'right' }}>{fmtCurrency(item.paid_amount)}</td>
+                  </tr>
+                ))}
+                {(!detailPayment.payment_items || detailPayment.payment_items.length === 0) && <tr><td colSpan={3} style={{ textAlign: 'center', color: 'var(--mu)' }}>ไม่มีรายการย่อย</td></tr>}
+              </tbody>
+              <tfoot>
+                <tr>
+                  <td style={{ textAlign: 'right', fontWeight: 700 }}>รวม</td>
+                  <td></td>
+                  <td style={{ textAlign: 'right', fontWeight: 700 }}>{fmtCurrency(detailPayment.amount)}</td>
+                </tr>
+              </tfoot>
+            </table>
+
+            {detailPayment.note ? <div style={{ marginTop: 12 }}><strong>หมายเหตุ:</strong> {detailPayment.note}</div> : null}
+          </div>
+          <div className="modal-foot">
+            <button className="btn btn-g" onClick={() => setDetailPayment(null)}>ปิด</button>
+            <button className="btn btn-p" onClick={() => { setReceiptTarget(detailPayment); setShowReceiptActionModal(true) }}>ออกรายงานใบเสร็จ</button>
+          </div>
+        </div></div>
+      )}
+
+      {showReceiptActionModal && (
+        <div className="modal-root"><div className="modal" style={{ maxWidth: 420 }}>
+          <div className="modal-head"><div className="modal-title">Modal ออกรายงาน (3 แบบ)</div></div>
+          <div className="modal-body">
+            <div style={{ color: 'var(--mu)', marginBottom: 8 }}>เลือกวิธีออกรายงานใบเสร็จรับเงิน</div>
+            <div style={{ display: 'grid', gap: 8 }}>
+              <button className="btn btn-p" disabled={runningReceiptAction} onClick={() => runReceiptAction('paper')}>พิมพ์เอกสาร (Paper)</button>
+              <button className="btn btn-o" disabled={runningReceiptAction} onClick={() => runReceiptAction('pdf')}>ดาวน์โหลด PDF</button>
+              <button className="btn btn-g" disabled={runningReceiptAction} onClick={() => runReceiptAction('image')}>ดาวน์โหลด PNG</button>
+            </div>
+          </div>
+          <div className="modal-foot">
+            <button className="btn btn-g" onClick={() => setShowReceiptActionModal(false)} disabled={runningReceiptAction}>ปิด</button>
+          </div>
+        </div></div>
+      )}
     </div>
   )
 }
