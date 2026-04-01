@@ -789,11 +789,21 @@ export async function deleteFee(id) {
   return true
 }
 
-export async function listPayments({ limit } = {}) {
+const PAYMENT_SELECT = 'id, fee_id, house_id, amount, payment_method, slip_url, paid_at, verified_by, verified_at, note, payer_type, payer_name, payer_contact, payer_tax_id, payer_address, partner_id, receipt_no, verified_profile:verified_by(full_name), fees(id, year, period, status, total_amount, due_date, invoice_date), houses(id, house_no, soi, owner_name), partners(id, name, tax_id, address, phone), payment_items(id, item_key, item_label, due_amount, paid_amount, outstanding_amount)'
+
+function applyPaymentKindFilter(query, { generalOnly = false, feeOnly = false } = {}) {
+  if (generalOnly) return query.is('fee_id', null)
+  if (feeOnly) return query.not('fee_id', 'is', null)
+  return query
+}
+
+export async function listPayments({ limit, generalOnly = false, feeOnly = false } = {}) {
   let query = supabase
     .from('payments')
-    .select('id, fee_id, house_id, amount, payment_method, slip_url, paid_at, verified_by, verified_at, note, payer_type, payer_name, payer_contact, payer_tax_id, payer_address, partner_id, receipt_no, verified_profile:verified_by(full_name), fees(id, year, period, status, total_amount, due_date, invoice_date), houses(id, house_no, soi, owner_name), partners(id, name, tax_id, address, phone), payment_items(id, item_key, item_label, due_amount, paid_amount, outstanding_amount)')
+    .select(PAYMENT_SELECT)
     .order('paid_at', { ascending: false })
+
+  query = applyPaymentKindFilter(query, { generalOnly, feeOnly })
 
   if (limit) {
     query = query.limit(limit)
@@ -804,12 +814,16 @@ export async function listPayments({ limit } = {}) {
   return data ?? []
 }
 
-export async function listPaymentMonthOptions() {
-  const { data, error } = await supabase
+export async function listPaymentMonthOptions({ generalOnly = false, feeOnly = false } = {}) {
+  let query = supabase
     .from('payments')
     .select('paid_at')
     .not('paid_at', 'is', null)
     .order('paid_at', { ascending: false })
+
+  query = applyPaymentKindFilter(query, { generalOnly, feeOnly })
+
+  const { data, error } = await query
 
   if (error) throw error
 
@@ -831,7 +845,7 @@ export async function listPaymentMonthOptions() {
   return options
 }
 
-export async function listPaymentsByMonth({ year, month } = {}) {
+export async function listPaymentsByMonth({ year, month, generalOnly = false, feeOnly = false } = {}) {
   const y = Number(year)
   const m = Number(month)
   if (!Number.isFinite(y) || !Number.isFinite(m) || m < 1 || m > 12) {
@@ -841,12 +855,16 @@ export async function listPaymentsByMonth({ year, month } = {}) {
   const start = new Date(Date.UTC(y, m - 1, 1, 0, 0, 0)).toISOString()
   const end = new Date(Date.UTC(y, m, 1, 0, 0, 0)).toISOString()
 
-  const { data, error } = await supabase
+  let query = supabase
     .from('payments')
-    .select('id, fee_id, house_id, amount, payment_method, slip_url, paid_at, verified_by, verified_at, note, payer_type, payer_name, payer_contact, payer_tax_id, payer_address, partner_id, receipt_no, verified_profile:verified_by(full_name), fees(id, year, period, status, total_amount, due_date, invoice_date), houses(id, house_no, soi, owner_name), partners(id, name, tax_id, address, phone), payment_items(id, item_key, item_label, due_amount, paid_amount, outstanding_amount)')
+    .select(PAYMENT_SELECT)
     .gte('paid_at', start)
     .lt('paid_at', end)
     .order('paid_at', { ascending: false })
+
+  query = applyPaymentKindFilter(query, { generalOnly, feeOnly })
+
+  const { data, error } = await query
 
   if (error) throw error
   return data || []
@@ -1006,12 +1024,14 @@ export async function createPayment(payload) {
     payer_address: payload.payer_address?.trim() || null,
     partner_id: payload.partner_id || null,
     paid_at: payload.paid_at || new Date().toISOString(),
+    verified_by: payload.verified_by || null,
+    verified_at: payload.verified_at || null,
   }
   // Insert payment (including payer fields if provided)
   const { data: insertedPayment, error: insertError } = await supabase
     .from('payments')
     .insert([payment])
-    .select('id, fee_id, house_id, amount, payment_method, slip_url, paid_at, verified_by, verified_at, note, payer_type, payer_name, payer_contact, payer_tax_id, payer_address, partner_id, receipt_no, partners(id, name, tax_id, address, phone)')
+    .select(PAYMENT_SELECT)
     .single()
 
   if (insertError) throw insertError
@@ -1114,8 +1134,15 @@ export async function createPayment(payload) {
     }
   }
 
-  // Return the inserted payment (with items attached where applicable)
-  return insertedPayment
+  const { data: fullPayment, error: fullPaymentError } = await supabase
+    .from('payments')
+    .select(PAYMENT_SELECT)
+    .eq('id', insertedPayment.id)
+    .single()
+
+  if (fullPaymentError) throw fullPaymentError
+
+  return fullPayment
 }
 
 export async function uploadPaymentSlip(file, { houseId } = {}) {
