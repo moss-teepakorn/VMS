@@ -10,6 +10,10 @@ DROP POLICY IF EXISTS partners_select_authenticated ON public.partners;
 DROP POLICY IF EXISTS partners_insert_admin ON public.partners;
 DROP POLICY IF EXISTS partners_update_admin ON public.partners;
 DROP POLICY IF EXISTS partners_delete_admin ON public.partners;
+DROP POLICY IF EXISTS partners_public_select ON public.partners;
+DROP POLICY IF EXISTS partners_public_insert ON public.partners;
+DROP POLICY IF EXISTS partners_public_update ON public.partners;
+DROP POLICY IF EXISTS partners_public_delete ON public.partners;
 
 CREATE POLICY partners_public_select ON public.partners
   FOR SELECT
