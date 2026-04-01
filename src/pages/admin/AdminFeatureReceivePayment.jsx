@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react'
+import React, { useEffect, useMemo, useRef, useState } from 'react'
 import html2canvas from 'html2canvas'
 import { jsPDF } from 'jspdf'
 import Swal from 'sweetalert2'
@@ -8,6 +8,7 @@ import { createPayment, listPaymentsByMonth, listPaymentMonthOptions } from '../
 import { listPartners } from '../../lib/partners'
 import { getSetupConfig } from '../../lib/setup'
 import villageLogo from '../../assets/village-logo.svg'
+import './AdminFeatureReceivePayment.css'
 
 function fmtCurrency(v) {
   const n = Number(v || 0)
@@ -75,6 +76,13 @@ export default function AdminFeatureReceivePayment() {
   const [receiptTarget, setReceiptTarget] = useState(null)
   const [showReceiptActionModal, setShowReceiptActionModal] = useState(false)
   const [runningReceiptAction, setRunningReceiptAction] = useState(false)
+  const [pendingItemId, setPendingItemId] = useState('')
+  const itemPickerRef = useRef(null)
+
+  // UX: focus the first control so operators can start quickly.
+  useEffect(() => {
+    itemPickerRef.current?.focus()
+  }, [])
 
   useEffect(() => {
     (async () => {
@@ -145,6 +153,20 @@ export default function AdminFeatureReceivePayment() {
     })
   }
 
+  const handleAddPendingItem = () => {
+    if (!pendingItemId) return
+    const selectedItem = items.find((x) => x.id === pendingItemId)
+    if (selectedItem) addItem(selectedItem)
+    setPendingItemId('')
+    itemPickerRef.current?.focus()
+  }
+
+  const handleItemPickerKeyDown = (event) => {
+    if (event.key !== 'Enter') return
+    event.preventDefault()
+    handleAddPendingItem()
+  }
+
   const removeItem = (index) => setSelected((cur) => cur.filter((_, i) => i !== index))
 
   const updateItemAmount = (index, value) => {
@@ -183,13 +205,23 @@ export default function AdminFeatureReceivePayment() {
     try {
       const data = await createPayment(payload)
       setLoading(false)
-      Swal.fire({ icon: 'success', title: 'บันทึกการรับชำระแล้ว' })
+      Swal.fire({
+        icon: 'success',
+        title: 'บันทึกสำเร็จ',
+        toast: true,
+        timer: 1800,
+        position: 'top-end',
+        showConfirmButton: false,
+      })
       await refreshCurrentMonth()
       setReceiptTarget(data)
       setShowReceiptActionModal(true)
       setSelected([])
+      setSelectedHouseId('')
       setSelectedPartnerId('')
       setNote('')
+      setPaidAt(new Date().toISOString().slice(0, 16))
+      itemPickerRef.current?.focus()
     } catch (err) {
       setLoading(false)
       Swal.fire({ icon: 'error', title: 'ผิดพลาด', text: err.message })
@@ -419,104 +451,146 @@ export default function AdminFeatureReceivePayment() {
   const summaryTotal = payments.reduce((sum, p) => sum + Number(p.amount || 0), 0)
 
   return (
-    <div className="pane on houses-compact reports-compact">
-      <div className="ph">
+    <div className="pane on houses-compact reports-compact rp-wrap">
+      <div className="ph rp-hero">
         <div className="ph-in" style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
           <div className="ph-ico">💳</div>
           <div>
             <div className="ph-h1">รับชำระเงิน</div>
-            <div className="ph-sub">บันทึกรับชำระทีละหลายค่าในใบเดียว พร้อมตารางตามเลขที่ใบรับชำระ</div>
+            <div className="ph-sub">ระบบรับชำระแบบองค์กร: หลายรายการต่อใบ, รายเดือน, และออกใบเสร็จทันที</div>
           </div>
         </div>
       </div>
 
-      <div className="card">
-        <div className="ch"><div className="ct">เพิ่มการรับชำระ</div></div>
-        <div className="cb" style={{ display: 'flex', gap: 12 }}>
-          <div style={{ flex: 1 }}>
-            <div style={{ marginBottom: 8 }}>
-              <select onChange={e => { const id = e.target.value; const it = items.find(x => x.id === id); if (it) addItem(it); e.target.value = '' }}>
-                <option value="">-- เพิ่มรายการ --</option>
-                {items.map(it => <option key={it.id} value={it.id}>{it.code} — {it.label} ({fmtCurrency(it.default_amount)})</option>)}
-              </select>
-            </div>
-            <div style={{ overflow: 'auto' }}>
-              <table className="tw" style={{ width: '100%' }}>
-                <thead><tr><th>รายการ</th><th style={{ textAlign: 'right' }}>จำนวนเงิน</th><th></th></tr></thead>
-                <tbody>
-                  {selected.map((s, idx) => (
-                    <tr key={idx}>
-                      <td>{s.label}</td>
-                      <td style={{ textAlign: 'right' }}>
-                        <input type="number" value={s.paid_amount} onChange={e => updateItemAmount(idx, e.target.value)} style={{ width: 120, textAlign: 'right' }} />
-                      </td>
-                      <td><button className="btn btn-xs btn-dg" onClick={() => removeItem(idx)}>ลบ</button></td>
-                    </tr>
-                  ))}
-                  {selected.length === 0 && <tr><td colSpan={3} style={{ textAlign: 'center', color: 'var(--mu)' }}>ยังไม่มีรายการ</td></tr>}
-                </tbody>
-              </table>
-            </div>
+      <div className="rp-grid">
+        <div className="rp-panel">
+          <div className="rp-panel-head">
+            <div className="rp-panel-title">📄 รายการชำระในใบนี้</div>
           </div>
-
-          <div style={{ width: 320 }}>
-            <div style={{ marginBottom: 8 }}>
-              <div style={{ fontWeight: 600, marginBottom: 6 }}>ผู้ชำระ</div>
-              <label style={{ display: 'block' }}><input type="radio" checked={payerType === 'resident'} onChange={() => setPayerType('resident')} /> ลูกบ้าน</label>
-              <label style={{ display: 'block' }}><input type="radio" checked={payerType === 'external'} onChange={() => setPayerType('external')} /> บุคคลภายนอก</label>
+          <div className="rp-panel-body">
+            <div className="rp-toolbar">
+              <select
+                ref={itemPickerRef}
+                className="rp-select"
+                value={pendingItemId}
+                onChange={(e) => setPendingItemId(e.target.value)}
+                onKeyDown={handleItemPickerKeyDown}
+              >
+                <option value="">เลือกประเภทค่ารับชำระ</option>
+                {items.map((it) => <option key={it.id} value={it.id}>{it.code} - {it.label} ({fmtCurrency(it.default_amount)})</option>)}
+              </select>
+              <button className="btn btn-p" onClick={handleAddPendingItem}>+ เพิ่มรายการ</button>
             </div>
 
-            {payerType === 'resident' ? (
-              <div>
-                <select value={selectedHouseId} onChange={e => setSelectedHouseId(e.target.value)} style={{ width: '100%' }}>
-                  <option value="">-- เลือกบ้าน --</option>
-                  {houses.map(h => <option key={h.id} value={h.id}>{h.soi || ''} / {h.house_no} — {h.owner_name}</option>)}
-                </select>
+            {selected.length === 0 ? (
+              <div className="rp-empty">
+                <h4>📄 ยังไม่มีรายการชำระ</h4>
+                <p>เริ่มต้นโดยเพิ่มรายการ เช่น:</p>
+                <ul>
+                  <li>ค่าส่วนกลาง</li>
+                  <li>ค่าปรับ</li>
+                  <li>ค่าน้ำ / ไฟ</li>
+                </ul>
+                <button className="btn btn-p" style={{ marginTop: 10 }} onClick={() => itemPickerRef.current?.focus()}>+ เพิ่มรายการ</button>
               </div>
             ) : (
-              <div>
-                <select value={selectedPartnerId} onChange={(e) => setSelectedPartnerId(e.target.value)} style={{ width: '100%', marginBottom: 8 }}>
-                  <option value="">-- เลือกคู่ค้า --</option>
-                  {partners.map((p) => <option key={p.id} value={p.id}>{p.name} {p.tax_id ? `(${p.tax_id})` : ''}</option>)}
-                </select>
-                {selectedPartner && (
-                  <div style={{ fontSize: 12, color: 'var(--mu)', background: '#f8fafc', padding: 8, borderRadius: 8 }}>
-                    <div>ผู้เสียภาษี: {selectedPartner.tax_id || '-'}</div>
-                    <div>ที่อยู่: {selectedPartner.address || '-'}</div>
-                    <div>โทร: {selectedPartner.phone || '-'}</div>
-                  </div>
-                )}
+              <div className="rp-item-table" style={{ marginTop: 10 }}>
+                <table className="tw" style={{ width: '100%' }}>
+                  <thead>
+                    <tr>
+                      <th>รายการ</th>
+                      <th style={{ textAlign: 'right' }}>จำนวนเงิน</th>
+                      <th style={{ width: 80 }}></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {selected.map((s, idx) => (
+                      <tr key={idx}>
+                        <td>{s.label}</td>
+                        <td style={{ textAlign: 'right' }}>
+                          <input className="rp-input rp-amount-input" type="number" value={s.paid_amount} onChange={e => updateItemAmount(idx, e.target.value)} />
+                        </td>
+                        <td><button className="btn btn-xs btn-dg" onClick={() => removeItem(idx)}>ลบ</button></td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
             )}
+          </div>
+        </div>
 
-            <div style={{ marginTop: 12 }}>
-              <div style={{ fontWeight: 600 }}>วิธีชำระ</div>
-              <select value={method} onChange={e => setMethod(e.target.value)} style={{ width: '100%' }}>
-                <option value="transfer">โอน</option>
-                <option value="cash">เงินสด</option>
-                <option value="qr">QR</option>
-              </select>
-            </div>
-
-            <div style={{ marginTop: 12 }}>
-              <div style={{ fontWeight: 600 }}>วันเวลาชำระ</div>
-              <input type="datetime-local" value={paidAt} onChange={(e) => setPaidAt(e.target.value)} style={{ width: '100%' }} />
-            </div>
-
-            <div style={{ marginTop: 12 }}>
-              <div style={{ fontWeight: 600 }}>หมายเหตุ</div>
-              <textarea value={note} onChange={(e) => setNote(e.target.value)} style={{ width: '100%', minHeight: 70 }} />
-            </div>
-
-            <div style={{ marginTop: 12 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <div style={{ fontWeight: 700 }}>รวมทั้งหมด</div>
-                <div style={{ fontWeight: 700 }}>{fmtCurrency(total)}</div>
+        <div className="rp-panel">
+          <div className="rp-panel-head">
+            <div className="rp-panel-title">🧾 ข้อมูลการชำระ</div>
+          </div>
+          <div className="rp-panel-body">
+            <div className="rp-section">
+              <div className="rp-section-title">ผู้ชำระ</div>
+              <div className="rp-payer-toggle">
+                <label className={`rp-radio ${payerType === 'resident' ? 'active' : ''}`}>
+                  <input type="radio" checked={payerType === 'resident'} onChange={() => setPayerType('resident')} />
+                  ลูกบ้าน
+                </label>
+                <label className={`rp-radio ${payerType === 'external' ? 'active' : ''}`}>
+                  <input type="radio" checked={payerType === 'external'} onChange={() => setPayerType('external')} />
+                  บุคคลภายนอก
+                </label>
               </div>
-              <div style={{ marginTop: 12, display: 'flex', gap: 8 }}>
-                <button className="btn btn-dg" onClick={() => { setSelected([]) }}>ยกเลิก</button>
-                <button className="btn btn-p" onClick={handleSubmit} disabled={loading} style={{ marginLeft: 'auto' }}>{loading ? 'กำลังบันทึก...' : 'บันทึก & ออกใบเสร็จ'}</button>
+
+              {payerType === 'resident' ? (
+                <div style={{ marginTop: 8 }}>
+                  <select className="rp-select" value={selectedHouseId} onChange={e => setSelectedHouseId(e.target.value)}>
+                    <option value="">เลือกบ้านผู้ชำระ</option>
+                    {houses.map(h => <option key={h.id} value={h.id}>{h.soi || ''} / {h.house_no} - {h.owner_name}</option>)}
+                  </select>
+                </div>
+              ) : (
+                <div style={{ marginTop: 8 }}>
+                  <select className="rp-select" value={selectedPartnerId} onChange={(e) => setSelectedPartnerId(e.target.value)}>
+                    <option value="">เลือกคู่ค้านิติบุคคล</option>
+                    {partners.map((p) => <option key={p.id} value={p.id}>{p.name} {p.tax_id ? `(${p.tax_id})` : ''}</option>)}
+                  </select>
+                  {selectedPartner && (
+                    <div className="rp-partner-card">
+                      <div>เลขผู้เสียภาษี: {selectedPartner.tax_id || '-'}</div>
+                      <div>ที่อยู่: {selectedPartner.address || '-'}</div>
+                      <div>เบอร์โทร: {selectedPartner.phone || '-'}</div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
+            <div className="rp-section">
+              <div className="rp-section-title">วิธีชำระ</div>
+              <div style={{ display: 'grid', gap: 8 }}>
+                <select className="rp-select" value={method} onChange={e => setMethod(e.target.value)}>
+                  <option value="cash">เงินสด</option>
+                  <option value="transfer">โอน</option>
+                  <option value="qr">QR</option>
+                </select>
               </div>
+            </div>
+
+            <div className="rp-section">
+              <div className="rp-section-title">เวลา & หมายเหตุ</div>
+              <div style={{ display: 'grid', gap: 8 }}>
+                <input className="rp-input" type="datetime-local" value={paidAt} onChange={(e) => setPaidAt(e.target.value)} />
+                <textarea className="rp-textarea" value={note} onChange={(e) => setNote(e.target.value)} placeholder="รายละเอียดเพิ่มเติม" style={{ minHeight: 78 }} />
+              </div>
+            </div>
+
+            <div className="rp-total-hero">
+              <div className="rp-total-label">💰 รวมทั้งหมด</div>
+              <div className="rp-total-value">{fmtCurrency(total)} บาท</div>
+            </div>
+
+            <div className="rp-actions" style={{ display: 'flex', gap: 8 }}>
+              <button className="btn btn-o" onClick={() => { setSelected([]); setNote('') }}>ยกเลิก</button>
+              <button className="btn rp-primary" onClick={handleSubmit} disabled={loading} style={{ marginLeft: 'auto' }}>
+                {loading ? 'กำลังบันทึก...' : 'บันทึก & ออกใบเสร็จ'}
+              </button>
             </div>
           </div>
         </div>
@@ -525,8 +599,8 @@ export default function AdminFeatureReceivePayment() {
       <div className="card" style={{ marginTop: 16 }}>
         <div className="ch" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
           <div className="ct">รายการรับชำระตามเลขที่ใบรับชำระ</div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <select value={selectedMonthKey} onChange={(e) => setSelectedMonthKey(e.target.value)}>
+          <div className="rp-head-tools">
+            <select className="rp-select" value={selectedMonthKey} onChange={(e) => setSelectedMonthKey(e.target.value)}>
               {monthOptions.map((opt) => (
                 <option key={opt.key} value={opt.key}>{buildMonthLabel(opt.year, opt.month)}</option>
               ))}
@@ -535,11 +609,11 @@ export default function AdminFeatureReceivePayment() {
           </div>
         </div>
         <div className="cb">
-          <div style={{ marginBottom: 10, display: 'flex', justifyContent: 'space-between', color: 'var(--mu)' }}>
+          <div className="rp-summary">
             <div>ทั้งหมด {payments.length} รายการ</div>
             <div>รวมยอดรับชำระ ฿{fmtCurrency(summaryTotal)}</div>
           </div>
-          <div style={{ overflow: 'auto' }}>
+          <div className="rp-table-wrap">
             <table className="tw" style={{ width: '100%', minWidth: 980 }}>
               <thead>
                 <tr>
@@ -555,14 +629,18 @@ export default function AdminFeatureReceivePayment() {
               </thead>
               <tbody>
                 {payments.map((p) => (
-                  <tr key={p.id}>
+                  <tr key={p.id} className="rp-row">
                     <td>{p.receipt_no || p.id}</td>
                     <td>{formatDateTime(p.paid_at)}</td>
-                    <td>{p.payer_name || p.houses?.owner_name || '-'}</td>
+                    <td><span className="rp-icon">👤</span> {p.payer_name || p.houses?.owner_name || '-'}</td>
                     <td>{p.payer_type === 'external' ? 'บุคคลภายนอก' : 'ลูกบ้าน'}</td>
                     <td style={{ textAlign: 'right' }}>{fmtCurrency(p.amount)}</td>
                     <td>{formatMethod(p.payment_method)}</td>
-                    <td>{p.verified_at ? 'อนุมัติแล้ว' : 'รอตรวจสอบ'}</td>
+                    <td>
+                      {p.verified_at
+                        ? <span className="rp-status ok">✅ อนุมัติแล้ว</span>
+                        : <span className="rp-status pending">⏳ รอตรวจสอบ</span>}
+                    </td>
                     <td style={{ whiteSpace: 'nowrap' }}>
                       <button className="btn btn-xs btn-o" onClick={() => setDetailPayment(p)}>ดูรายละเอียด</button>
                       <button className="btn btn-xs btn-p" style={{ marginLeft: 8 }} onClick={() => { setReceiptTarget(p); setShowReceiptActionModal(true) }}>ออกรายงาน</button>

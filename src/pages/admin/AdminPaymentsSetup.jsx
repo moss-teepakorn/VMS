@@ -31,6 +31,10 @@ export default function AdminPaymentsSetup() {
 
   useEffect(() => { load() }, [])
 
+  const openNew = () => {
+    setNewItem({ code: '', label: '', default_amount: '', category: '', description: '', is_active: true })
+  }
+
   const startEditItem = (r) => {
     setEditingItemId(r.id)
     setItemDraft({
