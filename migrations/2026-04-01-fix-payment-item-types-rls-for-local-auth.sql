@@ -11,6 +11,9 @@ DROP POLICY IF EXISTS admins_can_insert ON public.payment_item_types;
 DROP POLICY IF EXISTS admins_can_update ON public.payment_item_types;
 DROP POLICY IF EXISTS admins_can_delete ON public.payment_item_types;
 DROP POLICY IF EXISTS allow_public_insert ON public.payment_item_types;
+DROP POLICY IF EXISTS allow_public_select ON public.payment_item_types;
+DROP POLICY IF EXISTS allow_public_update ON public.payment_item_types;
+DROP POLICY IF EXISTS allow_public_delete ON public.payment_item_types;
 
 CREATE POLICY allow_public_select ON public.payment_item_types
   FOR SELECT
