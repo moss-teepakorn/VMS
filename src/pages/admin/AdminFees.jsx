@@ -191,7 +191,7 @@ const AdminFees = () => {
           year: override.year ?? yearFilter,
           period: override.period ?? periodFilter,
         }),
-        listPayments({ limit: 10 }),
+        listPayments({ limit: 10, feeOnly: true }),
         houses.length === 0 ? listHouses() : Promise.resolve(houses),
       ])
 

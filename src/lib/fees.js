@@ -797,6 +797,52 @@ function applyPaymentKindFilter(query, { generalOnly = false, feeOnly = false } 
   return query
 }
 
+function buildReceiptDatePart(value) {
+  const date = value ? new Date(value) : new Date()
+  if (Number.isNaN(date.getTime())) {
+    const fallback = new Date()
+    return `${String(fallback.getFullYear()).slice(-2)}${String(fallback.getMonth() + 1).padStart(2, '0')}${String(fallback.getDate()).padStart(2, '0')}`
+  }
+  return `${String(date.getFullYear()).slice(-2)}${String(date.getMonth() + 1).padStart(2, '0')}${String(date.getDate()).padStart(2, '0')}`
+}
+
+async function generateReceiptNo(paidAt, { excludePaymentId = null } = {}) {
+  const date = paidAt ? new Date(paidAt) : new Date()
+  if (Number.isNaN(date.getTime())) {
+    throw new Error('วันที่ชำระไม่ถูกต้อง')
+  }
+
+  const start = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate(), 0, 0, 0)).toISOString()
+  const end = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate() + 1, 0, 0, 0)).toISOString()
+
+  let query = supabase
+    .from('payments')
+    .select('id', { count: 'exact', head: true })
+    .gte('paid_at', start)
+    .lt('paid_at', end)
+
+  if (excludePaymentId) {
+    query = query.neq('id', excludePaymentId)
+  }
+
+  const { count, error } = await query
+  if (error) throw error
+
+  const running = String(Number(count || 0) + 1).padStart(3, '0')
+  return `RCT-${buildReceiptDatePart(date.toISOString())}-${running}`
+}
+
+async function getPaymentById(paymentId) {
+  const { data, error } = await supabase
+    .from('payments')
+    .select(PAYMENT_SELECT)
+    .eq('id', paymentId)
+    .single()
+
+  if (error) throw error
+  return data
+}
+
 export async function listPayments({ limit, generalOnly = false, feeOnly = false } = {}) {
   let query = supabase
     .from('payments')
@@ -1036,11 +1082,9 @@ export async function createPayment(payload) {
 
   if (insertError) throw insertError
 
-  // Ensure a receipt_no exists. If caller provided one in payload, persist it; otherwise generate.
+  // Ensure a short receipt_no exists. If caller provided one in payload, persist it; otherwise generate.
   if (!insertedPayment.receipt_no) {
-    const paidAt = new Date(insertedPayment.paid_at || new Date().toISOString()).toISOString()
-    const datePart = paidAt.slice(0, 10).replace(/-/g, '')
-    const generated = `RCT-${datePart}-${String(insertedPayment.id).padStart(6, '0')}`
+    const generated = await generateReceiptNo(insertedPayment.paid_at, { excludePaymentId: insertedPayment.id })
 
     const { data: updated, error: updErr } = await supabase
       .from('payments')
@@ -1143,6 +1187,86 @@ export async function createPayment(payload) {
   if (fullPaymentError) throw fullPaymentError
 
   return fullPayment
+}
+
+export async function updatePayment(paymentId, payload = {}) {
+  if (!paymentId) throw new Error('ไม่พบรายการที่ต้องการแก้ไข')
+  const current = await getPaymentById(paymentId)
+
+  const paymentItems = (Array.isArray(payload.payment_items) ? payload.payment_items : [])
+    .filter((item) => String(item?.item_label || '').trim())
+    .map((item, index) => ({
+      item_key: String(item?.item_key || item?.key || `item_${index + 1}`).trim(),
+      item_label: String(item?.item_label || item?.label || '-').trim(),
+      due_amount: Number.isFinite(Number(item?.due_amount ?? item?.dueAmount)) ? Number(item?.due_amount ?? item?.dueAmount) : 0,
+      paid_amount: Number.isFinite(Number(item?.paid_amount ?? item?.paidAmount)) ? Number(item?.paid_amount ?? item?.paidAmount) : 0,
+    }))
+
+  const nextPaidAt = payload.paid_at || new Date().toISOString()
+  const updates = {
+    house_id: payload.house_id || null,
+    amount: Number(payload.amount || 0),
+    payment_method: payload.payment_method || 'transfer',
+    slip_url: payload.slip_url?.trim() || null,
+    note: payload.note?.trim() || null,
+    payer_type: payload.payer_type || null,
+    payer_name: payload.payer_name?.trim() || null,
+    payer_contact: payload.payer_contact?.trim() || null,
+    payer_tax_id: payload.payer_tax_id?.trim() || null,
+    payer_address: payload.payer_address?.trim() || null,
+    partner_id: payload.partner_id || null,
+    paid_at: nextPaidAt,
+    verified_by: payload.verified_by || null,
+    verified_at: payload.verified_at || null,
+  }
+
+  if (payload.receipt_no) {
+    updates.receipt_no = String(payload.receipt_no).trim()
+  } else if (current?.receipt_no) {
+    updates.receipt_no = String(current.receipt_no).trim()
+  } else {
+    updates.receipt_no = await generateReceiptNo(nextPaidAt, { excludePaymentId: paymentId })
+  }
+
+  const { error: updateError } = await supabase
+    .from('payments')
+    .update(updates)
+    .eq('id', paymentId)
+
+  if (updateError) throw updateError
+
+  const { error: deleteItemError } = await supabase
+    .from('payment_items')
+    .delete()
+    .eq('payment_id', paymentId)
+
+  if (deleteItemError) throw deleteItemError
+
+  if (paymentItems.length > 0) {
+    const itemRows = paymentItems.map((item) => ({
+      payment_id: paymentId,
+      fee_id: payload.fee_id || null,
+      house_id: payload.house_id || null,
+      item_key: item.item_key,
+      item_label: item.item_label,
+      due_amount: item.due_amount,
+      paid_amount: item.paid_amount,
+    }))
+
+    const { error: insertItemError } = await supabase
+      .from('payment_items')
+      .insert(itemRows)
+
+    if (insertItemError) throw insertItemError
+  }
+
+  const data = await getPaymentById(paymentId)
+
+  if (data?.fee_id) {
+    await refreshFeeStatusFromPayments(data.fee_id)
+  }
+
+  return data
 }
 
 export async function uploadPaymentSlip(file, { houseId } = {}) {

@@ -21,7 +21,7 @@ export default function AdminFeatureExpensePayment() {
         <div className="ph-in" style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
           <div className="ph-ico">📤</div>
           <div>
-            <div className="ph-h1">Feature — การจ่ายเงิน</div>
+            <div className="ph-h1">การจ่ายเงิน</div>
             <div className="ph-sub">Mock page สำหรับการจ่ายเงิน (UI prototype)</div>
           </div>
           <div style={{ marginLeft: 'auto' }}>

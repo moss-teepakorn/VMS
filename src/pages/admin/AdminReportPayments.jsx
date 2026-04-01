@@ -69,7 +69,7 @@ export default function AdminReportPayments() {
     }
     setLoading(true)
     try {
-      const data = await listPayments()
+      const data = await listPayments({ feeOnly: true })
       // Filter by selected month range and year
       const filtered = (data || []).filter((p) => {
         if (!p.paid_at) return false

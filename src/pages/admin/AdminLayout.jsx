@@ -112,8 +112,8 @@ const AdminLayout = () => {
     { section: 'การเงิน', tone: 'operation', sectionIcon: '💰', items: [
       { id: 'fees', label: 'ค่าส่วนกลาง', icon: '💵', path: '/admin/fees' },
       { id: 'payments', label: 'ชำระเงิน', icon: '💳', path: '/admin/payments' },
-      { id: 'receive-payments', label: 'รับชำระเงิน (Feature)', icon: '💳', path: '/admin/receive-payments' },
-      { id: 'disbursements', label: 'การจ่ายเงิน (Feature)', icon: '📤', path: '/admin/disbursements' },
+      { id: 'receive-payments', label: 'รับชำระเงิน', icon: '💳', path: '/admin/receive-payments' },
+      { id: 'disbursements', label: 'การจ่ายเงิน', icon: '📤', path: '/admin/disbursements' },
       { id: 'payments-setup', label: 'ตั้งค่ารายการรับชำระ', icon: '⚙️', path: '/admin/payments/setup' },
     ]},
     { section: 'การจัดการ', tone: 'operation', sectionIcon: '📋', items: [

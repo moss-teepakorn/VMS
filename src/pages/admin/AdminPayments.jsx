@@ -449,7 +449,7 @@ export default function AdminPayments() {
   const loadPayments = async () => {
     try {
       setLoading(true)
-      setPayments(await listPayments())
+      setPayments(await listPayments({ feeOnly: true }))
     } catch (error) {
       console.error('Error loading payments:', error)
     } finally {

@@ -5,7 +5,7 @@ import Swal from 'sweetalert2'
 import { useAuth } from '../../contexts/AuthContext'
 import { listPaymentItemTypes } from '../../lib/paymentItemTypes'
 import { listHouses } from '../../lib/houses'
-import { createPayment, listPayments } from '../../lib/fees'
+import { createPayment, listPayments, updatePayment } from '../../lib/fees'
 import { listPartners } from '../../lib/partners'
 import { getSetupConfig } from '../../lib/setup'
 import villageLogo from '../../assets/village-logo.svg'
@@ -138,6 +138,25 @@ function emptyForm() {
   }
 }
 
+function mapPaymentToEditForm(payment) {
+  const rows = getPaymentItemRows(payment).map((row) => ({
+    item_key: row.key,
+    item_label: row.label,
+    due_amount: Number(row.dueAmount || 0),
+    paid_amount: Number(row.paidAmount || 0),
+  }))
+  return {
+    payerType: payment?.payer_type === 'external' ? 'external' : 'resident',
+    houseId: payment?.house_id || '',
+    partnerId: payment?.partner_id || '',
+    paymentMethod: payment?.payment_method || 'transfer',
+    paidAt: buildLocalDateTimeValue(payment?.paid_at ? new Date(payment.paid_at) : new Date()),
+    note: payment?.note || '',
+    selectedItems: rows,
+    pendingItemId: '',
+  }
+}
+
 export default function AdminFeatureReceivePayment() {
   const { profile } = useAuth()
   const [setup, setSetup] = useState({ villageName: 'The Greenfield' })
@@ -153,6 +172,9 @@ export default function AdminFeatureReceivePayment() {
   const [yearFilter, setYearFilter] = useState(() => String(new Date().getFullYear()))
   const [monthFilter, setMonthFilter] = useState(() => String(new Date().getMonth() + 1))
   const [detailTarget, setDetailTarget] = useState(null)
+  const [detailForm, setDetailForm] = useState(() => emptyForm())
+  const [savingEdit, setSavingEdit] = useState(false)
+  const [editableMap, setEditableMap] = useState({})
   const [receiptPrintTarget, setReceiptPrintTarget] = useState(null)
   const [showReceiptPrintActionModal, setShowReceiptPrintActionModal] = useState(false)
   const [runningReceiptPrintAction, setRunningReceiptPrintAction] = useState(false)
@@ -255,6 +277,13 @@ export default function AdminFeatureReceivePayment() {
     [receiveForm.selectedItems],
   )
 
+  const detailTotal = useMemo(
+    () => detailForm.selectedItems.reduce((sum, item) => sum + Number(item.paid_amount || 0), 0),
+    [detailForm.selectedItems],
+  )
+
+  const isDetailEditable = Boolean(detailTarget?.id && editableMap[detailTarget.id])
+
   const openReceiveModal = () => {
     setReceiveForm(emptyForm())
     setShowReceiveModal(true)
@@ -266,13 +295,13 @@ export default function AdminFeatureReceivePayment() {
     setReceiveForm(emptyForm())
   }
 
-  const addSelectedItem = () => {
-    if (!receiveForm.pendingItemId) return
-    const item = items.find((row) => String(row.id) === String(receiveForm.pendingItemId))
+  const addSelectedItem = (formSetter, formState) => {
+    if (!formState.pendingItemId) return
+    const item = items.find((row) => String(row.id) === String(formState.pendingItemId))
     if (!item) return
 
-    setReceiveForm((prev) => {
-      if (prev.selectedItems.some((selectedItem) => String(selectedItem.item_type_id) === String(item.id))) {
+    formSetter((prev) => {
+      if (prev.selectedItems.some((selectedItem) => String(selectedItem.item_key) === String(item.code || item.id))) {
         return { ...prev, pendingItemId: '' }
       }
 
@@ -282,7 +311,6 @@ export default function AdminFeatureReceivePayment() {
         selectedItems: [
           ...prev.selectedItems,
           {
-            item_type_id: item.id,
             item_key: item.code || `item_${prev.selectedItems.length + 1}`,
             item_label: item.label,
             due_amount: Number(item.default_amount || 0),
@@ -293,8 +321,8 @@ export default function AdminFeatureReceivePayment() {
     })
   }
 
-  const handleItemAmountChange = (index, field, value) => {
-    setReceiveForm((prev) => ({
+  const handleItemAmountChange = (formSetter, index, field, value) => {
+    formSetter((prev) => ({
       ...prev,
       selectedItems: prev.selectedItems.map((item, itemIndex) => {
         if (itemIndex !== index) return item
@@ -306,18 +334,29 @@ export default function AdminFeatureReceivePayment() {
     }))
   }
 
-  const removeSelectedItem = (index) => {
-    setReceiveForm((prev) => ({
+  const handleItemLabelChange = (formSetter, index, value) => {
+    formSetter((prev) => ({
+      ...prev,
+      selectedItems: prev.selectedItems.map((item, itemIndex) => {
+        if (itemIndex !== index) return item
+        return {
+          ...item,
+          item_label: value,
+        }
+      }),
+    }))
+  }
+
+  const removeSelectedItem = (formSetter, index) => {
+    formSetter((prev) => ({
       ...prev,
       selectedItems: prev.selectedItems.filter((_, itemIndex) => itemIndex !== index),
     }))
   }
 
   const buildReceiptHtml = (payment, { autoPrint = false, forCapture = false } = {}) => {
-    if (!payment?.verified_at) return ''
-
     const receiptNo = getReceiptNo(payment)
-    const issueDate = formatDateTime(payment.verified_at)
+    const issueDate = formatDateTime(payment.verified_at || payment.paid_at)
     const houseNo = payment.houses?.house_no || '-'
     const ownerName = payment.payer_name || payment.houses?.owner_name || payment.partners?.name || '-'
     const invoiceLabel = 'รับชำระทั่วไป'
@@ -422,55 +461,17 @@ export default function AdminFeatureReceivePayment() {
             @page { size: A4; margin: 0; }
             * { box-sizing: border-box; }
             html, body { font-family: 'Sarabun', 'TH Sarabun New', Tahoma, sans-serif; margin: 0; padding: 0; color: #111827; background: #fff; }
-            .sheet {
-              position: relative;
-              width: ${forCapture ? '794px' : '100%'};
-              ${forCapture ? 'height: 1122px; overflow: hidden;' : 'page-break-after: always; break-after: page; break-inside: avoid;'}
-              background: #fff;
-              padding: 24px 28px;
-              display: flex;
-              flex-direction: column;
-              gap: 8px;
-            }
-            .page-break {}
-            .head {
-              display: flex;
-              justify-content: space-between;
-              gap: 12px;
-              border: 1px solid #cbd5e1;
-              border-radius: 4px;
-              padding: 10px 12px;
-              background: #ffffff;
-            }
+            .sheet { position: relative; width: ${forCapture ? '794px' : '100%'}; ${forCapture ? 'height: 1122px; overflow: hidden;' : 'page-break-after: always; break-after: page; break-inside: avoid;'} background: #fff; padding: 24px 28px; display: flex; flex-direction: column; gap: 8px; }
+            .head { display: flex; justify-content: space-between; gap: 12px; border: 1px solid #cbd5e1; border-radius: 4px; padding: 10px 12px; background: #ffffff; }
             .brand { display: flex; align-items: flex-start; gap: 10px; flex: 1; min-width: 0; }
-            .brand img {
-              width: 48px;
-              height: 48px;
-              border-radius: 6px;
-              object-fit: cover;
-              border: 1px solid #cbd5e1;
-            }
+            .brand img { width: 48px; height: 48px; border-radius: 6px; object-fit: cover; border: 1px solid #cbd5e1; }
             .doc { font-size: 16px; font-weight: 700; line-height: 1.3; }
             .village { font-size: 11px; margin-top: 3px; font-weight: 600; }
             .sub { font-size: 9px; color: #6b7280; margin-top: 2px; }
             .doc-meta { font-size: 10px; min-width: 200px; display: flex; flex-direction: column; gap: 2px; word-break: break-word; }
             .doc-meta span { color: #6b7280; font-weight: 500; }
-            .copy-mark-row {
-              display: flex;
-              justify-content: flex-end;
-              margin-top: 10px;
-            }
-            .copy-mark {
-              border: none;
-              border-radius: 4px;
-              padding: 3px 10px;
-              text-align: center;
-              font-size: 14px;
-              font-weight: 700;
-              line-height: 1.3;
-              color: #0c4a6e;
-              background: transparent;
-            }
+            .copy-mark-row { display: flex; justify-content: flex-end; margin-top: 10px; }
+            .copy-mark { border: none; border-radius: 4px; padding: 3px 10px; text-align: center; font-size: 14px; font-weight: 700; line-height: 1.3; color: #0c4a6e; background: transparent; }
             .box { border: 1px solid #cbd5e1; border-radius: 4px; padding: 10px 12px; }
             .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 10px; word-break: break-word; }
             .grid > div { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
@@ -482,24 +483,8 @@ export default function AdminFeatureReceivePayment() {
             .c { text-align: center; }
             .r { text-align: right; }
             tfoot td { background: #f8fafc; font-weight: 700; }
-            .note-box {
-              border-top: 1px dashed #d1d5db;
-              padding-top: 4px;
-              font-size: 10px;
-              color: #4b5563;
-              margin-top: 4px;
-            }
-            .foot {
-              margin-top: 8px;
-              border: 1px solid #cbd5e1;
-              border-radius: 4px;
-              padding: 10px 12px;
-              display: flex;
-              align-items: flex-end;
-              justify-content: space-between;
-              gap: 12px;
-              background: #f9fafb;
-            }
+            .note-box { border-top: 1px dashed #d1d5db; padding-top: 4px; font-size: 10px; color: #4b5563; margin-top: 4px; }
+            .foot { margin-top: 8px; border: 1px solid #cbd5e1; border-radius: 4px; padding: 10px 12px; display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; background: #f9fafb; }
             .note { font-size: 9px; color: #64748b; line-height: 1.4; }
             .sign-wrap { min-width: 180px; text-align: center; font-size: 9px; color: #64748b; }
             .sign-img { max-width: 160px; max-height: 52px; width: auto; height: auto; display: block; margin: 0 auto 6px; object-fit: contain; }
@@ -540,7 +525,6 @@ export default function AdminFeatureReceivePayment() {
   }
 
   const handlePrintReceipt = (payment) => {
-    if (!payment?.verified_at) return
     setReceiptPrintTarget(payment)
     setShowReceiptPrintActionModal(true)
   }
@@ -628,7 +612,6 @@ export default function AdminFeatureReceivePayment() {
     }
 
     const paidAtIso = receiveForm.paidAt ? new Date(receiveForm.paidAt).toISOString() : new Date().toISOString()
-    const verifiedAt = new Date().toISOString()
     const payload = {
       fee_id: null,
       house_id: receiveForm.payerType === 'resident' ? receiveForm.houseId : null,
@@ -643,7 +626,7 @@ export default function AdminFeatureReceivePayment() {
       payer_address: receiveForm.payerType === 'external' ? selectedPartner?.address : null,
       partner_id: receiveForm.payerType === 'external' ? selectedPartner?.id : null,
       verified_by: profile?.id || null,
-      verified_at: verifiedAt,
+      verified_at: new Date().toISOString(),
       payment_items: receiveForm.selectedItems.map((item, index) => ({
         item_key: item.item_key || `item_${index + 1}`,
         item_label: item.item_label,
@@ -663,7 +646,7 @@ export default function AdminFeatureReceivePayment() {
       setReceiveForm(emptyForm())
       setReceiptPrintTarget(created)
       setShowReceiptPrintActionModal(true)
-      await Swal.fire({ icon: 'success', title: 'บันทึกรับชำระเรียบร้อย', timer: 1400, showConfirmButton: false })
+      await Swal.fire({ icon: 'success', title: 'บันทึกรับชำระเรียบร้อย (อนุมัติอัตโนมัติ)', timer: 1400, showConfirmButton: false })
     } catch (error) {
       await Swal.fire({ icon: 'error', title: 'บันทึกรับชำระไม่สำเร็จ', text: error.message })
     } finally {
@@ -671,9 +654,74 @@ export default function AdminFeatureReceivePayment() {
     }
   }
 
+  const openDetail = (payment) => {
+    setDetailTarget(payment)
+    setDetailForm(mapPaymentToEditForm(payment))
+  }
+
+  const toggleEditable = (payment) => {
+    setEditableMap((prev) => {
+      const nextValue = !prev[payment.id]
+      const next = { ...prev, [payment.id]: nextValue }
+      return next
+    })
+  }
+
+  const handleUpdatePayment = async () => {
+    if (!detailTarget) return
+    if (!isDetailEditable) {
+      await Swal.fire({ icon: 'warning', title: 'ยังแก้ไขไม่ได้', text: 'กรุณากดปุ่มเปลี่ยนสถานะเพื่อแก้ไขก่อน' })
+      return
+    }
+    if (detailForm.selectedItems.length === 0) {
+      await Swal.fire({ icon: 'warning', title: 'ยังไม่มีรายการรับชำระ', text: 'กรุณาเลือกรายการอย่างน้อย 1 รายการ' })
+      return
+    }
+
+    const selectedDetailPartner = partners.find((partner) => String(partner.id) === String(detailForm.partnerId)) || null
+    const selectedDetailHouse = houses.find((house) => String(house.id) === String(detailForm.houseId)) || null
+
+    setSavingEdit(true)
+    try {
+      const payload = {
+        fee_id: null,
+        house_id: detailForm.payerType === 'resident' ? detailForm.houseId : null,
+        amount: detailTotal,
+        payment_method: detailForm.paymentMethod,
+        paid_at: detailForm.paidAt ? new Date(detailForm.paidAt).toISOString() : new Date().toISOString(),
+        note: detailForm.note?.trim() || null,
+        payer_type: detailForm.payerType,
+        payer_name: detailForm.payerType === 'external' ? selectedDetailPartner?.name : selectedDetailHouse?.owner_name,
+        payer_contact: detailForm.payerType === 'external' ? selectedDetailPartner?.phone : null,
+        payer_tax_id: detailForm.payerType === 'external' ? selectedDetailPartner?.tax_id : null,
+        payer_address: detailForm.payerType === 'external' ? selectedDetailPartner?.address : null,
+        partner_id: detailForm.payerType === 'external' ? selectedDetailPartner?.id : null,
+        verified_by: profile?.id || null,
+        verified_at: new Date().toISOString(),
+        payment_items: detailForm.selectedItems.map((item, index) => ({
+          item_key: item.item_key || `item_${index + 1}`,
+          item_label: item.item_label,
+          due_amount: Number(item.due_amount || 0),
+          paid_amount: Number(item.paid_amount || 0),
+        })),
+      }
+
+      const updated = await updatePayment(detailTarget.id, payload)
+      setPayments((prev) => prev.map((row) => (row.id === updated.id ? updated : row)))
+      setDetailTarget(updated)
+      setDetailForm(mapPaymentToEditForm(updated))
+      setEditableMap((prev) => ({ ...prev, [updated.id]: false }))
+      await Swal.fire({ icon: 'success', title: 'แก้ไขรายการเรียบร้อย', timer: 1200, showConfirmButton: false })
+    } catch (error) {
+      await Swal.fire({ icon: 'error', title: 'แก้ไขไม่สำเร็จ', text: error.message })
+    } finally {
+      setSavingEdit(false)
+    }
+  }
+
   const getStatusBadge = (payment) => {
-    if (payment?.verified_at) return { className: 'bd b-ok', label: 'ออกใบเสร็จแล้ว' }
-    return { className: 'bd b-wn', label: 'รอตรวจสอบ' }
+    if (editableMap[payment?.id]) return { className: 'bd b-wn', label: 'พร้อมแก้ไข' }
+    return { className: 'bd b-ok', label: 'ออกใบเสร็จแล้ว' }
   }
 
   return (
@@ -685,8 +733,8 @@ export default function AdminFeatureReceivePayment() {
               <img className="ph-ico-img" src={setup.loginCircleLogoUrl || villageLogo} alt="system-logo" />
             </div>
             <div>
-              <div className="ph-h1">รับชำระ</div>
-              <div className="ph-sub">บันทึกรับชำระ ออกใบเสร็จ และติดตามย้อนหลังแบบเดียวกับหน้า payment · {setup.villageName}</div>
+              <div className="ph-h1">รับชำระเงิน</div>
+              <div className="ph-sub">แยกจากหน้าชำระค่าส่วนกลาง และอนุมัติอัตโนมัติเมื่อบันทึก</div>
             </div>
           </div>
         </div>
@@ -740,12 +788,12 @@ export default function AdminFeatureReceivePayment() {
                   <th style={{ width: '15%' }}>เลขที่ใบเสร็จ</th>
                   <th style={{ width: '8%' }}>ซอย</th>
                   <th style={{ width: '8%' }}>บ้าน</th>
-                  <th style={{ width: '17%' }}>ผู้ชำระ</th>
-                  <th style={{ width: '12%' }}>จำนวนเงิน</th>
+                  <th style={{ width: '16%' }}>ผู้ชำระ</th>
+                  <th style={{ width: '11%' }}>จำนวนเงิน</th>
                   <th style={{ width: '10%' }}>วิธีชำระ</th>
                   <th style={{ width: '12%' }}>วันที่</th>
                   <th style={{ width: '10%' }}>สถานะ</th>
-                  <th style={{ width: '18%' }}></th>
+                  <th style={{ width: '20%' }}></th>
                 </tr>
               </thead>
               <tbody>
@@ -759,9 +807,7 @@ export default function AdminFeatureReceivePayment() {
                     const payerName = payment.payer_name || payment.houses?.owner_name || payment.partners?.name || '-'
                     return (
                       <tr key={payment.id}>
-                        <td>
-                          <button className="btn btn-xs btn-o" onClick={() => setDetailTarget(payment)}>{getReceiptNo(payment)}</button>
-                        </td>
+                        <td>{getReceiptNo(payment)}</td>
                         <td style={{ whiteSpace: 'nowrap' }}>{payment.houses?.soi || '-'}</td>
                         <td style={{ whiteSpace: 'nowrap' }}>{payment.houses?.house_no || '-'}</td>
                         <td style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{payerName}</td>
@@ -771,7 +817,8 @@ export default function AdminFeatureReceivePayment() {
                         <td><span className={badge.className}>{badge.label}</span></td>
                         <td>
                           <div className="td-acts payments-row-acts">
-                            <button className="btn btn-xs btn-g" onClick={() => setDetailTarget(payment)}>รายละเอียด</button>
+                            <button className="btn btn-xs btn-g" onClick={() => openDetail(payment)}>รายละเอียด</button>
+                            <button className="btn btn-xs btn-o" onClick={() => toggleEditable(payment)}>{editableMap[payment.id] ? 'ล็อกแก้ไข' : 'เปลี่ยนสถานะเพื่อแก้ไข'}</button>
                             <button className="btn btn-xs btn-a" onClick={() => handlePrintReceipt(payment)}>ใบเสร็จ</button>
                           </div>
                         </td>
@@ -782,37 +829,6 @@ export default function AdminFeatureReceivePayment() {
               </tbody>
             </table>
           </div>
-
-          <div className="houses-mobile-only" style={{ gap: 10, padding: '4px 0' }}>
-            {loading ? (
-              <div className="mcard-empty">กำลังโหลดข้อมูล...</div>
-            ) : filteredPayments.length === 0 ? (
-              <div className="mcard-empty">ยังไม่มีรายการรับชำระ</div>
-            ) : filteredPayments.map((payment) => {
-              const badge = getStatusBadge(payment)
-              const payerName = payment.payer_name || payment.houses?.owner_name || payment.partners?.name || '-'
-              return (
-                <div key={payment.id} className="houses-mcard">
-                  <div className="houses-mcard-top">
-                    <div>
-                      <div className="houses-mcard-no">{getReceiptNo(payment)}</div>
-                      <div className="mcard-sub">{payerName} · {payment.houses?.house_no || 'ไม่ระบุบ้าน'}</div>
-                    </div>
-                    <span className={`${badge.className} houses-mcard-badge`}>{badge.label}</span>
-                  </div>
-                  <div className="mcard-meta" style={{ marginTop: 4 }}>
-                    <span><span className="mcard-label">จำนวนเงิน</span> ฿{formatMoney(payment.amount)}</span>
-                    <span><span className="mcard-label">วิธีชำระ</span> {formatMethod(payment.payment_method)}</span>
-                    <span><span className="mcard-label">วันที่ชำระ</span> {formatDateTime(payment.paid_at)}</span>
-                  </div>
-                  <div className="mcard-actions">
-                    <button className="btn btn-xs btn-g" onClick={() => setDetailTarget(payment)}>รายละเอียด</button>
-                    <button className="btn btn-xs btn-a" onClick={() => handlePrintReceipt(payment)}>ใบเสร็จ</button>
-                  </div>
-                </div>
-              )
-            })}
-          </div>
         </div>
       </div>
 
@@ -821,8 +837,8 @@ export default function AdminFeatureReceivePayment() {
           <div className="house-md house-md--md">
             <div className="house-md-head">
               <div>
-                <div className="house-md-title">รับชำระ</div>
-                <div className="house-md-sub">รูปแบบเดียวกับหน้า payment แต่ใช้สำหรับรายการรับชำระทั่วไป</div>
+                <div className="house-md-title">รับชำระเงิน</div>
+                <div className="house-md-sub">ค่าอื่นๆ นอกเหนือจากค่าส่วนกลาง (อนุมัติอัตโนมัติ)</div>
               </div>
             </div>
             <form onSubmit={handleSubmitReceive}>
@@ -879,7 +895,7 @@ export default function AdminFeatureReceivePayment() {
                             <option key={item.id} value={item.id}>{item.label} · ฿{formatMoney(item.default_amount)}</option>
                           ))}
                         </select>
-                        <button type="button" className="btn btn-xs btn-a" onClick={addSelectedItem}>เพิ่มรายการ</button>
+                        <button type="button" className="btn btn-xs btn-a" onClick={() => addSelectedItem(setReceiveForm, receiveForm)}>เพิ่มรายการ</button>
                       </div>
                       <div className="houses-table-wrap payments-receive-wrap" style={{ maxHeight: '280px', overflow: 'auto' }}>
                         <table className="tw receive-items-table" style={{ width: '100%', tableLayout: 'fixed' }}>
@@ -899,15 +915,9 @@ export default function AdminFeatureReceivePayment() {
                               <tr key={`${item.item_key}-${index}`}>
                                 <td style={{ textAlign: 'center' }}>{index + 1}</td>
                                 <td>{item.item_label}</td>
-                                <td>
-                                  <input type="number" min="0" step="0.01" value={item.due_amount} onChange={(event) => handleItemAmountChange(index, 'due_amount', event.target.value)} style={{ width: '100%' }} />
-                                </td>
-                                <td>
-                                  <input type="number" min="0" step="0.01" value={item.paid_amount} onChange={(event) => handleItemAmountChange(index, 'paid_amount', event.target.value)} style={{ width: '100%' }} />
-                                </td>
-                                <td>
-                                  <button type="button" className="btn btn-xs btn-dg" onClick={() => removeSelectedItem(index)}>ลบ</button>
-                                </td>
+                                <td><input type="number" min="0" step="0.01" value={item.due_amount} onChange={(event) => handleItemAmountChange(setReceiveForm, index, 'due_amount', event.target.value)} style={{ width: '100%' }} /></td>
+                                <td><input type="number" min="0" step="0.01" value={item.paid_amount} onChange={(event) => handleItemAmountChange(setReceiveForm, index, 'paid_amount', event.target.value)} style={{ width: '100%' }} /></td>
+                                <td><button type="button" className="btn btn-xs btn-dg" onClick={() => removeSelectedItem(setReceiveForm, index)}>ลบ</button></td>
                               </tr>
                             ))}
                           </tbody>
@@ -941,23 +951,33 @@ export default function AdminFeatureReceivePayment() {
             <div className="house-md-head">
               <div>
                 <div className="house-md-title">รายละเอียดการรับชำระ</div>
-                <div className="house-md-sub">เลขที่ใบเสร็จ {getReceiptNo(detailTarget)}</div>
+                <div className="house-md-sub">เลขที่ใบเสร็จ {getReceiptNo(detailTarget)} · {isDetailEditable ? 'แก้ไขได้' : 'อ่านอย่างเดียว'}</div>
               </div>
             </div>
             <div className="house-md-body">
               <section className="house-sec">
                 <div className="house-grid" style={{ gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-                  <div className="house-field"><span>ผู้ชำระ</span><strong>{detailTarget.payer_name || detailTarget.houses?.owner_name || detailTarget.partners?.name || '-'}</strong></div>
-                  <div className="house-field"><span>บ้าน</span><strong>{detailTarget.houses?.house_no || '-'}</strong></div>
-                  <div className="house-field"><span>วิธีชำระ</span><strong>{formatMethod(detailTarget.payment_method)}</strong></div>
-                  <div className="house-field"><span>วันที่ชำระ</span><strong>{formatDateTime(detailTarget.paid_at)}</strong></div>
-                  <div className="house-field"><span>เลขที่ใบเสร็จ</span><strong>{getReceiptNo(detailTarget)}</strong></div>
-                  <div className="house-field"><span>จำนวนเงินรวม</span><strong>฿{formatMoney(detailTarget.amount)}</strong></div>
+                  <label className="house-field"><span>ผู้ชำระ (ชื่อ)</span><input disabled={!isDetailEditable} value={detailForm.payerType === 'external' ? (partners.find((p) => String(p.id) === String(detailForm.partnerId))?.name || '') : (houses.find((h) => String(h.id) === String(detailForm.houseId))?.owner_name || '')} readOnly /></label>
+                  <label className="house-field"><span>วิธีชำระ</span><select disabled={!isDetailEditable} value={detailForm.paymentMethod} onChange={(event) => setDetailForm((prev) => ({ ...prev, paymentMethod: event.target.value }))}><option value="transfer">โอนเงิน</option><option value="cash">เงินสด</option><option value="qr">QR</option></select></label>
+                  <label className="house-field"><span>วันที่ชำระ</span><input disabled={!isDetailEditable} type="datetime-local" value={detailForm.paidAt} onChange={(event) => setDetailForm((prev) => ({ ...prev, paidAt: event.target.value }))} /></label>
+                  <label className="house-field"><span>จำนวนเงินรวม</span><input value={formatMoney(detailTotal)} readOnly /></label>
                 </div>
               </section>
+
               <section className="house-sec">
                 <div className="house-field" style={{ gap: 8 }}>
                   <span>รายการชำระ</span>
+                  {isDetailEditable && (
+                    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                      <select value={detailForm.pendingItemId} onChange={(event) => setDetailForm((prev) => ({ ...prev, pendingItemId: event.target.value }))} style={{ flex: '1 1 280px' }}>
+                        <option value="">เลือกรายการจาก setup</option>
+                        {items.map((item) => (
+                          <option key={item.id} value={item.id}>{item.label} · ฿{formatMoney(item.default_amount)}</option>
+                        ))}
+                      </select>
+                      <button type="button" className="btn btn-xs btn-a" onClick={() => addSelectedItem(setDetailForm, detailForm)}>เพิ่มรายการ</button>
+                    </div>
+                  )}
                   <div className="houses-table-wrap" style={{ maxHeight: 260, overflow: 'auto' }}>
                     <table className="tw" style={{ width: '100%', minWidth: 560 }}>
                       <thead>
@@ -966,15 +986,17 @@ export default function AdminFeatureReceivePayment() {
                           <th>รายการ</th>
                           <th style={{ width: 170 }}>ยอดที่ต้องชำระ</th>
                           <th style={{ width: 170 }}>ยอดชำระจริง</th>
+                          {isDetailEditable && <th style={{ width: 72 }}></th>}
                         </tr>
                       </thead>
                       <tbody>
-                        {getPaymentItemRows(detailTarget).map((row, index) => (
-                          <tr key={`${detailTarget.id}-${row.key}-${index}`}>
+                        {detailForm.selectedItems.map((row, index) => (
+                          <tr key={`${detailTarget.id}-${row.item_key}-${index}`}>
                             <td style={{ textAlign: 'center' }}>{index + 1}</td>
-                            <td>{row.label}</td>
-                            <td>฿{formatMoney(row.dueAmount)}</td>
-                            <td>฿{formatMoney(row.paidAmount)}</td>
+                            <td>{isDetailEditable ? <input value={row.item_label} onChange={(event) => handleItemLabelChange(setDetailForm, index, event.target.value)} style={{ width: '100%' }} /> : row.item_label}</td>
+                            <td>{isDetailEditable ? <input type="number" min="0" step="0.01" value={row.due_amount} onChange={(event) => handleItemAmountChange(setDetailForm, index, 'due_amount', event.target.value)} style={{ width: '100%' }} /> : `฿${formatMoney(row.due_amount)}`}</td>
+                            <td>{isDetailEditable ? <input type="number" min="0" step="0.01" value={row.paid_amount} onChange={(event) => handleItemAmountChange(setDetailForm, index, 'paid_amount', event.target.value)} style={{ width: '100%' }} /> : `฿${formatMoney(row.paid_amount)}`}</td>
+                            {isDetailEditable && <td><button type="button" className="btn btn-xs btn-dg" onClick={() => removeSelectedItem(setDetailForm, index)}>ลบ</button></td>}
                           </tr>
                         ))}
                       </tbody>
@@ -982,17 +1004,18 @@ export default function AdminFeatureReceivePayment() {
                   </div>
                 </div>
               </section>
-              {detailTarget.note && (
-                <section className="house-sec">
-                  <div className="house-field">
-                    <span>หมายเหตุ</span>
-                    <div>{detailTarget.note}</div>
-                  </div>
-                </section>
-              )}
+
+              <section className="house-sec">
+                <label className="house-field">
+                  <span>หมายเหตุ</span>
+                  <textarea disabled={!isDetailEditable} rows="2" value={detailForm.note} onChange={(event) => setDetailForm((prev) => ({ ...prev, note: event.target.value }))} />
+                </label>
+              </section>
             </div>
             <div className="house-md-foot">
               <button className="btn btn-g" type="button" onClick={() => setDetailTarget(null)}>ปิด</button>
+              <button className="btn btn-o" type="button" onClick={() => { if (detailTarget) toggleEditable(detailTarget) }}>{isDetailEditable ? 'ล็อกแก้ไข' : 'เปลี่ยนสถานะเพื่อแก้ไข'}</button>
+              {isDetailEditable && <button className="btn btn-p" type="button" disabled={savingEdit} onClick={handleUpdatePayment}>{savingEdit ? 'กำลังบันทึก...' : 'บันทึกการแก้ไข'}</button>}
               <button className="btn btn-a" type="button" onClick={() => handlePrintReceipt(detailTarget)}>ใบเสร็จ</button>
             </div>
           </div>
@@ -1005,65 +1028,16 @@ export default function AdminFeatureReceivePayment() {
             <div className="house-md-head">
               <div>
                 <div className="house-md-title">ตัวเลือกการพิมพ์</div>
-                <div className="house-md-sub">
-                  ใบเสร็จ {getReceiptNo(receiptPrintTarget)} · {receiptPrintTarget.houses?.house_no || receiptPrintTarget.payer_name || receiptPrintTarget.partners?.name || '-'}
-                </div>
+                <div className="house-md-sub">ใบเสร็จ {getReceiptNo(receiptPrintTarget)}</div>
               </div>
             </div>
             <div className="house-md-body" style={{ display: 'grid', gap: 10 }}>
-              <button
-                className="btn btn-p"
-                type="button"
-                onClick={() => runReceiptPrintAction('paper')}
-                disabled={runningReceiptPrintAction}
-                style={{ justifyContent: 'space-between', padding: '12px 14px', fontFamily: 'inherit', letterSpacing: 0, fontStretch: 'normal' }}
-              >
-                <span style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', lineHeight: 1.25 }}>
-                  <span style={{ fontSize: 15, fontWeight: 700 }}>พิมพ์เอกสาร</span>
-                  <span style={{ fontSize: 12, fontWeight: 500, opacity: 0.88 }}>เปิดหน้าพิมพ์สำหรับใบเสร็จ</span>
-                </span>
-                <span style={{ fontSize: 12, fontWeight: 700 }}>{runningReceiptPrintAction ? 'กำลังดำเนินการ...' : 'Paper'}</span>
-              </button>
-
-              <button
-                className="btn btn-a"
-                type="button"
-                onClick={() => runReceiptPrintAction('pdf')}
-                disabled={runningReceiptPrintAction}
-                style={{ justifyContent: 'space-between', padding: '12px 14px', fontFamily: 'inherit', letterSpacing: 0, fontStretch: 'normal' }}
-              >
-                <span style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', lineHeight: 1.25 }}>
-                  <span style={{ fontSize: 15, fontWeight: 700 }}>Save เป็น PDF</span>
-                  <span style={{ fontSize: 12, fontWeight: 500, opacity: 0.88 }}>ดาวน์โหลดไฟล์ PDF ลงเครื่องทันที</span>
-                </span>
-                <span style={{ fontSize: 12, fontWeight: 700 }}>{runningReceiptPrintAction ? 'กำลังดำเนินการ...' : 'PDF'}</span>
-              </button>
-
-              <button
-                className="btn btn-g"
-                type="button"
-                onClick={() => runReceiptPrintAction('image')}
-                disabled={runningReceiptPrintAction}
-                style={{ justifyContent: 'space-between', padding: '12px 14px', fontFamily: 'inherit', letterSpacing: 0, fontStretch: 'normal' }}
-              >
-                <span style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', lineHeight: 1.25 }}>
-                  <span style={{ fontSize: 15, fontWeight: 700 }}>Save เป็น Image</span>
-                  <span style={{ fontSize: 12, fontWeight: 500, opacity: 0.88 }}>บันทึกเป็นรูปภาพ PNG แยกตามหน้าเอกสาร</span>
-                </span>
-                <span style={{ fontSize: 12, fontWeight: 700 }}>{runningReceiptPrintAction ? 'กำลังดำเนินการ...' : 'PNG'}</span>
-              </button>
+              <button className="btn btn-p" type="button" onClick={() => runReceiptPrintAction('paper')} disabled={runningReceiptPrintAction}>พิมพ์เอกสาร</button>
+              <button className="btn btn-a" type="button" onClick={() => runReceiptPrintAction('pdf')} disabled={runningReceiptPrintAction}>Save เป็น PDF</button>
+              <button className="btn btn-g" type="button" onClick={() => runReceiptPrintAction('image')} disabled={runningReceiptPrintAction}>Save เป็น Image</button>
             </div>
             <div className="house-md-foot">
-              <button
-                className="btn btn-g"
-                type="button"
-                onClick={() => {
-                  if (runningReceiptPrintAction) return
-                  setShowReceiptPrintActionModal(false)
-                }}
-              >
-                ปิด
-              </button>
+              <button className="btn btn-g" type="button" onClick={() => setShowReceiptPrintActionModal(false)} disabled={runningReceiptPrintAction}>ปิด</button>
             </div>
           </div>
         </div>
