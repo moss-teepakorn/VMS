@@ -133,6 +133,7 @@ const AdminLayout = () => {
     { section: 'ตั้งค่า', tone: 'system', sectionIcon: '⚙️', items: [
       { id: 'cfg', label: 'ตั้งค่าระบบ', icon: '⚙️', path: '/admin/config' },
       { id: 'payments-setup', label: 'ตั้งค่ารายการรับชำระ', icon: '⚙️', path: '/admin/payments/setup' },
+      { id: 'board-sets', label: 'ทะเบียนกรรมการ', icon: '👥', path: '/admin/board-sets' },
       { id: 'usr', label: 'ผู้ใช้งาน', icon: '👥', path: '/admin/users' },
       { id: 'login-logs', label: 'ประวัติการใช้ระบบ', icon: '🔐', path: '/admin/login-logs' },
     ]},

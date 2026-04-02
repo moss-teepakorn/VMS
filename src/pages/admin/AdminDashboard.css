@@ -1137,6 +1137,37 @@
   padding-right: 16px;
 }
 
+.pane.on.disbursements-compact .card {
+  border-radius: 14px;
+  overflow: hidden;
+}
+
+.pane.on.disbursements-compact .card > .houses-main-head {
+  border-radius: 14px 14px 0 0;
+}
+
+.pane.on.disbursements-compact .card > .houses-main-body {
+  padding: 0 0 12px;
+  border-radius: 0 0 14px 14px;
+}
+
+.pane.on.disbursements-compact .disbursements-table-wrap {
+  max-height: calc(100vh - 420px);
+  overflow-x: auto;
+  overflow-y: auto;
+  border-radius: 0 0 14px 14px;
+}
+
+.pane.on.disbursements-compact .houses-main-table th:first-child,
+.pane.on.disbursements-compact .houses-main-table td:first-child {
+  padding-left: 16px;
+}
+
+.pane.on.disbursements-compact .houses-main-table th:last-child,
+.pane.on.disbursements-compact .houses-main-table td:last-child {
+  padding-right: 16px;
+}
+
 .houses-owner-main {
   color: var(--tx);
   font-size: 12px;
