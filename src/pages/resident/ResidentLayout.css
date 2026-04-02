@@ -1,0 +1,148 @@
+/* ═══════════════════════════════════════════════
+   ResidentLayout.css — Resident portal styles
+   Complements AdminLayout.css + AdminDashboard.css
+═══════════════════════════════════════════════ */
+
+/* ── WHITE BUTTON (used in .ph gradient header) ── */
+.btn-w {
+  background: rgba(255,255,255,.2);
+  color: #fff;
+  border: 1.5px solid rgba(255,255,255,.35);
+}
+.btn-w:hover { background: rgba(255,255,255,.32); }
+
+/* ── ALERT BANNERS ── */
+.al { padding: 10px 13px; border-radius: 9px; font-size: 12.5px; display: flex; gap: 8px; align-items: flex-start; margin-bottom: 13px; }
+.al-w { background: var(--wnl); color: var(--wn); border: 1.5px solid rgba(245,158,11,.2); }
+.al-d { background: var(--dgl); color: var(--dg); border: 1.5px solid rgba(239,68,68,.2); }
+.al-ok { background: var(--acl); color: var(--ac); border: 1.5px solid rgba(16,185,129,.2); }
+.al-i { background: var(--prl); color: var(--pr); border: 1.5px solid rgba(59,130,246,.15); }
+
+/* ── ANNOUNCEMENT ITEMS ── */
+.ann { padding: 12px 14px; border: 1.5px solid var(--bo); border-radius: 10px; margin-bottom: 9px; background: var(--card); display: flex; gap: 10px; transition: box-shadow .15s; }
+.ann:hover { box-shadow: 0 3px 14px rgba(0,0,0,.09); }
+.ann-dot { width: 7px; height: 7px; border-radius: 50%; margin-top: 5px; flex-shrink: 0; }
+.ad-urg { background: var(--dg); }
+.ad-gen { background: var(--ac); }
+.ad-evt { background: var(--pr); }
+.ann-t { font-size: 13px; font-weight: 700; color: var(--tx); }
+.ann-b { font-size: 13px; color: var(--tx); margin-top: 2px; line-height: 1.6; }
+.ann-d { font-size: 11px; color: var(--mu); margin-top: 4px; }
+
+/* ── VEHICLES ── */
+.vc { background: var(--card); border: 1.5px solid var(--bo); border-radius: 10px; padding: 13px; display: flex; gap: 11px; align-items: center; margin-bottom: 9px; transition: box-shadow .15s; }
+.vc-ico { width: 44px; height: 44px; background: var(--prl); border-radius: 11px; display: flex; align-items: center; justify-content: center; font-size: 22px; flex-shrink: 0; }
+.vc-pl { font-size: 14px; font-weight: 800; color: var(--tx); }
+.vc-dt { font-size: 12.5px; color: var(--tx); margin-top: 2px; }
+
+/* ── TECHNICIAN CARDS ── */
+.tech-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 14px; margin-bottom: 18px; }
+.tech-card { background: var(--card); border: 1.5px solid var(--bo); border-radius: var(--r); padding: 16px; transition: box-shadow .15s, transform .15s; }
+.tech-card:hover { box-shadow: 0 4px 18px rgba(0,0,0,.1); transform: translateY(-1px); }
+.tech-avatar { width: 54px; height: 54px; border-radius: 14px; background: var(--prl); display: flex; align-items: center; justify-content: center; font-size: 26px; flex-shrink: 0; border: 2px solid var(--bo); }
+.tech-name { font-size: 14px; font-weight: 800; color: var(--tx); }
+.tech-phone { font-size: 12.5px; color: var(--tx); margin-top: 2px; }
+.tech-tags { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 9px; }
+.tech-tag { padding: 3px 9px; border-radius: 20px; font-size: 10.5px; font-weight: 700; background: var(--prl); color: var(--pr); border: 1px solid var(--bo); }
+.tech-tag.ac-tag { background: var(--acl); color: var(--ac); }
+.tech-tag.wn-tag { background: var(--wnl); color: var(--wn); }
+.tech-tag.dg-tag { background: var(--dgl); color: var(--dg); }
+
+/* ── FILTER CHIPS ── */
+.filter-chip { padding: 5px 12px; border-radius: 20px; border: 1.5px solid var(--bo); background: var(--card); font-size: 12px; font-weight: 600; cursor: pointer; color: var(--mu); transition: all .15s; white-space: nowrap; font-family: 'Sarabun', sans-serif; }
+.filter-chip.on { background: var(--prb); color: #fff; border-color: transparent; }
+.rating-stars { color: #F59E0B; font-size: 13px; }
+
+/* ── MARKETPLACE CARDS ── */
+.mkt-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(195px, 1fr)); gap: 12px; margin-bottom: 16px; }
+.r-mcard { background: var(--card); border: 1.5px solid var(--bo); border-radius: var(--r); overflow: hidden; cursor: pointer; transition: box-shadow .15s, transform .15s; display: flex; flex-direction: column; }
+.r-mcard:hover { box-shadow: 0 4px 18px rgba(0,0,0,.1); transform: translateY(-2px); }
+.r-mcard-img { height: 120px; background: var(--bg2); display: flex; align-items: center; justify-content: center; font-size: 40px; position: relative; }
+.r-mcard-badge { position: absolute; top: 7px; right: 7px; padding: 3px 8px; border-radius: 20px; font-size: 10px; font-weight: 800; }
+.ms-sale { background: #FEF3C7; color: #B45309; }
+.ms-free { background: #D1FAE5; color: #065F46; }
+.ms-rent { background: #DBEAFE; color: #1E40AF; }
+.ms-sold { background: #F3F4F6; color: #6B7280; }
+.r-mcard-body { padding: 10px 12px; flex: 1; }
+.r-mcard-cat { padding: 2px 7px; border-radius: 6px; background: var(--prl); color: var(--pr); font-size: 10px; font-weight: 700; display: inline-block; margin-bottom: 4px; }
+.r-mcard-title { font-size: 12.5px; font-weight: 800; color: var(--tx); margin-bottom: 3px; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+.r-mcard-price { font-size: 14px; font-weight: 800; color: var(--pr); margin-bottom: 3px; }
+.r-mcard-meta { font-size: 11.5px; color: var(--tx); }
+
+/* ── FEE STYLES ── */
+.fee-hero { background: var(--hg); border-radius: var(--r-lg); padding: 20px 22px; color: #fff; margin-bottom: 18px; position: relative; overflow: hidden; box-shadow: var(--shm); }
+.fee-hero::before { content: ''; position: absolute; right: -20px; top: -20px; width: 130px; height: 130px; background: rgba(255,255,255,.07); border-radius: 50%; }
+.fhi { position: relative; z-index: 1; }
+.f-lbl { font-size: 11.5px; margin-bottom: 3px; }
+.f-amt { font-size: 30px; font-weight: 800; line-height: 1; margin-bottom: 3px; }
+.f-per { font-size: 12px; }
+.f-btns { margin-top: 14px; display: flex; gap: 8px; flex-wrap: wrap; }
+.fee-row { display: flex; justify-content: space-between; align-items: center; padding: 9px 0; border-bottom: 1px solid var(--bo); font-size: 13px; }
+.fee-row:last-child { border-bottom: none; }
+.fee-lbl { color: var(--mu); font-weight: 500; }
+.fee-val { font-weight: 800; color: var(--tx); }
+.fee-row.tot .fee-lbl { color: var(--tx); font-weight: 800; font-size: 14px; }
+.fee-row.tot .fee-val { color: var(--pr); font-size: 15px; }
+
+/* ── YEAR CARDS ── */
+.ycs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 18px; }
+.yc { background: var(--card); border: 2px solid var(--bo); border-radius: 12px; padding: 14px; cursor: pointer; transition: all .18s; text-align: center; position: relative; overflow: hidden; }
+.yc.on { border-color: var(--pr); background: var(--prl); }
+.yc.on::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; background: var(--prb); }
+.yc-y { font-size: 17px; font-weight: 800; color: var(--tx); }
+.yc-s { font-size: 10.5px; color: var(--mu); margin-top: 2px; }
+.yc-a { font-size: 12.5px; font-weight: 700; color: var(--pr); margin-top: 4px; }
+
+/* ── HOUSE STATUS BADGES ── */
+.hs { display: inline-flex; align-items: center; gap: 5px; padding: 4px 12px; border-radius: 8px; font-size: 11.5px; font-weight: 700; white-space: nowrap; }
+.hs-ok { background: #D4EDDA; color: #276D3B; border: 1.5px solid #A8D8B4; }
+.hs-lt { background: #FCF0D0; color: #8A5A0A; border: 1.5px solid #F0D080; }
+.hs-ss { background: #FAD8D8; color: #902828; border: 1.5px solid #ECA0A0; }
+[data-theme=dark] .hs-ok { background: #0E2818; color: #5DB87A; border-color: #2A6040; }
+[data-theme=dark] .hs-lt { background: #281A08; color: #C8902A; border-color: #604010; }
+[data-theme=dark] .hs-ss { background: #281010; color: #C86060; border-color: #602020; }
+
+/* ── TABS (resident) ── */
+.rtabs { display: flex; border-bottom: 2px solid var(--bo); margin-bottom: 16px; gap: 0; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.rtabs::-webkit-scrollbar { height: 0; }
+.rtab { padding: 8px 14px; font-family: 'Sarabun', sans-serif; font-size: 12.5px; font-weight: 500; cursor: pointer; border: none; background: transparent; color: var(--mu); border-bottom: 3px solid transparent; margin-bottom: -2px; transition: all .15s; white-space: nowrap; flex-shrink: 0; }
+.rtab.on { color: var(--pr); border-bottom-color: var(--pr); font-weight: 800; }
+
+/* ── SECTION LABEL ── */
+.sl { font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: .06em; color: var(--pr); margin-bottom: 11px; margin-top: 14px; display: flex; align-items: center; gap: 7px; }
+.sl::after { content: ''; flex: 1; height: 1px; background: var(--bo); }
+.hdiv { height: 1px; background: var(--bo); margin: 14px 0; }
+
+/* ── TOPBAR SETUP MENU (resident) ── */
+.r-setup-wrap { position: relative; }
+.r-setup-menu {
+  position: absolute; top: calc(100% + 8px); right: 0;
+  background: var(--card); border: 1.5px solid var(--bo);
+  border-radius: 14px; padding: 14px; min-width: 240px;
+  box-shadow: 0 8px 32px rgba(0,0,0,.15); z-index: 500;
+}
+.r-setup-title { font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: .07em; color: var(--mu); margin-bottom: 10px; }
+.r-setup-row { display: flex; justify-content: space-between; padding: 3px 0; font-size: 12px; }
+.r-setup-row span { color: var(--mu); }
+.r-setup-row strong { color: var(--tx); }
+
+/* ── SIDEBAR ACCOUNT CARD (compact) ── */
+.sb-res-account {
+  display: flex; align-items: center; gap: 9px;
+  padding: 8px 9px; border-radius: 9px; cursor: pointer;
+  transition: background var(--tr);
+}
+.sb-res-account:hover { background: var(--sbhv); }
+.sb-res-logout {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 12px; margin-top: 4px; border-radius: 9px; cursor: pointer;
+  color: #F87171; font-size: 13.5px; font-weight: 600;
+  transition: background var(--tr);
+}
+.sb-res-logout:hover { background: rgba(239,68,68,.12); color: #ef4444; }
+
+/* ── CHART BOX ── */
+.r-chart-box { background: var(--card); border: 1.5px solid var(--bo); border-radius: var(--r); padding: 14px 16px; box-shadow: var(--sh); margin-bottom: 14px; }
+.r-chart-box h3 { font-size: 12.5px; font-weight: 700; color: var(--tx); margin-bottom: 12px; }
+.r-chart-wrap { position: relative; height: 190px; }
+@media(min-width: 640px) { .r-chart-wrap { height: 210px; } }
