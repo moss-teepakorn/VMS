@@ -1,7 +1,7 @@
 import { supabase } from './supabase'
 
 export async function listPaymentItemTypes({ onlyActive = false } = {}) {
-  let q = supabase.from('payment_item_types').select('*').order('label', { ascending: true })
+  let q = supabase.from('payment_item_types').select('*').order('code', { ascending: true })
   if (onlyActive) q = q.eq('is_active', true)
   const { data, error } = await q
   if (error) throw error

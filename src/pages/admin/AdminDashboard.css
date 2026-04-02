@@ -1009,6 +1009,25 @@
   margin-top: 0;
 }
 
+.pane.on.houses-compact.payments-compact .sc {
+  padding: 10px 11px;
+}
+
+.pane.on.houses-compact.payments-compact .sc-ico {
+  width: 34px;
+  height: 34px;
+  font-size: 17px;
+  margin-bottom: 6px;
+}
+
+.pane.on.houses-compact.payments-compact .sc-v {
+  font-size: 18px;
+}
+
+.pane.on.houses-compact.payments-compact .sc-l {
+  font-size: 11px;
+}
+
 .pane.on.houses-compact.fees-compact {
   display: flex;
   flex-direction: column;
@@ -1087,6 +1106,35 @@
 .payments-compact .payments-main-wrap,
 .payments-compact .payments-receive-wrap {
   overflow-x: hidden;
+}
+
+.pane.on.payments-setup-compact .card {
+  border-radius: 14px;
+  overflow: hidden;
+}
+
+.pane.on.payments-setup-compact .card > .houses-main-head {
+  border-radius: 14px 14px 0 0;
+}
+
+.pane.on.payments-setup-compact .card > .houses-main-body {
+  padding: 0 0 12px;
+  border-radius: 0 0 14px 14px;
+}
+
+.pane.on.payments-setup-compact .payments-setup-table-wrap {
+  max-height: calc(100vh - 360px);
+  border-radius: 0 0 14px 14px;
+}
+
+.pane.on.payments-setup-compact .houses-main-table th:first-child,
+.pane.on.payments-setup-compact .houses-main-table td:first-child {
+  padding-left: 16px;
+}
+
+.pane.on.payments-setup-compact .houses-main-table th:last-child,
+.pane.on.payments-setup-compact .houses-main-table td:last-child {
+  padding-right: 16px;
 }
 
 .houses-owner-main {

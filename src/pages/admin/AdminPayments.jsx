@@ -170,12 +170,14 @@ function formatPeriod(period) {
   return period || '-'
 }
 
-function buildReceiptNo(payment) {
-  const date = new Date(payment.verified_at || payment.paid_at || Date.now())
-  const y = date.getFullYear() + 543
-  const m = String(date.getMonth() + 1).padStart(2, '0')
-  const d = String(date.getDate()).padStart(2, '0')
-  return `RC-${y}${m}${d}-${String(payment.id || '').slice(0, 6).toUpperCase()}`
+function buildReceiptNo(payment, receiptNoById = {}) {
+  const fallbackDate = new Date(payment?.verified_at || payment?.paid_at || Date.now())
+  const yy = String(fallbackDate.getFullYear()).slice(-2)
+  const mm = String(fallbackDate.getMonth() + 1).padStart(2, '0')
+  const dd = String(fallbackDate.getDate()).padStart(2, '0')
+  const fallback = `RC-${yy}${mm}${dd}-001`
+  if (!payment?.id) return fallback
+  return receiptNoById[payment.id] || fallback
 }
 
 function toThaiBahtText(value) {
@@ -426,6 +428,32 @@ export default function AdminPayments() {
       { value: 'full_year', label: 'เต็มปี', count: rows.filter((p) => p.fees?.period === 'full_year').length },
     ]
   }, [filteredByYear])
+
+  const receiptNoById = useMemo(() => {
+    const approved = payments
+      .filter((payment) => payment?.verified_at)
+      .slice()
+      .sort((a, b) => {
+        const timeA = new Date(a.verified_at || a.paid_at || 0).getTime()
+        const timeB = new Date(b.verified_at || b.paid_at || 0).getTime()
+        if (timeA !== timeB) return timeA - timeB
+        return String(a.id || '').localeCompare(String(b.id || ''))
+      })
+
+    const dailyCount = {}
+    const byId = {}
+    for (const payment of approved) {
+      const date = new Date(payment.verified_at || payment.paid_at || Date.now())
+      const yy = String(date.getFullYear()).slice(-2)
+      const mm = String(date.getMonth() + 1).padStart(2, '0')
+      const dd = String(date.getDate()).padStart(2, '0')
+      const key = `${yy}${mm}${dd}`
+      const seq = Number(dailyCount[key] || 0) + 1
+      dailyCount[key] = seq
+      byId[payment.id] = `RC-${key}-${String(seq).padStart(3, '0')}`
+    }
+    return byId
+  }, [payments])
 
   const filtered = useMemo(() => {
     const kw = search.trim().toLowerCase()
@@ -761,7 +789,7 @@ export default function AdminPayments() {
   const buildReceiptHtml = (payment, { autoPrint = false, forCapture = false } = {}) => {
     if (!payment?.verified_at) return ''
 
-    const receiptNo = buildReceiptNo(payment)
+    const receiptNo = buildReceiptNo(payment, receiptNoById)
     const issueDate = formatDateTime(payment.verified_at)
     const houseNo = payment.houses?.house_no || '-'
     const ownerName = payment.houses?.owner_name || '-'
@@ -997,7 +1025,7 @@ export default function AdminPayments() {
 
     try {
       const target = receiptPrintTarget
-      const fileLabel = `receipt-${buildReceiptNo(target)}`
+      const fileLabel = `receipt-${buildReceiptNo(target, receiptNoById)}`
       if (mode === 'paper') {
         const html = buildReceiptHtml(target, { autoPrint: true })
         const popup = openHtmlInWindow(html)

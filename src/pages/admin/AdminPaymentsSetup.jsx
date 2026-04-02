@@ -1,18 +1,50 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import Swal from 'sweetalert2'
 import { listPaymentItemTypes, createPaymentItemType, updatePaymentItemType, deletePaymentItemType } from '../../lib/paymentItemTypes'
 import { listPartners, createPartner, updatePartner, deletePartner } from '../../lib/partners'
+
+const EMPTY_ITEM_FORM = {
+  code: '',
+  label: '',
+  default_amount: '',
+  category: '',
+  description: '',
+  is_active: true,
+}
+
+const EMPTY_PARTNER_FORM = {
+  name: '',
+  tax_id: '',
+  address: '',
+  phone: '',
+  note: '',
+  is_active: true,
+}
 
 export default function AdminPaymentsSetup() {
   const [rows, setRows] = useState([])
   const [partners, setPartners] = useState([])
   const [loading, setLoading] = useState(false)
-  const [editingItemId, setEditingItemId] = useState('')
-  const [editingPartnerId, setEditingPartnerId] = useState('')
-  const [itemDraft, setItemDraft] = useState({})
-  const [partnerDraft, setPartnerDraft] = useState({})
-  const [newItem, setNewItem] = useState(null)
-  const [newPartner, setNewPartner] = useState(null)
+
+  const [showItemModal, setShowItemModal] = useState(false)
+  const [itemMode, setItemMode] = useState('create')
+  const [itemTargetId, setItemTargetId] = useState('')
+  const [itemForm, setItemForm] = useState(EMPTY_ITEM_FORM)
+  const [savingItem, setSavingItem] = useState(false)
+
+  const [showPartnerModal, setShowPartnerModal] = useState(false)
+  const [partnerMode, setPartnerMode] = useState('create')
+  const [partnerTargetId, setPartnerTargetId] = useState('')
+  const [partnerForm, setPartnerForm] = useState(EMPTY_PARTNER_FORM)
+  const [savingPartner, setSavingPartner] = useState(false)
+
+  const sortedRows = useMemo(() => {
+    return [...rows].sort((a, b) => String(a.code || '').localeCompare(String(b.code || ''), 'th', { numeric: true, sensitivity: 'base' }))
+  }, [rows])
+
+  const sortedPartners = useMemo(() => {
+    return [...partners].sort((a, b) => String(a.name || '').localeCompare(String(b.name || ''), 'th', { numeric: true, sensitivity: 'base' }))
+  }, [partners])
 
   const load = async () => {
     setLoading(true)
@@ -21,8 +53,8 @@ export default function AdminPaymentsSetup() {
         listPaymentItemTypes(),
         listPartners(),
       ])
-      setRows(data)
-      setPartners(partnerData)
+      setRows(data || [])
+      setPartners(partnerData || [])
     } catch (err) {
       Swal.fire({ icon: 'error', title: 'Error', text: err.message })
     }
@@ -31,72 +63,68 @@ export default function AdminPaymentsSetup() {
 
   useEffect(() => { load() }, [])
 
-  const openNew = () => {
-    setNewItem({ code: '', label: '', default_amount: '', category: '', description: '', is_active: true })
+  const openCreateItemModal = () => {
+    setItemMode('create')
+    setItemTargetId('')
+    setItemForm(EMPTY_ITEM_FORM)
+    setShowItemModal(true)
   }
 
-  const startEditItem = (r) => {
-    setEditingItemId(r.id)
-    setItemDraft({
-      id: r.id,
-      code: r.code || '',
-      label: r.label || '',
-      default_amount: String(Number(r.default_amount || 0)),
-      category: r.category || '',
-      description: r.description || '',
-      is_active: !!r.is_active,
+  const openEditItemModal = (row) => {
+    setItemMode('edit')
+    setItemTargetId(row.id)
+    setItemForm({
+      code: row.code || '',
+      label: row.label || '',
+      default_amount: String(Number(row.default_amount || 0)),
+      category: row.category || '',
+      description: row.description || '',
+      is_active: !!row.is_active,
     })
+    setShowItemModal(true)
   }
 
-  const cancelEditItem = () => {
-    setEditingItemId('')
-    setItemDraft({})
+  const closeItemModal = () => {
+    if (savingItem) return
+    setShowItemModal(false)
+    setItemMode('create')
+    setItemTargetId('')
+    setItemForm(EMPTY_ITEM_FORM)
   }
 
   const saveItem = async () => {
     try {
-      if (!itemDraft.code || !itemDraft.label) {
+      if (!itemForm.code || !itemForm.label) {
         return Swal.fire({ icon: 'warning', title: 'ข้อมูลไม่ครบ', text: 'กรุณากรอก code และ label' })
       }
-      if (!editingItemId) return
-      await updatePaymentItemType(editingItemId, {
-        code: itemDraft.code,
-        label: itemDraft.label,
-        description: itemDraft.description,
-        default_amount: Number(itemDraft.default_amount || 0),
-        category: itemDraft.category,
-        is_active: !!itemDraft.is_active,
-      })
-      Swal.fire({ icon: 'success', title: 'บันทึกแล้ว', timer: 1000, showConfirmButton: false })
-      cancelEditItem()
+
+      setSavingItem(true)
+      const payload = {
+        code: itemForm.code,
+        label: itemForm.label,
+        description: itemForm.description,
+        default_amount: Number(itemForm.default_amount || 0),
+        category: itemForm.category,
+        is_active: !!itemForm.is_active,
+      }
+
+      if (itemMode === 'edit' && itemTargetId) {
+        await updatePaymentItemType(itemTargetId, payload)
+      } else {
+        await createPaymentItemType(payload)
+      }
+
+      closeItemModal()
+      Swal.fire({ icon: 'success', title: itemMode === 'edit' ? 'บันทึกแล้ว' : 'สร้างแล้ว', timer: 1000, showConfirmButton: false })
       load()
     } catch (err) {
       Swal.fire({ icon: 'error', title: 'ผิดพลาด', text: err.message })
+    } finally {
+      setSavingItem(false)
     }
   }
 
-  const saveNewItem = async () => {
-    try {
-      if (!newItem?.code || !newItem?.label) {
-        return Swal.fire({ icon: 'warning', title: 'ข้อมูลไม่ครบ', text: 'กรุณากรอก code และ label' })
-      }
-      await createPaymentItemType({
-        code: newItem.code,
-        label: newItem.label,
-        description: newItem.description,
-        default_amount: Number(newItem.default_amount || 0),
-        category: newItem.category,
-        is_active: !!newItem.is_active,
-      })
-      setNewItem(null)
-      Swal.fire({ icon: 'success', title: 'สร้างแล้ว', timer: 1000, showConfirmButton: false })
-      load()
-    } catch (err) {
-      Swal.fire({ icon: 'error', title: 'ผิดพลาด', text: err.message })
-    }
-  }
-
-  const handleDelete = async (id) => {
+  const handleDeleteItem = async (id) => {
     const res = await Swal.fire({ icon: 'warning', title: 'ลบรายการ?', showCancelButton: true })
     if (!res.isConfirmed) return
     try {
@@ -108,10 +136,17 @@ export default function AdminPaymentsSetup() {
     }
   }
 
-  const startEditPartner = (row) => {
-    setEditingPartnerId(row.id)
-    setPartnerDraft({
-      id: row.id,
+  const openCreatePartnerModal = () => {
+    setPartnerMode('create')
+    setPartnerTargetId('')
+    setPartnerForm(EMPTY_PARTNER_FORM)
+    setShowPartnerModal(true)
+  }
+
+  const openEditPartnerModal = (row) => {
+    setPartnerMode('edit')
+    setPartnerTargetId(row.id)
+    setPartnerForm({
       name: row.name || '',
       tax_id: row.tax_id || '',
       address: row.address || '',
@@ -119,53 +154,46 @@ export default function AdminPaymentsSetup() {
       note: row.note || '',
       is_active: !!row.is_active,
     })
+    setShowPartnerModal(true)
   }
 
-  const cancelEditPartner = () => {
-    setEditingPartnerId('')
-    setPartnerDraft({})
+  const closePartnerModal = () => {
+    if (savingPartner) return
+    setShowPartnerModal(false)
+    setPartnerMode('create')
+    setPartnerTargetId('')
+    setPartnerForm(EMPTY_PARTNER_FORM)
   }
 
   const savePartner = async () => {
     try {
-      if (!editingPartnerId) return
-      if (!partnerDraft.name) {
+      if (!partnerForm.name) {
         return Swal.fire({ icon: 'warning', title: 'ข้อมูลไม่ครบ', text: 'กรุณากรอกชื่อคู่ค้า' })
       }
-      await updatePartner(editingPartnerId, {
-        name: partnerDraft.name,
-        tax_id: partnerDraft.tax_id,
-        address: partnerDraft.address,
-        phone: partnerDraft.phone,
-        note: partnerDraft.note,
-        is_active: !!partnerDraft.is_active,
-      })
-      cancelEditPartner()
-      Swal.fire({ icon: 'success', title: 'บันทึกแล้ว', timer: 1000, showConfirmButton: false })
-      load()
-    } catch (err) {
-      Swal.fire({ icon: 'error', title: 'ผิดพลาด', text: err.message })
-    }
-  }
 
-  const saveNewPartner = async () => {
-    try {
-      if (!newPartner?.name) {
-        return Swal.fire({ icon: 'warning', title: 'ข้อมูลไม่ครบ', text: 'กรุณากรอกชื่อคู่ค้า' })
+      setSavingPartner(true)
+      const payload = {
+        name: partnerForm.name,
+        tax_id: partnerForm.tax_id,
+        address: partnerForm.address,
+        phone: partnerForm.phone,
+        note: partnerForm.note,
+        is_active: !!partnerForm.is_active,
       }
-      await createPartner({
-        name: newPartner.name,
-        tax_id: newPartner.tax_id,
-        address: newPartner.address,
-        phone: newPartner.phone,
-        note: newPartner.note,
-        is_active: !!newPartner.is_active,
-      })
-      setNewPartner(null)
-      Swal.fire({ icon: 'success', title: 'สร้างแล้ว', timer: 1000, showConfirmButton: false })
+
+      if (partnerMode === 'edit' && partnerTargetId) {
+        await updatePartner(partnerTargetId, payload)
+      } else {
+        await createPartner(payload)
+      }
+
+      closePartnerModal()
+      Swal.fire({ icon: 'success', title: partnerMode === 'edit' ? 'บันทึกแล้ว' : 'สร้างแล้ว', timer: 1000, showConfirmButton: false })
       load()
     } catch (err) {
       Swal.fire({ icon: 'error', title: 'ผิดพลาด', text: err.message })
+    } finally {
+      setSavingPartner(false)
     }
   }
 
@@ -182,29 +210,27 @@ export default function AdminPaymentsSetup() {
   }
 
   return (
-    <div className="pane on houses-compact reports-compact">
-      <div className="ph">
+    <div className="pane on houses-compact fees-compact payments-setup-compact">
+      <div className="ph houses-ph">
         <div className="ph-in" style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
           <div className="ph-ico">⚙️</div>
           <div>
             <div className="ph-h1">ตั้งค่ารายการรับชำระ</div>
-            <div className="ph-sub">จัดการรายการประเภทรับชำระ (master data)</div>
-          </div>
-          <div style={{ marginLeft: 'auto' }}>
-            <button className="btn btn-p" onClick={openNew}>สร้างรายการใหม่</button>
+            <div className="ph-sub">จัดการรายการประเภทรับชำระและคู่ค้านิติบุคคล</div>
           </div>
         </div>
       </div>
 
-      <div className="card">
-        <div className="ch"><div className="ct">รายการประเภทรับชำระ</div></div>
-        <div className="cb">
-          <div style={{ marginBottom: 10, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <div style={{ color: 'var(--mu)' }}>แสดงข้อมูลก่อน แล้วแก้ไขแบบ Inline Edit</div>
-            <button className="btn btn-p" onClick={() => setNewItem({ code: '', label: '', default_amount: '', category: '', description: '', is_active: true })}>+ เพิ่มรายการ</button>
+      <div className="card houses-main-card">
+        <div className="ch houses-list-head houses-main-head">
+          <div className="ct">รายการประเภทรับชำระ</div>
+          <div className="houses-list-actions">
+            <button className="btn btn-p btn-sm" onClick={openCreateItemModal}>+ เพิ่มรายการ</button>
           </div>
-          <div style={{ overflow: 'auto' }}>
-            <table className="tw" style={{ width: '100%', minWidth: 900 }}>
+        </div>
+        <div className="cb houses-table-card-body houses-main-body">
+          <div className="houses-table-wrap houses-main-wrap payments-setup-table-wrap">
+            <table className="tw houses-table houses-main-table" style={{ width: '100%', minWidth: 900 }}>
               <thead>
                 <tr>
                   <th>Code</th>
@@ -217,69 +243,40 @@ export default function AdminPaymentsSetup() {
                 </tr>
               </thead>
               <tbody>
-                {newItem && (
-                  <tr>
-                    <td><input value={newItem.code} onChange={(e) => setNewItem((p) => ({ ...p, code: e.target.value }))} /></td>
-                    <td><input value={newItem.label} onChange={(e) => setNewItem((p) => ({ ...p, label: e.target.value }))} /></td>
-                    <td><input type="number" value={newItem.default_amount} onChange={(e) => setNewItem((p) => ({ ...p, default_amount: e.target.value }))} style={{ textAlign: 'right' }} /></td>
-                    <td><input value={newItem.category} onChange={(e) => setNewItem((p) => ({ ...p, category: e.target.value }))} /></td>
-                    <td><input value={newItem.description} onChange={(e) => setNewItem((p) => ({ ...p, description: e.target.value }))} /></td>
-                    <td style={{ textAlign: 'center' }}><input type="checkbox" checked={!!newItem.is_active} onChange={(e) => setNewItem((p) => ({ ...p, is_active: e.target.checked }))} /></td>
+                {loading ? (
+                  <tr><td colSpan={7} style={{ textAlign: 'center', color: 'var(--mu)' }}>กำลังโหลดข้อมูล...</td></tr>
+                ) : sortedRows.length === 0 ? (
+                  <tr><td colSpan={7} style={{ textAlign: 'center', color: 'var(--mu)' }}>ไม่พบข้อมูล</td></tr>
+                ) : sortedRows.map((row) => (
+                  <tr key={row.id}>
+                    <td>{row.code}</td>
+                    <td>{row.label}</td>
+                    <td style={{ textAlign: 'right' }}>{Number(row.default_amount || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                    <td>{row.category || '-'}</td>
+                    <td>{row.description || '-'}</td>
+                    <td>{row.is_active ? 'ใช้งาน' : 'ปิด'}</td>
                     <td>
-                      <button className="btn btn-xs btn-p" onClick={saveNewItem}>บันทึก</button>
-                      <button className="btn btn-xs btn-g" style={{ marginLeft: 8 }} onClick={() => setNewItem(null)}>ยกเลิก</button>
+                      <button className="btn btn-xs btn-o" onClick={() => openEditItemModal(row)}>แก้ไข</button>
+                      <button className="btn btn-xs btn-dg" style={{ marginLeft: 8 }} onClick={() => handleDeleteItem(row.id)}>ลบ</button>
                     </td>
                   </tr>
-                )}
-                {rows.map(r => (
-                  <tr key={r.id}>
-                    {editingItemId === r.id ? (
-                      <>
-                        <td><input value={itemDraft.code || ''} onChange={(e) => setItemDraft((p) => ({ ...p, code: e.target.value }))} /></td>
-                        <td><input value={itemDraft.label || ''} onChange={(e) => setItemDraft((p) => ({ ...p, label: e.target.value }))} /></td>
-                        <td><input type="number" value={itemDraft.default_amount || ''} onChange={(e) => setItemDraft((p) => ({ ...p, default_amount: e.target.value }))} style={{ textAlign: 'right' }} /></td>
-                        <td><input value={itemDraft.category || ''} onChange={(e) => setItemDraft((p) => ({ ...p, category: e.target.value }))} /></td>
-                        <td><input value={itemDraft.description || ''} onChange={(e) => setItemDraft((p) => ({ ...p, description: e.target.value }))} /></td>
-                        <td style={{ textAlign: 'center' }}><input type="checkbox" checked={!!itemDraft.is_active} onChange={(e) => setItemDraft((p) => ({ ...p, is_active: e.target.checked }))} /></td>
-                        <td>
-                          <button className="btn btn-xs btn-p" onClick={saveItem}>บันทึก</button>
-                          <button className="btn btn-xs btn-g" style={{ marginLeft: 8 }} onClick={cancelEditItem}>ยกเลิก</button>
-                        </td>
-                      </>
-                    ) : (
-                      <>
-                        <td>{r.code}</td>
-                        <td>{r.label}</td>
-                        <td style={{ textAlign: 'right' }}>{Number(r.default_amount || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-                        <td>{r.category || '-'}</td>
-                        <td>{r.description || '-'}</td>
-                        <td>{r.is_active ? 'ใช้งาน' : 'ปิด'}</td>
-                        <td>
-                          <button className="btn btn-xs btn-o" onClick={() => startEditItem(r)}>แก้ไข</button>
-                          <button className="btn btn-xs btn-dg" style={{ marginLeft: 8 }} onClick={() => handleDelete(r.id)}>ลบ</button>
-                        </td>
-                      </>
-                    )}
-                  </tr>
                 ))}
-                {rows.length === 0 && (
-                  <tr><td colSpan={7} style={{ textAlign: 'center', color: 'var(--mu)' }}>ไม่พบข้อมูล</td></tr>
-                )}
               </tbody>
             </table>
           </div>
         </div>
       </div>
 
-      <div className="card" style={{ marginTop: 16 }}>
-        <div className="ch"><div className="ct">Setup คู่ค้านิติบุคคล (บุคคลภายนอก)</div></div>
-        <div className="cb">
-          <div style={{ marginBottom: 10, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <div style={{ color: 'var(--mu)' }}>ใช้ในหน้ารับชำระเมื่อผู้ชำระเป็นบุคคลภายนอก</div>
-            <button className="btn btn-p" onClick={() => setNewPartner({ name: '', tax_id: '', address: '', phone: '', note: '', is_active: true })}>+ เพิ่มคู่ค้า</button>
+      <div className="card houses-main-card">
+        <div className="ch houses-list-head houses-main-head">
+          <div className="ct">Setup คู่ค้านิติบุคคล (บุคคลภายนอก)</div>
+          <div className="houses-list-actions">
+            <button className="btn btn-p btn-sm" onClick={openCreatePartnerModal}>+ เพิ่มคู่ค้า</button>
           </div>
-          <div style={{ overflow: 'auto' }}>
-            <table className="tw" style={{ width: '100%', minWidth: 1100 }}>
+        </div>
+        <div className="cb houses-table-card-body houses-main-body">
+          <div className="houses-table-wrap houses-main-wrap payments-setup-table-wrap">
+            <table className="tw houses-table houses-main-table" style={{ width: '100%', minWidth: 1100 }}>
               <thead>
                 <tr>
                   <th>ชื่อคู่ค้า</th>
@@ -292,59 +289,129 @@ export default function AdminPaymentsSetup() {
                 </tr>
               </thead>
               <tbody>
-                {newPartner && (
-                  <tr>
-                    <td><input value={newPartner.name} onChange={(e) => setNewPartner((p) => ({ ...p, name: e.target.value }))} /></td>
-                    <td><input value={newPartner.tax_id} onChange={(e) => setNewPartner((p) => ({ ...p, tax_id: e.target.value }))} /></td>
-                    <td><input value={newPartner.address} onChange={(e) => setNewPartner((p) => ({ ...p, address: e.target.value }))} /></td>
-                    <td><input value={newPartner.phone} onChange={(e) => setNewPartner((p) => ({ ...p, phone: e.target.value }))} /></td>
-                    <td><input value={newPartner.note} onChange={(e) => setNewPartner((p) => ({ ...p, note: e.target.value }))} /></td>
-                    <td style={{ textAlign: 'center' }}><input type="checkbox" checked={!!newPartner.is_active} onChange={(e) => setNewPartner((p) => ({ ...p, is_active: e.target.checked }))} /></td>
+                {loading ? (
+                  <tr><td colSpan={7} style={{ textAlign: 'center', color: 'var(--mu)' }}>กำลังโหลดข้อมูล...</td></tr>
+                ) : sortedPartners.length === 0 ? (
+                  <tr><td colSpan={7} style={{ textAlign: 'center', color: 'var(--mu)' }}>ยังไม่มีคู่ค้า</td></tr>
+                ) : sortedPartners.map((row) => (
+                  <tr key={row.id}>
+                    <td>{row.name}</td>
+                    <td>{row.tax_id || '-'}</td>
+                    <td>{row.address || '-'}</td>
+                    <td>{row.phone || '-'}</td>
+                    <td>{row.note || '-'}</td>
+                    <td>{row.is_active ? 'ใช้งาน' : 'ปิด'}</td>
                     <td>
-                      <button className="btn btn-xs btn-p" onClick={saveNewPartner}>บันทึก</button>
-                      <button className="btn btn-xs btn-g" style={{ marginLeft: 8 }} onClick={() => setNewPartner(null)}>ยกเลิก</button>
+                      <button className="btn btn-xs btn-o" onClick={() => openEditPartnerModal(row)}>แก้ไข</button>
+                      <button className="btn btn-xs btn-dg" style={{ marginLeft: 8 }} onClick={() => handleDeletePartner(row.id)}>ลบ</button>
                     </td>
                   </tr>
-                )}
-                {partners.map((row) => (
-                  <tr key={row.id}>
-                    {editingPartnerId === row.id ? (
-                      <>
-                        <td><input value={partnerDraft.name || ''} onChange={(e) => setPartnerDraft((p) => ({ ...p, name: e.target.value }))} /></td>
-                        <td><input value={partnerDraft.tax_id || ''} onChange={(e) => setPartnerDraft((p) => ({ ...p, tax_id: e.target.value }))} /></td>
-                        <td><input value={partnerDraft.address || ''} onChange={(e) => setPartnerDraft((p) => ({ ...p, address: e.target.value }))} /></td>
-                        <td><input value={partnerDraft.phone || ''} onChange={(e) => setPartnerDraft((p) => ({ ...p, phone: e.target.value }))} /></td>
-                        <td><input value={partnerDraft.note || ''} onChange={(e) => setPartnerDraft((p) => ({ ...p, note: e.target.value }))} /></td>
-                        <td style={{ textAlign: 'center' }}><input type="checkbox" checked={!!partnerDraft.is_active} onChange={(e) => setPartnerDraft((p) => ({ ...p, is_active: e.target.checked }))} /></td>
-                        <td>
-                          <button className="btn btn-xs btn-p" onClick={savePartner}>บันทึก</button>
-                          <button className="btn btn-xs btn-g" style={{ marginLeft: 8 }} onClick={cancelEditPartner}>ยกเลิก</button>
-                        </td>
-                      </>
-                    ) : (
-                      <>
-                        <td>{row.name}</td>
-                        <td>{row.tax_id || '-'}</td>
-                        <td>{row.address || '-'}</td>
-                        <td>{row.phone || '-'}</td>
-                        <td>{row.note || '-'}</td>
-                        <td>{row.is_active ? 'ใช้งาน' : 'ปิด'}</td>
-                        <td>
-                          <button className="btn btn-xs btn-o" onClick={() => startEditPartner(row)}>แก้ไข</button>
-                          <button className="btn btn-xs btn-dg" style={{ marginLeft: 8 }} onClick={() => handleDeletePartner(row.id)}>ลบ</button>
-                        </td>
-                      </>
-                    )}
-                  </tr>
                 ))}
-                {partners.length === 0 && (
-                  <tr><td colSpan={7} style={{ textAlign: 'center', color: 'var(--mu)' }}>ยังไม่มีคู่ค้า</td></tr>
-                )}
               </tbody>
             </table>
           </div>
         </div>
       </div>
+
+      {showItemModal && (
+        <div className="house-mo">
+          <div className="house-md house-md--md">
+            <div className="house-md-head">
+              <div>
+                <div className="house-md-title">{itemMode === 'edit' ? 'แก้ไขรายการรับชำระ' : 'เพิ่มรายการรับชำระ'}</div>
+                <div className="house-md-sub">กรอกข้อมูลรายการประเภทชำระ</div>
+              </div>
+            </div>
+            <div className="house-md-body">
+              <section className="house-sec">
+                <div className="house-grid" style={{ gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                  <label className="house-field">
+                    <span>Code *</span>
+                    <input value={itemForm.code} onChange={(e) => setItemForm((prev) => ({ ...prev, code: e.target.value }))} />
+                  </label>
+                  <label className="house-field">
+                    <span>Label *</span>
+                    <input value={itemForm.label} onChange={(e) => setItemForm((prev) => ({ ...prev, label: e.target.value }))} />
+                  </label>
+                  <label className="house-field">
+                    <span>Default Amount</span>
+                    <input type="number" value={itemForm.default_amount} onChange={(e) => setItemForm((prev) => ({ ...prev, default_amount: e.target.value }))} />
+                  </label>
+                  <label className="house-field">
+                    <span>Category</span>
+                    <input value={itemForm.category} onChange={(e) => setItemForm((prev) => ({ ...prev, category: e.target.value }))} />
+                  </label>
+                  <label className="house-field" style={{ gridColumn: '1 / -1' }}>
+                    <span>Description</span>
+                    <input value={itemForm.description} onChange={(e) => setItemForm((prev) => ({ ...prev, description: e.target.value }))} />
+                  </label>
+                  <label className="house-field">
+                    <span>สถานะ</span>
+                    <select value={itemForm.is_active ? '1' : '0'} onChange={(e) => setItemForm((prev) => ({ ...prev, is_active: e.target.value === '1' }))}>
+                      <option value="1">ใช้งาน</option>
+                      <option value="0">ปิด</option>
+                    </select>
+                  </label>
+                </div>
+              </section>
+            </div>
+            <div className="house-md-foot">
+              <button className="btn btn-p" type="button" disabled={savingItem} onClick={saveItem}>{savingItem ? 'กำลังบันทึก...' : 'บันทึก'}</button>
+              <button className="btn btn-g" type="button" disabled={savingItem} onClick={closeItemModal}>ยกเลิก</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showPartnerModal && (
+        <div className="house-mo">
+          <div className="house-md house-md--md">
+            <div className="house-md-head">
+              <div>
+                <div className="house-md-title">{partnerMode === 'edit' ? 'แก้ไขคู่ค้านิติบุคคล' : 'เพิ่มคู่ค้านิติบุคคล'}</div>
+                <div className="house-md-sub">ใช้สำหรับผู้ชำระประเภทบุคคลภายนอก</div>
+              </div>
+            </div>
+            <div className="house-md-body">
+              <section className="house-sec">
+                <div className="house-grid" style={{ gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                  <label className="house-field">
+                    <span>ชื่อคู่ค้า *</span>
+                    <input value={partnerForm.name} onChange={(e) => setPartnerForm((prev) => ({ ...prev, name: e.target.value }))} />
+                  </label>
+                  <label className="house-field">
+                    <span>เลขที่ผู้เสียภาษี</span>
+                    <input value={partnerForm.tax_id} onChange={(e) => setPartnerForm((prev) => ({ ...prev, tax_id: e.target.value }))} />
+                  </label>
+                  <label className="house-field" style={{ gridColumn: '1 / -1' }}>
+                    <span>ที่อยู่</span>
+                    <input value={partnerForm.address} onChange={(e) => setPartnerForm((prev) => ({ ...prev, address: e.target.value }))} />
+                  </label>
+                  <label className="house-field">
+                    <span>เบอร์โทร</span>
+                    <input value={partnerForm.phone} onChange={(e) => setPartnerForm((prev) => ({ ...prev, phone: e.target.value }))} />
+                  </label>
+                  <label className="house-field">
+                    <span>สถานะ</span>
+                    <select value={partnerForm.is_active ? '1' : '0'} onChange={(e) => setPartnerForm((prev) => ({ ...prev, is_active: e.target.value === '1' }))}>
+                      <option value="1">ใช้งาน</option>
+                      <option value="0">ปิด</option>
+                    </select>
+                  </label>
+                  <label className="house-field" style={{ gridColumn: '1 / -1' }}>
+                    <span>รายละเอียด</span>
+                    <input value={partnerForm.note} onChange={(e) => setPartnerForm((prev) => ({ ...prev, note: e.target.value }))} />
+                  </label>
+                </div>
+              </section>
+            </div>
+            <div className="house-md-foot">
+              <button className="btn btn-p" type="button" disabled={savingPartner} onClick={savePartner}>{savingPartner ? 'กำลังบันทึก...' : 'บันทึก'}</button>
+              <button className="btn btn-g" type="button" disabled={savingPartner} onClick={closePartnerModal}>ยกเลิก</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
