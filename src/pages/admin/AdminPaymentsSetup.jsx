@@ -212,11 +212,13 @@ export default function AdminPaymentsSetup() {
   return (
     <div className="pane on houses-compact fees-compact payments-setup-compact">
       <div className="ph houses-ph">
-        <div className="ph-in" style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-          <div className="ph-ico">⚙️</div>
-          <div>
-            <div className="ph-h1">ตั้งค่ารายการรับชำระ</div>
-            <div className="ph-sub">จัดการรายการประเภทรับชำระและคู่ค้านิติบุคคล</div>
+        <div className="ph-in">
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <div className="ph-ico">⚙️</div>
+            <div>
+              <div className="ph-h1">ตั้งค่ารายการรับชำระ</div>
+              <div className="ph-sub">จัดการรายการประเภทรับชำระและคู่ค้านิติบุคคล</div>
+            </div>
           </div>
         </div>
       </div>
@@ -315,7 +317,7 @@ export default function AdminPaymentsSetup() {
 
       {showItemModal && (
         <div className="house-mo">
-          <div className="house-md house-md--md">
+          <div className="house-md house-md--sm">
             <div className="house-md-head">
               <div>
                 <div className="house-md-title">{itemMode === 'edit' ? 'แก้ไขรายการรับชำระ' : 'เพิ่มรายการรับชำระ'}</div>
@@ -365,7 +367,7 @@ export default function AdminPaymentsSetup() {
 
       {showPartnerModal && (
         <div className="house-mo">
-          <div className="house-md house-md--md">
+          <div className="house-md house-md--sm">
             <div className="house-md-head">
               <div>
                 <div className="house-md-title">{partnerMode === 'edit' ? 'แก้ไขคู่ค้านิติบุคคล' : 'เพิ่มคู่ค้านิติบุคคล'}</div>

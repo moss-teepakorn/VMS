@@ -1197,26 +1197,28 @@ export default function AdminPayments() {
               <table className="tw houses-table houses-main-table" style={{ width: '100%', tableLayout: 'fixed' }}>
                 <thead>
                   <tr>
-                    <th style={{ width: '9%' }}>ซอย</th>
-                    <th style={{ width: '9%' }}>บ้าน</th>
-                    <th style={{ width: '13%' }}>งวด</th>
-                    <th style={{ width: '12%' }}>จำนวนเงิน</th>
-                    <th style={{ width: '10%' }}>วิธีชำระ</th>
-                    <th style={{ width: '12%' }}>วันที่</th>
-                    <th style={{ width: '11%' }}>สถานะ</th>
-                    <th style={{ width: '24%' }}></th>
+                    <th style={{ width: '13%' }}>เลขที่ใบเสร็จ</th>
+                    <th style={{ width: '8%' }}>ซอย</th>
+                    <th style={{ width: '8%' }}>บ้าน</th>
+                    <th style={{ width: '12%' }}>งวด</th>
+                    <th style={{ width: '10%' }}>จำนวนเงิน</th>
+                    <th style={{ width: '9%' }}>วิธีชำระ</th>
+                    <th style={{ width: '11%' }}>วันที่</th>
+                    <th style={{ width: '9%' }}>สถานะ</th>
+                    <th style={{ width: '20%' }}></th>
                   </tr>
                 </thead>
                 <tbody>
                   {loading ? (
-                    <tr><td colSpan="8" style={{ textAlign: 'center', color: 'var(--mu)', padding: '20px' }}>กำลังโหลดข้อมูล...</td></tr>
+                    <tr><td colSpan="9" style={{ textAlign: 'center', color: 'var(--mu)', padding: '20px' }}>กำลังโหลดข้อมูล...</td></tr>
                   ) : filtered.length === 0 ? (
-                    <tr><td colSpan="8" style={{ textAlign: 'center', color: 'var(--mu)', padding: '20px' }}>ยังไม่มีรายการชำระเงิน</td></tr>
+                    <tr><td colSpan="9" style={{ textAlign: 'center', color: 'var(--mu)', padding: '20px' }}>ยังไม่มีรายการชำระเงิน</td></tr>
                   ) : (
                     filtered.map((payment) => {
                       const badge = getStatusBadge(payment)
                       return (
                       <tr key={payment.id}>
+                        <td style={{ whiteSpace: 'nowrap', fontFamily: 'monospace', fontSize: 11 }}>{payment.verified_at ? buildReceiptNo(payment, receiptNoById) : '-'}</td>
                         <td style={{ whiteSpace: 'nowrap' }}>{payment.houses?.soi || '-'}</td>
                         <td style={{ whiteSpace: 'nowrap' }}>{payment.houses?.house_no || '-'}</td>
                         <td style={{ whiteSpace: 'nowrap' }}>{payment.fees ? `${formatPeriod(payment.fees.period)} ${toBE(payment.fees.year)}` : '-'}</td>
@@ -1256,6 +1258,7 @@ export default function AdminPayments() {
                   <span className={`${badge.className} houses-mcard-badge`}>{badge.label}</span>
                 </div>
                 <div className="mcard-meta" style={{ marginTop: 4 }}>
+                  {payment.verified_at && <span><span className="mcard-label">เลขใบเสร็จ</span> {buildReceiptNo(payment, receiptNoById)}</span>}
                   <span><span className="mcard-label">จำนวนเงิน</span> {formatMoney(payment.amount)}</span>
                   <span><span className="mcard-label">วิธีชำระ</span> {formatMethod(payment.payment_method)}</span>
                   <span><span className="mcard-label">วันที่ชำระ</span> {formatDateTime(payment.paid_at)}</span>
