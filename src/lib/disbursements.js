@@ -4,7 +4,7 @@ export async function listDisbursements() {
   const { data, error } = await supabase
     .from('disbursements')
     .select(`
-      id, recipient_type, partner_id, house_id, disbursement_date,
+      id, recipient_type, recipient_name, partner_id, house_id, disbursement_date,
       payment_method, bank_name, bank_account_no, bank_account_name,
       sub_total, vat_enabled, vat_rate, vat_amount,
       wht_enabled, wht_rate, wht_amount, total_amount,
@@ -35,6 +35,7 @@ function buildRow(payload, items) {
 
   return {
     recipient_type: payload.recipient_type || 'partner',
+    recipient_name: String(payload.recipient_name || '').trim() || null,
     partner_id: payload.partner_id || null,
     house_id: payload.house_id || null,
     disbursement_date: payload.disbursement_date,

@@ -1155,26 +1155,26 @@
 }
 
 .pane.on.houses-compact.disbursements-compact .sc {
-  padding: 10px 11px;
+  padding: 8px 9px;
 }
 
 .pane.on.houses-compact.disbursements-compact .sc-ico {
-  width: 34px;
-  height: 34px;
-  font-size: 17px;
-  margin-bottom: 6px;
+  width: 30px;
+  height: 30px;
+  font-size: 15px;
+  margin-bottom: 4px;
 }
 
 .pane.on.houses-compact.disbursements-compact .sc-v {
-  font-size: 18px;
+  font-size: 16px;
 }
 
 .pane.on.houses-compact.disbursements-compact .sc-l {
-  font-size: 11px;
+  font-size: 10px;
 }
 
 .pane.on.houses-compact.disbursements-compact .sc-s {
-  font-size: 11px;
+  font-size: 10px;
 }
 
 .pane.on.disbursements-compact .card > .houses-main-head {

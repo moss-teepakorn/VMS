@@ -54,6 +54,7 @@ const toDatetimeInput = (value) => (value ? String(value).slice(0, 16) : '')
 
 const EMPTY_FORM = () => ({
   recipient_type: 'partner',
+  recipient_name: '',
   partner_id: '',
   house_id: '',
   disbursement_date: todayStr(),
@@ -132,7 +133,7 @@ export default function AdminFeatureExpensePayment() {
     const kw = search.trim().toLowerCase()
     if (!kw) return rows
     return rows.filter((d) => {
-      const recipient = d.recipient_type === 'partner' ? (d.partners?.name || '') : `บ้านเลขที่ ${d.houses?.house_no || ''} ${d.houses?.owner_name || ''}`
+      const recipient = d.recipient_name || (d.recipient_type === 'partner' ? (d.partners?.name || '') : `บ้านเลขที่ ${d.houses?.house_no || ''} ${d.houses?.owner_name || ''}`)
       const no = disburseNoById[d.id] || ''
       const items = (d.disbursement_items || []).map((i) => i.item_label).join(' ')
       return no.toLowerCase().includes(kw) || recipient.toLowerCase().includes(kw) || items.toLowerCase().includes(kw) || (STATUS_MAP[d.status]?.label || '').includes(kw)
@@ -163,27 +164,35 @@ export default function AdminFeatureExpensePayment() {
   }, [])
 
   const recipientLabel = (d) => {
+    if (d.recipient_name) return d.recipient_name
     if (d.recipient_type === 'partner') return d.partners?.name || '-'
     if (d.recipient_type === 'house') return `บ้านเลขที่ ${d.houses?.house_no || '-'}${d.houses?.owner_name ? ` (${d.houses.owner_name})` : ''}`
     return '-'
   }
 
-  const getHouseLabel = (houseId) => {
+  const getHouseRecipientName = (houseId) => {
     const found = houses.find((h) => h.id === houseId)
     if (!found) return ''
-    return found.owner_name ? `${found.owner_name} (บ้าน ${found.house_no})` : `บ้าน ${found.house_no}`
+    return found.owner_name || `บ้าน ${found.house_no}`
   }
 
   const handleHouseChange = (houseId) => {
-    const autoLabel = getHouseLabel(houseId)
+    const autoName = getHouseRecipientName(houseId)
     setForm((prev) => {
-      const nextItems = [...prev.items]
-      if (nextItems.length === 0) {
-        nextItems.push({ item_type_id: '', item_label: autoLabel, amount: '', note: '' })
-      } else if (!nextItems[0].item_label || nextItems[0].item_label === getHouseLabel(prev.house_id)) {
-        nextItems[0] = { ...nextItems[0], item_label: autoLabel }
-      }
-      return { ...prev, house_id: houseId, items: nextItems }
+      const prevAutoName = getHouseRecipientName(prev.house_id)
+      const nextRecipientName = (!prev.recipient_name || prev.recipient_name === prevAutoName) ? autoName : prev.recipient_name
+      return { ...prev, house_id: houseId, recipient_name: nextRecipientName }
+    })
+  }
+
+  const handlePartnerChange = (partnerId) => {
+    const found = partners.find((p) => p.id === partnerId)
+    const autoName = found?.name || ''
+    setForm((prev) => {
+      const prevPartner = partners.find((p) => p.id === prev.partner_id)
+      const prevAutoName = prevPartner?.name || ''
+      const nextRecipientName = (!prev.recipient_name || prev.recipient_name === prevAutoName) ? autoName : prev.recipient_name
+      return { ...prev, partner_id: partnerId, recipient_name: nextRecipientName }
     })
   }
 
@@ -205,6 +214,7 @@ export default function AdminFeatureExpensePayment() {
     }))
     setForm({
       recipient_type: d.recipient_type || 'partner',
+      recipient_name: d.recipient_name || recipientLabel(d),
       partner_id: d.partner_id || '',
       house_id: d.house_id || '',
       disbursement_date: d.disbursement_date || todayStr(),
@@ -234,6 +244,7 @@ export default function AdminFeatureExpensePayment() {
   }
 
   const handleSave = async () => {
+    if (!String(form.recipient_name || '').trim()) return Swal.fire({ icon: 'warning', title: 'กรุณาระบุชื่อผู้รับเงิน' })
     if (!form.approver_id) return Swal.fire({ icon: 'warning', title: 'กรุณาเลือกผู้อนุมัติ' })
     if (!form.payer_id) return Swal.fire({ icon: 'warning', title: 'กรุณาเลือกผู้จ่ายเงิน' })
 
@@ -295,19 +306,19 @@ export default function AdminFeatureExpensePayment() {
 
   const handlePrint = (d) => {
     const disburseNo = disburseNoById[d.id] || 'EXP-??????'
-    const recipient = recipientLabel(d)
+    const recipient = d.recipient_name || recipientLabel(d)
     const items = d.disbursement_items || []
     const itemRows = items.map((item, idx) => `<tr><td style="text-align:center">${idx + 1}</td><td>${item.item_label}</td><td style="text-align:right">${fmt2(item.amount)}</td><td>${item.note || '-'}</td></tr>`).join('')
 
     const html = `<!DOCTYPE html><html><head><title>ใบสั่งจ่าย ${disburseNo}</title>
 <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap" rel="stylesheet">
-<style>@page{size:A4;margin:0}*{box-sizing:border-box}html,body{font-family:'Sarabun','TH Sarabun New',Tahoma,sans-serif;margin:0;padding:0;color:#111827;background:#fff}.sheet{width:100%;padding:24px 28px;display:flex;flex-direction:column;gap:10px}.head{display:flex;justify-content:space-between;gap:12px;border:1px solid #cbd5e1;border-radius:4px;padding:10px 12px}.brand{display:flex;align-items:flex-start;gap:10px}.brand img{width:48px;height:48px;border-radius:6px;object-fit:cover;border:1px solid #cbd5e1}.doc{font-size:16px;font-weight:700}.village{font-size:11px;font-weight:600;margin-top:3px}.sub{font-size:9px;color:#6b7280;margin-top:2px}.doc-meta{font-size:10px;min-width:200px;display:flex;flex-direction:column;gap:3px}.doc-meta span{color:#6b7280;font-weight:500}.box{border:1px solid #cbd5e1;border-radius:4px;padding:10px 12px}.grid2{display:grid;grid-template-columns:1fr 1fr;gap:6px 10px}.grid2>div{display:flex;flex-direction:column;gap:2px}.grid2 span{font-size:9px;color:#6b7280}.grid2 strong{font-size:11px;font-weight:600}table{width:100%;border-collapse:collapse}th,td{border:1px solid #cbd5e1;padding:6px 8px;font-size:10px}th{background:#f1f5f9;font-weight:600;text-align:left}tfoot td{background:#f8fafc;font-weight:700;font-size:10px}.sign-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-top:4px}.sign-box{border:1px solid #cbd5e1;border-radius:4px;padding:10px 12px;text-align:center;font-size:9px;color:#6b7280}.sign-line{border-top:1px solid #94a3b8;margin:40px 8px 6px}.sign-label{font-size:10px;font-weight:600;color:#1e293b;margin-bottom:2px}.sign-pos{font-size:9px;color:#64748b}</style>
+<style>@page{size:A4;margin:0}*{box-sizing:border-box}html,body{font-family:'Sarabun','TH Sarabun New',Tahoma,sans-serif;margin:0;padding:0;color:#111827;background:#fff}.sheet{width:100%;padding:24px 28px;display:flex;flex-direction:column;gap:10px}.head{display:flex;justify-content:space-between;gap:12px;border:1px solid #cbd5e1;border-radius:4px;padding:10px 12px}.brand{display:flex;align-items:flex-start;gap:10px}.brand img{width:48px;height:48px;border-radius:6px;object-fit:cover;border:1px solid #cbd5e1}.doc{font-size:16px;font-weight:700}.village{font-size:11px;font-weight:600;margin-top:3px}.sub{font-size:9px;color:#6b7280;margin-top:2px}.doc-meta{font-size:10px;min-width:200px;display:flex;flex-direction:column;gap:3px}.doc-meta span{color:#6b7280;font-weight:500}.box{border:1px solid #cbd5e1;border-radius:4px;padding:10px 12px}.grid2{display:grid;grid-template-columns:1fr 1fr;gap:6px 10px}.grid2>div{display:flex;flex-direction:column;gap:2px}.grid2 span{font-size:9px;color:#6b7280}.grid2 strong{font-size:11px;font-weight:600}table{width:100%;border-collapse:collapse}th,td{border:1px solid #cbd5e1;padding:6px 8px;font-size:10px}th{background:#f1f5f9;font-weight:600;text-align:left}tfoot td{background:#f8fafc;font-weight:700;font-size:10px}.sign-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-top:4px}.sign-box{border:1px solid #cbd5e1;border-radius:4px;padding:8px 10px;text-align:center;font-size:9px;color:#6b7280;min-height:102px}.sign-slot{height:36px;display:flex;align-items:center;justify-content:center}.sign-line{border-top:1px solid #94a3b8;margin:2px 8px 5px}.sign-label{font-size:10px;font-weight:600;color:#1e293b;margin-bottom:1px}.sign-pos{font-size:9px;color:#64748b;line-height:1.2}</style>
 </head><body><div class="sheet">
 <div class="head"><div class="brand">${setup.loginCircleLogoUrl ? `<img src="${setup.loginCircleLogoUrl}" alt="logo">` : ''}<div><div class="doc">ใบสั่งจ่าย / ใบสำคัญจ่าย</div><div class="village">${setup.villageName || 'Village Management System'}</div><div class="sub">${setup.address || ''}</div></div></div>
-<div class="doc-meta"><div><span>เลขที่:</span> <strong>${disburseNo}</strong></div><div><span>วันที่จ่าย:</span> <strong>${fmtDate(d.disbursement_date)}</strong></div><div><span>วิธีชำระ:</span> <strong>${fmtMethod(d.payment_method)}</strong></div>${d.bank_name || d.bank_account_no ? `<div><span>ธนาคาร/บัญชี:</span> <strong>${d.bank_name || ''} ${d.bank_account_no || ''} ${d.bank_account_name || ''}</strong></div>` : ''}<div><span>สถานะ:</span> <strong>${STATUS_MAP[d.status]?.label || d.status}</strong></div></div></div>
-<div class="box"><div class="grid2"><div><span>ผู้รับเงิน</span><strong>${recipient}</strong></div>${d.recipient_type === 'partner' && d.partners?.tax_id ? `<div><span>เลขที่ผู้เสียภาษี</span><strong>${d.partners.tax_id}</strong></div>` : '<div></div>'}</div></div>
+<div class="doc-meta"><div><span>เลขที่:</span> <strong>${disburseNo}</strong></div><div><span>วันที่ทำรายการ:</span> <strong>${fmtDate(d.disbursement_date)}</strong></div><div><span>สถานะ:</span> <strong>${STATUS_MAP[d.status]?.label || d.status}</strong></div></div></div>
+<div class="box"><div class="grid2"><div><span>ชื่อผู้รับเงิน</span><strong>${recipient || '-'}</strong></div><div><span>วิธีชำระ</span><strong>${fmtMethod(d.payment_method)}</strong></div><div><span>ธนาคาร</span><strong>${d.bank_name || '-'}</strong></div><div><span>เลขที่บัญชี</span><strong>${d.bank_account_no || '-'}</strong></div>${d.recipient_type === 'partner' && d.partners?.tax_id ? `<div><span>เลขที่ผู้เสียภาษี</span><strong>${d.partners.tax_id}</strong></div>` : '<div></div>'}</div></div>
 <div class="box"><table><thead><tr><th style="width:36px;text-align:center">ลำดับ</th><th>รายการ</th><th style="width:130px;text-align:right">จำนวนเงิน (บาท)</th><th style="width:120px">หมายเหตุ</th></tr></thead><tbody>${itemRows}</tbody><tfoot><tr><td colspan="2" style="text-align:right">ยอดก่อนภาษี</td><td style="text-align:right">${fmt2(d.sub_total)}</td><td></td></tr>${d.vat_enabled ? `<tr><td colspan="2" style="text-align:right">ภาษีมูลค่าเพิ่ม ${d.vat_rate}%</td><td style="text-align:right">${fmt2(d.vat_amount)}</td><td></td></tr>` : ''}${d.wht_enabled ? `<tr><td colspan="2" style="text-align:right">หัก ณ ที่จ่าย ${d.wht_rate}%</td><td style="text-align:right">(${fmt2(d.wht_amount)})</td><td></td></tr>` : ''}<tr><td colspan="2" style="text-align:right"><strong>ยอดสุทธิ</strong></td><td style="text-align:right"><strong>${fmt2(d.total_amount)}</strong></td><td></td></tr></tfoot></table>${d.note ? `<div style="padding-top:6px;font-size:10px;color:#4b5563;border-top:1px dashed #d1d5db;margin-top:4px">หมายเหตุ: ${d.note}</div>` : ''}</div>
-<div class="sign-row"><div class="sign-box">${setup.juristicSignatureUrl ? `<img src="${setup.juristicSignatureUrl}" alt="" style="max-height:44px;display:block;margin:0 auto 4px;object-fit:contain">` : ''}<div class="sign-line"></div><div class="sign-label">ผู้จัดทำ</div><div class="sign-pos">ลงชื่อผู้จัดทำรายการ</div></div><div class="sign-box"><div class="sign-line"></div><div class="sign-label">ประธานกรรมการ</div><div class="sign-pos">วันที่อนุมัติ: ____________________</div></div><div class="sign-box"><div class="sign-line"></div><div class="sign-label">กรรมการการเงิน</div><div class="sign-pos">วันที่จ่าย: ____________________</div></div></div>
+<div class="sign-row"><div class="sign-box"><div class="sign-slot">${setup.juristicSignatureUrl ? `<img src="${setup.juristicSignatureUrl}" alt="" style="max-height:30px;display:block;margin:0 auto;object-fit:contain">` : ''}</div><div class="sign-line"></div><div class="sign-label">ผู้จัดทำ</div><div class="sign-pos">ลงชื่อผู้จัดทำรายการ</div></div><div class="sign-box"><div class="sign-slot"></div><div class="sign-line"></div><div class="sign-label">ประธานกรรมการ</div><div class="sign-pos">วันที่อนุมัติ: ____________________</div></div><div class="sign-box"><div class="sign-slot"></div><div class="sign-line"></div><div class="sign-label">กรรมการการเงิน</div><div class="sign-pos">วันที่จ่าย: ____________________</div></div></div>
 </div><script>window.onload=()=>window.print()</script></body></html>`
 
     const popup = window.open('', '_blank', 'width=900,height=800')
@@ -450,7 +461,7 @@ export default function AdminFeatureExpensePayment() {
                 <div className="house-grid" style={{ gridTemplateColumns: '1fr 1.6fr 1.4fr 1fr', gap: 10, marginBottom: 12 }}>
                   <label className="house-field">
                     <span>ประเภท</span>
-                    <select value={form.recipient_type} onChange={(e) => setForm((p) => ({ ...p, recipient_type: e.target.value, partner_id: '', house_id: '' }))}>
+                    <select value={form.recipient_type} onChange={(e) => setForm((p) => ({ ...p, recipient_type: e.target.value, recipient_name: '', partner_id: '', house_id: '' }))}>
                       <option value="partner">คู่ค้า / บุคคลภายนอก</option>
                       <option value="house">ลูกบ้าน</option>
                     </select>
@@ -459,7 +470,7 @@ export default function AdminFeatureExpensePayment() {
                   {form.recipient_type === 'partner' ? (
                     <label className="house-field">
                       <span>คู่ค้า *</span>
-                      <select value={form.partner_id} onChange={(e) => setForm((p) => ({ ...p, partner_id: e.target.value }))}>
+                      <select value={form.partner_id} onChange={(e) => handlePartnerChange(e.target.value)}>
                         <option value="">— เลือกคู่ค้า —</option>
                         {partners.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
                       </select>
@@ -484,8 +495,15 @@ export default function AdminFeatureExpensePayment() {
                   </label>
 
                   <label className="house-field">
-                    <span>วันที่จ่าย *</span>
+                    <span>วันที่ทำรายการ *</span>
                     <input type="date" value={form.disbursement_date} onChange={(e) => setForm((p) => ({ ...p, disbursement_date: e.target.value }))} />
+                  </label>
+                </div>
+
+                <div className="house-grid" style={{ gridTemplateColumns: '1fr', gap: 10, marginBottom: 12 }}>
+                  <label className="house-field">
+                    <span>ชื่อผู้รับเงิน *</span>
+                    <input value={form.recipient_name} onChange={(e) => setForm((p) => ({ ...p, recipient_name: e.target.value }))} placeholder="ชื่อผู้รับเงินจริง (แก้ไขได้)" />
                   </label>
                 </div>
 
