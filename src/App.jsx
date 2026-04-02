@@ -56,7 +56,8 @@ function RequireResident({ children }) {
   const { profile, loading } = useAuth()
   if (loading) return <PageLoader />
   if (!profile) return <Navigate to="/login" replace />
-  if (profile.role !== 'resident') return <Navigate to="/admin/dashboard" replace />
+  const canUseResidentPortal = profile.role === 'resident' || (profile.role === 'admin' && !!profile.house_id)
+  if (!canUseResidentPortal) return <Navigate to="/admin/dashboard" replace />
   return children
 }
 

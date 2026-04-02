@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import Swal from 'sweetalert2'
 import { useAuth } from '../../contexts/AuthContext'
 import {
@@ -41,6 +42,7 @@ function showSwal(options) {
 }
 
 export default function ResidentLayout() {
+  const navigate = useNavigate()
   const { profile, logout } = useAuth()
   const [activeSection, setActiveSection] = useState('fees')
   const [fees, setFees] = useState([])
@@ -406,6 +408,9 @@ export default function ResidentLayout() {
             </div>
           </div>
           <div className="ph-acts">
+            {profile?.role === 'admin' && (
+              <button className="btn btn-a btn-sm" onClick={() => navigate('/admin/dashboard')}>↩ กลับโหมดแอดมิน</button>
+            )}
             <button
               className="btn btn-o btn-sm"
               onClick={() => {

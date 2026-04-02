@@ -437,6 +437,9 @@ const AdminLayout = () => {
                   </div>
 
                   <div className="setup-section">
+                    {profile?.role === 'admin' && profile?.house_id && (
+                      <button className="btn btn-a btn-sm" style={{ width: '100%', marginBottom: '6px' }} onClick={() => { setSetupOpen(false); navigate('/resident/home') }}>🏠 โหมดลูกบ้าน (ดูข้อมูลของฉัน)</button>
+                    )}
                     <button className="btn btn-p btn-sm" style={{ width: '100%' }} onClick={() => { setSetupOpen(false); setShowPasswordModal(true) }}>🔑 เปลี่ยนรหัสผ่าน</button>
                     <button className="btn btn-g btn-sm" style={{ width: '100%', marginTop: '6px' }} onClick={() => setSetupOpen(false)}>ปิด</button>
                   </div>
