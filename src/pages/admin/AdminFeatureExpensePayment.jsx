@@ -164,17 +164,22 @@ export default function AdminFeatureExpensePayment() {
   }, [])
 
   const recipientLabel = (d) => {
+    if (d.recipient_type === 'house') {
+      const houseNo = d.houses?.house_no || '-'
+      const name = String(d.recipient_name || d.houses?.owner_name || '').trim()
+      if (name.startsWith('บ้านเลขที่')) return name
+      return name ? `บ้านเลขที่ ${houseNo} ${name}` : `บ้านเลขที่ ${houseNo}`
+    }
     if (d.recipient_name) return d.recipient_name
     if (d.recipient_type === 'partner') return d.partners?.name || '-'
-    if (d.recipient_type === 'house') return `บ้านเลขที่ ${d.houses?.house_no || '-'}${d.houses?.owner_name ? ` (${d.houses.owner_name})` : ''}`
     return '-'
   }
 
   const getHouseRecipientName = (houseId) => {
     const found = houses.find((h) => h.id === houseId)
     if (!found) return ''
-    if (found.owner_name) return `บ้านเลขที่ ${found.house_no} คุณ${found.owner_name}`
-    return `บ้านเลขที่ ${found.house_no}`
+    if (found.owner_name) return `คุณ${found.owner_name}`
+    return ''
   }
 
   const handleHouseChange = (houseId) => {
@@ -215,7 +220,7 @@ export default function AdminFeatureExpensePayment() {
     }))
     setForm({
       recipient_type: d.recipient_type || 'partner',
-      recipient_name: d.recipient_name || recipientLabel(d),
+      recipient_name: d.recipient_name || (d.recipient_type === 'house' ? (d.houses?.owner_name ? `คุณ${d.houses.owner_name}` : '') : recipientLabel(d)),
       partner_id: d.partner_id || '',
       house_id: d.house_id || '',
       disbursement_date: d.disbursement_date || todayStr(),

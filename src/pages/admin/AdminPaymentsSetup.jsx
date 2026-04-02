@@ -317,14 +317,14 @@ export default function AdminPaymentsSetup() {
 
       {showItemModal && (
         <div className="house-mo">
-          <div className="house-md house-md--sm">
+          <div className="house-md house-md--sm" style={{ height: 'auto', maxHeight: 'min(560px, 88vh)' }}>
             <div className="house-md-head">
               <div>
                 <div className="house-md-title">{itemMode === 'edit' ? 'แก้ไขรายการรับชำระ' : 'เพิ่มรายการรับชำระ'}</div>
                 <div className="house-md-sub">กรอกข้อมูลรายการประเภทชำระ</div>
               </div>
             </div>
-            <div className="house-md-body">
+            <div className="house-md-body" style={{ overflowY: 'auto' }}>
               <section className="house-sec">
                 <div className="house-grid" style={{ gridTemplateColumns: '1fr 1fr', gap: 10 }}>
                   <label className="house-field">
@@ -367,14 +367,14 @@ export default function AdminPaymentsSetup() {
 
       {showPartnerModal && (
         <div className="house-mo">
-          <div className="house-md house-md--sm">
+          <div className="house-md house-md--sm" style={{ height: 'auto', maxHeight: 'min(560px, 88vh)' }}>
             <div className="house-md-head">
               <div>
                 <div className="house-md-title">{partnerMode === 'edit' ? 'แก้ไขคู่ค้านิติบุคคล' : 'เพิ่มคู่ค้านิติบุคคล'}</div>
                 <div className="house-md-sub">ใช้สำหรับผู้ชำระประเภทบุคคลภายนอก</div>
               </div>
             </div>
-            <div className="house-md-body">
+            <div className="house-md-body" style={{ overflowY: 'auto' }}>
               <section className="house-sec">
                 <div className="house-grid" style={{ gridTemplateColumns: '1fr 1fr', gap: 10 }}>
                   <label className="house-field">
