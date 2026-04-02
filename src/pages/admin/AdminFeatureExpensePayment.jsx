@@ -312,7 +312,7 @@ export default function AdminFeatureExpensePayment() {
 
   const handlePrint = (d) => {
     const disburseNo = disburseNoById[d.id] || 'EXP-??????'
-    const recipient = d.recipient_name || recipientLabel(d)
+    const recipient = recipientLabel(d)
     const approvedDateText = d.approved_at ? fmtDate(d.approved_at) : ''
     const paidDateText = d.paid_at ? fmtDate(d.paid_at) : ''
     const items = d.disbursement_items || []
