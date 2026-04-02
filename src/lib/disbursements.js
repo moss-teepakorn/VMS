@@ -8,7 +8,7 @@ export async function listDisbursements() {
       payment_method, bank_name, bank_account_no, bank_account_name,
       sub_total, vat_enabled, vat_rate, vat_amount,
       wht_enabled, wht_rate, wht_amount, total_amount,
-      status, approved_at, paid_at, note, created_at, updated_at,
+      status, approver_id, payer_id, approved_at, paid_at, note, created_at, updated_at,
       partners:partner_id(id, name, tax_id),
       houses:house_id(id, house_no, owner_name),
       approver:board_members!approver_id(id, member_no, full_name, position),
@@ -50,6 +50,11 @@ function buildRow(payload, items) {
     wht_rate: whtRate,
     wht_amount: whtAmount,
     total_amount: totalAmount,
+    approver_id: payload.approver_id || null,
+    payer_id: payload.payer_id || null,
+    approved_at: payload.approved_at || null,
+    paid_at: payload.paid_at || null,
+    status: payload.status || 'pending',
     note: String(payload.note || '').trim() || null,
   }
 }
@@ -59,7 +64,7 @@ export async function createDisbursement(payload = {}) {
   const items = Array.isArray(payload.items) ? payload.items : []
   if (items.length === 0) throw new Error('กรุณาเพิ่มรายการอย่างน้อย 1 รายการ')
 
-  const row = { ...buildRow(payload, items), status: 'draft' }
+  const row = { ...buildRow(payload, items), status: payload.status || 'pending' }
 
   const { data, error } = await supabase
     .from('disbursements')

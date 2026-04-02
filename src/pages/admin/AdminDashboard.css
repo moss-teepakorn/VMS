@@ -1142,6 +1142,41 @@
   overflow: hidden;
 }
 
+.pane.on.houses-compact.disbursements-compact {
+  display: flex;
+  flex-direction: column;
+  gap: 12px !important;
+}
+
+.pane.on.houses-compact.disbursements-compact .stats {
+  margin-top: 2px;
+  margin-bottom: 2px;
+  gap: 10px;
+}
+
+.pane.on.houses-compact.disbursements-compact .sc {
+  padding: 10px 11px;
+}
+
+.pane.on.houses-compact.disbursements-compact .sc-ico {
+  width: 34px;
+  height: 34px;
+  font-size: 17px;
+  margin-bottom: 6px;
+}
+
+.pane.on.houses-compact.disbursements-compact .sc-v {
+  font-size: 18px;
+}
+
+.pane.on.houses-compact.disbursements-compact .sc-l {
+  font-size: 11px;
+}
+
+.pane.on.houses-compact.disbursements-compact .sc-s {
+  font-size: 11px;
+}
+
 .pane.on.disbursements-compact .card > .houses-main-head {
   border-radius: 14px 14px 0 0;
 }
