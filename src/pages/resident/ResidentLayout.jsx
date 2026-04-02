@@ -44,7 +44,7 @@ function showSwal(options) {
 export default function ResidentLayout() {
   const navigate = useNavigate()
   const { profile, logout } = useAuth()
-  const [activeSection, setActiveSection] = useState('fees')
+  const [activeSection, setActiveSection] = useState('dash')
   const [fees, setFees] = useState([])
   const [payments, setPayments] = useState([])
   const [feeLoading, setFeeLoading] = useState(false)
@@ -152,6 +152,41 @@ export default function ResidentLayout() {
     if (method === 'qr') return 'QR'
     return method || '-'
   }
+
+  const sectionItems = [
+    { key: 'dash', icon: '🏡', label: 'หน้าแรก' },
+    { key: 'house', icon: '🏠', label: 'ข้อมูลบ้านของฉัน' },
+    { key: 'vehicles', icon: '🚗', label: 'ข้อมูลรถ' },
+    { key: 'fees', icon: '💳', label: 'ค่าส่วนกลาง' },
+    { key: 'issue', icon: '🔔', label: 'แจ้งปัญหา' },
+    { key: 'notif', icon: '⚠️', label: 'การแจ้งเตือน' },
+    { key: 'news', icon: '📢', label: 'ประกาศ' },
+    { key: 'work', icon: '🏆', label: 'ผลงานนิติ' },
+    { key: 'tech', icon: '🔨', label: 'ทำเนียบช่าง' },
+    { key: 'market', icon: '🛒', label: 'ตลาดชุมชน' },
+    { key: 'profile', icon: '👤', label: 'โปรไฟล์' },
+  ]
+
+  const unresolvedFees = fees.filter((item) => item.status === 'unpaid' || item.status === 'overdue')
+  const overdueAmount = unresolvedFees.reduce((sum, item) => sum + Number(item.total_amount || 0), 0)
+  const inProgressViolations = violations.filter((item) => item.status === 'pending' || item.status === 'in_progress')
+
+  const latestViolation = violations[0] || null
+
+  const quickAnnouncements = [
+    { id: 'n1', title: 'ประกาศปิดน้ำชั่วคราว', subtitle: '20 มี.ค. 09:00–12:00 น.' },
+    { id: 'n2', title: 'กิจกรรมชุมชนประจำเดือน', subtitle: 'เสาร์ 5 เม.ย. เวลา 17:00 น.' },
+  ]
+
+  const demoTech = [
+    { id: 't1', name: 'ช่างสมศักดิ์ (แอร์)', phone: '081-111-2222', rating: '★★★★★' },
+    { id: 't2', name: 'ช่างวิภา (ประปา)', phone: '089-333-4444', rating: '★★★★☆' },
+  ]
+
+  const demoMarket = [
+    { id: 'm1', title: 'โซฟา 3 ที่นั่ง สภาพดี', price: 'ให้ฟรี', meta: 'บ้าน 8/2' },
+    { id: 'm2', title: 'Honda PCX ปี 2022', price: '฿48,000', meta: 'บ้าน 22/5' },
+  ]
 
   const openPaymentModal = (fee) => {
     setSelectedFee(fee)
@@ -403,8 +438,8 @@ export default function ResidentLayout() {
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
             <div className="ph-ico">🏠</div>
             <div>
-              <div className="ph-h1">พอร์ทัลลูกบ้าน</div>
-              <div className="ph-sub">บ้านของฉัน {profile?.house_id ? '' : '(ยังไม่ได้ผูกบ้าน)'}</div>
+              <div className="ph-h1">สวัสดี คุณ{profile?.full_name || profile?.username || 'ลูกบ้าน'} 👋</div>
+              <div className="ph-sub">บ้านของฉัน {profile?.house_id ? '' : '(ยังไม่ได้ผูกบ้าน)'} · The Greenfield</div>
             </div>
           </div>
           <div className="ph-acts">
@@ -414,9 +449,10 @@ export default function ResidentLayout() {
             <button
               className="btn btn-o btn-sm"
               onClick={() => {
-                if (activeSection === 'fees') {
+                if (activeSection === 'fees' || activeSection === 'dash') {
                   loadFeeData({ status: feeStatusFilter, year: feeYearFilter })
-                } else {
+                }
+                if (activeSection === 'notif' || activeSection === 'issue' || activeSection === 'dash') {
                   loadViolations({ status: statusFilter, search: searchTerm })
                 }
               }}
@@ -429,11 +465,139 @@ export default function ResidentLayout() {
       </div>
 
       <div className="card" style={{ marginTop: '16px' }}>
-        <div className="cb" style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-          <button className={`btn btn-sm ${activeSection === 'fees' ? 'btn-a' : 'btn-o'}`} onClick={() => setActiveSection('fees')}>ค่าส่วนกลาง</button>
-          <button className={`btn btn-sm ${activeSection === 'violations' ? 'btn-a' : 'btn-o'}`} onClick={() => setActiveSection('violations')}>แจ้งกระทำผิด</button>
+        <div className="cb" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: '8px' }}>
+          {sectionItems.map((item) => (
+            <button
+              key={item.key}
+              className={`btn btn-sm ${activeSection === item.key ? 'btn-a' : 'btn-g'}`}
+              onClick={() => setActiveSection(item.key)}
+              style={{ justifyContent: 'flex-start' }}
+            >
+              <span>{item.icon}</span>
+              <span>{item.label}</span>
+            </button>
+          ))}
         </div>
       </div>
+
+      {activeSection === 'dash' && (
+        <>
+          <div className="stats" style={{ marginTop: '16px', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))' }}>
+            <div className="sc" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <div className="sc-ico d">💳</div>
+              <div>
+                <div className="sc-v" style={{ fontSize: 18 }}>฿{formatMoney(overdueAmount)}</div>
+                <div className="sc-l">ยอดค้างชำระ</div>
+              </div>
+            </div>
+            <div className="sc" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <div className="sc-ico w">⚠️</div>
+              <div>
+                <div className="sc-v" style={{ fontSize: 18 }}>{inProgressViolations.length}</div>
+                <div className="sc-l">การแจ้งเตือนคงค้าง</div>
+              </div>
+            </div>
+            <div className="sc" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <div className="sc-ico a">✅</div>
+              <div>
+                <div className="sc-v" style={{ fontSize: 18 }}>{payments.length}</div>
+                <div className="sc-l">ประวัติการชำระ</div>
+              </div>
+            </div>
+          </div>
+
+          <div className="g2" style={{ marginTop: '16px' }}>
+            <div className="card">
+              <div className="ch"><div className="ch-ico">📢</div><div className="ct">ประกาศล่าสุด</div></div>
+              <div className="cb" style={{ display: 'grid', gap: '10px' }}>
+                {quickAnnouncements.map((item) => (
+                  <div key={item.id} style={{ border: '1px solid var(--bo)', borderRadius: 10, padding: '10px 12px' }}>
+                    <div style={{ fontWeight: 700, color: 'var(--tx)', marginBottom: 3 }}>{item.title}</div>
+                    <div style={{ fontSize: 12, color: 'var(--mu)' }}>{item.subtitle}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className="card">
+              <div className="ch"><div className="ch-ico">⚠️</div><div className="ct">การแจ้งเตือนล่าสุด</div></div>
+              <div className="cb">
+                {latestViolation ? (
+                  <div className="vio" style={{ marginBottom: 0 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', gap: '8px', flexWrap: 'wrap' }}>
+                      <div className="vio-t">{latestViolation.type || '-'}</div>
+                      <span className={getStatusBadge(latestViolation.status).className}>{getStatusBadge(latestViolation.status).label}</span>
+                    </div>
+                    <div className="vio-d">{latestViolation.detail || '-'}</div>
+                    <div className="vio-dl">⏰ กำหนด: {formatDate(latestViolation.due_date)}</div>
+                  </div>
+                ) : (
+                  <div style={{ color: 'var(--mu)' }}>ยังไม่มีการแจ้งเตือน</div>
+                )}
+              </div>
+            </div>
+          </div>
+        </>
+      )}
+
+      {activeSection === 'house' && (
+        <div className="g2" style={{ marginTop: '16px' }}>
+          <div className="card">
+            <div className="ch"><div className="ch-ico">🏠</div><div className="ct">ข้อมูลบ้านของฉัน</div></div>
+            <div className="cb">
+              <div className="ig">
+                <div className="ii"><div className="ik">รหัสบ้าน</div><div className="iv">{profile?.house_id || '-'}</div></div>
+                <div className="ii"><div className="ik">เจ้าของบัญชี</div><div className="iv">{profile?.full_name || profile?.username || '-'}</div></div>
+                <div className="ii"><div className="ik">Email</div><div className="iv" style={{ fontSize: 12 }}>{profile?.email || '-'}</div></div>
+                <div className="ii"><div className="ik">เบอร์โทร</div><div className="iv">{profile?.phone || '-'}</div></div>
+              </div>
+            </div>
+          </div>
+          <div className="card">
+            <div className="ch"><div className="ch-ico">📋</div><div className="ct">สรุปคำขอล่าสุด</div></div>
+            <div className="cb" style={{ display: 'grid', gap: '10px' }}>
+              <div style={{ border: '1px solid var(--bo)', borderRadius: 10, padding: '10px 12px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', gap: '8px' }}>
+                  <strong>ขอแก้ไขข้อมูลติดต่อ</strong>
+                  <span className="bd b-wn">รออนุมัติ</span>
+                </div>
+                <div style={{ fontSize: 12, color: 'var(--mu)', marginTop: 4 }}>ต้นแบบจาก concept (ส่วนนี้ยังไม่ผูกฟอร์มส่งคำขอ)</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {activeSection === 'vehicles' && (
+        <div className="card" style={{ marginTop: '16px' }}>
+          <div className="ch"><div className="ch-ico">🚗</div><div className="ct">ข้อมูลรถของฉัน</div></div>
+          <div className="cb">
+            <div className="al al-i" style={{ marginBottom: 12 }}>ℹ️ หน้านี้เป็น prototype ตาม concept สำหรับ flow การดูรถและขอแก้ไข</div>
+            <div style={{ display: 'grid', gap: '10px' }}>
+              <div style={{ border: '1px solid var(--bo)', borderRadius: 10, padding: '10px 12px', display: 'flex', justifyContent: 'space-between', gap: 8, flexWrap: 'wrap' }}>
+                <div>
+                  <div style={{ fontWeight: 700 }}>กข-1234 กรุงเทพฯ</div>
+                  <div style={{ fontSize: 12, color: 'var(--mu)' }}>Toyota Camry · ขาว · หน้าบ้าน</div>
+                </div>
+                <span className="bd b-ok">ใช้งาน</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {activeSection === 'issue' && (
+        <div className="card" style={{ marginTop: '16px' }}>
+          <div className="ch"><div className="ch-ico">🔔</div><div className="ct">แจ้งปัญหา</div></div>
+          <div className="cb">
+            <div className="al al-i" style={{ marginBottom: 12 }}>ℹ️ หน้านี้ทำ prototype ให้ตรงโครง concept พร้อม timeline ตัวอย่าง</div>
+            <div className="tl">
+              <div className="tli"><div className="tld td-done" /><div><div className="tl-l">รับเรื่องแล้ว</div><div className="tl-s">12 มี.ค. 08:30</div></div></div>
+              <div className="tli"><div className="tld td-active" /><div><div className="tl-l">กำลังดำเนินการ</div><div className="tl-s">ส่งช่างเข้าตรวจสอบแล้ว</div></div></div>
+              <div className="tli"><div className="tld td-pend" /><div><div className="tl-l" style={{ color: 'var(--mu)' }}>เสร็จสิ้น</div></div></div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {activeSection === 'fees' && (
         <>
@@ -546,7 +710,7 @@ export default function ResidentLayout() {
         </>
       )}
 
-      {activeSection === 'violations' && (
+      {activeSection === 'notif' && (
         <>
 
       <div className="card" style={{ marginTop: '16px', marginBottom: '16px' }}>
@@ -614,6 +778,90 @@ export default function ResidentLayout() {
         </div>
       </div>
         </>
+      )}
+
+      {activeSection === 'news' && (
+        <div className="card" style={{ marginTop: '16px' }}>
+          <div className="ch"><div className="ch-ico">📢</div><div className="ct">ประกาศ / ข่าวสาร</div></div>
+          <div className="cb" style={{ display: 'grid', gap: '10px' }}>
+            {quickAnnouncements.map((item) => (
+              <div key={item.id} style={{ border: '1px solid var(--bo)', borderRadius: 10, padding: '10px 12px' }}>
+                <div style={{ fontWeight: 700 }}>{item.title}</div>
+                <div style={{ color: 'var(--mu)', fontSize: 12 }}>{item.subtitle}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {activeSection === 'work' && (
+        <div className="card" style={{ marginTop: '16px' }}>
+          <div className="ch"><div className="ch-ico">🏆</div><div className="ct">ผลงานนิติ</div></div>
+          <div className="cb" style={{ display: 'grid', gap: '10px' }}>
+            <div style={{ border: '1px solid var(--bo)', borderRadius: 10, padding: '10px 12px' }}>
+              <div style={{ fontWeight: 700 }}>รายงานผลงานประจำเดือน</div>
+              <div style={{ fontSize: 12, color: 'var(--mu)' }}>ซ่อมแซมไฟทางเดิน, ตัดแต่งต้นไม้, ล้างสระว่ายน้ำ</div>
+            </div>
+            <div style={{ border: '1px solid var(--bo)', borderRadius: 10, padding: '10px 12px' }}>
+              <div style={{ fontWeight: 700 }}>สุขาภิบาลชุมชน</div>
+              <div style={{ fontSize: 12, color: 'var(--mu)' }}>พ่นหมอกควันกำจัดยุง, ทำความสะอาดพื้นที่ส่วนกลาง</div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {activeSection === 'tech' && (
+        <div className="card" style={{ marginTop: '16px' }}>
+          <div className="ch"><div className="ch-ico">🔨</div><div className="ct">ทำเนียบช่าง</div></div>
+          <div className="cb" style={{ display: 'grid', gap: '10px' }}>
+            {demoTech.map((item) => (
+              <div key={item.id} style={{ border: '1px solid var(--bo)', borderRadius: 10, padding: '10px 12px', display: 'flex', justifyContent: 'space-between', gap: 8, flexWrap: 'wrap' }}>
+                <div>
+                  <div style={{ fontWeight: 700 }}>{item.name}</div>
+                  <div style={{ fontSize: 12, color: 'var(--mu)' }}>📞 {item.phone}</div>
+                </div>
+                <div style={{ color: '#f59e0b', fontSize: 13 }}>{item.rating}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {activeSection === 'market' && (
+        <div className="card" style={{ marginTop: '16px' }}>
+          <div className="ch"><div className="ch-ico">🛒</div><div className="ct">ตลาดชุมชน</div></div>
+          <div className="cb" style={{ display: 'grid', gap: '10px' }}>
+            {demoMarket.map((item) => (
+              <div key={item.id} style={{ border: '1px solid var(--bo)', borderRadius: 10, padding: '10px 12px' }}>
+                <div style={{ fontWeight: 700 }}>{item.title}</div>
+                <div style={{ color: 'var(--pr)', fontWeight: 700, marginTop: 2 }}>{item.price}</div>
+                <div style={{ fontSize: 12, color: 'var(--mu)' }}>{item.meta}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {activeSection === 'profile' && (
+        <div className="g2" style={{ marginTop: '16px' }}>
+          <div className="card">
+            <div className="ch"><div className="ch-ico">👤</div><div className="ct">ข้อมูลส่วนตัว</div></div>
+            <div className="cb">
+              <div className="ig">
+                <div className="ii"><div className="ik">ชื่อผู้ใช้</div><div className="iv">{profile?.username || '-'}</div></div>
+                <div className="ii"><div className="ik">ชื่อ-นามสกุล</div><div className="iv">{profile?.full_name || '-'}</div></div>
+                <div className="ii"><div className="ik">Email</div><div className="iv" style={{ fontSize: 12 }}>{profile?.email || '-'}</div></div>
+                <div className="ii"><div className="ik">เบอร์โทร</div><div className="iv">{profile?.phone || '-'}</div></div>
+              </div>
+            </div>
+          </div>
+          <div className="card">
+            <div className="ch"><div className="ch-ico">🔒</div><div className="ct">เปลี่ยนรหัสผ่าน</div></div>
+            <div className="cb">
+              <div className="al al-i">ℹ️ ส่วนนี้เป็น prototype layout ตาม concept และยังไม่ผูกฟอร์มเปลี่ยนรหัสผ่าน</div>
+            </div>
+          </div>
+        </div>
       )}
 
       {showPaymentModal && (
