@@ -244,6 +244,20 @@ const AdminLayout = () => {
     return location.pathname === path
   }
 
+  const getTopbarTitle = () => {
+    for (const section of navItems) {
+      if (section.skipToggle && section.dashboardLink === location.pathname) {
+        return { main: 'Dashboard', sub: 'ภาพรวม' }
+      }
+      if (section.items) {
+        const found = section.items.find((item) => item.path === location.pathname)
+        if (found) return { main: found.label, sub: section.section }
+      }
+    }
+    return { main: 'Dashboard', sub: 'ภาพรวม' }
+  }
+  const topbarTitle = getTopbarTitle()
+
   const searchKeyword = menuSearch.trim().toLowerCase()
   const visibleNavSections = navItems
     .map((section) => {
@@ -399,7 +413,7 @@ const AdminLayout = () => {
         <div className="topbar">
           <div className="tb-ham" onClick={() => setSidebarOpen(!sidebarOpen)}>☰</div>
           <div className="tb-title">
-            Dashboard — <span className="hl">ภาพรวม</span>
+            {topbarTitle.main} — <span className="hl">{topbarTitle.sub}</span>
           </div>
           <div className="tb-right">
             <span style={{ fontSize: '13px', fontWeight: 500, whiteSpace: 'nowrap', marginRight: '4px' }}>สวัสดี คุณ{profile?.full_name || profile?.username || ''}</span>

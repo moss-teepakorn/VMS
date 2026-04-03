@@ -14,7 +14,7 @@ import { listAnnouncements } from '../../lib/announcements'
 import { listWorkReports } from '../../lib/workReports'
 import { listTechnicians } from '../../lib/technicians'
 import { listMarketplace } from '../../lib/marketplace'
-import { listVehicles } from '../../lib/vehicles'
+import { listVehicles, listVehicleImages, deleteVehicleImagesByPaths } from '../../lib/vehicles'
 import {
   listVehicleRequests,
   createVehicleRequest,
@@ -30,6 +30,10 @@ import { insertPageViewLog } from '../../lib/loginLogs'
 import '../admin/AdminLayout.css'
 import '../admin/AdminDashboard.css'
 import './ResidentLayout.css'
+
+const BUILD_SHA = typeof __BUILD_SHA__ !== 'undefined' ? __BUILD_SHA__ : 'local'
+const BUILD_DATE = typeof __BUILD_DATE__ !== 'undefined' ? __BUILD_DATE__ : '-'
+const APP_VERSION = '1.0.0'
 
 const MAX_ATTACHMENTS = 5
 const MAX_IMAGE_SIZE_BYTES = 100 * 1024
@@ -104,6 +108,8 @@ const THEMES = ['normal', 'dark', 'rose', 'sage', 'sand', 'violet', 'teal', 'cor
 const NAV_GROUPS = [
   {
     section: 'หลัก',
+    tone: 'core',
+    sectionIcon: '🏠',
     items: [
       { key: 'dash', icon: '🏡', label: 'หน้าแรก' },
       { key: 'house', icon: '🏠', label: 'ข้อมูลบ้านของฉัน' },
@@ -115,6 +121,8 @@ const NAV_GROUPS = [
   },
   {
     section: 'ข้อมูล',
+    tone: 'insight',
+    sectionIcon: '📋',
     items: [
       { key: 'news', icon: '📢', label: 'ประกาศ' },
       { key: 'work', icon: '🏆', label: 'ผลงานนิติ' },
@@ -124,6 +132,8 @@ const NAV_GROUPS = [
   },
   {
     section: 'บัญชี',
+    tone: 'system',
+    sectionIcon: '👤',
     items: [
       { key: 'profile', icon: '👤', label: 'โปรไฟล์' },
     ],
@@ -189,6 +199,13 @@ export default function ResidentLayout() {
 
   const [activeSection, setActiveSection] = useState('dash')
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => localStorage.getItem('vms-res-sidebar-collapsed') === '1')
+  const [menuSearch, setMenuSearch] = useState('')
+  const [sectionOpen, setSectionOpen] = useState({
+    หลัก: true,
+    ข้อมูล: false,
+    บัญชี: false,
+  })
   const [theme, setTheme] = useState(() => localStorage.getItem('vms-theme') || 'normal')
   const [setupOpen, setSetupOpen] = useState(false)
   const [houseNo, setHouseNo] = useState('-')
@@ -249,6 +266,7 @@ export default function ResidentLayout() {
   const [vehicleReqForm, setVehicleReqForm] = useState(EMPTY_VR_FORM)
   const [vehicleReqSaving, setVehicleReqSaving] = useState(false)
   const [vehicleReqAttachments, setVehicleReqAttachments] = useState([])
+  const [vehicleReqRemovedPaths, setVehicleReqRemovedPaths] = useState([])
 
   const chartCanvasRef = useRef(null)
   const chartInstanceRef = useRef(null)
@@ -257,6 +275,16 @@ export default function ResidentLayout() {
     document.body.setAttribute('data-theme', theme)
     localStorage.setItem('vms-theme', theme)
   }, [theme])
+
+  useEffect(() => {
+    localStorage.setItem('vms-res-sidebar-collapsed', sidebarCollapsed ? '1' : '0')
+  }, [sidebarCollapsed])
+
+  useEffect(() => {
+    const activeGroup = NAV_GROUPS.find((group) => group.items.some((item) => item.key === activeSection))
+    if (!activeGroup) return
+    setSectionOpen((prev) => ({ ...prev, [activeGroup.section]: true }))
+  }, [activeSection])
 
   useEffect(() => {
     getSetupConfig().then((s) => {
@@ -555,6 +583,28 @@ export default function ResidentLayout() {
     setSidebarOpen(false)
   }
 
+  function isSectionCurrent(section) {
+    if (!section) return false
+    return section.items.some((item) => item.key === activeSection)
+  }
+
+  function toggleSection(sectionName) {
+    setSectionOpen((prev) => ({ ...prev, [sectionName]: !prev[sectionName] }))
+  }
+
+  const searchKeyword = menuSearch.trim().toLowerCase()
+  const visibleNavSections = NAV_GROUPS
+    .map((section) => {
+      if (!searchKeyword) return section
+      const filtered = section.items.filter((item) => {
+        const haystack = `${item.label} ${item.key}`.toLowerCase()
+        return haystack.includes(searchKeyword)
+      })
+      if (filtered.length === 0) return null
+      return { ...section, items: filtered }
+    })
+    .filter(Boolean)
+
   function openPaymentModal(fee) {
     setSelectedFee(fee)
     setPaymentForm({ amount: String(Number(fee.total_amount || 0)), payment_method: 'transfer', slip_url: '', note: '' })
@@ -793,7 +843,7 @@ export default function ResidentLayout() {
     setShowVehicleReqModal(true)
   }
 
-  function openEditVehicleRequest(vehicle) {
+  async function openEditVehicleRequest(vehicle) {
     const baseColor = COLOR_OPTIONS.includes(vehicle.color || '') ? vehicle.color : 'อื่นๆ'
     const [prefix = '', number = ''] = String(vehicle.license_plate || '').split('-')
     setVehicleReqMode('edit')
@@ -815,8 +865,13 @@ export default function ResidentLayout() {
       parking_fee: String(vehicle.parking_fee || '0'),
       note: '',
     })
+    setVehicleReqRemovedPaths([])
     setVehicleReqAttachments([])
     setShowVehicleReqModal(true)
+    try {
+      const imgs = await listVehicleImages(vehicle.id)
+      setVehicleReqAttachments(imgs.map((img) => ({ source: 'existing', name: img.name, path: img.path, url: img.url })))
+    } catch { /* no existing images or error — leave empty */ }
   }
 
   function closeVehicleReqModal() {
@@ -825,7 +880,8 @@ export default function ResidentLayout() {
     setVehicleReqTarget(null)
     setVehicleReqForm(EMPTY_VR_FORM)
     setVehicleReqAttachments([])
-  }
+      setVehicleReqRemovedPaths([])
+    }
 
   function handleVehicleReqFormChange(e) {
     const { name, value } = e.target
@@ -846,7 +902,7 @@ export default function ResidentLayout() {
     if (remaining <= 0) { await showSwal({ icon: 'warning', title: 'แนบรูปได้สูงสุด 5 รูป' }); return }
     const toProcess = selectedFiles.slice(0, remaining)
     try {
-      const startIdx = vehicleReqAttachments.length + 1
+      const startIdx = vehicleReqAttachments.filter((a) => a.source === 'new').length + 1
       const prepared = []
       for (let i = 0; i < toProcess.length; i++) {
         const resized = await resizeImageToLimit(toProcess[i], startIdx + i)
@@ -856,6 +912,17 @@ export default function ResidentLayout() {
     } catch (error) {
       await showSwal({ icon: 'error', title: 'แนบรูปไม่สำเร็จ', text: error.message })
     }
+  }
+
+  function handleRemoveVehicleReqAttachment(target) {
+    setVehicleReqAttachments((cur) => {
+      const next = cur.filter((item) => item !== target)
+      if (target.source === 'new' && target.url) URL.revokeObjectURL(target.url)
+      if (target.source === 'existing' && target.path) {
+        setVehicleReqRemovedPaths((prev) => (prev.includes(target.path) ? prev : [...prev, target.path]))
+      }
+      return next
+    })
   }
 
   async function handleSubmitVehicleRequest(e) {
@@ -906,6 +973,10 @@ export default function ResidentLayout() {
         await updateVehicleRequestImageUrls(req.id, urls)
       }
 
+      if (vehicleReqRemovedPaths.length > 0) {
+        await deleteVehicleImagesByPaths(vehicleReqRemovedPaths).catch(() => {})
+      }
+
       await showSwal({ icon: 'success', title: vehicleReqMode === 'add' ? 'ส่งคำขอเพิ่มรถแล้ว' : 'ส่งคำขอแก้ไขรถแล้ว', text: 'รอนิติอนุมัติ', timer: 1600, showConfirmButton: false })
       closeVehicleReqModal()
       const reqs = await listVehicleRequests({ houseId: profile.house_id })
@@ -953,13 +1024,21 @@ export default function ResidentLayout() {
     <div className="app">
       <div className={`sb-overlay ${sidebarOpen ? 'show' : ''}`} onClick={() => setSidebarOpen(false)} />
 
-      <aside className={`sidebar ${sidebarOpen ? 'open' : ''}`}>
+      <aside className={`sidebar ${sidebarOpen ? 'open' : ''} ${sidebarCollapsed ? 'collapsed' : ''}`}>
         <div className="sb-logo">
           <div className="sb-logo-ico">🏘️</div>
           <div>
             <div className="sb-logo-name">{setup.villageName}</div>
             <div className="sb-logo-sub">Village Management {setup.version || 'v12.3'}</div>
           </div>
+          <button
+            type="button"
+            className="sb-collapse-btn"
+            onClick={() => setSidebarCollapsed((prev) => !prev)}
+            title={sidebarCollapsed ? 'ขยายเมนู' : 'ย่อเมนู'}
+          >
+            {sidebarCollapsed ? '›' : '‹'}
+          </button>
         </div>
 
         <div className="sb-role">
@@ -967,22 +1046,54 @@ export default function ResidentLayout() {
           <span className="sb-role-txt">ลูกบ้าน</span>
         </div>
 
+        <div className="sb-search-wrap">
+          <div className="sb-search-input-wrap">
+            <span className="sb-search-icon">🔍</span>
+            <input
+              className="sb-search-input"
+              type="text"
+              placeholder="ค้นหาเมนู"
+              value={menuSearch}
+              onChange={(e) => setMenuSearch(e.target.value)}
+            />
+          </div>
+        </div>
+
         <nav className="sb-nav">
-          {NAV_GROUPS.map((group) => (
-            <div key={group.section}>
-              <div className="sb-sec">{group.section}</div>
-              {group.items.map((item) => (
-                <div
-                  key={item.key}
-                  className={`sb-item ${activeSection === item.key ? 'act' : ''}`}
-                  onClick={() => navTo(item.key)}
+          {visibleNavSections.map((group) => {
+            const expanded = sidebarCollapsed || Boolean(searchKeyword) || Boolean(sectionOpen[group.section])
+            return (
+              <div key={group.section} className={`sb-major-group tone-${group.tone || 'default'}`}>
+                <button
+                  type="button"
+                  className={`sb-sec sb-sec-btn tone-${group.tone || 'default'} ${isSectionCurrent(group) ? 'sec-act' : ''}`}
+                  onClick={() => toggleSection(group.section)}
+                  aria-expanded={expanded}
+                  title={group.section}
                 >
-                  <span className="sb-ico">{item.icon}</span>
-                  <span className="sb-label">{item.label}</span>
-                </div>
-              ))}
-            </div>
-          ))}
+                  <span className="sb-sec-left">
+                    <span className="sb-sec-ico">{group.sectionIcon || '>'}</span>
+                    <span className="sb-sec-title">{group.section}</span>
+                  </span>
+                  <span className={`sb-sec-arrow ${expanded ? 'open' : ''}`}>▾</span>
+                </button>
+                {expanded && (
+                  <div className="sb-submenu-wrap">
+                    {group.items.map((item) => (
+                      <div
+                        key={item.key}
+                        className={`sb-item ${activeSection === item.key ? 'act' : ''} ${group.tone === 'core' ? 'core-item' : ''}`}
+                        onClick={() => navTo(item.key)}
+                      >
+                        <span className="sb-ico">{item.icon}</span>
+                        <span className="sb-label">{item.label}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )
+          })}
         </nav>
 
         <div className="sb-foot">
@@ -1228,21 +1339,24 @@ export default function ResidentLayout() {
                     ) : houseVehicles.length === 0 ? (
                       <div style={{ color: 'var(--mu)', textAlign: 'center', padding: '16px 0' }}>ยังไม่มีข้อมูลรถ</div>
                     ) : houseVehicles.map((v) => (
-                      <div key={v.id} className="vc">
-                        <div className="vc-ico">{vehicleTypeIcon(v.vehicle_type)}</div>
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          <div className="vc-pl">{v.license_plate} {v.province || ''}</div>
-                          <div className="vc-dt">{[v.brand, v.model, v.color].filter(Boolean).join(' · ')}</div>
-                          <div className="vc-dt" style={{ marginTop: 2 }}>
-                            {v.parking_location && <span>📍 {v.parking_location}{v.parking_lock_no ? ` · 🔒 ${v.parking_lock_no}` : ''}</span>}
-                            {v.parking_fee > 0 && <span style={{ marginLeft: v.parking_location ? 8 : 0 }}>💰 ฿{formatMoney(v.parking_fee)}/เดือน</span>}
-                          </div>
-                          <div style={{ marginTop: 5 }}>
-                            <span className={`bd ${v.status === 'active' ? 'b-ok' : v.status === 'pending' ? 'b-wn' : 'b-mu'}`}>{v.status === 'active' ? 'ใช้งาน' : v.status === 'pending' ? 'รออนุมัติ' : (v.status || '-')}</span>
+                        <div key={v.id} className="vc">
+                          <div className="vc-ico">{vehicleTypeIcon(v.vehicle_type)}</div>
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginBottom: 8 }}>
+                              <div className="vc-pl">{v.license_plate} <span style={{ fontSize: 12, color: 'var(--mu)', fontWeight: 400 }}>{v.province || ''}</span></div>
+                              <span className={`bd ${v.status === 'active' ? 'b-ok' : v.status === 'pending' ? 'b-wn' : 'b-mu'}`}>{v.status === 'active' ? 'ใช้งาน' : v.status === 'pending' ? 'รออนุมัติ' : (v.status || '-')}</span>
+                            </div>
+                            <div className="ig">
+                              <div className="ii"><div className="ik">ยี่ห้อ</div><div className="iv">{v.brand || '-'}</div></div>
+                              <div className="ii"><div className="ik">รุ่น</div><div className="iv">{v.model || '-'}</div></div>
+                              <div className="ii"><div className="ik">สี</div><div className="iv">{v.color || '-'}</div></div>
+                              <div className="ii"><div className="ik">ที่จอด</div><div className="iv">{v.parking_location || '-'}</div></div>
+                              <div className="ii"><div className="ik">Lock No.</div><div className="iv">{v.parking_lock_no || '-'}</div></div>
+                              <div className="ii"><div className="ik">ค่าจอด/เดือน</div><div className="iv">฿{v.parking_fee > 0 ? formatMoney(v.parking_fee) : '0'}</div></div>
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    ))}
+                      ))}
                   </div>
                 </div>
               </div>
@@ -1307,22 +1421,27 @@ export default function ResidentLayout() {
                   ) : houseVehicles.length === 0 ? (
                     <div style={{ color: 'var(--mu)', textAlign: 'center', padding: '20px 0' }}>ยังไม่มีข้อมูลรถ</div>
                   ) : houseVehicles.map((v) => (
-                    <div key={v.id} className="vc">
-                      <div className="vc-ico">{vehicleTypeIcon(v.vehicle_type)}</div>
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div className="vc-pl">{v.license_plate} {v.province || ''}</div>
-                        <div className="vc-dt">{[v.brand, v.model, v.color].filter(Boolean).join(' · ')}</div>
-                        <div className="vc-dt" style={{ marginTop: 2 }}>
-                          {v.parking_location && <span>📍 {v.parking_location}{v.parking_lock_no ? ` · 🔒 ${v.parking_lock_no}` : ''}</span>}
-                          {v.parking_fee > 0 && <span style={{ marginLeft: v.parking_location ? 8 : 0 }}>💰 ฿{formatMoney(v.parking_fee)}/เดือน</span>}
-                        </div>
-                        <div style={{ marginTop: 5, display: 'flex', gap: 5, flexWrap: 'wrap', alignItems: 'center' }}>
-                          <span className={`bd ${v.status === 'active' ? 'b-ok' : v.status === 'pending' ? 'b-wn' : 'b-mu'}`}>{v.status === 'active' ? 'ใช้งาน' : v.status === 'pending' ? 'รออนุมัติ' : (v.status || '-')}</span>
-                          <button className="btn btn-xs btn-a" style={{ marginLeft: 4 }} onClick={() => openEditVehicleRequest(v)}>✏️ ขอแก้ไข</button>
+                      <div key={v.id} className="vc">
+                        <div className="vc-ico">{vehicleTypeIcon(v.vehicle_type)}</div>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginBottom: 8 }}>
+                            <div className="vc-pl">{v.license_plate} <span style={{ fontSize: 12, color: 'var(--mu)', fontWeight: 400 }}>{v.province || ''}</span></div>
+                            <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
+                              <span className={`bd ${v.status === 'active' ? 'b-ok' : v.status === 'pending' ? 'b-wn' : 'b-mu'}`}>{v.status === 'active' ? 'ใช้งาน' : v.status === 'pending' ? 'รออนุมัติ' : (v.status || '-')}</span>
+                              <button className="btn btn-xs btn-a" onClick={() => openEditVehicleRequest(v)}>✏️ ขอแก้ไข</button>
+                            </div>
+                          </div>
+                          <div className="ig">
+                            <div className="ii"><div className="ik">ยี่ห้อ</div><div className="iv">{v.brand || '-'}</div></div>
+                            <div className="ii"><div className="ik">รุ่น</div><div className="iv">{v.model || '-'}</div></div>
+                            <div className="ii"><div className="ik">สี</div><div className="iv">{v.color || '-'}</div></div>
+                            <div className="ii"><div className="ik">ที่จอด</div><div className="iv">{v.parking_location || '-'}</div></div>
+                            <div className="ii"><div className="ik">Lock No.</div><div className="iv">{v.parking_lock_no || '-'}</div></div>
+                            <div className="ii"><div className="ik">ค่าจอด/เดือน</div><div className="iv">฿{v.parking_fee > 0 ? formatMoney(v.parking_fee) : '0'}</div></div>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
+                    ))}
                 </div>
               </div>
             </>
@@ -1954,8 +2073,8 @@ export default function ResidentLayout() {
         )}
 
         {showVehicleReqModal && (
-          <div className="house-mo">
-            <div className="house-md house-md--xl">
+          <div className="house-mo house-mo--vehicle-req">
+            <div className="house-md house-md--xl house-md--vehicle-req">
               <div className="house-md-head">
                 <div>
                   <div className="house-md-title">
@@ -2058,28 +2177,29 @@ export default function ResidentLayout() {
                     </div>
                   </section>
 
-                  {vehicleReqMode === 'add' && (
-                    <section className="house-sec">
-                      <div className="house-sec-title">รูปรถ (บังคับ ≥ 1 รูป)</div>
-                      <label className="house-field">
-                        <span>แนบรูปรถ</span>
-                        <input type="file" accept="image/*" multiple onChange={handleVehicleReqAttachFiles} />
-                      </label>
-                      <div style={{ marginTop: 8, fontSize: 12, color: 'var(--mu)' }}>ระบบย่อไฟล์ไม่เกิน 100KB อัตโนมัติ</div>
-                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 8 }}>
-                        {vehicleReqAttachments.length === 0 ? (
-                          <div style={{ fontSize: 12, color: 'var(--dg)' }}>⚠️ กรุณาแนบรูปรถอย่างน้อย 1 รูป</div>
-                        ) : vehicleReqAttachments.map((att, idx) => (
-                          <div key={`${att.name}-${idx}`} style={{ width: 64 }}>
-                            <button type="button" onClick={() => showSwal({ imageUrl: att.url, showConfirmButton: false, showCloseButton: true, width: 'auto', background: '#0f172a' })} style={{ width: 64, height: 64, borderRadius: 8, border: '1px solid var(--bo)', background: '#fff', padding: 0, overflow: 'hidden', cursor: 'pointer' }}>
-                              <img src={att.url} alt={att.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                            </button>
-                            <button type="button" onClick={() => setVehicleReqAttachments((cur) => { const n = cur.filter((a) => a !== att); if (att.url) URL.revokeObjectURL(att.url); return n })} className="btn btn-xs btn-dg" style={{ marginTop: 4, width: '100%' }}>ลบ</button>
-                          </div>
-                        ))}
-                      </div>
-                    </section>
-                  )}
+                  <section className="house-sec">
+                    <div className="house-sec-title">รูปรถ {vehicleReqMode === 'add' ? '(บังคับ ≥ 1 รูป)' : '(รูปเดิม + รูปใหม่)'}</div>
+                    <label className="house-field">
+                      <span>{vehicleReqMode === 'add' ? 'แนบรูปรถ' : 'เพิ่ม/แทนที่รูปเดิม'}</span>
+                      <input type="file" accept="image/*" multiple onChange={handleVehicleReqAttachFiles} />
+                    </label>
+                    <div style={{ marginTop: 8, fontSize: 12, color: 'var(--mu)' }}>ระบบย่อไฟล์ไม่เกิน 100KB อัตโนมัติ และเปลี่ยนชื่อไฟล์ให้ใหม่</div>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 8 }}>
+                      {vehicleReqAttachments.length === 0 ? (
+                        <div style={{ fontSize: 12, color: vehicleReqMode === 'add' ? 'var(--dg)' : 'var(--mu)' }}>
+                          {vehicleReqMode === 'add' ? '⚠️ กรุณาแนบรูปรถอย่างน้อย 1 รูป' : 'ยังไม่มีรูปแนบ'}
+                        </div>
+                      ) : vehicleReqAttachments.map((att, idx) => (
+                        <div key={`${att.name}-${idx}`} style={{ width: 74 }}>
+                          <button type="button" onClick={() => showSwal({ imageUrl: att.url, showConfirmButton: false, showCloseButton: true, width: 'auto', background: '#0f172a' })} style={{ width: 64, height: 64, borderRadius: 8, border: '1px solid var(--bo)', background: '#fff', padding: 0, overflow: 'hidden', cursor: 'pointer' }}>
+                            <img src={att.url} alt={att.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                          </button>
+                          <div style={{ fontSize: 10.5, color: 'var(--mu)', marginTop: 2, textAlign: 'center' }}>{att.source === 'existing' ? 'เดิม' : 'ใหม่'}</div>
+                          <button type="button" onClick={() => handleRemoveVehicleReqAttachment(att)} className="btn btn-xs btn-dg" style={{ marginTop: 4, width: '100%' }}>ลบ</button>
+                        </div>
+                      ))}
+                    </div>
+                  </section>
 
                   <section className="house-sec">
                     <div className="house-grid house-grid-1">
@@ -2101,6 +2221,10 @@ export default function ResidentLayout() {
             </div>
           </div>
         )}
+
+        <footer className="fixed bottom-0 right-0 left-0 sm:left-60 bg-white/80 border-t border-slate-200 px-6 py-3 text-center text-xs text-slate-500">
+          <p>{setup.villageName} | version {APP_VERSION} | Built no : {BUILD_SHA} | Built date : {BUILD_DATE}</p>
+        </footer>
 
       </div>
     </div>
