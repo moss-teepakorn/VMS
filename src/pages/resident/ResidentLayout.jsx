@@ -149,6 +149,7 @@ export default function ResidentLayout() {
   const [setup, setSetup] = useState({ villageName: 'The Greenfield', appLineMain: 'Village Management', version: 'v12.3' })
 
   const [fees, setFees] = useState([])
+  const [allFees, setAllFees] = useState([])
   const [payments, setPayments] = useState([])
   const [feeLoading, setFeeLoading] = useState(false)
   const [feeStatusFilter, setFeeStatusFilter] = useState('all')
@@ -172,8 +173,10 @@ export default function ResidentLayout() {
   const [technicians, setTechnicians] = useState([])
   const [marketplace, setMarketplace] = useState([])
   const [vehicles, setVehicles] = useState([])
+  const [vehiclesLoaded, setVehiclesLoaded] = useState(false)
   const [issues, setIssues] = useState([])
   const [houseDetail, setHouseDetail] = useState(null)
+  const [houseDetailLoaded, setHouseDetailLoaded] = useState(false)
 
   const [showIssueForm, setShowIssueForm] = useState(false)
   const [issueForm, setIssueForm] = useState({ title: '', detail: '', category: 'general' })
@@ -207,10 +210,36 @@ export default function ResidentLayout() {
   }, [])
 
   useEffect(() => {
-    if (!profile?.house_id) { setHouseNo('-'); return }
-    getHouseDetail(profile.house_id)
-      .then((d) => setHouseNo(d?.house_no || '-'))
-      .catch(() => setHouseNo('-'))
+    if (!profile?.house_id) {
+      setHouseNo('-')
+      setHouseDetail(null)
+      setHouseDetailLoaded(true)
+      setVehicles([])
+      setVehiclesLoaded(true)
+      return
+    }
+
+    setHouseDetailLoaded(false)
+    setVehiclesLoaded(false)
+
+    Promise.all([
+      getHouseDetail(profile.house_id),
+      listVehicles(),
+    ])
+      .then(([detail, allVehicles]) => {
+        setHouseDetail(detail)
+        setHouseNo(detail?.house_no || '-')
+        setVehicles((allVehicles || []).filter((item) => String(item.house_id) === String(profile.house_id)))
+      })
+      .catch(() => {
+        setHouseNo('-')
+        setHouseDetail(null)
+        setVehicles([])
+      })
+      .finally(() => {
+        setHouseDetailLoaded(true)
+        setVehiclesLoaded(true)
+      })
   }, [profile?.house_id])
 
   useEffect(() => {
@@ -257,14 +286,16 @@ export default function ResidentLayout() {
     if (!profile?.house_id) return
     try {
       setFeeLoading(true)
-      const [feeRows, paymentRows] = await Promise.all([
+      const [feeRows, allFeeRows, paymentRows] = await Promise.all([
         listHouseFees(profile.house_id, {
           status: override.status ?? feeStatusFilter,
           year: override.year ?? feeYearFilter,
         }),
+        listHouseFees(profile.house_id),
         listHousePayments(profile.house_id),
       ])
       setFees(feeRows)
+      setAllFees(allFeeRows)
       setPayments(paymentRows)
     } catch (error) {
       await showSwal({ icon: 'error', title: 'โหลดค่าส่วนกลางไม่สำเร็จ', text: error.message })
@@ -306,14 +337,8 @@ export default function ResidentLayout() {
     if (activeSection === 'market' && marketplace.length === 0) {
       listMarketplace({ status: 'active' }).then(setMarketplace).catch(() => {})
     }
-    if (activeSection === 'vehicles' && vehicles.length === 0 && profile?.house_id) {
-      listVehicles().then((all) => setVehicles(all.filter((v) => v.house_id === profile.house_id))).catch(() => {})
-    }
     if (activeSection === 'issue' && issues.length === 0 && profile?.house_id) {
-      listIssues().then((all) => setIssues(all.filter((i) => i.house_id === profile.house_id))).catch(() => {})
-    }
-    if (activeSection === 'house' && !houseDetail && profile?.house_id) {
-      getHouseDetail(profile.house_id).then(setHouseDetail).catch(() => {})
+      listIssues().then((all) => setIssues(all.filter((i) => String(i.house_id) === String(profile.house_id)))).catch(() => {})
     }
     if (activeSection === 'dash' && announcements.length === 0) {
       listAnnouncements().then(setAnnouncements).catch(() => {})
@@ -323,43 +348,66 @@ export default function ResidentLayout() {
   useEffect(() => {
     if (activeSection !== 'dash') return
     if (!chartCanvasRef.current) return
-    const sorted = [...fees]
+    const sorted = [...allFees]
       .sort((a, b) => {
+        const dateA = new Date(a.invoice_date || a.created_at || 0).getTime()
+        const dateB = new Date(b.invoice_date || b.created_at || 0).getTime()
+        if (dateB !== dateA) return dateB - dateA
         if (Number(b.year || 0) !== Number(a.year || 0)) return Number(b.year || 0) - Number(a.year || 0)
         return String(b.period || '').localeCompare(String(a.period || ''))
       })
-      .slice(0, 8)
+      .slice(0, 5)
       .reverse()
 
     if (sorted.length === 0) return
 
     if (chartInstanceRef.current) { chartInstanceRef.current.destroy(); chartInstanceRef.current = null }
 
-    const labels = sorted.map((f) => `${f.period || ''} ${f.year || ''}`.trim())
-    const data = sorted.map((f) => Number(f.total_amount || 0))
-    const bgColors = sorted.map((f) => {
-      if (f.status === 'paid') return '#22c55e'
-      if (f.status === 'overdue') return '#ef4444'
-      return '#f59e0b'
+    const paidByFeeId = payments.reduce((acc, payment) => {
+      if (!payment?.fee_id || getRejectedReason(payment.note)) return acc
+      const itemTotal = Array.isArray(payment.payment_items)
+        ? payment.payment_items.reduce((sum, item) => sum + Number(item?.paid_amount || 0), 0)
+        : 0
+      const amount = itemTotal > 0 ? itemTotal : Number(payment.amount || 0)
+      acc[payment.fee_id] = Number(acc[payment.fee_id] || 0) + amount
+      return acc
+    }, {})
+
+    const labels = sorted.map((fee) => {
+      if (fee.period === 'first_half') return `ครึ่งปีแรก ${fee.year}`
+      if (fee.period === 'second_half') return `ครึ่งปีหลัง ${fee.year}`
+      if (fee.period === 'full_year') return `ทั้งปี ${fee.year}`
+      return `${fee.period || '-'} ${fee.year || ''}`.trim()
     })
+    const dueData = sorted.map((fee) => Number(fee.total_amount || 0))
+    const paidData = sorted.map((fee) => Number(paidByFeeId[fee.id] || 0))
 
     chartInstanceRef.current = new Chart(chartCanvasRef.current, {
       type: 'bar',
       data: {
         labels,
-        datasets: [{
-          label: 'ค่าส่วนกลาง',
-          data,
-          backgroundColor: bgColors,
-          borderRadius: 6,
-          barThickness: 28,
-        }],
+        datasets: [
+          {
+            label: 'ยอดใบแจ้งหนี้',
+            data: dueData,
+            backgroundColor: '#1d4ed8',
+            borderRadius: 6,
+            barThickness: 18,
+          },
+          {
+            label: 'ยอดที่ชำระแล้ว',
+            data: paidData,
+            backgroundColor: '#22c55e',
+            borderRadius: 6,
+            barThickness: 18,
+          },
+        ],
       },
       options: {
         responsive: true,
         maintainAspectRatio: false,
         plugins: {
-          legend: { display: false },
+          legend: { display: true, position: 'bottom' },
           tooltip: { callbacks: { label: (ctx) => `฿${Number(ctx.raw || 0).toLocaleString('th-TH')}` } },
         },
         scales: {
@@ -372,7 +420,7 @@ export default function ResidentLayout() {
     return () => {
       if (chartInstanceRef.current) { chartInstanceRef.current.destroy(); chartInstanceRef.current = null }
     }
-  }, [activeSection, fees])
+  }, [activeSection, allFees, payments])
 
   function getFeeStatusBadge(status) {
     if (status === 'paid') return { className: 'bd b-ok', label: 'ชำระแล้ว' }
@@ -417,6 +465,12 @@ export default function ResidentLayout() {
   const latestViolation = violations[0] || null
   const pendingIssues = issues.filter((i) => i.status === 'pending' || i.status === 'in_progress')
   const latestAnnouncements = announcements.slice(0, 3)
+  const houseAreaSqw = Number(houseDetail?.area_sqw ?? houseDetail?.area ?? 0)
+  const houseAnnualFee = Number(houseDetail?.annual_fee || (houseAreaSqw > 0 ? houseAreaSqw * 12 * Number(houseDetail?.fee_rate || 0) : 0))
+  const houseVehicles = vehicles.filter((vehicle) => String(vehicle.house_id) === String(profile?.house_id))
+  const houseAddressText = [houseDetail?.address, houseDetail?.soi ? `ซอย ${houseDetail.soi}` : '', houseDetail?.house_no ? `บ้าน ${houseDetail.house_no}` : '']
+    .filter(Boolean)
+    .join(' · ')
 
   const filteredTechs = technicians.filter((t) => {
     if (!techSearch) return true
@@ -842,9 +896,9 @@ export default function ResidentLayout() {
                 </div>
               </div>
 
-              {fees.length > 0 && (
+              {allFees.length > 0 && (
                 <div className="r-chart-box">
-                  <h3>💳 ประวัติการชำระค่าส่วนกลาง</h3>
+                  <h3>💳 ประวัติการชำระค่าส่วนกลาง 5 งวดย้อนหลัง</h3>
                   <div className="r-chart-wrap">
                     <canvas ref={chartCanvasRef} />
                   </div>
@@ -907,27 +961,33 @@ export default function ResidentLayout() {
                 <div className="card">
                   <div className="ch"><div className="ch-ico">🏠</div><div className="ct">ข้อมูลที่อยู่</div></div>
                   <div className="cb">
-                    {houseDetail ? (
+                    {houseDetailLoaded ? (
+                      houseDetail ? (
                       <>
                         <div className="sl">ที่อยู่</div>
                         <div className="ig">
                           <div className="ii"><div className="ik">บ้านเลขที่</div><div className="iv">{houseDetail.house_no || '-'}</div></div>
                           <div className="ii"><div className="ik">ซอย</div><div className="iv">{houseDetail.soi || '-'}</div></div>
-                          <div className="ii"><div className="ik">ถนน</div><div className="iv">{houseDetail.road || houseDetail.address || '-'}</div></div>
-                          <div className="ii"><div className="ik">พื้นที่</div><div className="iv">{houseDetail.area ? `${houseDetail.area} ตร.ว.` : '-'}</div></div>
-                          <div className="ii"><div className="ik">ค่าส่วนกลาง/ปี</div><div className="iv" style={{ color: 'var(--pr)', fontWeight: 800 }}>{houseDetail.annual_fee ? `฿${formatMoney(houseDetail.annual_fee)}` : '-'}</div></div>
+                          <div className="ii"><div className="ik">ที่อยู่</div><div className="iv">{houseAddressText || '-'}</div></div>
+                          <div className="ii"><div className="ik">พื้นที่</div><div className="iv">{houseAreaSqw > 0 ? `${formatMoney(houseAreaSqw)} ตร.ว.` : '-'}</div></div>
+                          <div className="ii"><div className="ik">อัตราค่าส่วนกลาง</div><div className="iv">{houseDetail.fee_rate ? `฿${formatMoney(houseDetail.fee_rate)} / ตร.ว. / เดือน` : '-'}</div></div>
+                          <div className="ii"><div className="ik">ค่าส่วนกลาง/ปี</div><div className="iv" style={{ color: 'var(--pr)', fontWeight: 800 }}>{houseAnnualFee > 0 ? `฿${formatMoney(houseAnnualFee)}` : '-'}</div></div>
                           <div className="ii"><div className="ik">สถานะ</div><div className="iv"><span className={`hs ${houseDetail.status === 'normal' ? 'hs-ok' : 'hs-lt'}`}>● {houseDetail.status === 'normal' ? 'ปกติ' : (houseDetail.status || '-')}</span></div></div>
                         </div>
                         <div className="sl" style={{ marginTop: 16 }}>ผู้อาศัย</div>
                         <div className="ig">
-                          <div className="ii"><div className="ik">เจ้าของกรรมสิทธิ์</div><div className="iv">{houseDetail.owner_name || '-'}</div></div>
-                          <div className="ii"><div className="ik">ผู้เช่า</div><div className="iv">{houseDetail.resident_name || '-'}</div></div>
+                          <div className="ii"><div className="ik">เจ้าของบ้าน</div><div className="iv">{houseDetail.owner_name || '-'}</div></div>
+                          <div className="ii"><div className="ik">ผู้อยู่อาศัย</div><div className="iv">{houseDetail.resident_name || '-'}</div></div>
+                          <div className="ii"><div className="ik">ผู้ติดต่อหลัก</div><div className="iv">{houseDetail.contact_name || houseDetail.resident_name || houseDetail.owner_name || '-'}</div></div>
                           <div className="ii"><div className="ik">เบอร์โทร</div><div className="iv">{houseDetail.phone || '-'}</div></div>
+                          <div className="ii"><div className="ik">Line ID</div><div className="iv">{houseDetail.line_id || '-'}</div></div>
                           <div className="ii"><div className="ik">Email</div><div className="iv" style={{ fontSize: 12 }}>{houseDetail.email || '-'}</div></div>
-                          <div className="ii"><div className="ik">ประเภทผู้อยู่อาศัย</div><div className="iv">{houseDetail.residence_type || '-'}</div></div>
-                          <div className="ii"><div className="ik">ประเภทบ้าน</div><div className="iv">{houseDetail.house_type || '-'}</div></div>
+                          <div className="ii"><div className="ik">ลักษณะการอยู่อาศัย</div><div className="iv">{houseDetail.house_type || '-'}</div></div>
                         </div>
                       </>
+                    ) : (
+                      <div style={{ color: 'var(--mu)', padding: '16px 0', textAlign: 'center' }}>ไม่พบข้อมูลบ้าน</div>
+                    )
                     ) : (
                       <div style={{ color: 'var(--mu)', padding: '16px 0', textAlign: 'center' }}>กำลังโหลด...</div>
                     )}
@@ -936,9 +996,11 @@ export default function ResidentLayout() {
                 <div className="card">
                   <div className="ch"><div className="ch-ico">🚗</div><div className="ct">รถที่ลงทะเบียน</div></div>
                   <div className="cb">
-                    {vehicles.length === 0 ? (
+                    {!vehiclesLoaded ? (
+                      <div style={{ color: 'var(--mu)', textAlign: 'center', padding: '16px 0' }}>กำลังโหลด...</div>
+                    ) : houseVehicles.length === 0 ? (
                       <div style={{ color: 'var(--mu)', textAlign: 'center', padding: '16px 0' }}>ยังไม่มีข้อมูลรถ</div>
-                    ) : vehicles.map((v) => (
+                    ) : houseVehicles.map((v) => (
                       <div key={v.id} className="vc">
                         <div className="vc-ico">{vehicleTypeIcon(v.vehicle_type)}</div>
                         <div style={{ flex: 1, minWidth: 0 }}>
@@ -968,11 +1030,13 @@ export default function ResidentLayout() {
               </div>
               <div className="al al-i">ℹ️ การขอแก้ไขข้อมูลรถต้องผ่านนิติก่อนจึงจะมีผล</div>
               <div className="card" style={{ marginBottom: 14 }}>
-                <div className="ch"><div className="ch-ico">🚗</div><div className="ct">รถที่ลงทะเบียน ({vehicles.length} คัน)</div></div>
+                <div className="ch"><div className="ch-ico">🚗</div><div className="ct">รถที่ลงทะเบียน ({houseVehicles.length} คัน)</div></div>
                 <div className="cb">
-                  {vehicles.length === 0 ? (
+                  {!vehiclesLoaded ? (
+                    <div style={{ color: 'var(--mu)', textAlign: 'center', padding: '20px 0' }}>กำลังโหลด...</div>
+                  ) : houseVehicles.length === 0 ? (
                     <div style={{ color: 'var(--mu)', textAlign: 'center', padding: '20px 0' }}>ยังไม่มีข้อมูลรถ</div>
-                  ) : vehicles.map((v) => (
+                  ) : houseVehicles.map((v) => (
                     <div key={v.id} className="vc">
                       <div className="vc-ico">{vehicleTypeIcon(v.vehicle_type)}</div>
                       <div style={{ flex: 1, minWidth: 0 }}>
@@ -1030,7 +1094,7 @@ export default function ResidentLayout() {
                   </select>
                   <select className="fs" style={{ flex: 1, minWidth: 100 }} value={feeYearFilter} onChange={(e) => setFeeYearFilter(e.target.value)}>
                     <option value="all">ทุกปี</option>
-                    {[...new Set(fees.map((r) => r.year).filter(Boolean))].sort((a, b) => b - a).map((y) => <option key={y} value={y}>{y}</option>)}
+                    {[...new Set(allFees.map((r) => r.year).filter(Boolean))].sort((a, b) => b - a).map((y) => <option key={y} value={y}>{y}</option>)}
                   </select>
                   <button className="btn btn-a btn-sm" onClick={() => loadFeeData({ status: feeStatusFilter, year: feeYearFilter })}>ค้นหา</button>
                 </div>
