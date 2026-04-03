@@ -15,6 +15,14 @@ import { listWorkReports } from '../../lib/workReports'
 import { listTechnicians } from '../../lib/technicians'
 import { listMarketplace } from '../../lib/marketplace'
 import { listVehicles } from '../../lib/vehicles'
+import {
+  listVehicleRequests,
+  createVehicleRequest,
+  updateVehicleRequestImageUrls,
+  uploadVehicleRequestImages,
+  cancelVehicleRequest,
+  resubmitVehicleRequest,
+} from '../../lib/vehicleRequests'
 import { listIssues, createIssue } from '../../lib/issues'
 import { getHouseDetail, updateUser } from '../../lib/users'
 import { getSetupConfig, applyDocumentTitle } from '../../lib/setup'
@@ -51,6 +59,44 @@ function blurActiveElement() {
 function showSwal(options) {
   blurActiveElement()
   return Swal.fire({ returnFocus: false, ...options })
+}
+
+const VEHICLE_TYPES_OPT = ['รถยนต์', 'รถจักรยานยนต์', 'รถกระบะ', 'รถตู้', 'รถอื่นๆ']
+const BRAND_OPTIONS = [
+  'Toyota', 'Honda', 'Isuzu', 'Mitsubishi', 'Nissan', 'Mazda', 'Ford', 'MG',
+  'BYD', 'GWM', 'Suzuki', 'Subaru', 'Hyundai', 'Kia', 'Mercedes-Benz',
+  'BMW', 'Audi', 'Volvo', 'Lexus', 'Chevrolet', 'Peugeot', 'Yamaha', 'Honda Motorcycle',
+  'Kawasaki', 'Suzuki Motorcycle', 'Vespa', 'Ducati', 'Triumph', 'Royal Enfield', 'อื่นๆ',
+]
+const COLOR_OPTIONS = ['ขาว', 'ดำ', 'เทา', 'เงิน', 'น้ำเงิน', 'แดง', 'เขียว', 'เหลือง', 'ส้ม', 'น้ำตาล', 'ม่วง', 'ชมพู', 'ทอง', 'ฟ้า', 'อื่นๆ']
+const PROVINCE_OPTIONS = [
+  'กรุงเทพมหานคร', 'กระบี่', 'กาญจนบุรี', 'กาฬสินธุ์', 'กำแพงเพชร', 'ขอนแก่น', 'จันทบุรี', 'ฉะเชิงเทรา',
+  'ชลบุรี', 'ชัยนาท', 'ชัยภูมิ', 'ชุมพร', 'เชียงราย', 'เชียงใหม่', 'ตรัง', 'ตราด', 'ตาก', 'นครนายก',
+  'นครปฐม', 'นครพนม', 'นครราชสีมา', 'นครศรีธรรมราช', 'นครสวรรค์', 'นนทบุรี', 'นราธิวาส', 'น่าน',
+  'บึงกาฬ', 'บุรีรัมย์', 'ปทุมธานี', 'ประจวบคีรีขันธ์', 'ปราจีนบุรี', 'ปัตตานี', 'พระนครศรีอยุธยา',
+  'พะเยา', 'พังงา', 'พัทลุง', 'พิจิตร', 'พิษณุโลก', 'เพชรบุรี', 'เพชรบูรณ์', 'แพร่', 'ภูเก็ต',
+  'มหาสารคาม', 'มุกดาหาร', 'แม่ฮ่องสอน', 'ยะลา', 'ร้อยเอ็ด', 'ระนอง', 'ระยอง', 'ราชบุรี', 'ลพบุรี',
+  'ลำปาง', 'ลำพูน', 'เลย', 'ศรีสะเกษ', 'สกลนคร', 'สงขลา', 'สตูล', 'สมุทรปราการ', 'สมุทรสงคราม',
+  'สมุทรสาคร', 'สระแก้ว', 'สระบุรี', 'สิงห์บุรี', 'สุโขทัย', 'สุพรรณบุรี', 'สุราษฎร์ธานี', 'สุรินทร์',
+  'หนองคาย', 'หนองบัวลำภู', 'อ่างทอง', 'อำนาจเจริญ', 'อุดรธานี', 'อุตรดิตถ์', 'อุทัยธานี', 'อุบลราชธานี', 'เบตง',
+]
+const PARKING_OPTIONS = ['ในบ้าน', 'หน้าบ้าน', 'ส่วนกลาง']
+
+const EMPTY_VR_FORM = {
+  license_plate_prefix: '',
+  license_plate_number: '',
+  province: 'กรุงเทพมหานคร',
+  vehicle_type: 'รถยนต์',
+  brand: 'Toyota',
+  brand_other: '',
+  model: '',
+  color: 'ขาว',
+  color_other: '',
+  vehicle_status: 'active',
+  parking_location: 'ในบ้าน',
+  parking_lock_no: '',
+  parking_fee: '0',
+  note: '',
 }
 
 const THEMES = ['normal', 'dark', 'rose', 'sage', 'sand', 'violet', 'teal', 'coral', 'mauve', 'dustyrose']
@@ -194,6 +240,16 @@ export default function ResidentLayout() {
   const [marketSearch, setMarketSearch] = useState('')
   const [marketFilter, setMarketFilter] = useState('all')
 
+  // Vehicle request states
+  const [vehicleRequests, setVehicleRequests] = useState([])
+  const [vehicleRequestsLoaded, setVehicleRequestsLoaded] = useState(false)
+  const [showVehicleReqModal, setShowVehicleReqModal] = useState(false)
+  const [vehicleReqMode, setVehicleReqMode] = useState('add') // 'add' | 'edit'
+  const [vehicleReqTarget, setVehicleReqTarget] = useState(null) // vehicle being edited
+  const [vehicleReqForm, setVehicleReqForm] = useState(EMPTY_VR_FORM)
+  const [vehicleReqSaving, setVehicleReqSaving] = useState(false)
+  const [vehicleReqAttachments, setVehicleReqAttachments] = useState([])
+
   const chartCanvasRef = useRef(null)
   const chartInstanceRef = useRef(null)
 
@@ -216,29 +272,36 @@ export default function ResidentLayout() {
       setHouseDetailLoaded(true)
       setVehicles([])
       setVehiclesLoaded(true)
+      setVehicleRequests([])
+      setVehicleRequestsLoaded(true)
       return
     }
 
     setHouseDetailLoaded(false)
     setVehiclesLoaded(false)
+    setVehicleRequestsLoaded(false)
 
     Promise.all([
       getHouseDetail(profile.house_id),
       listVehicles(),
+      listVehicleRequests({ houseId: profile.house_id }),
     ])
-      .then(([detail, allVehicles]) => {
+      .then(([detail, allVehicles, requests]) => {
         setHouseDetail(detail)
         setHouseNo(detail?.house_no || '-')
         setVehicles((allVehicles || []).filter((item) => String(item.house_id) === String(profile.house_id)))
+        setVehicleRequests(requests || [])
       })
       .catch(() => {
         setHouseNo('-')
         setHouseDetail(null)
         setVehicles([])
+        setVehicleRequests([])
       })
       .finally(() => {
         setHouseDetailLoaded(true)
         setVehiclesLoaded(true)
+        setVehicleRequestsLoaded(true)
       })
   }, [profile?.house_id])
 
@@ -348,18 +411,7 @@ export default function ResidentLayout() {
   useEffect(() => {
     if (activeSection !== 'dash') return
     if (!chartCanvasRef.current) return
-    const sorted = [...allFees]
-      .sort((a, b) => {
-        const dateA = new Date(a.invoice_date || a.created_at || 0).getTime()
-        const dateB = new Date(b.invoice_date || b.created_at || 0).getTime()
-        if (dateB !== dateA) return dateB - dateA
-        if (Number(b.year || 0) !== Number(a.year || 0)) return Number(b.year || 0) - Number(a.year || 0)
-        return String(b.period || '').localeCompare(String(a.period || ''))
-      })
-      .slice(0, 5)
-      .reverse()
-
-    if (sorted.length === 0) return
+    if (allFees.length === 0) return
 
     if (chartInstanceRef.current) { chartInstanceRef.current.destroy(); chartInstanceRef.current = null }
 
@@ -373,14 +425,23 @@ export default function ResidentLayout() {
       return acc
     }, {})
 
-    const labels = sorted.map((fee) => {
-      if (fee.period === 'first_half') return `ครึ่งปีแรก ${fee.year}`
-      if (fee.period === 'second_half') return `ครึ่งปีหลัง ${fee.year}`
-      if (fee.period === 'full_year') return `ทั้งปี ${fee.year}`
-      return `${fee.period || '-'} ${fee.year || ''}`.trim()
+    // Group allFees by year and sum amounts
+    const yearMap = {}
+    allFees.forEach((fee) => {
+      const yr = String(fee.year || '').trim()
+      if (!yr) return
+      if (!yearMap[yr]) yearMap[yr] = { billed: 0, paid: 0 }
+      yearMap[yr].billed += Number(fee.total_amount || 0)
+      yearMap[yr].paid += Number(paidByFeeId[fee.id] || 0)
     })
-    const dueData = sorted.map((fee) => Number(fee.total_amount || 0))
-    const paidData = sorted.map((fee) => Number(paidByFeeId[fee.id] || 0))
+
+    // Get last 5 years sorted ascending
+    const years = Object.keys(yearMap).sort((a, b) => Number(a) - Number(b)).slice(-5)
+    if (years.length === 0) return
+
+    const labels = years.map((yr) => `ปี ${yr}`)
+    const dueData = years.map((yr) => yearMap[yr].billed)
+    const paidData = years.map((yr) => yearMap[yr].paid)
 
     chartInstanceRef.current = new Chart(chartCanvasRef.current, {
       type: 'bar',
@@ -392,14 +453,14 @@ export default function ResidentLayout() {
             data: dueData,
             backgroundColor: '#1d4ed8',
             borderRadius: 6,
-            barThickness: 18,
+            barThickness: 22,
           },
           {
             label: 'ยอดที่ชำระแล้ว',
             data: paidData,
             backgroundColor: '#22c55e',
             borderRadius: 6,
-            barThickness: 18,
+            barThickness: 22,
           },
         ],
       },
@@ -722,6 +783,172 @@ export default function ResidentLayout() {
     if (isConfirmed) logout()
   }
 
+  // ── Vehicle request handlers ────────────────────────────────────────────────
+
+  function openAddVehicleRequest() {
+    setVehicleReqMode('add')
+    setVehicleReqTarget(null)
+    setVehicleReqForm(EMPTY_VR_FORM)
+    setVehicleReqAttachments([])
+    setShowVehicleReqModal(true)
+  }
+
+  function openEditVehicleRequest(vehicle) {
+    const baseColor = COLOR_OPTIONS.includes(vehicle.color || '') ? vehicle.color : 'อื่นๆ'
+    const [prefix = '', number = ''] = String(vehicle.license_plate || '').split('-')
+    setVehicleReqMode('edit')
+    setVehicleReqTarget(vehicle)
+    setVehicleReqForm({
+      ...EMPTY_VR_FORM,
+      license_plate_prefix: prefix.trim(),
+      license_plate_number: number.trim(),
+      province: vehicle.province || 'กรุงเทพมหานคร',
+      vehicle_type: vehicle.vehicle_type || 'รถยนต์',
+      brand: vehicle.brand || 'Toyota',
+      brand_other: '',
+      model: vehicle.model || '',
+      color: baseColor,
+      color_other: baseColor === 'อื่นๆ' ? (vehicle.color || '') : '',
+      vehicle_status: vehicle.status === 'active' ? 'active' : 'inactive',
+      parking_location: vehicle.parking_location || 'ในบ้าน',
+      parking_lock_no: vehicle.parking_lock_no || '',
+      parking_fee: String(vehicle.parking_fee || '0'),
+      note: '',
+    })
+    setVehicleReqAttachments([])
+    setShowVehicleReqModal(true)
+  }
+
+  function closeVehicleReqModal() {
+    if (vehicleReqSaving) return
+    setShowVehicleReqModal(false)
+    setVehicleReqTarget(null)
+    setVehicleReqForm(EMPTY_VR_FORM)
+    setVehicleReqAttachments([])
+  }
+
+  function handleVehicleReqFormChange(e) {
+    const { name, value } = e.target
+    setVehicleReqForm((prev) => {
+      const next = { ...prev, [name]: value }
+      if (name === 'brand' && value !== 'อื่นๆ') next.brand_other = ''
+      if (name === 'color' && value !== 'อื่นๆ') next.color_other = ''
+      if (name === 'parking_location' && value !== 'ส่วนกลาง') next.parking_lock_no = ''
+      return next
+    })
+  }
+
+  async function handleVehicleReqAttachFiles(event) {
+    const selectedFiles = Array.from(event.target.files || [])
+    event.target.value = ''
+    if (selectedFiles.length === 0) return
+    const remaining = MAX_ATTACHMENTS - vehicleReqAttachments.filter((a) => a.source === 'new').length
+    if (remaining <= 0) { await showSwal({ icon: 'warning', title: 'แนบรูปได้สูงสุด 5 รูป' }); return }
+    const toProcess = selectedFiles.slice(0, remaining)
+    try {
+      const startIdx = vehicleReqAttachments.length + 1
+      const prepared = []
+      for (let i = 0; i < toProcess.length; i++) {
+        const resized = await resizeImageToLimit(toProcess[i], startIdx + i)
+        prepared.push({ source: 'new', name: resized.name, file: resized, url: URL.createObjectURL(resized) })
+      }
+      setVehicleReqAttachments((cur) => [...cur, ...prepared])
+    } catch (error) {
+      await showSwal({ icon: 'error', title: 'แนบรูปไม่สำเร็จ', text: error.message })
+    }
+  }
+
+  async function handleSubmitVehicleRequest(e) {
+    e.preventDefault()
+    if (!profile?.house_id) return
+
+    const licensePlate = `${vehicleReqForm.license_plate_prefix.trim()}-${vehicleReqForm.license_plate_number.trim()}`
+    if (!vehicleReqForm.license_plate_prefix.trim() || !vehicleReqForm.license_plate_number.trim()) {
+      await showSwal({ icon: 'warning', title: 'กรุณากรอกทะเบียนรถ' }); return
+    }
+    if (vehicleReqMode === 'add' && vehicleReqForm.brand === 'อื่นๆ' && !vehicleReqForm.brand_other.trim()) {
+      await showSwal({ icon: 'warning', title: 'กรุณากรอกยี่ห้อรถ' }); return
+    }
+    if (vehicleReqMode === 'add' && vehicleReqAttachments.filter((a) => a.source === 'new').length === 0) {
+      await showSwal({ icon: 'warning', title: 'กรุณาแนบรูปรถอย่างน้อย 1 รูป' }); return
+    }
+
+    try {
+      setVehicleReqSaving(true)
+      const brandName = vehicleReqMode === 'add'
+        ? (vehicleReqForm.brand === 'อื่นๆ' ? vehicleReqForm.brand_other : vehicleReqForm.brand)
+        : vehicleReqTarget?.brand
+      const colorName = vehicleReqForm.color === 'อื่นๆ' ? vehicleReqForm.color_other : vehicleReqForm.color
+
+      const payload = {
+        house_id: profile.house_id,
+        vehicle_id: vehicleReqMode === 'edit' ? (vehicleReqTarget?.id || null) : null,
+        request_type: vehicleReqMode,
+        license_plate: licensePlate,
+        province: vehicleReqForm.province,
+        brand: brandName,
+        model: vehicleReqMode === 'add' ? vehicleReqForm.model : vehicleReqTarget?.model,
+        color: colorName,
+        vehicle_type: vehicleReqMode === 'add' ? vehicleReqForm.vehicle_type : vehicleReqTarget?.vehicle_type,
+        vehicle_status: vehicleReqForm.vehicle_status,
+        parking_location: vehicleReqForm.parking_location,
+        parking_lock_no: vehicleReqForm.parking_location === 'ส่วนกลาง' ? vehicleReqForm.parking_lock_no : null,
+        parking_fee: Number(String(vehicleReqForm.parking_fee).replace(/,/g, '')) || 0,
+        note: vehicleReqForm.note,
+        created_by_id: profile.id,
+      }
+
+      const req = await createVehicleRequest(payload)
+
+      const newFiles = vehicleReqAttachments.filter((a) => a.source === 'new' && a.file).map((a) => a.file)
+      if (newFiles.length > 0) {
+        const urls = await uploadVehicleRequestImages(req.id, newFiles)
+        await updateVehicleRequestImageUrls(req.id, urls)
+      }
+
+      await showSwal({ icon: 'success', title: vehicleReqMode === 'add' ? 'ส่งคำขอเพิ่มรถแล้ว' : 'ส่งคำขอแก้ไขรถแล้ว', text: 'รอนิติอนุมัติ', timer: 1600, showConfirmButton: false })
+      closeVehicleReqModal()
+      const reqs = await listVehicleRequests({ houseId: profile.house_id })
+      setVehicleRequests(reqs)
+    } catch (error) {
+      await showSwal({ icon: 'error', title: 'ส่งคำขอไม่สำเร็จ', text: error.message })
+    } finally {
+      setVehicleReqSaving(false)
+    }
+  }
+
+  async function cancelVehicleReq(requestId) {
+    const { isConfirmed } = await showSwal({
+      icon: 'warning', title: 'ยกเลิกคำขอ?', text: 'เมื่อยกเลิกแล้วจะแก้ไขไม่ได้อีก',
+      showCancelButton: true, confirmButtonText: 'ยืนยัน', cancelButtonText: 'ไม่',
+    })
+    if (!isConfirmed) return
+    try {
+      await cancelVehicleRequest(requestId)
+      await showSwal({ icon: 'success', title: 'ยกเลิกแล้ว', timer: 1200, showConfirmButton: false })
+      const reqs = await listVehicleRequests({ houseId: profile.house_id })
+      setVehicleRequests(reqs)
+    } catch (error) {
+      await showSwal({ icon: 'error', title: 'ไม่สำเร็จ', text: error.message })
+    }
+  }
+
+  async function resubmitVehicleReq(requestId) {
+    const { isConfirmed } = await showSwal({
+      icon: 'question', title: 'ส่งคำขออีกครั้ง?',
+      showCancelButton: true, confirmButtonText: 'ส่ง', cancelButtonText: 'ยกเลิก',
+    })
+    if (!isConfirmed) return
+    try {
+      await resubmitVehicleRequest(requestId)
+      await showSwal({ icon: 'success', title: 'ส่งใหม่แล้ว', text: 'รอนิติอนุมัติ', timer: 1400, showConfirmButton: false })
+      const reqs = await listVehicleRequests({ houseId: profile.house_id })
+      setVehicleRequests(reqs)
+    } catch (error) {
+      await showSwal({ icon: 'error', title: 'ไม่สำเร็จ', text: error.message })
+    }
+  }
+
   return (
     <div className="app">
       <div className={`sb-overlay ${sidebarOpen ? 'show' : ''}`} onClick={() => setSidebarOpen(false)} />
@@ -1006,8 +1233,12 @@ export default function ResidentLayout() {
                         <div style={{ flex: 1, minWidth: 0 }}>
                           <div className="vc-pl">{v.license_plate} {v.province || ''}</div>
                           <div className="vc-dt">{[v.brand, v.model, v.color].filter(Boolean).join(' · ')}</div>
+                          <div className="vc-dt" style={{ marginTop: 2 }}>
+                            {v.parking_location && <span>📍 {v.parking_location}{v.parking_lock_no ? ` · 🔒 ${v.parking_lock_no}` : ''}</span>}
+                            {v.parking_fee > 0 && <span style={{ marginLeft: v.parking_location ? 8 : 0 }}>💰 ฿{formatMoney(v.parking_fee)}/เดือน</span>}
+                          </div>
                           <div style={{ marginTop: 5 }}>
-                            <span className={`bd ${v.status === 'active' ? 'b-ok' : 'b-mu'}`}>{v.status === 'active' ? 'ใช้งาน' : (v.status || '-')}</span>
+                            <span className={`bd ${v.status === 'active' ? 'b-ok' : v.status === 'pending' ? 'b-wn' : 'b-mu'}`}>{v.status === 'active' ? 'ใช้งาน' : v.status === 'pending' ? 'รออนุมัติ' : (v.status || '-')}</span>
                           </div>
                         </div>
                       </div>
@@ -1026,9 +1257,48 @@ export default function ResidentLayout() {
                     <div className="ph-ico">🚗</div>
                     <div><div className="ph-h1">ข้อมูลรถของฉัน</div><div className="ph-sub">ยานพาหนะที่ลงทะเบียนไว้</div></div>
                   </div>
+                  <div className="ph-acts">
+                    <button className="btn btn-w btn-sm" onClick={openAddVehicleRequest}>+ ขอเพิ่มรถ</button>
+                  </div>
                 </div>
               </div>
               <div className="al al-i">ℹ️ การขอแก้ไขข้อมูลรถต้องผ่านนิติก่อนจึงจะมีผล</div>
+
+              {/* Pending requests block */}
+              {vehicleRequestsLoaded && vehicleRequests.filter((r) => r.status === 'pending' || r.status === 'rejected').length > 0 && (
+                <div className="card" style={{ marginBottom: 14 }}>
+                  <div className="ch"><div className="ch-ico">📋</div><div className="ct">คำขอที่รอดำเนินการ ({vehicleRequests.filter((r) => r.status === 'pending' || r.status === 'rejected').length} รายการ)</div></div>
+                  <div className="cb" style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                    {vehicleRequests.filter((r) => r.status === 'pending' || r.status === 'rejected').map((req) => (
+                      <div key={req.id} style={{ background: 'var(--bg)', borderRadius: 10, padding: 12, border: '1px solid var(--bo)' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: 7, marginBottom: 6 }}>
+                          <div>
+                            <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--tx)' }}>
+                              {req.request_type === 'add' ? '🆕 ขอเพิ่มรถ' : '✏️ ขอแก้ไขรถ'} — {req.license_plate || '-'}
+                            </span>
+                            <div style={{ fontSize: 11.5, color: 'var(--mu)', marginTop: 2 }}>{formatDate(req.created_at)}</div>
+                          </div>
+                          <div style={{ display: 'flex', gap: 6, alignItems: 'flex-start', flexWrap: 'wrap' }}>
+                            <span className={`bd ${req.status === 'pending' ? 'b-wn' : 'b-dg'}`}>{req.status === 'pending' ? 'รอดำเนินการ' : 'ถูกปฏิเสธ'}</span>
+                          </div>
+                        </div>
+                        {req.admin_note && (
+                          <div style={{ background: 'var(--prl)', borderRadius: 7, padding: '7px 10px', fontSize: 12.5, color: 'var(--dg)', marginBottom: 8 }}>
+                            💬 หมายเหตุนิติ: {req.admin_note}
+                          </div>
+                        )}
+                        <div style={{ display: 'flex', gap: 7, flexWrap: 'wrap' }}>
+                          {req.status === 'rejected' && (
+                            <button className="btn btn-xs btn-p" onClick={() => resubmitVehicleReq(req.id)}>📤 ส่งใหม่อีกครั้ง</button>
+                          )}
+                          <button className="btn btn-xs btn-dg" onClick={() => cancelVehicleReq(req.id)}>ยกเลิกคำขอ</button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               <div className="card" style={{ marginBottom: 14 }}>
                 <div className="ch"><div className="ch-ico">🚗</div><div className="ct">รถที่ลงทะเบียน ({houseVehicles.length} คัน)</div></div>
                 <div className="cb">
@@ -1041,9 +1311,14 @@ export default function ResidentLayout() {
                       <div className="vc-ico">{vehicleTypeIcon(v.vehicle_type)}</div>
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div className="vc-pl">{v.license_plate} {v.province || ''}</div>
-                        <div className="vc-dt">{[v.brand, v.model, v.color, v.parking_location].filter(Boolean).join(' · ')}</div>
-                        <div style={{ marginTop: 5, display: 'flex', gap: 5, flexWrap: 'wrap' }}>
-                          <span className={`bd ${v.status === 'active' ? 'b-ok' : 'b-mu'}`}>{v.status === 'active' ? 'ใช้งาน' : (v.status || '-')}</span>
+                        <div className="vc-dt">{[v.brand, v.model, v.color].filter(Boolean).join(' · ')}</div>
+                        <div className="vc-dt" style={{ marginTop: 2 }}>
+                          {v.parking_location && <span>📍 {v.parking_location}{v.parking_lock_no ? ` · 🔒 ${v.parking_lock_no}` : ''}</span>}
+                          {v.parking_fee > 0 && <span style={{ marginLeft: v.parking_location ? 8 : 0 }}>💰 ฿{formatMoney(v.parking_fee)}/เดือน</span>}
+                        </div>
+                        <div style={{ marginTop: 5, display: 'flex', gap: 5, flexWrap: 'wrap', alignItems: 'center' }}>
+                          <span className={`bd ${v.status === 'active' ? 'b-ok' : v.status === 'pending' ? 'b-wn' : 'b-mu'}`}>{v.status === 'active' ? 'ใช้งาน' : v.status === 'pending' ? 'รออนุมัติ' : (v.status || '-')}</span>
+                          <button className="btn btn-xs btn-a" style={{ marginLeft: 4 }} onClick={() => openEditVehicleRequest(v)}>✏️ ขอแก้ไข</button>
                         </div>
                       </div>
                     </div>
@@ -1672,6 +1947,155 @@ export default function ResidentLayout() {
                 <div className="house-md-foot">
                   <button className="btn btn-g" type="button" onClick={() => closeViolationModal()}>ยกเลิก</button>
                   <button className="btn btn-p" type="submit" disabled={saving}>{saving ? 'กำลังบันทึก...' : 'ส่งอัปเดต'}</button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+
+        {showVehicleReqModal && (
+          <div className="house-mo">
+            <div className="house-md house-md--xl">
+              <div className="house-md-head">
+                <div>
+                  <div className="house-md-title">
+                    {vehicleReqMode === 'add' ? '🆕 ขอเพิ่มรถ' : '✏️ ขอแก้ไขข้อมูลรถ'}
+                  </div>
+                  <div className="house-md-sub">
+                    {vehicleReqMode === 'edit' ? `รถ: ${vehicleReqTarget?.license_plate || '-'} ${vehicleReqTarget?.brand || ''} ${vehicleReqTarget?.model || ''}` : 'กรอกข้อมูลรถที่ต้องการเพิ่ม'}
+                  </div>
+                </div>
+              </div>
+              <form onSubmit={handleSubmitVehicleRequest}>
+                <div className="house-md-body">
+
+                  <section className="house-sec">
+                    <div className="house-sec-title">ข้อมูลทะเบียนรถ</div>
+                    <div className="house-grid house-grid-4">
+                      <label className="house-field">
+                        <span>ทะเบียนรถ *</span>
+                        <div className="plate-split-wrap">
+                          <input className="plate-prefix" name="license_plate_prefix" value={vehicleReqForm.license_plate_prefix} onChange={handleVehicleReqFormChange} placeholder="7กจ" />
+                          <span className="plate-dash">-</span>
+                          <input className="plate-number" name="license_plate_number" value={vehicleReqForm.license_plate_number} onChange={handleVehicleReqFormChange} placeholder="5533" />
+                        </div>
+                      </label>
+                      <label className="house-field">
+                        <span>จังหวัด</span>
+                        <select name="province" value={vehicleReqForm.province} onChange={handleVehicleReqFormChange}>
+                          {PROVINCE_OPTIONS.map((p) => <option key={p} value={p}>{p}</option>)}
+                        </select>
+                      </label>
+                      {vehicleReqMode === 'add' && (
+                        <label className="house-field">
+                          <span>ประเภทรถ</span>
+                          <select name="vehicle_type" value={vehicleReqForm.vehicle_type} onChange={handleVehicleReqFormChange}>
+                            {VEHICLE_TYPES_OPT.map((t) => <option key={t} value={t}>{t}</option>)}
+                          </select>
+                        </label>
+                      )}
+                    </div>
+                  </section>
+
+                  {vehicleReqMode === 'add' && (
+                    <section className="house-sec">
+                      <div className="house-sec-title">รายละเอียดรถ</div>
+                      <div className="house-grid house-grid-3">
+                        <label className="house-field">
+                          <span>ยี่ห้อ</span>
+                          <select name="brand" value={vehicleReqForm.brand} onChange={handleVehicleReqFormChange}>
+                            {BRAND_OPTIONS.map((b) => <option key={b} value={b}>{b}</option>)}
+                          </select>
+                        </label>
+                        {vehicleReqForm.brand === 'อื่นๆ' && (
+                          <label className="house-field">
+                            <span>ระบุยี่ห้ออื่นๆ *</span>
+                            <input name="brand_other" value={vehicleReqForm.brand_other} onChange={handleVehicleReqFormChange} placeholder="เช่น NETA" />
+                          </label>
+                        )}
+                        <label className="house-field">
+                          <span>รุ่น</span>
+                          <input name="model" value={vehicleReqForm.model} onChange={handleVehicleReqFormChange} placeholder="เช่น City / Revo" />
+                        </label>
+                      </div>
+                    </section>
+                  )}
+
+                  <section className="house-sec">
+                    <div className="house-sec-title">สี / สถานะ / ที่จอด</div>
+                    <div className="house-grid house-grid-3">
+                      <label className="house-field">
+                        <span>สี</span>
+                        <select name="color" value={vehicleReqForm.color} onChange={handleVehicleReqFormChange}>
+                          {COLOR_OPTIONS.map((c) => <option key={c} value={c}>{c}</option>)}
+                        </select>
+                      </label>
+                      {vehicleReqForm.color === 'อื่นๆ' && (
+                        <label className="house-field">
+                          <span>ระบุสีอื่นๆ</span>
+                          <input name="color_other" value={vehicleReqForm.color_other} onChange={handleVehicleReqFormChange} placeholder="เช่น สีครีม" />
+                        </label>
+                      )}
+                      <label className="house-field">
+                        <span>สถานะการใช้รถ</span>
+                        <select name="vehicle_status" value={vehicleReqForm.vehicle_status} onChange={handleVehicleReqFormChange}>
+                          <option value="active">ใช้งาน / จอดในพื้นที่</option>
+                          <option value="inactive">ไม่ได้จอดในพื้นที่</option>
+                        </select>
+                      </label>
+                      <label className="house-field">
+                        <span>สถานที่จอด</span>
+                        <select name="parking_location" value={vehicleReqForm.parking_location} onChange={handleVehicleReqFormChange}>
+                          {PARKING_OPTIONS.map((p) => <option key={p} value={p}>{p}</option>)}
+                        </select>
+                      </label>
+                      {vehicleReqForm.parking_location === 'ส่วนกลาง' && (
+                        <label className="house-field">
+                          <span>Lock No.</span>
+                          <input name="parking_lock_no" value={vehicleReqForm.parking_lock_no} onChange={handleVehicleReqFormChange} placeholder="เช่น A-12" />
+                        </label>
+                      )}
+                    </div>
+                  </section>
+
+                  {vehicleReqMode === 'add' && (
+                    <section className="house-sec">
+                      <div className="house-sec-title">รูปรถ (บังคับ ≥ 1 รูป)</div>
+                      <label className="house-field">
+                        <span>แนบรูปรถ</span>
+                        <input type="file" accept="image/*" multiple onChange={handleVehicleReqAttachFiles} />
+                      </label>
+                      <div style={{ marginTop: 8, fontSize: 12, color: 'var(--mu)' }}>ระบบย่อไฟล์ไม่เกิน 100KB อัตโนมัติ</div>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 8 }}>
+                        {vehicleReqAttachments.length === 0 ? (
+                          <div style={{ fontSize: 12, color: 'var(--dg)' }}>⚠️ กรุณาแนบรูปรถอย่างน้อย 1 รูป</div>
+                        ) : vehicleReqAttachments.map((att, idx) => (
+                          <div key={`${att.name}-${idx}`} style={{ width: 64 }}>
+                            <button type="button" onClick={() => showSwal({ imageUrl: att.url, showConfirmButton: false, showCloseButton: true, width: 'auto', background: '#0f172a' })} style={{ width: 64, height: 64, borderRadius: 8, border: '1px solid var(--bo)', background: '#fff', padding: 0, overflow: 'hidden', cursor: 'pointer' }}>
+                              <img src={att.url} alt={att.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                            </button>
+                            <button type="button" onClick={() => setVehicleReqAttachments((cur) => { const n = cur.filter((a) => a !== att); if (att.url) URL.revokeObjectURL(att.url); return n })} className="btn btn-xs btn-dg" style={{ marginTop: 4, width: '100%' }}>ลบ</button>
+                          </div>
+                        ))}
+                      </div>
+                    </section>
+                  )}
+
+                  <section className="house-sec">
+                    <div className="house-grid house-grid-1">
+                      <label className="house-field">
+                        <span>หมายเหตุเพิ่มเติม</span>
+                        <textarea name="note" rows={2} value={vehicleReqForm.note} onChange={handleVehicleReqFormChange} placeholder="รายละเอียดเพิ่มเติม (ถ้ามี)" />
+                      </label>
+                    </div>
+                  </section>
+
+                </div>
+                <div className="house-md-foot">
+                  <button className="btn btn-g" type="button" onClick={closeVehicleReqModal} disabled={vehicleReqSaving}>ยกเลิก</button>
+                  <button className="btn btn-p" type="submit" disabled={vehicleReqSaving}>
+                    {vehicleReqSaving ? 'กำลังส่ง...' : '📤 ส่งคำขอ'}
+                  </button>
                 </div>
               </form>
             </div>
