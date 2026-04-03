@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react'
 import Swal from 'sweetalert2'
 import { listHouses } from '../../lib/houses'
 import {
-  assertUniqueVehiclePlateBrand,
+  assertUniqueVehiclePlateProvince,
   createVehicle,
   deleteVehicle,
   deleteVehicleImagesByPaths,
@@ -406,9 +406,9 @@ const AdminVehicles = () => {
     try {
       setSaving(true)
 
-      await assertUniqueVehiclePlateBrand({
+      await assertUniqueVehiclePlateProvince({
         licensePlate,
-        brand: brandName,
+        province: form.province,
         vehicleType: form.vehicle_type,
         excludeId: editingVehicle?.id || null,
       })

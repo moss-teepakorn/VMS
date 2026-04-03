@@ -81,20 +81,20 @@ export async function createVehicle(payload) {
   return data
 }
 
-export async function assertUniqueVehiclePlateBrand({ licensePlate, brand, vehicleType = null, excludeId = null }) {
+export async function assertUniqueVehiclePlateProvince({ licensePlate, province, vehicleType = null, excludeId = null }) {
   const normalizedPlate = String(licensePlate || '').trim().toLowerCase()
-  const normalizedBrand = String(brand || '').trim().toLowerCase()
+  const normalizedProvince = String(province || '').trim().toLowerCase()
   const normalizedVehicleType = String(vehicleType || '').trim().toLowerCase()
 
-  if (!normalizedPlate || !normalizedBrand || !normalizedVehicleType) {
-    throw new Error('กรุณาระบุทะเบียนรถ ประเภทรถ และยี่ห้อ')
+  if (!normalizedPlate || !normalizedProvince || !normalizedVehicleType) {
+    throw new Error('กรุณาระบุทะเบียนรถ ประเภทรถ และจังหวัด')
   }
 
   let query = supabase
     .from('vehicles')
-    .select('id, license_plate, brand, vehicle_type')
+    .select('id, license_plate, province, vehicle_type')
     .ilike('license_plate', licensePlate)
-    .ilike('brand', brand)
+    .ilike('province', province)
     .limit(30)
 
   if (vehicleType) query = query.eq('vehicle_type', vehicleType)
@@ -106,12 +106,12 @@ export async function assertUniqueVehiclePlateBrand({ licensePlate, brand, vehic
   const duplicate = (data || []).find((item) => {
     if (excludeId && item.id === excludeId) return false
     return String(item.license_plate || '').trim().toLowerCase() === normalizedPlate
-      && String(item.brand || '').trim().toLowerCase() === normalizedBrand
+      && String(item.province || '').trim().toLowerCase() === normalizedProvince
       && String(item.vehicle_type || '').trim().toLowerCase() === normalizedVehicleType
   })
 
   if (duplicate) {
-    throw new Error('ทะเบียนรถ ประเภทรถ และยี่ห้อนี้มีอยู่แล้วในระบบ')
+    throw new Error('ทะเบียนรถ ประเภทรถ และจังหวัดนี้มีอยู่แล้วในระบบ')
   }
 
   return true

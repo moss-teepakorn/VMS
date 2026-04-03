@@ -8,20 +8,20 @@ function normalizeText(value) {
   return String(value || '').trim().toLowerCase()
 }
 
-async function assertUniqueVehicleRequestCombo({ licensePlate, brand, vehicleType, excludeVehicleId = null }) {
+async function assertUniqueVehicleRequestCombo({ licensePlate, province, vehicleType, excludeVehicleId = null }) {
   const normalizedPlate = normalizeText(licensePlate)
-  const normalizedBrand = normalizeText(brand)
+  const normalizedProvince = normalizeText(province)
   const normalizedVehicleType = normalizeText(vehicleType)
 
-  if (!normalizedPlate || !normalizedBrand || !normalizedVehicleType) {
-    throw new Error('กรุณาระบุทะเบียนรถ ประเภทรถ และยี่ห้อ')
+  if (!normalizedPlate || !normalizedProvince || !normalizedVehicleType) {
+    throw new Error('กรุณาระบุทะเบียนรถ ประเภทรถ และจังหวัด')
   }
 
   let vehicleQuery = supabase
     .from('vehicles')
-    .select('id, license_plate, brand, vehicle_type')
+    .select('id, license_plate, province, vehicle_type')
     .ilike('license_plate', licensePlate)
-    .ilike('brand', brand)
+    .ilike('province', province)
     .eq('vehicle_type', vehicleType)
     .limit(30)
 
@@ -31,19 +31,19 @@ async function assertUniqueVehicleRequestCombo({ licensePlate, brand, vehicleTyp
 
   const duplicateVehicle = (vehicles || []).find((item) => {
     return normalizeText(item.license_plate) === normalizedPlate
-      && normalizeText(item.brand) === normalizedBrand
+      && normalizeText(item.province) === normalizedProvince
       && normalizeText(item.vehicle_type) === normalizedVehicleType
   })
   if (duplicateVehicle) {
-    throw new Error('ข้อมูลรถซ้ำในระบบ: ทะเบียน + ประเภทรถ + ยี่ห้อ')
+    throw new Error('ข้อมูลรถซ้ำในระบบ: ทะเบียน + ประเภทรถ + จังหวัด')
   }
 
   const { data: pendingRequests, error: requestError } = await supabase
     .from('vehicle_requests')
-    .select('id, license_plate, brand, vehicle_type, status')
+    .select('id, license_plate, province, vehicle_type, status')
     .in('status', ['pending'])
     .ilike('license_plate', licensePlate)
-    .ilike('brand', brand)
+    .ilike('province', province)
     .eq('vehicle_type', vehicleType)
     .limit(30)
 
@@ -51,12 +51,12 @@ async function assertUniqueVehicleRequestCombo({ licensePlate, brand, vehicleTyp
 
   const duplicatePending = (pendingRequests || []).find((item) => {
     return normalizeText(item.license_plate) === normalizedPlate
-      && normalizeText(item.brand) === normalizedBrand
+      && normalizeText(item.province) === normalizedProvince
       && normalizeText(item.vehicle_type) === normalizedVehicleType
   })
 
   if (duplicatePending) {
-    throw new Error('มีคำขอรถรายการนี้ค้างอยู่แล้ว (ทะเบียน + ประเภทรถ + ยี่ห้อ)')
+    throw new Error('มีคำขอรถรายการนี้ค้างอยู่แล้ว (ทะเบียน + ประเภทรถ + จังหวัด)')
   }
 }
 
@@ -77,7 +77,7 @@ export async function listVehicleRequests({ houseId = null, status = 'all' } = {
 export async function createVehicleRequest(payload) {
   await assertUniqueVehicleRequestCombo({
     licensePlate: payload.license_plate,
-    brand: payload.brand,
+    province: payload.province,
     vehicleType: payload.vehicle_type,
     excludeVehicleId: payload.request_type === 'edit' ? (payload.vehicle_id || null) : null,
   })
@@ -160,6 +160,21 @@ export async function resubmitVehicleRequest(id) {
 
 // Admin: approve a request (applies changes to vehicles table)
 export async function approveVehicleRequest(requestId, request) {
+  const approvedParkingLockNo = request.parking_location === 'ส่วนกลาง'
+    ? (request.parking_lock_no?.trim() || null)
+    : null
+  const approvedParkingFee = Number(request.parking_fee || 0) || 0
+
+  const { error: requestUpdateError } = await supabase
+    .from('vehicle_requests')
+    .update({
+      parking_lock_no: approvedParkingLockNo,
+      parking_fee: approvedParkingFee,
+    })
+    .eq('id', requestId)
+
+  if (requestUpdateError) throw requestUpdateError
+
   if (request.request_type === 'add') {
     // Create new vehicle record
     await createVehicle({
@@ -171,8 +186,8 @@ export async function approveVehicleRequest(requestId, request) {
       color: request.color,
       vehicle_type: request.vehicle_type,
       parking_location: request.parking_location,
-      parking_lock_no: request.parking_lock_no,
-      parking_fee: request.parking_fee,
+      parking_lock_no: approvedParkingLockNo,
+      parking_fee: approvedParkingFee,
       status: request.vehicle_status || 'active',
       note: request.note,
     })
@@ -184,6 +199,8 @@ export async function approveVehicleRequest(requestId, request) {
     if (request.color) updates.color = request.color
     if (request.vehicle_status) updates.status = request.vehicle_status
     if (request.parking_location) updates.parking_location = request.parking_location
+    updates.parking_lock_no = approvedParkingLockNo
+    updates.parking_fee = approvedParkingFee
     await updateVehicle(request.vehicle_id, updates)
   }
 

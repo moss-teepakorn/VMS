@@ -959,7 +959,7 @@ export default function ResidentLayout() {
         vehicle_type: vehicleReqMode === 'add' ? vehicleReqForm.vehicle_type : vehicleReqTarget?.vehicle_type,
         vehicle_status: vehicleReqForm.vehicle_status,
         parking_location: vehicleReqForm.parking_location,
-        parking_lock_no: vehicleReqForm.parking_location === 'ส่วนกลาง' ? vehicleReqForm.parking_lock_no : null,
+        parking_lock_no: null,
         parking_fee: Number(String(vehicleReqForm.parking_fee).replace(/,/g, '')) || 0,
         note: vehicleReqForm.note,
         created_by_id: profile.id,
@@ -2210,12 +2210,6 @@ export default function ResidentLayout() {
                           {PARKING_OPTIONS.map((p) => <option key={p} value={p}>{p}</option>)}
                         </select>
                       </label>
-                      {vehicleReqForm.parking_location === 'ส่วนกลาง' && (
-                        <label className="house-field">
-                          <span>Lock No.</span>
-                          <input name="parking_lock_no" value={vehicleReqForm.parking_lock_no} onChange={handleVehicleReqFormChange} placeholder="เช่น A-12" />
-                        </label>
-                      )}
                     </div>
                   </section>
 

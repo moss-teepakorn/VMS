@@ -46,6 +46,7 @@ const AdminRequests = () => {
   const [statusFilter, setStatusFilter] = useState('pending')
   const [categoryFilter, setCategoryFilter] = useState('all')
   const [saving, setSaving] = useState(false)
+  const [approvalDrafts, setApprovalDrafts] = useState({})
 
   const loadRequests = useCallback(async (override = {}) => {
     try {
@@ -73,13 +74,37 @@ const AdminRequests = () => {
   const pendingVehicleEditCount = requests.filter((r) => r.status === 'pending' && r.request_type === 'edit').length
   const pendingAllCount = requests.filter((r) => r.status === 'pending').length
 
+  function getApprovalDraft(req) {
+    return approvalDrafts[req.id] || {
+      parking_lock_no: req.parking_lock_no || req.vehicles?.parking_lock_no || '',
+      parking_fee: String(req.parking_fee ?? req.vehicles?.parking_fee ?? 0),
+    }
+  }
+
+  function handleApprovalDraftChange(req, field, value) {
+    setApprovalDrafts((prev) => ({
+      ...prev,
+      [req.id]: {
+        ...getApprovalDraft(req),
+        [field]: value,
+      },
+    }))
+  }
+
   async function handleApprove(req) {
+    const draft = getApprovalDraft(req)
+    const approvedRequest = {
+      ...req,
+      parking_lock_no: req.parking_location === 'ส่วนกลาง' ? draft.parking_lock_no.trim() : null,
+      parking_fee: Number(String(draft.parking_fee).replace(/,/g, '')) || 0,
+    }
+
     const { isConfirmed } = await showSwal({
       icon: 'question',
       title: 'อนุมัติคำขอ?',
       text: req.request_type === 'add'
-        ? `ระบบจะสร้างรถ ${req.license_plate || '-'} ในระบบ`
-        : `ระบบจะอัปเดตข้อมูลรถ ${req.license_plate || '-'}`,
+        ? `ระบบจะสร้างรถ ${approvedRequest.license_plate || '-'} ในระบบ`
+        : `ระบบจะอัปเดตข้อมูลรถ ${approvedRequest.license_plate || '-'}`,
       showCancelButton: true,
       confirmButtonText: 'อนุมัติ',
       cancelButtonText: 'ยกเลิก',
@@ -88,9 +113,14 @@ const AdminRequests = () => {
 
     try {
       setSaving(true)
-      await approveVehicleRequest(req.id, req)
+      await approveVehicleRequest(req.id, approvedRequest)
       await showSwal({ icon: 'success', title: 'อนุมัติเรียบร้อย', timer: 1400, showConfirmButton: false })
       await loadRequests({ status: statusFilter })
+      setApprovalDrafts((prev) => {
+        const next = { ...prev }
+        delete next[req.id]
+        return next
+      })
     } catch (error) {
       await showSwal({ icon: 'error', title: 'อนุมัติไม่สำเร็จ', text: error.message })
     } finally {
@@ -280,6 +310,33 @@ const AdminRequests = () => {
                       {req.note && (
                         <div style={{ background: 'var(--bg)', borderRadius: 8, padding: '7px 10px', fontSize: 12.5, marginBottom: 10 }}>
                           📝 หมายเหตุลูกบ้าน: {req.note}
+                        </div>
+                      )}
+
+                      {req.status === 'pending' && (
+                        <div style={{ background: '#f8fafc', border: '1px solid var(--bo)', borderRadius: 10, padding: 12, marginBottom: 12 }}>
+                          <div style={{ fontSize: 11, fontWeight: 800, color: 'var(--mu)', textTransform: 'uppercase', letterSpacing: '.05em', marginBottom: 8 }}>ข้อมูลที่นิติกำหนดก่อนอนุมัติ</div>
+                          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 10 }}>
+                            <label style={{ display: 'grid', gap: 4, fontSize: 12.5 }}>
+                              <span style={{ color: 'var(--mu)', fontSize: 11 }}>Lock No.</span>
+                              <input
+                                value={getApprovalDraft(req).parking_lock_no}
+                                onChange={(e) => handleApprovalDraftChange(req, 'parking_lock_no', e.target.value)}
+                                placeholder={req.parking_location === 'ส่วนกลาง' ? 'เช่น A-12' : 'ไม่มีการใช้ Lock No.'}
+                                disabled={req.parking_location !== 'ส่วนกลาง' || saving}
+                              />
+                            </label>
+                            <label style={{ display: 'grid', gap: 4, fontSize: 12.5 }}>
+                              <span style={{ color: 'var(--mu)', fontSize: 11 }}>ค่าจอด</span>
+                              <input
+                                value={getApprovalDraft(req).parking_fee}
+                                onChange={(e) => handleApprovalDraftChange(req, 'parking_fee', e.target.value)}
+                                placeholder="0"
+                                inputMode="numeric"
+                                disabled={saving}
+                              />
+                            </label>
+                          </div>
                         </div>
                       )}
 
