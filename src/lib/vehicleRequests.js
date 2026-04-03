@@ -1,5 +1,11 @@
 import { supabase } from './supabase'
-import { createVehicle, updateVehicle } from './vehicles'
+import {
+  createVehicle,
+  updateVehicle,
+  listVehicleImages,
+  uploadVehicleImages,
+  deleteVehicleImagesByPaths,
+} from './vehicles'
 
 const REQUEST_IMAGE_BUCKET = 'vehicle-images'
 const MAX_REQUEST_IMAGE_BYTES = 100 * 1024
@@ -164,6 +170,28 @@ export async function deleteVehicleRequestImagesByPaths(paths) {
   return true
 }
 
+async function copyRequestImagesToVehicle(requestId, vehicleId, { replaceExisting = false } = {}) {
+  const requestImages = await listVehicleRequestImages(requestId)
+  if (requestImages.length === 0 || !vehicleId) return []
+
+  if (replaceExisting) {
+    const currentVehicleImages = await listVehicleImages(vehicleId)
+    const currentPaths = currentVehicleImages.map((item) => item.path).filter(Boolean)
+    if (currentPaths.length > 0) await deleteVehicleImagesByPaths(currentPaths)
+  }
+
+  const files = []
+  for (const image of requestImages) {
+    const response = await fetch(image.url)
+    if (!response.ok) throw new Error('โหลดรูปรถจากคำขอไม่สำเร็จ')
+    const blob = await response.blob()
+    files.push(new File([blob], image.name, { type: blob.type || 'image/jpeg' }))
+  }
+
+  if (files.length === 0) return []
+  return uploadVehicleImages(vehicleId, files)
+}
+
 export async function updateVehicleRequestStatus(id, { status, adminNote = null }) {
   const updates = {
     status,
@@ -217,7 +245,7 @@ export async function approveVehicleRequest(requestId, request) {
 
   if (request.request_type === 'add') {
     // Create new vehicle record
-    await createVehicle({
+    const createdVehicle = await createVehicle({
       house_id: request.house_id,
       license_plate: request.license_plate,
       province: request.province,
@@ -231,6 +259,14 @@ export async function approveVehicleRequest(requestId, request) {
       status: request.vehicle_status || 'active',
       note: request.note,
     })
+    await supabase
+      .from('vehicle_requests')
+      .update({ vehicle_id: createdVehicle.id })
+      .eq('id', requestId)
+
+    if (Array.isArray(request.image_urls) && request.image_urls.length > 0) {
+      await copyRequestImagesToVehicle(requestId, createdVehicle.id, { replaceExisting: true })
+    }
   } else if (request.request_type === 'edit' && request.vehicle_id) {
     // Update existing vehicle record (only allowed edit fields)
     const updates = {}
@@ -242,6 +278,10 @@ export async function approveVehicleRequest(requestId, request) {
     updates.parking_lock_no = approvedParkingLockNo
     updates.parking_fee = approvedParkingFee
     await updateVehicle(request.vehicle_id, updates)
+
+    if (Array.isArray(request.image_urls) && request.image_urls.length > 0) {
+      await copyRequestImagesToVehicle(requestId, request.vehicle_id, { replaceExisting: true })
+    }
   }
 
   return updateVehicleRequestStatus(requestId, { status: 'approved' })

@@ -870,6 +870,19 @@ export default function ResidentLayout() {
     }
 
     setVehicleReqAttachments(attachments)
+    return attachments
+  }
+
+  function findApprovedRequestImageFallback(vehicle) {
+    return [...vehicleRequests]
+      .filter((req) => req.status === 'approved')
+      .filter((req) => {
+        if (req.vehicle_id && String(req.vehicle_id) === String(vehicle.id)) return true
+        return req.license_plate === vehicle.license_plate
+          && req.province === vehicle.province
+          && req.vehicle_type === vehicle.vehicle_type
+      })
+      .sort((left, right) => new Date(right.created_at) - new Date(left.created_at))[0] || null
   }
 
   async function openEditVehicleRequest(vehicle) {
@@ -898,7 +911,13 @@ export default function ResidentLayout() {
     setVehicleReqAttachments([])
     setShowVehicleReqModal(true)
     try {
-      await loadVehicleReqAttachments({ vehicleId: vehicle.id, includeVehicleImages: true })
+      const attachments = await loadVehicleReqAttachments({ vehicleId: vehicle.id, includeVehicleImages: true })
+      if (attachments.length === 0) {
+        const fallbackRequest = findApprovedRequestImageFallback(vehicle)
+        if (fallbackRequest) {
+          await loadVehicleReqAttachments({ requestId: fallbackRequest.id })
+        }
+      }
     } catch { /* no existing images or error — leave empty */ }
   }
 
