@@ -88,17 +88,17 @@
 .fee-summary-bar {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 12px;
-  margin-bottom: 16px;
+  gap: 10px;
+  margin-bottom: 12px;
 }
 
 .fee-summary-card {
   background: var(--card);
   border: 1px solid var(--bo);
-  border-radius: 16px;
-  padding: 16px 18px;
-  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.05);
-  min-height: 122px;
+  border-radius: 12px;
+  padding: 10px 13px;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
+  min-height: 0;
 }
 
 .fee-summary-card.tone-primary { border-top: 3px solid var(--pr); }
@@ -107,70 +107,37 @@
 .fee-summary-card.tone-error { border-top: 3px solid var(--dg); }
 
 .fee-summary-label {
-  font-size: 11px;
+  font-size: 10.5px;
   font-weight: 800;
   letter-spacing: .04em;
   text-transform: uppercase;
   color: var(--mu);
-  margin-bottom: 10px;
+  margin-bottom: 4px;
 }
 
 .fee-summary-value {
-  font-size: 28px;
-  line-height: 1.05;
+  font-size: 18px;
+  line-height: 1.1;
   font-weight: 800;
   color: var(--tx);
 }
 
 .fee-summary-value--date {
-  font-size: 22px;
+  font-size: 14px;
 }
 
 .fee-summary-value--status {
-  font-size: 24px;
+  font-size: 16px;
 }
 
 .fee-summary-sub {
-  margin-top: 10px;
-  font-size: 12px;
-  line-height: 1.5;
+  margin-top: 4px;
+  font-size: 10.5px;
+  line-height: 1.4;
   color: var(--mu);
 }
 
-.fee-card {
-  border: 1px solid var(--bo);
-}
 
-.fee-card .cb {
-  padding: 16px 18px;
-}
-
-.fee-section-head {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 10px;
-  margin-bottom: 14px;
-}
-
-.fee-section-title {
-  font-size: 15px;
-  font-weight: 800;
-  color: var(--tx);
-}
-
-.fee-section-sub {
-  margin-top: 3px;
-  font-size: 12px;
-  color: var(--mu);
-}
-
-.fee-section-meta {
-  font-size: 12px;
-  font-weight: 700;
-  color: var(--pr);
-  white-space: nowrap;
-}
 
 .fee-toolbar-row {
   display: flex;
@@ -198,11 +165,11 @@
 .fee-payment-head {
   display: grid;
   color: var(--mu);
-  font-size: 11px;
+  font-size: 10.5px;
   font-weight: 800;
   letter-spacing: .05em;
   text-transform: uppercase;
-  padding: 0 0 8px;
+  padding: 0 0 6px;
   border-bottom: 1px solid var(--bo);
 }
 
@@ -221,7 +188,7 @@
 .fee-invoice-row {
   display: grid;
   align-items: center;
-  padding: 14px 0;
+  padding: 10px 0;
   border-bottom: 1px solid var(--bo);
 }
 
@@ -240,31 +207,41 @@
 }
 
 .fee-cell-kicker {
-  font-size: 10.5px;
-  font-weight: 700;
-  color: var(--mu);
-  margin-bottom: 4px;
+  display: none;
 }
 
 .fee-cell-main {
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 700;
   color: var(--tx);
 }
 
 .fee-cell-sub {
-  margin-top: 4px;
-  font-size: 11.5px;
+  margin-top: 3px;
+  font-size: 11px;
   color: var(--mu);
 }
 
 .fee-amount-strong {
-  font-size: 22px;
-  letter-spacing: -.02em;
+  font-size: 17px;
+  letter-spacing: -.01em;
 }
 
-.fee-inline-action {
-  margin-top: 8px;
+.fee-invoice-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.fee-inline-btns {
+  display: flex;
+  gap: 5px;
+  flex-wrap: wrap;
+  margin-top: 4px;
+}
+
+.fee-receipt-btn {
+  margin-top: 4px;
 }
 
 .fee-empty {
@@ -285,7 +262,7 @@
 .fee-payment-summary {
   display: grid;
   align-items: center;
-  padding: 14px 0;
+  padding: 10px 0;
   cursor: pointer;
   list-style: none;
 }
@@ -298,23 +275,22 @@
   color: var(--pr);
 }
 
+.fee-payment-col--status {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
 .fee-payment-detail {
-  padding: 0 0 14px;
-  margin-top: -4px;
+  padding: 0 0 12px;
+  margin-top: -2px;
 }
 
 .fee-breakdown-block {
   background: var(--bg);
   border: 1px solid var(--bo);
-  border-radius: 12px;
-  padding: 12px 14px;
-}
-
-.fee-breakdown-total {
-  font-size: 14px;
-  font-weight: 800;
-  color: var(--tx);
-  margin-bottom: 8px;
+  border-radius: 10px;
+  padding: 10px 12px;
 }
 
 .fee-breakdown-list {

@@ -597,6 +597,302 @@ export default function ResidentLayout() {
     return itemTotal > 0 ? itemTotal : Number(row?.amount || 0)
   }
 
+  function openHtmlInWindow(html) {
+    const w = window.open('', '_blank', 'width=1100,height=900')
+    if (!w) return null
+    w.document.write(html)
+    w.document.close()
+    return w
+  }
+
+  function toThaiBahtText(value) {
+    const amount = Number(value || 0)
+    if (!Number.isFinite(amount) || amount < 0) return '-'
+    if (amount === 0) return 'ศูนย์บาทถ้วน'
+    const numberText = ['ศูนย์', 'หนึ่ง', 'สอง', 'สาม', 'สี่', 'ห้า', 'หก', 'เจ็ด', 'แปด', 'เก้า']
+    const positionText = ['', 'สิบ', 'ร้อย', 'พัน', 'หมื่น', 'แสน', 'ล้าน']
+    const convertInteger = (num) => {
+      if (num === 0) return ''
+      let result = ''
+      const digits = String(num).split('').map((d) => Number(d))
+      const len = digits.length
+      digits.forEach((digit, idx) => {
+        const pos = len - idx - 1
+        if (digit === 0) return
+        if (pos === 0 && digit === 1 && len > 1) { result += 'เอ็ด'; return }
+        if (pos === 1 && digit === 1) { result += 'สิบ'; return }
+        if (pos === 1 && digit === 2) { result += 'ยี่สิบ'; return }
+        result += `${numberText[digit]}${positionText[pos]}`
+      })
+      return result
+    }
+    const [intPartRaw, decPartRaw = '00'] = amount.toFixed(2).split('.')
+    let intPart = Number(intPartRaw)
+    const decPart = Number(decPartRaw)
+    const millionChunks = []
+    while (intPart > 0) { millionChunks.unshift(intPart % 1000000); intPart = Math.floor(intPart / 1000000) }
+    const bahtText = millionChunks.map((chunk, index) => {
+      const text = convertInteger(chunk)
+      if (!text) return ''
+      return index === millionChunks.length - 1 ? text : `${text}ล้าน`
+    }).join('') || 'ศูนย์'
+    if (decPart === 0) return `${bahtText}บาทถ้วน`
+    return `${bahtText}บาท${convertInteger(decPart)}สตางค์`
+  }
+
+  const PRINT_SHARED_CSS = `
+    @page { size: A4; margin: 0; }
+    * { box-sizing: border-box; }
+    html, body { font-family: 'Sarabun', 'TH Sarabun New', Tahoma, sans-serif; margin: 0; padding: 0; color: #111827; background: #fff; }
+    .sheet { width: 100%; page-break-after: always; break-after: page; break-inside: avoid; background: #fff; padding: 24px 28px; display: flex; flex-direction: column; gap: 8px; }
+    .head { display: flex; justify-content: space-between; gap: 12px; border: 1px solid #cbd5e1; border-radius: 4px; padding: 10px 12px; background: #fff; margin-bottom: 4px; }
+    .brand { display: flex; align-items: flex-start; gap: 10px; flex: 1; min-width: 0; }
+    .logo-wrap { width: 54px; height: 54px; border-radius: 10px; background: #f1f5f9; border: 1.5px solid #cbd5e1; padding: 5px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .logo-wrap img { width: 100%; height: 100%; object-fit: contain; }
+    .doc { font-size: 16px; font-weight: 700; line-height: 1.3; }
+    .village { font-size: 11px; margin-top: 3px; font-weight: 600; }
+    .sub { font-size: 9px; color: #6b7280; margin-top: 2px; }
+    .doc-meta { font-size: 10px; min-width: 180px; display: flex; flex-direction: column; gap: 2px; word-break: break-word; }
+    .doc-meta span { color: #6b7280; font-weight: 500; }
+    .copy-mark-row { display: flex; justify-content: flex-end; margin-top: 10px; }
+    .copy-mark { font-size: 14px; font-weight: 700; color: #0c4a6e; }
+    .box { border: 1px solid #cbd5e1; border-radius: 4px; padding: 10px 12px; }
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 10px; }
+    .grid > div { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+    .grid span { font-size: 9px; color: #6b7280; font-weight: 500; }
+    .grid strong { font-size: 11px; font-weight: 600; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { border: 1px solid #cbd5e1; padding: 6px 8px; font-size: 10px; word-wrap: break-word; }
+    th { background: #f1f5f9; text-align: left; font-weight: 600; }
+    .c { text-align: center; } .r { text-align: right; }
+    tfoot td { background: #f1f5f9; font-weight: 600; }
+    .amount-text { margin-top: 4px; font-size: 10px; color: #374151; font-weight: 500; text-align: right; }
+    .payment-box { display: flex; flex-direction: column; gap: 6px; }
+    .payment-title { font-size: 11px; font-weight: 700; }
+    .payment-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 10px; }
+    .payment-grid > div { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+    .payment-grid span { font-size: 9px; color: #6b7280; font-weight: 500; }
+    .payment-grid strong { font-size: 11px; font-weight: 600; }
+    .payment-note { border-top: 1px dashed #d1d5db; padding-top: 4px; font-size: 10px; color: #4b5563; margin-top: 4px; }
+    .foot { margin-top: 8px; border: 1px solid #cbd5e1; border-radius: 4px; padding: 10px 12px; display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; background: #f9fafb; }
+    .note { font-size: 9px; color: #64748b; line-height: 1.4; }
+    .sign-wrap { min-width: 140px; text-align: center; font-size: 9px; color: #64748b; }
+    .sign-wrap img { max-width: 100px; max-height: 36px; object-fit: contain; display: block; margin: 0 auto 4px; }
+    .sign-line { border-top: 1px solid #cbd5e1; margin: 4px 0; }
+    @media print { .sheet { page-break-after: always; break-after: page; } .sheet:last-of-type { page-break-after: avoid; break-after: avoid; } }
+  `
+
+  function buildResidentInvoiceHtml(fee) {
+    const logoSrc = setup.loginCircleLogoUrl || setup.villageLogoUrl || ''
+    const invoiceNo = `INV-${String(fee?.year || '').slice(-2)}-${String(fee?.id || '').slice(0, 8).toUpperCase()}`
+    const periodText = formatFeePeriodLabel(fee)
+    const ownerName = houseDetail?.owner_name || profile?.full_name || '-'
+    const fmtDate = (v) => v ? new Date(v).toLocaleDateString('th-TH', { year: 'numeric', month: 'short', day: 'numeric' }) : '-'
+    const fmtMoney = (v) => Number(v || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+    const totalAmount = Number(fee.total_amount || 0)
+    const renderSheet = (copyLabel) => `
+      <div class="sheet">
+        <div class="head">
+          <div class="brand">
+            ${logoSrc ? `<div class="logo-wrap"><img src="${logoSrc}" alt="logo" /></div>` : ''}
+            <div>
+              <div class="doc">ใบแจ้งหนี้ค่าส่วนกลาง</div>
+              <div class="village">${setup.villageName || 'The Greenfield'}</div>
+              <div class="sub">${setup.address || '-'}</div>
+            </div>
+          </div>
+          <div class="doc-meta">
+            <div><span>เลขที่เอกสาร:</span> <strong>${invoiceNo}</strong></div>
+            <div><span>วันที่ออกเอกสาร:</span> <strong>${fmtDate(fee.invoice_date)}</strong></div>
+            <div><span>ครบกำหนดชำระ:</span> <strong>${fmtDate(fee.due_date)}</strong></div>
+            <div class="copy-mark-row"><div class="copy-mark">${copyLabel}</div></div>
+          </div>
+        </div>
+        <section class="box">
+          <div class="grid">
+            <div><span>บ้านเลขที่</span><strong>${houseNo || '-'}</strong></div>
+            <div><span>ชื่อเจ้าของบ้าน</span><strong>${ownerName}</strong></div>
+            <div><span>งวดเรียกเก็บ</span><strong>${periodText}</strong></div>
+          </div>
+        </section>
+        <section class="box">
+          <table>
+            <thead>
+              <tr>
+                <th class="c" style="width:56px;">ลำดับ</th>
+                <th>รายการ</th>
+                <th class="r" style="width:180px;">จำนวนเงิน (บาท)</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td class="c">1</td>
+                <td>ค่าส่วนกลาง งวด ${periodText}</td>
+                <td class="r">${fmtMoney(totalAmount)}</td>
+              </tr>
+            </tbody>
+            <tfoot>
+              <tr>
+                <td colspan="2" class="r"><strong>รวมทั้งสิ้น</strong></td>
+                <td class="r"><strong>${fmtMoney(totalAmount)}</strong></td>
+              </tr>
+            </tfoot>
+          </table>
+          <div class="amount-text">(${toThaiBahtText(totalAmount)})</div>
+        </section>
+        <section class="box payment-box">
+          <div class="payment-title">รายละเอียดการชำระเงิน</div>
+          <div class="payment-grid">
+            <div><span>ธนาคาร</span><strong>${setup.bankName || '-'}</strong></div>
+            <div><span>เลขที่บัญชี</span><strong>${setup.bankAccountNo || '-'}</strong></div>
+            <div><span>ชื่อบัญชี</span><strong>${setup.bankAccountName || '-'}</strong></div>
+            <div><span>กำหนดชำระ</span><strong>${fmtDate(fee.due_date)}</strong></div>
+          </div>
+          <div class="payment-note">กรุณาชำระภายในวันที่ครบกำหนด หากพ้นกำหนดจะมีค่าปรับตามประกาศนิติบุคคล</div>
+        </section>
+        <section class="foot">
+          <div class="note">หมายเหตุ: กรุณาชำระภายในวันที่ครบกำหนด เพื่อหลีกเลี่ยงค่าปรับเพิ่มเติม</div>
+          <div class="sign-wrap">
+            ${setup.juristicSignatureUrl ? `<img src="${setup.juristicSignatureUrl}" alt="signature" />` : ''}
+            <div class="sign-line"></div>
+            <div>ผู้มีอำนาจลงนาม</div>
+          </div>
+        </section>
+      </div>
+    `
+    return `
+      <html>
+        <head>
+          <title>ใบแจ้งหนี้ ${invoiceNo}</title>
+          <link rel="preconnect" href="https://fonts.googleapis.com">
+          <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+          <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;700&display=swap" rel="stylesheet">
+          <style>${PRINT_SHARED_CSS}</style>
+        </head>
+        <body>
+          ${renderSheet('ต้นฉบับ')}
+          ${renderSheet('สำเนา')}
+          <script>window.onload = () => window.print();</script>
+        </body>
+      </html>
+    `
+  }
+
+  function buildResidentReceiptHtml(payment) {
+    const receiptNo = `REC-${String(payment?.id || '').slice(0, 8).toUpperCase()}`
+    const logoSrc = setup.loginCircleLogoUrl || setup.villageLogoUrl || ''
+    const ownerName = houseDetail?.owner_name || profile?.full_name || '-'
+    const fmtDate = (v) => v ? new Date(v).toLocaleDateString('th-TH', { year: 'numeric', month: 'short', day: 'numeric' }) : '-'
+    const fmtMoney = (v) => Number(v || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+    const breakdown = getPaymentBreakdown(payment)
+    const totalPaid = getPaymentAmount(payment)
+    const periodLabel = payment.fees ? `งวด ${formatFeePeriodLabel(payment.fees)}` : 'รับชำระทั่วไป'
+    const renderRows = () => {
+      if (breakdown.length > 0) {
+        return breakdown.map((item, idx) => `
+          <tr>
+            <td class="c">${idx + 1}</td>
+            <td>${item.label}</td>
+            <td class="r">${fmtMoney(item.amount)}</td>
+          </tr>
+        `).join('')
+      }
+      return `
+        <tr>
+          <td class="c">1</td>
+          <td>ค่าส่วนกลาง ${periodLabel}</td>
+          <td class="r">${fmtMoney(totalPaid)}</td>
+        </tr>
+      `
+    }
+    const renderSheet = (copyLabel) => `
+      <div class="sheet">
+        <div class="head">
+          <div class="brand">
+            ${logoSrc ? `<div class="logo-wrap"><img src="${logoSrc}" alt="logo" /></div>` : ''}
+            <div>
+              <div class="doc">ใบเสร็จรับเงินค่าส่วนกลาง</div>
+              <div class="village">${setup.villageName || 'The Greenfield'}</div>
+              <div class="sub">${setup.address || '-'}</div>
+            </div>
+          </div>
+          <div class="doc-meta">
+            <div><span>เลขที่ใบเสร็จ:</span> <strong>${receiptNo}</strong></div>
+            <div><span>วันที่รับชำระ:</span> <strong>${fmtDate(payment.paid_at)}</strong></div>
+            <div><span>วันที่อนุมัติ:</span> <strong>${fmtDate(payment.verified_at)}</strong></div>
+            <div class="copy-mark-row"><div class="copy-mark">${copyLabel}</div></div>
+          </div>
+        </div>
+        <section class="box">
+          <div class="grid">
+            <div><span>บ้านเลขที่</span><strong>${houseNo || '-'}</strong></div>
+            <div><span>ชื่อผู้ชำระ</span><strong>${ownerName}</strong></div>
+            <div><span>รอบใบแจ้งหนี้</span><strong>${periodLabel}</strong></div>
+            <div><span>วิธีชำระ</span><strong>${formatMethod(payment.payment_method)}</strong></div>
+          </div>
+        </section>
+        <section class="box">
+          <table>
+            <thead>
+              <tr>
+                <th class="c" style="width:56px;">ลำดับ</th>
+                <th>รายการ</th>
+                <th class="r" style="width:170px;">ยอดชำระ (บาท)</th>
+              </tr>
+            </thead>
+            <tbody>${renderRows()}</tbody>
+            <tfoot>
+              <tr>
+                <td colspan="2" class="r"><strong>รวมยอดชำระ</strong></td>
+                <td class="r"><strong>${fmtMoney(totalPaid)}</strong></td>
+              </tr>
+            </tfoot>
+          </table>
+          <div class="amount-text">(${toThaiBahtText(totalPaid)})</div>
+        </section>
+        <section class="foot">
+          <div class="note">
+            ออกใบเสร็จหลังจากตรวจสอบการชำระเรียบร้อยแล้ว<br/>
+            บัญชีอ้างอิง ${setup.bankAccountName || '-'} ${setup.bankAccountNo || ''}
+          </div>
+          <div class="sign-wrap">
+            ${setup.juristicSignatureUrl ? `<img src="${setup.juristicSignatureUrl}" alt="signature" />` : ''}
+            <div class="sign-line"></div>
+            <div>ผู้ตรวจสอบ / ผู้ออกใบเสร็จ</div>
+          </div>
+        </section>
+      </div>
+    `
+    return `
+      <html>
+        <head>
+          <title>ใบเสร็จรับเงิน ${receiptNo}</title>
+          <link rel="preconnect" href="https://fonts.googleapis.com">
+          <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+          <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;700&display=swap" rel="stylesheet">
+          <style>${PRINT_SHARED_CSS}</style>
+        </head>
+        <body>
+          ${renderSheet('ต้นฉบับ')}
+          ${renderSheet('สำเนา')}
+          <script>window.onload = () => window.print();</script>
+        </body>
+      </html>
+    `
+  }
+
+  function handlePrintInvoice(fee) {
+    const html = buildResidentInvoiceHtml(fee)
+    const w = openHtmlInWindow(html)
+    if (!w) showSwal({ icon: 'warning', title: 'ไม่สามารถเปิดหน้าต่างพิมพ์ได้', text: 'กรุณาอนุญาต popup ของเบราว์เซอร์' })
+  }
+
+  function handlePrintReceipt(payment) {
+    const html = buildResidentReceiptHtml(payment)
+    const w = openHtmlInWindow(html)
+    if (!w) showSwal({ icon: 'warning', title: 'ไม่สามารถเปิดหน้าต่างพิมพ์ได้', text: 'กรุณาอนุญาต popup ของเบราว์เซอร์' })
+  }
+
   const unresolvedFees = fees.filter((f) => f.status === 'unpaid' || f.status === 'overdue')
   const overdueAmount = unresolvedFees.reduce((sum, f) => sum + Number(f.total_amount || 0), 0)
   const nextDueFee = [...unresolvedFees].sort((left, right) => new Date(left.due_date || 0) - new Date(right.due_date || 0))[0] || null
@@ -1606,7 +1902,7 @@ export default function ResidentLayout() {
 
           {activeSection === 'fees' && (
             <>
-              <div className="ph" style={{ marginBottom: 18 }}>
+              <div className="ph" style={{ marginBottom: 14 }}>
                 <div className="ph-in">
                   <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                     <div className="ph-ico">💳</div>
@@ -1624,198 +1920,160 @@ export default function ResidentLayout() {
                 <div className="fee-summary-card tone-error">
                   <div className="fee-summary-label">💸 ค้างชำระ</div>
                   <div className="fee-summary-value">฿{formatMoney(overdueAmount)}</div>
-                  <div className="fee-summary-sub">{unresolvedFees.length} ใบแจ้งหนี้ที่ยังต้องดำเนินการ</div>
                 </div>
                 <div className="fee-summary-card tone-primary">
-                  <div className="fee-summary-label">📅 ครบกำหนดถัดไป</div>
+                  <div className="fee-summary-label">📅 งวดถัดไป</div>
                   <div className="fee-summary-value fee-summary-value--date">{nextDueFee ? formatDate(nextDueFee.due_date) : 'ไม่มี'}</div>
-                  <div className="fee-summary-sub">{nextDueFee ? `งวด ${formatFeePeriodLabel(nextDueFee)}` : 'ไม่มีงวดที่ค้างอยู่'}</div>
                 </div>
                 <div className={`fee-summary-card tone-${feeStatusSummary.tone}`}>
                   <div className="fee-summary-label">🧾 สถานะ</div>
                   <div className="fee-summary-value fee-summary-value--status">{feeStatusSummary.label}</div>
-                  <div className="fee-summary-sub">อ้างอิงจากสถานะใบแจ้งหนี้ล่าสุด</div>
                 </div>
                 <div className="fee-summary-card tone-success">
                   <div className="fee-summary-label">✅ ชำระแล้ว</div>
                   <div className="fee-summary-value">{approvedPaymentCount}</div>
-                  <div className="fee-summary-sub">รายการที่ตรวจสอบและอนุมัติแล้ว</div>
                 </div>
               </div>
 
               {overdueAmount > 0 && (
-                <div className="al al-w" style={{ marginBottom: 14 }}>
+                <div className="al al-w" style={{ marginBottom: 12 }}>
                   ⚠️ มียอดค้างชำระ <strong>฿{formatMoney(overdueAmount)}</strong> กรุณาดำเนินการก่อนครบกำหนด
                 </div>
               )}
 
-              <div className="card fee-card" style={{ marginBottom: 14 }}>
-                <div className="cb">
-                  <div className="fee-section-head">
-                    <div>
-                      <div className="fee-section-title">ค้นหาและกรองข้อมูล</div>
-                      <div className="fee-section-sub">แสดงเฉพาะรายการที่ต้องการดู</div>
-                    </div>
-                  </div>
-                  <div className="fee-toolbar-row">
-                    <select className="fs fee-toolbar-select" value={feeStatusFilter} onChange={(e) => setFeeStatusFilter(e.target.value)}>
-                      <option value="all">ทุกสถานะ</option>
-                      <option value="unpaid">ยังไม่ชำระ</option>
-                      <option value="pending">รอตรวจสอบ</option>
-                      <option value="paid">ชำระแล้ว</option>
-                      <option value="overdue">ค้างชำระ</option>
-                    </select>
-                    <select className="fs fee-toolbar-select" value={feeYearFilter} onChange={(e) => setFeeYearFilter(e.target.value)}>
-                      <option value="all">ทุกปี</option>
-                      {feeYearOptions.map((year) => <option key={year} value={year}>{year}</option>)}
-                    </select>
-                    <button className="btn btn-a btn-sm fee-toolbar-button" onClick={() => loadFeeData({ status: feeStatusFilter, year: feeYearFilter })}>🔍 ค้นหา</button>
-                  </div>
-                </div>
+              <div className="fee-toolbar-row" style={{ marginBottom: 16 }}>
+                <select className="fs fee-toolbar-select" value={feeStatusFilter} onChange={(e) => setFeeStatusFilter(e.target.value)}>
+                  <option value="all">ทุกสถานะ</option>
+                  <option value="unpaid">ยังไม่ชำระ</option>
+                  <option value="pending">รอตรวจสอบ</option>
+                  <option value="paid">ชำระแล้ว</option>
+                  <option value="overdue">ค้างชำระ</option>
+                </select>
+                <select className="fs fee-toolbar-select" value={feeYearFilter} onChange={(e) => setFeeYearFilter(e.target.value)}>
+                  <option value="all">ทุกปี</option>
+                  {feeYearOptions.map((year) => <option key={year} value={year}>{year}</option>)}
+                </select>
+                <button className="btn btn-a btn-sm fee-toolbar-button" onClick={() => loadFeeData({ status: feeStatusFilter, year: feeYearFilter })}>🔍 ค้นหา</button>
               </div>
 
-              <div className="card fee-card" style={{ marginBottom: 14 }}>
-                <div className="cb">
-                  <div className="fee-section-head">
-                    <div>
-                      <div className="fee-section-title">ใบแจ้งหนี้</div>
-                      <div className="fee-section-sub">สรุปรายการที่ต้องชำระแบบอ่านเร็ว</div>
-                    </div>
-                    <div className="fee-section-meta">{fees.length} รายการ</div>
-                  </div>
+              <div className="sl">🧾 ใบแจ้งหนี้ <span style={{ fontWeight: 400, marginLeft: 6 }}>{fees.length} รายการ</span></div>
+              <div className="fee-invoice-table">
+                <div className="fee-invoice-head">
+                  <div>งวด</div>
+                  <div>ครบกำหนด</div>
+                  <div>ยอด</div>
+                  <div>สถานะ</div>
+                </div>
 
-                  <div className="fee-invoice-table">
-                    <div className="fee-invoice-head">
-                      <div>งวด</div>
-                      <div>ครบกำหนด</div>
-                      <div>ยอด</div>
-                      <div>สถานะ</div>
-                    </div>
-
-                    {feeLoading ? (
-                      <div className="fee-empty">กำลังโหลด...</div>
-                    ) : fees.length === 0 ? (
-                      <div className="fee-empty">ยังไม่มีใบแจ้งหนี้</div>
-                    ) : fees.map((fee) => {
-                      const badge = getFeeStatusBadge(fee.status)
-                      const canSubmitSlip = fee.status === 'unpaid' || fee.status === 'overdue'
-                      return (
-                        <div key={fee.id} className={`fee-invoice-row tone-${fee.status === 'paid' ? 'success' : fee.status === 'pending' ? 'primary' : fee.status === 'overdue' ? 'error' : 'warning'}`}>
-                          <div className="fee-invoice-cell fee-invoice-period">
-                            <div className="fee-cell-kicker">งวด</div>
-                            <div className="fee-cell-main">{formatFeePeriodLabel(fee)}</div>
-                            <div className="fee-cell-sub">ออกวันที่ {formatDate(fee.invoice_date)}</div>
-                          </div>
-                          <div className="fee-invoice-cell">
-                            <div className="fee-cell-kicker">ครบกำหนด</div>
-                            <div className="fee-cell-main">{formatDate(fee.due_date)}</div>
-                          </div>
-                          <div className="fee-invoice-cell fee-invoice-amount">
-                            <div className="fee-cell-kicker">ยอดเงิน</div>
-                            <div className="fee-cell-main fee-amount-strong">฿{formatMoney(fee.total_amount)}</div>
-                          </div>
-                          <div className="fee-invoice-cell fee-invoice-status">
-                            <div className="fee-cell-kicker">สถานะ</div>
-                            <div><span className={badge.className}>{badge.label}</span></div>
+                {feeLoading ? (
+                  <div className="fee-empty">กำลังโหลด...</div>
+                ) : fees.length === 0 ? (
+                  <div className="fee-empty">ยังไม่มีใบแจ้งหนี้</div>
+                ) : fees.map((fee) => {
+                  const badge = getFeeStatusBadge(fee.status)
+                  const canSubmitSlip = fee.status === 'unpaid' || fee.status === 'overdue'
+                  const tone = fee.status === 'paid' ? 'success' : fee.status === 'pending' ? 'primary' : fee.status === 'overdue' ? 'error' : 'warning'
+                  return (
+                    <div key={fee.id} className={`fee-invoice-row tone-${tone}`}>
+                      <div className="fee-invoice-cell">
+                        <div className="fee-cell-main">{formatFeePeriodLabel(fee)}</div>
+                      </div>
+                      <div className="fee-invoice-cell">
+                        <div className="fee-cell-main">{formatDate(fee.due_date)}</div>
+                      </div>
+                      <div className="fee-invoice-cell">
+                        <div className="fee-cell-main fee-amount-strong">฿{formatMoney(fee.total_amount)}</div>
+                      </div>
+                      <div className="fee-invoice-cell">
+                        <div className="fee-invoice-actions">
+                          <span className={badge.className}>{badge.label}</span>
+                          <div className="fee-inline-btns">
                             {canSubmitSlip && (
-                              <button className="btn btn-xs btn-a fee-inline-action" onClick={() => openPaymentModal(fee)}>ส่งหลักฐาน</button>
+                              <button className="btn btn-xs btn-a" onClick={() => openPaymentModal(fee)}>ส่งหลักฐาน</button>
                             )}
+                            <button className="btn btn-xs btn-g" onClick={() => handlePrintInvoice(fee)}>🖨 ใบแจ้งหนี้</button>
                           </div>
                         </div>
-                      )
-                    })}
-                  </div>
-                </div>
+                      </div>
+                    </div>
+                  )
+                })}
               </div>
 
-              <div className="card fee-card">
-                <div className="cb">
-                  <div className="fee-section-head">
-                    <div>
-                      <div className="fee-section-title">ประวัติการชำระ</div>
-                      <div className="fee-section-sub">แสดงเฉพาะข้อมูลที่จำเป็น พร้อมเปิดดูรายละเอียดเพิ่มเติมได้</div>
-                    </div>
-                    <div className="fee-section-meta">{payments.length} รายการ</div>
-                  </div>
+              <div className="sl" style={{ marginTop: 20 }}>📋 ประวัติการชำระ <span style={{ fontWeight: 400, marginLeft: 6 }}>{payments.length} รายการ</span></div>
+              <div className="fee-payment-list">
+                <div className="fee-payment-head">
+                  <div>วันที่ / งวด</div>
+                  <div>จำนวนเงิน</div>
+                  <div>วิธี</div>
+                  <div>สถานะ</div>
+                </div>
 
-                  <div className="fee-payment-list">
-                    <div className="fee-payment-head">
-                      <div>วันที่</div>
-                      <div>จำนวนเงิน</div>
-                      <div>วิธี</div>
-                      <div>สถานะ</div>
-                    </div>
+                {feeLoading ? (
+                  <div className="fee-empty">กำลังโหลด...</div>
+                ) : payments.length === 0 ? (
+                  <div className="fee-empty">ยังไม่มีประวัติการชำระ</div>
+                ) : payments.map((row) => {
+                  const badge = getPaymentStatusBadge(row)
+                  const breakdown = getPaymentBreakdown(row)
+                  const amount = getPaymentAmount(row)
+                  const rejectedReason = getRejectedReason(row.note)
+                  const cleanNote = getCleanPaymentNote(row.note)
+                  const hasDetails = breakdown.length > 0 || row.slip_url || rejectedReason || cleanNote
+                  const canPrintReceipt = !!row.verified_at
+                  return (
+                    <details key={row.id} className="fee-payment-item" open={false}>
+                      <summary className="fee-payment-summary">
+                        <div className="fee-payment-col">
+                          <div className="fee-cell-main">{formatDate(row.paid_at)}</div>
+                          <div className="fee-cell-sub">{row.fees ? `งวด ${formatFeePeriodLabel(row.fees)}` : 'ไม่ระบุงวด'}</div>
+                        </div>
+                        <div className="fee-payment-col fee-payment-col--amount">
+                          <div className="fee-cell-main fee-amount-strong">฿{formatMoney(amount)}</div>
+                        </div>
+                        <div className="fee-payment-col">
+                          <div className="fee-cell-main">{formatMethod(row.payment_method)}</div>
+                        </div>
+                        <div className="fee-payment-col fee-payment-col--status">
+                          <span className={badge.className}>{badge.label}</span>
+                          {canPrintReceipt && (
+                            <button className="btn btn-xs btn-g fee-receipt-btn" onClick={(e) => { e.preventDefault(); handlePrintReceipt(row) }}>🖨 ใบเสร็จ</button>
+                          )}
+                        </div>
+                      </summary>
 
-                    {feeLoading ? (
-                      <div className="fee-empty">กำลังโหลด...</div>
-                    ) : payments.length === 0 ? (
-                      <div className="fee-empty">ยังไม่มีประวัติการชำระ</div>
-                    ) : payments.map((row) => {
-                      const badge = getPaymentStatusBadge(row)
-                      const breakdown = getPaymentBreakdown(row)
-                      const amount = getPaymentAmount(row)
-                      const rejectedReason = getRejectedReason(row.note)
-                      const cleanNote = getCleanPaymentNote(row.note)
-                      const hasDetails = breakdown.length > 0 || row.slip_url || rejectedReason || cleanNote
-                      return (
-                        <details key={row.id} className="fee-payment-item" open={false}>
-                          <summary className="fee-payment-summary">
-                            <div className="fee-payment-col">
-                              <div className="fee-cell-kicker">วันที่</div>
-                              <div className="fee-cell-main">{formatDate(row.paid_at)}</div>
-                              <div className="fee-cell-sub">{row.fees ? `งวด ${formatFeePeriodLabel(row.fees)}` : 'ไม่ระบุงวด'}</div>
-                            </div>
-                            <div className="fee-payment-col fee-payment-col--amount">
-                              <div className="fee-cell-kicker">จำนวนเงิน</div>
-                              <div className="fee-cell-main fee-amount-strong">฿{formatMoney(amount)}</div>
-                              {breakdown.length > 0 && <div className="fee-cell-sub">{breakdown.length} รายการย่อย</div>}
-                            </div>
-                            <div className="fee-payment-col">
-                              <div className="fee-cell-kicker">วิธีชำระ</div>
-                              <div className="fee-cell-main">{formatMethod(row.payment_method)}</div>
-                            </div>
-                            <div className="fee-payment-col fee-payment-col--status">
-                              <div className="fee-cell-kicker">สถานะ</div>
-                              <div><span className={badge.className}>{badge.label}</span></div>
-                              {hasDetails && <div className="fee-cell-sub">ดูรายละเอียดเพิ่มเติม</div>}
-                            </div>
-                          </summary>
-
-                          {hasDetails && (
-                            <div className="fee-payment-detail">
-                              {breakdown.length > 0 && (
-                                <div className="fee-breakdown-block">
-                                  <div className="fee-breakdown-total">ชำระ: ฿{formatMoney(amount)}</div>
-                                  <div className="fee-breakdown-list">
-                                    {breakdown.map((item, index) => (
-                                      <div key={`${row.id}-${item.label}-${index}`} className="fee-breakdown-row">
-                                        <span>{item.label}</span>
-                                        <strong>฿{formatMoney(item.amount)}</strong>
-                                      </div>
-                                    ))}
+                      {hasDetails && (
+                        <div className="fee-payment-detail">
+                          {breakdown.length > 0 && (
+                            <div className="fee-breakdown-block">
+                              <div className="fee-breakdown-list">
+                                {breakdown.map((item, index) => (
+                                  <div key={`${row.id}-${item.label}-${index}`} className="fee-breakdown-row">
+                                    <span>{item.label}</span>
+                                    <strong>฿{formatMoney(item.amount)}</strong>
                                   </div>
-                                </div>
-                              )}
-
-                              {row.slip_url && (
-                                <div className="fee-payment-links">
-                                  <a href={row.slip_url} target="_blank" rel="noreferrer">ดูหลักฐานการชำระ</a>
-                                </div>
-                              )}
-
-                              {(rejectedReason || cleanNote) && (
-                                <div className="fee-payment-note">
-                                  {rejectedReason && <div className="fee-payment-note-row fee-payment-note-row--error">เหตุผลตีกลับ: {rejectedReason}</div>}
-                                  {cleanNote && <div className="fee-payment-note-row">หมายเหตุ: {cleanNote}</div>}
-                                </div>
-                              )}
+                                ))}
+                              </div>
                             </div>
                           )}
-                        </details>
-                      )
-                    })}
-                  </div>
-                </div>
+
+                          {row.slip_url && (
+                            <div className="fee-payment-links">
+                              <a href={row.slip_url} target="_blank" rel="noreferrer">ดูหลักฐานการชำระ</a>
+                            </div>
+                          )}
+
+                          {(rejectedReason || cleanNote) && (
+                            <div className="fee-payment-note">
+                              {rejectedReason && <div className="fee-payment-note-row fee-payment-note-row--error">เหตุผลตีกลับ: {rejectedReason}</div>}
+                              {cleanNote && <div className="fee-payment-note-row">หมายเหตุ: {cleanNote}</div>}
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </details>
+                  )
+                })}
               </div>
             </>
           )}
