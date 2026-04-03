@@ -4,6 +4,62 @@ import { createVehicle, updateVehicle } from './vehicles'
 const REQUEST_IMAGE_BUCKET = 'vehicle-images'
 const MAX_REQUEST_IMAGE_BYTES = 100 * 1024
 
+function normalizeText(value) {
+  return String(value || '').trim().toLowerCase()
+}
+
+async function assertUniqueVehicleRequestCombo({ licensePlate, brand, vehicleType, excludeVehicleId = null }) {
+  const normalizedPlate = normalizeText(licensePlate)
+  const normalizedBrand = normalizeText(brand)
+  const normalizedVehicleType = normalizeText(vehicleType)
+
+  if (!normalizedPlate || !normalizedBrand || !normalizedVehicleType) {
+    throw new Error('กรุณาระบุทะเบียนรถ ประเภทรถ และยี่ห้อ')
+  }
+
+  let vehicleQuery = supabase
+    .from('vehicles')
+    .select('id, license_plate, brand, vehicle_type')
+    .ilike('license_plate', licensePlate)
+    .ilike('brand', brand)
+    .eq('vehicle_type', vehicleType)
+    .limit(30)
+
+  if (excludeVehicleId) vehicleQuery = vehicleQuery.neq('id', excludeVehicleId)
+  const { data: vehicles, error: vehicleError } = await vehicleQuery
+  if (vehicleError) throw vehicleError
+
+  const duplicateVehicle = (vehicles || []).find((item) => {
+    return normalizeText(item.license_plate) === normalizedPlate
+      && normalizeText(item.brand) === normalizedBrand
+      && normalizeText(item.vehicle_type) === normalizedVehicleType
+  })
+  if (duplicateVehicle) {
+    throw new Error('ข้อมูลรถซ้ำในระบบ: ทะเบียน + ประเภทรถ + ยี่ห้อ')
+  }
+
+  const { data: pendingRequests, error: requestError } = await supabase
+    .from('vehicle_requests')
+    .select('id, license_plate, brand, vehicle_type, status')
+    .in('status', ['pending'])
+    .ilike('license_plate', licensePlate)
+    .ilike('brand', brand)
+    .eq('vehicle_type', vehicleType)
+    .limit(30)
+
+  if (requestError) throw requestError
+
+  const duplicatePending = (pendingRequests || []).find((item) => {
+    return normalizeText(item.license_plate) === normalizedPlate
+      && normalizeText(item.brand) === normalizedBrand
+      && normalizeText(item.vehicle_type) === normalizedVehicleType
+  })
+
+  if (duplicatePending) {
+    throw new Error('มีคำขอรถรายการนี้ค้างอยู่แล้ว (ทะเบียน + ประเภทรถ + ยี่ห้อ)')
+  }
+}
+
 export async function listVehicleRequests({ houseId = null, status = 'all' } = {}) {
   let query = supabase
     .from('vehicle_requests')
@@ -19,6 +75,13 @@ export async function listVehicleRequests({ houseId = null, status = 'all' } = {
 }
 
 export async function createVehicleRequest(payload) {
+  await assertUniqueVehicleRequestCombo({
+    licensePlate: payload.license_plate,
+    brand: payload.brand,
+    vehicleType: payload.vehicle_type,
+    excludeVehicleId: payload.request_type === 'edit' ? (payload.vehicle_id || null) : null,
+  })
+
   const record = {
     house_id: payload.house_id,
     vehicle_id: payload.vehicle_id || null,

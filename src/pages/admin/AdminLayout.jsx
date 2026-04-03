@@ -4,6 +4,8 @@ import { useAuth } from '../../contexts/AuthContext'
 import { insertPageViewLog } from '../../lib/loginLogs'
 import { applyDocumentTitle, getSetupConfig } from '../../lib/setup'
 import { updateUser, getHouseDetail } from '../../lib/users'
+import { listVehicleRequests } from '../../lib/vehicleRequests'
+import { listIssues } from '../../lib/issues'
 import Swal from 'sweetalert2'
 import villageLogo from '../../assets/village-logo.svg'
 import './AdminLayout.css'
@@ -28,6 +30,8 @@ const AdminLayout = () => {
   const [theme, setTheme] = useState(localStorage.getItem('vms-theme') || 'normal')
   const [setupOpen, setSetupOpen] = useState(false)
   const [menuSearch, setMenuSearch] = useState('')
+  const [notifyOpen, setNotifyOpen] = useState(false)
+  const [notifyCounts, setNotifyCounts] = useState({ requests: 0, issues: 0 })
   const [sectionOpen, setSectionOpen] = useState({
     ข้อมูล: false,
     การเงิน: false,
@@ -83,6 +87,37 @@ const AdminLayout = () => {
     loadSetup()
   }, [])
 
+  useEffect(() => {
+    const loadNotifies = async () => {
+      try {
+        const [reqs, issues] = await Promise.all([
+          listVehicleRequests({ status: 'pending' }),
+          listIssues({ status: 'pending' }),
+        ])
+        setNotifyCounts({
+          requests: (reqs || []).length,
+          issues: (issues || []).length,
+        })
+      } catch {
+        setNotifyCounts({ requests: 0, issues: 0 })
+      }
+    }
+    loadNotifies()
+  }, [location.pathname])
+
+  useEffect(() => {
+    if (!notifyOpen) return
+    const handleOutside = (event) => {
+      const menu = document.getElementById('admin-notify-menu')
+      const btn = document.getElementById('admin-notify-btn')
+      if (menu && !menu.contains(event.target) && btn && !btn.contains(event.target)) {
+        setNotifyOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handleOutside)
+    return () => document.removeEventListener('mousedown', handleOutside)
+  }, [notifyOpen])
+
   // Close sidebar on larger screens
   useEffect(() => {
     const handleResize = () => {
@@ -116,8 +151,8 @@ const AdminLayout = () => {
       { id: 'disbursements', label: 'การจ่ายเงิน', icon: '📤', path: '/admin/disbursements' },
     ]},
     { section: 'การจัดการ', tone: 'operation', sectionIcon: '📋', items: [
-      { id: 'req', label: 'คำขอแก้ไข', icon: '📝', path: '/admin/requests', badge: '7' },
-      { id: 'issues', label: 'จัดการปัญหา', icon: '🔧', path: '/admin/issues', badge: '3' },
+      { id: 'req', label: 'คำขอแก้ไข', icon: '📝', path: '/admin/requests' },
+      { id: 'issues', label: 'จัดการปัญหา', icon: '🔧', path: '/admin/issues' },
       { id: 'vio', label: 'แจ้งกระทำผิด', icon: '⚠️', path: '/admin/violations' },
       { id: 'ann', label: 'ประกาศ', icon: '📢', path: '/admin/announcements' },
       { id: 'rep', label: 'ผลงาน', icon: '🏆', path: '/admin/work-reports' },
@@ -416,6 +451,39 @@ const AdminLayout = () => {
             {topbarTitle.main} — <span className="hl">{topbarTitle.sub}</span>
           </div>
           <div className="tb-right">
+            <div style={{ position: 'relative' }}>
+              <div className="tb-ico" id="admin-notify-btn" onClick={() => setNotifyOpen((prev) => !prev)} title="การแจ้งเตือน">🔔</div>
+              {(notifyCounts.requests + notifyCounts.issues) > 0 && (
+                <span style={{ position: 'absolute', top: -3, right: -3, minWidth: 16, height: 16, borderRadius: 8, background: '#ef4444', color: '#fff', fontSize: 10, fontWeight: 800, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: '0 4px' }}>
+                  {notifyCounts.requests + notifyCounts.issues}
+                </span>
+              )}
+
+              {notifyOpen && (
+                <div id="admin-notify-menu" style={{ position: 'absolute', top: 'calc(100% + 8px)', right: 0, width: 280, background: 'var(--card)', border: '1.5px solid var(--bo)', borderRadius: 12, boxShadow: '0 10px 28px rgba(0,0,0,.14)', zIndex: 600, overflow: 'hidden' }}>
+                  <div style={{ padding: '10px 12px', borderBottom: '1px solid var(--bo)', fontSize: 12, fontWeight: 800, color: 'var(--mu)' }}>แจ้งเตือนงานค้าง</div>
+
+                  <button
+                    type="button"
+                    onClick={() => { setNotifyOpen(false); navigate('/admin/requests') }}
+                    style={{ width: '100%', border: 'none', background: 'transparent', textAlign: 'left', padding: '10px 12px', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
+                  >
+                    <span style={{ fontSize: 13, color: 'var(--tx)' }}>📝 คำขอแก้ไข</span>
+                    <span className="bd b-wn">{notifyCounts.requests}</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => { setNotifyOpen(false); navigate('/admin/issues') }}
+                    style={{ width: '100%', border: 'none', background: 'transparent', textAlign: 'left', padding: '10px 12px', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid var(--bo)' }}
+                  >
+                    <span style={{ fontSize: 13, color: 'var(--tx)' }}>🔧 จัดการปัญหา</span>
+                    <span className="bd b-wn">{notifyCounts.issues}</span>
+                  </button>
+                </div>
+              )}
+            </div>
+
             <span style={{ fontSize: '13px', fontWeight: 500, whiteSpace: 'nowrap', marginRight: '4px' }}>สวัสดี คุณ{profile?.full_name || profile?.username || ''}</span>
             <div className="setup-wrap">
               <div className="tb-ico" onClick={() => setSetupOpen((prev) => !prev)}>⚙️</div>

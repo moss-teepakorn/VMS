@@ -409,6 +409,7 @@ const AdminVehicles = () => {
       await assertUniqueVehiclePlateBrand({
         licensePlate,
         brand: brandName,
+        vehicleType: form.vehicle_type,
         excludeId: editingVehicle?.id || null,
       })
 

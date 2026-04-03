@@ -21,7 +21,6 @@ import {
   updateVehicleRequestImageUrls,
   uploadVehicleRequestImages,
   cancelVehicleRequest,
-  resubmitVehicleRequest,
 } from '../../lib/vehicleRequests'
 import { listIssues, createIssue } from '../../lib/issues'
 import { getHouseDetail, updateUser } from '../../lib/users'
@@ -1005,20 +1004,74 @@ export default function ResidentLayout() {
     }
   }
 
-  async function resubmitVehicleReq(requestId) {
-    const { isConfirmed } = await showSwal({
-      icon: 'question', title: 'ส่งคำขออีกครั้ง?',
-      showCancelButton: true, confirmButtonText: 'ส่ง', cancelButtonText: 'ยกเลิก',
-    })
-    if (!isConfirmed) return
-    try {
-      await resubmitVehicleRequest(requestId)
-      await showSwal({ icon: 'success', title: 'ส่งใหม่แล้ว', text: 'รอนิติอนุมัติ', timer: 1400, showConfirmButton: false })
-      const reqs = await listVehicleRequests({ houseId: profile.house_id })
-      setVehicleRequests(reqs)
-    } catch (error) {
-      await showSwal({ icon: 'error', title: 'ไม่สำเร็จ', text: error.message })
+  function openRejectedVehicleReq(req) {
+    const [prefix = '', number = ''] = String(req.license_plate || '').split('-')
+
+    if (req.request_type === 'add') {
+      const baseBrand = BRAND_OPTIONS.includes(req.brand || '') ? req.brand : 'อื่นๆ'
+      const baseColor = COLOR_OPTIONS.includes(req.color || '') ? req.color : 'อื่นๆ'
+      setVehicleReqMode('add')
+      setVehicleReqTarget(null)
+      setVehicleReqForm({
+        ...EMPTY_VR_FORM,
+        license_plate_prefix: prefix.trim(),
+        license_plate_number: number.trim(),
+        province: req.province || 'กรุงเทพมหานคร',
+        vehicle_type: req.vehicle_type || 'รถยนต์',
+        brand: baseBrand,
+        brand_other: baseBrand === 'อื่นๆ' ? (req.brand || '') : '',
+        model: req.model || '',
+        color: baseColor,
+        color_other: baseColor === 'อื่นๆ' ? (req.color || '') : '',
+        vehicle_status: req.vehicle_status || 'active',
+        parking_location: req.parking_location || 'ในบ้าน',
+        parking_lock_no: req.parking_lock_no || '',
+        parking_fee: String(req.parking_fee || '0'),
+        note: req.note || '',
+      })
+      setVehicleReqRemovedPaths([])
+      setVehicleReqAttachments([])
+      setShowVehicleReqModal(true)
+      return
     }
+
+    const fallbackVehicle = {
+      id: req.vehicle_id,
+      license_plate: req.license_plate || '',
+      province: req.province || '',
+      brand: req.brand || '',
+      model: req.model || '',
+      color: req.color || '',
+      vehicle_type: req.vehicle_type || 'รถยนต์',
+      status: req.vehicle_status || 'active',
+      parking_location: req.parking_location || 'ในบ้าน',
+      parking_lock_no: req.parking_lock_no || '',
+      parking_fee: req.parking_fee || 0,
+    }
+    const target = houseVehicles.find((v) => String(v.id) === String(req.vehicle_id)) || fallbackVehicle
+    setVehicleReqMode('edit')
+    setVehicleReqTarget(target)
+    const baseColor = COLOR_OPTIONS.includes(req.color || '') ? req.color : 'อื่นๆ'
+    setVehicleReqForm({
+      ...EMPTY_VR_FORM,
+      license_plate_prefix: prefix.trim(),
+      license_plate_number: number.trim(),
+      province: req.province || 'กรุงเทพมหานคร',
+      vehicle_type: target.vehicle_type || 'รถยนต์',
+      brand: target.brand || 'Toyota',
+      brand_other: '',
+      model: target.model || '',
+      color: baseColor,
+      color_other: baseColor === 'อื่นๆ' ? (req.color || '') : '',
+      vehicle_status: req.vehicle_status || 'active',
+      parking_location: req.parking_location || 'ในบ้าน',
+      parking_lock_no: req.parking_lock_no || '',
+      parking_fee: String(req.parking_fee || '0'),
+      note: req.note || '',
+    })
+    setVehicleReqRemovedPaths([])
+    setVehicleReqAttachments([])
+    setShowVehicleReqModal(true)
   }
 
   return (
@@ -1400,7 +1453,7 @@ export default function ResidentLayout() {
                         )}
                         <div style={{ display: 'flex', gap: 7, flexWrap: 'wrap' }}>
                           {req.status === 'rejected' && (
-                            <button className="btn btn-xs btn-p" onClick={() => resubmitVehicleReq(req.id)}>📤 ส่งใหม่อีกครั้ง</button>
+                            <button className="btn btn-xs btn-p" onClick={() => openRejectedVehicleReq(req)}>✏️ แก้ไขและส่งใหม่</button>
                           )}
                           <button className="btn btn-xs btn-dg" onClick={() => cancelVehicleReq(req.id)}>ยกเลิกคำขอ</button>
                         </div>
