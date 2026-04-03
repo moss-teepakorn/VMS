@@ -550,8 +550,59 @@ export default function ResidentLayout() {
     return method || '-'
   }
 
+  function formatFeePeriodLabel(fee) {
+    if (!fee) return '-'
+    if (fee.period === 'first_half') return `${fee.year || '-'} / 1`
+    if (fee.period === 'second_half') return `${fee.year || '-'} / 2`
+    if (fee.period === 'full_year') return `${fee.year || '-'} / ทั้งปี`
+    return [fee.year, fee.period].filter(Boolean).join(' / ') || '-'
+  }
+
+  function getFeeStatusSummary() {
+    if (overdueAmount > 0) return { label: 'ค้างชำระ', tone: 'error' }
+    if (fees.some((fee) => fee.status === 'pending')) return { label: 'รอตรวจสอบ', tone: 'warning' }
+    if (fees.some((fee) => fee.status === 'paid')) return { label: 'ปกติ', tone: 'success' }
+    return { label: 'ยังไม่มีข้อมูล', tone: 'primary' }
+  }
+
+  function isJsonLikeText(value) {
+    const raw = String(value || '').trim()
+    if (!raw) return false
+    if (!((raw.startsWith('{') && raw.endsWith('}')) || (raw.startsWith('[') && raw.endsWith(']')))) return false
+    try {
+      JSON.parse(raw)
+      return true
+    } catch {
+      return false
+    }
+  }
+
+  function getCleanPaymentNote(note) {
+    const display = getDisplayNote(note)
+    if (!display || isJsonLikeText(display)) return ''
+    return display
+  }
+
+  function getPaymentBreakdown(row) {
+    return (Array.isArray(row?.payment_items) ? row.payment_items : [])
+      .filter((item) => Number(item?.paid_amount || 0) > 0)
+      .map((item) => ({
+        label: item.item_label || item.item_key || 'รายการชำระ',
+        amount: Number(item.paid_amount || 0),
+      }))
+  }
+
+  function getPaymentAmount(row) {
+    const itemTotal = getPaymentBreakdown(row).reduce((sum, item) => sum + Number(item.amount || 0), 0)
+    return itemTotal > 0 ? itemTotal : Number(row?.amount || 0)
+  }
+
   const unresolvedFees = fees.filter((f) => f.status === 'unpaid' || f.status === 'overdue')
   const overdueAmount = unresolvedFees.reduce((sum, f) => sum + Number(f.total_amount || 0), 0)
+  const nextDueFee = [...unresolvedFees].sort((left, right) => new Date(left.due_date || 0) - new Date(right.due_date || 0))[0] || null
+  const approvedPaymentCount = payments.filter((row) => row.verified_at && !getRejectedReason(row.note)).length
+  const feeStatusSummary = getFeeStatusSummary()
+  const feeYearOptions = [...new Set(allFees.map((row) => row.year).filter(Boolean))].sort((a, b) => b - a)
   const inProgressViolations = violations.filter((v) => v.status === 'pending' || v.status === 'in_progress')
   const latestViolation = violations[0] || null
   const pendingIssues = issues.filter((i) => i.status === 'pending' || i.status === 'in_progress')
@@ -1569,102 +1620,200 @@ export default function ResidentLayout() {
                 </div>
               </div>
 
+              <div className="fee-summary-bar">
+                <div className="fee-summary-card tone-error">
+                  <div className="fee-summary-label">💸 ค้างชำระ</div>
+                  <div className="fee-summary-value">฿{formatMoney(overdueAmount)}</div>
+                  <div className="fee-summary-sub">{unresolvedFees.length} ใบแจ้งหนี้ที่ยังต้องดำเนินการ</div>
+                </div>
+                <div className="fee-summary-card tone-primary">
+                  <div className="fee-summary-label">📅 ครบกำหนดถัดไป</div>
+                  <div className="fee-summary-value fee-summary-value--date">{nextDueFee ? formatDate(nextDueFee.due_date) : 'ไม่มี'}</div>
+                  <div className="fee-summary-sub">{nextDueFee ? `งวด ${formatFeePeriodLabel(nextDueFee)}` : 'ไม่มีงวดที่ค้างอยู่'}</div>
+                </div>
+                <div className={`fee-summary-card tone-${feeStatusSummary.tone}`}>
+                  <div className="fee-summary-label">🧾 สถานะ</div>
+                  <div className="fee-summary-value fee-summary-value--status">{feeStatusSummary.label}</div>
+                  <div className="fee-summary-sub">อ้างอิงจากสถานะใบแจ้งหนี้ล่าสุด</div>
+                </div>
+                <div className="fee-summary-card tone-success">
+                  <div className="fee-summary-label">✅ ชำระแล้ว</div>
+                  <div className="fee-summary-value">{approvedPaymentCount}</div>
+                  <div className="fee-summary-sub">รายการที่ตรวจสอบและอนุมัติแล้ว</div>
+                </div>
+              </div>
+
               {overdueAmount > 0 && (
-                <div className="fee-hero" style={{ marginBottom: 18 }}>
-                  <div className="fhi">
-                    <div className="f-lbl">ยอดค้างชำระปัจจุบัน</div>
-                    <div className="f-amt">฿{formatMoney(overdueAmount)}</div>
-                    <div className="f-per">{unresolvedFees.length} รายการ</div>
-                    <div className="f-btns">
-                      <button className="btn btn-w btn-sm" onClick={() => { const f = unresolvedFees[0]; if (f) openPaymentModal(f) }}>💳 แจ้งชำระ</button>
-                    </div>
-                  </div>
+                <div className="al al-w" style={{ marginBottom: 14 }}>
+                  ⚠️ มียอดค้างชำระ <strong>฿{formatMoney(overdueAmount)}</strong> กรุณาดำเนินการก่อนครบกำหนด
                 </div>
               )}
 
-              <div className="card" style={{ marginBottom: 14 }}>
-                <div className="ch"><div className="ct">ค้นหาและกรองข้อมูล</div></div>
-                <div className="cb" style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-                  <select className="fs" style={{ flex: 1, minWidth: 140 }} value={feeStatusFilter} onChange={(e) => setFeeStatusFilter(e.target.value)}>
-                    <option value="all">ทุกสถานะ</option>
-                    <option value="unpaid">ยังไม่ชำระ</option>
-                    <option value="pending">รอตรวจสอบ</option>
-                    <option value="paid">ชำระแล้ว</option>
-                    <option value="overdue">ค้างชำระ</option>
-                  </select>
-                  <select className="fs" style={{ flex: 1, minWidth: 100 }} value={feeYearFilter} onChange={(e) => setFeeYearFilter(e.target.value)}>
-                    <option value="all">ทุกปี</option>
-                    {[...new Set(allFees.map((r) => r.year).filter(Boolean))].sort((a, b) => b - a).map((y) => <option key={y} value={y}>{y}</option>)}
-                  </select>
-                  <button className="btn btn-a btn-sm" onClick={() => loadFeeData({ status: feeStatusFilter, year: feeYearFilter })}>ค้นหา</button>
-                </div>
-              </div>
-
-              <div className="card" style={{ marginBottom: 14 }}>
-                <div className="ch"><div className="ct">ใบแจ้งหนี้ ({fees.length} รายการ)</div></div>
-                <div className="cb" style={{ padding: 0 }}>
-                  <div className="tw">
-                    <table>
-                      <thead><tr><th>ปี</th><th>งวด</th><th>ออกวันที่</th><th>ครบกำหนด</th><th>ยอด</th><th>สถานะ</th><th></th></tr></thead>
-                      <tbody>
-                        {feeLoading ? (
-                          <tr><td colSpan="7" style={{ textAlign: 'center', color: 'var(--mu)', padding: 20 }}>กำลังโหลด...</td></tr>
-                        ) : fees.length === 0 ? (
-                          <tr><td colSpan="7" style={{ textAlign: 'center', color: 'var(--mu)', padding: 20 }}>ยังไม่มีใบแจ้งหนี้</td></tr>
-                        ) : fees.map((fee) => {
-                          const badge = getFeeStatusBadge(fee.status)
-                          return (
-                            <tr key={fee.id}>
-                              <td>{fee.year || '-'}</td>
-                              <td>{fee.period || '-'}</td>
-                              <td>{formatDate(fee.invoice_date)}</td>
-                              <td>{formatDate(fee.due_date)}</td>
-                              <td><strong>฿{formatMoney(fee.total_amount)}</strong></td>
-                              <td><span className={badge.className}>{badge.label}</span></td>
-                              <td>
-                                {(fee.status === 'unpaid' || fee.status === 'overdue') && (
-                                  <button className="btn btn-xs btn-a" onClick={() => openPaymentModal(fee)}>ส่งหลักฐาน</button>
-                                )}
-                              </td>
-                            </tr>
-                          )
-                        })}
-                      </tbody>
-                    </table>
+              <div className="card fee-card" style={{ marginBottom: 14 }}>
+                <div className="cb">
+                  <div className="fee-section-head">
+                    <div>
+                      <div className="fee-section-title">ค้นหาและกรองข้อมูล</div>
+                      <div className="fee-section-sub">แสดงเฉพาะรายการที่ต้องการดู</div>
+                    </div>
+                  </div>
+                  <div className="fee-toolbar-row">
+                    <select className="fs fee-toolbar-select" value={feeStatusFilter} onChange={(e) => setFeeStatusFilter(e.target.value)}>
+                      <option value="all">ทุกสถานะ</option>
+                      <option value="unpaid">ยังไม่ชำระ</option>
+                      <option value="pending">รอตรวจสอบ</option>
+                      <option value="paid">ชำระแล้ว</option>
+                      <option value="overdue">ค้างชำระ</option>
+                    </select>
+                    <select className="fs fee-toolbar-select" value={feeYearFilter} onChange={(e) => setFeeYearFilter(e.target.value)}>
+                      <option value="all">ทุกปี</option>
+                      {feeYearOptions.map((year) => <option key={year} value={year}>{year}</option>)}
+                    </select>
+                    <button className="btn btn-a btn-sm fee-toolbar-button" onClick={() => loadFeeData({ status: feeStatusFilter, year: feeYearFilter })}>🔍 ค้นหา</button>
                   </div>
                 </div>
               </div>
 
-              <div className="card">
-                <div className="ch"><div className="ct">ประวัติการชำระ ({payments.length} รายการ)</div></div>
-                <div className="cb" style={{ padding: 0 }}>
-                  <div className="tw">
-                    <table>
-                      <thead><tr><th>งวด</th><th>ยอด</th><th>วิธี</th><th>หลักฐาน</th><th>วันที่</th><th>สถานะ</th><th>หมายเหตุ</th></tr></thead>
-                      <tbody>
-                        {feeLoading ? (
-                          <tr><td colSpan="7" style={{ textAlign: 'center', color: 'var(--mu)', padding: 20 }}>กำลังโหลด...</td></tr>
-                        ) : payments.length === 0 ? (
-                          <tr><td colSpan="7" style={{ textAlign: 'center', color: 'var(--mu)', padding: 20 }}>ยังไม่มีประวัติ</td></tr>
-                        ) : payments.map((row) => {
-                          const badge = getPaymentStatusBadge(row)
-                          return (
-                            <tr key={row.id}>
-                              <td>{row.fees ? `${row.fees.period} ${row.fees.year}` : '-'}</td>
-                              <td>฿{formatMoney(row.amount)}</td>
-                              <td>{formatMethod(row.payment_method)}</td>
-                              <td>{row.slip_url ? <a href={row.slip_url} target="_blank" rel="noreferrer">ดูสลิป</a> : '-'}</td>
-                              <td>{new Date(row.paid_at).toLocaleString('th-TH')}</td>
-                              <td><span className={badge.className}>{badge.label}</span></td>
-                              <td style={{ fontSize: 12 }}>
-                                {getRejectedReason(row.note) && <div style={{ color: 'var(--dg)' }}>เหตุผล: {getRejectedReason(row.note)}</div>}
-                                {getDisplayNote(row.note) || '-'}
-                              </td>
-                            </tr>
-                          )
-                        })}
-                      </tbody>
-                    </table>
+              <div className="card fee-card" style={{ marginBottom: 14 }}>
+                <div className="cb">
+                  <div className="fee-section-head">
+                    <div>
+                      <div className="fee-section-title">ใบแจ้งหนี้</div>
+                      <div className="fee-section-sub">สรุปรายการที่ต้องชำระแบบอ่านเร็ว</div>
+                    </div>
+                    <div className="fee-section-meta">{fees.length} รายการ</div>
+                  </div>
+
+                  <div className="fee-invoice-table">
+                    <div className="fee-invoice-head">
+                      <div>งวด</div>
+                      <div>ครบกำหนด</div>
+                      <div>ยอด</div>
+                      <div>สถานะ</div>
+                    </div>
+
+                    {feeLoading ? (
+                      <div className="fee-empty">กำลังโหลด...</div>
+                    ) : fees.length === 0 ? (
+                      <div className="fee-empty">ยังไม่มีใบแจ้งหนี้</div>
+                    ) : fees.map((fee) => {
+                      const badge = getFeeStatusBadge(fee.status)
+                      const canSubmitSlip = fee.status === 'unpaid' || fee.status === 'overdue'
+                      return (
+                        <div key={fee.id} className={`fee-invoice-row tone-${fee.status === 'paid' ? 'success' : fee.status === 'pending' ? 'primary' : fee.status === 'overdue' ? 'error' : 'warning'}`}>
+                          <div className="fee-invoice-cell fee-invoice-period">
+                            <div className="fee-cell-kicker">งวด</div>
+                            <div className="fee-cell-main">{formatFeePeriodLabel(fee)}</div>
+                            <div className="fee-cell-sub">ออกวันที่ {formatDate(fee.invoice_date)}</div>
+                          </div>
+                          <div className="fee-invoice-cell">
+                            <div className="fee-cell-kicker">ครบกำหนด</div>
+                            <div className="fee-cell-main">{formatDate(fee.due_date)}</div>
+                          </div>
+                          <div className="fee-invoice-cell fee-invoice-amount">
+                            <div className="fee-cell-kicker">ยอดเงิน</div>
+                            <div className="fee-cell-main fee-amount-strong">฿{formatMoney(fee.total_amount)}</div>
+                          </div>
+                          <div className="fee-invoice-cell fee-invoice-status">
+                            <div className="fee-cell-kicker">สถานะ</div>
+                            <div><span className={badge.className}>{badge.label}</span></div>
+                            {canSubmitSlip && (
+                              <button className="btn btn-xs btn-a fee-inline-action" onClick={() => openPaymentModal(fee)}>ส่งหลักฐาน</button>
+                            )}
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+              </div>
+
+              <div className="card fee-card">
+                <div className="cb">
+                  <div className="fee-section-head">
+                    <div>
+                      <div className="fee-section-title">ประวัติการชำระ</div>
+                      <div className="fee-section-sub">แสดงเฉพาะข้อมูลที่จำเป็น พร้อมเปิดดูรายละเอียดเพิ่มเติมได้</div>
+                    </div>
+                    <div className="fee-section-meta">{payments.length} รายการ</div>
+                  </div>
+
+                  <div className="fee-payment-list">
+                    <div className="fee-payment-head">
+                      <div>วันที่</div>
+                      <div>จำนวนเงิน</div>
+                      <div>วิธี</div>
+                      <div>สถานะ</div>
+                    </div>
+
+                    {feeLoading ? (
+                      <div className="fee-empty">กำลังโหลด...</div>
+                    ) : payments.length === 0 ? (
+                      <div className="fee-empty">ยังไม่มีประวัติการชำระ</div>
+                    ) : payments.map((row) => {
+                      const badge = getPaymentStatusBadge(row)
+                      const breakdown = getPaymentBreakdown(row)
+                      const amount = getPaymentAmount(row)
+                      const rejectedReason = getRejectedReason(row.note)
+                      const cleanNote = getCleanPaymentNote(row.note)
+                      const hasDetails = breakdown.length > 0 || row.slip_url || rejectedReason || cleanNote
+                      return (
+                        <details key={row.id} className="fee-payment-item" open={false}>
+                          <summary className="fee-payment-summary">
+                            <div className="fee-payment-col">
+                              <div className="fee-cell-kicker">วันที่</div>
+                              <div className="fee-cell-main">{formatDate(row.paid_at)}</div>
+                              <div className="fee-cell-sub">{row.fees ? `งวด ${formatFeePeriodLabel(row.fees)}` : 'ไม่ระบุงวด'}</div>
+                            </div>
+                            <div className="fee-payment-col fee-payment-col--amount">
+                              <div className="fee-cell-kicker">จำนวนเงิน</div>
+                              <div className="fee-cell-main fee-amount-strong">฿{formatMoney(amount)}</div>
+                              {breakdown.length > 0 && <div className="fee-cell-sub">{breakdown.length} รายการย่อย</div>}
+                            </div>
+                            <div className="fee-payment-col">
+                              <div className="fee-cell-kicker">วิธีชำระ</div>
+                              <div className="fee-cell-main">{formatMethod(row.payment_method)}</div>
+                            </div>
+                            <div className="fee-payment-col fee-payment-col--status">
+                              <div className="fee-cell-kicker">สถานะ</div>
+                              <div><span className={badge.className}>{badge.label}</span></div>
+                              {hasDetails && <div className="fee-cell-sub">ดูรายละเอียดเพิ่มเติม</div>}
+                            </div>
+                          </summary>
+
+                          {hasDetails && (
+                            <div className="fee-payment-detail">
+                              {breakdown.length > 0 && (
+                                <div className="fee-breakdown-block">
+                                  <div className="fee-breakdown-total">ชำระ: ฿{formatMoney(amount)}</div>
+                                  <div className="fee-breakdown-list">
+                                    {breakdown.map((item, index) => (
+                                      <div key={`${row.id}-${item.label}-${index}`} className="fee-breakdown-row">
+                                        <span>{item.label}</span>
+                                        <strong>฿{formatMoney(item.amount)}</strong>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+
+                              {row.slip_url && (
+                                <div className="fee-payment-links">
+                                  <a href={row.slip_url} target="_blank" rel="noreferrer">ดูหลักฐานการชำระ</a>
+                                </div>
+                              )}
+
+                              {(rejectedReason || cleanNote) && (
+                                <div className="fee-payment-note">
+                                  {rejectedReason && <div className="fee-payment-note-row fee-payment-note-row--error">เหตุผลตีกลับ: {rejectedReason}</div>}
+                                  {cleanNote && <div className="fee-payment-note-row">หมายเหตุ: {cleanNote}</div>}
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </details>
+                      )
+                    })}
                   </div>
                 </div>
               </div>
