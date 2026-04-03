@@ -27,6 +27,7 @@ import { listIssues, createIssue } from '../../lib/issues'
 import { getHouseDetail, updateUser } from '../../lib/users'
 import { getSetupConfig, applyDocumentTitle } from '../../lib/setup'
 import { insertPageViewLog } from '../../lib/loginLogs'
+import villageLogo from '../../assets/village-logo.svg'
 import '../admin/AdminLayout.css'
 import '../admin/AdminDashboard.css'
 import './ResidentLayout.css'
@@ -1026,7 +1027,9 @@ export default function ResidentLayout() {
 
       <aside className={`sidebar ${sidebarOpen ? 'open' : ''} ${sidebarCollapsed ? 'collapsed' : ''}`}>
         <div className="sb-logo">
-          <div className="sb-logo-ico">🏘️</div>
+          <div className="sb-logo-ico sb-logo-ico-img">
+            <img src={setup.loginCircleLogoUrl || setup.villageLogoUrl || villageLogo} alt="Village Logo" className="sb-logo-image" />
+          </div>
           <div>
             <div className="sb-logo-name">{setup.villageName}</div>
             <div className="sb-logo-sub">Village Management {setup.version || 'v12.3'}</div>
@@ -1346,13 +1349,12 @@ export default function ResidentLayout() {
                               <div className="vc-pl">{v.license_plate} <span style={{ fontSize: 12, color: 'var(--mu)', fontWeight: 400 }}>{v.province || ''}</span></div>
                               <span className={`bd ${v.status === 'active' ? 'b-ok' : v.status === 'pending' ? 'b-wn' : 'b-mu'}`}>{v.status === 'active' ? 'ใช้งาน' : v.status === 'pending' ? 'รออนุมัติ' : (v.status || '-')}</span>
                             </div>
-                            <div className="ig">
-                              <div className="ii"><div className="ik">ยี่ห้อ</div><div className="iv">{v.brand || '-'}</div></div>
-                              <div className="ii"><div className="ik">รุ่น</div><div className="iv">{v.model || '-'}</div></div>
-                              <div className="ii"><div className="ik">สี</div><div className="iv">{v.color || '-'}</div></div>
-                              <div className="ii"><div className="ik">ที่จอด</div><div className="iv">{v.parking_location || '-'}</div></div>
-                              <div className="ii"><div className="ik">Lock No.</div><div className="iv">{v.parking_lock_no || '-'}</div></div>
-                              <div className="ii"><div className="ik">ค่าจอด/เดือน</div><div className="iv">฿{v.parking_fee > 0 ? formatMoney(v.parking_fee) : '0'}</div></div>
+                            <div className="vc-kv-grid">
+                              <div className="vc-kv"><span className="vc-k">ยี่ห้อ/รุ่น</span><span className="vc-v">{[v.brand, v.model].filter(Boolean).join(' ') || '-'}</span></div>
+                              <div className="vc-kv"><span className="vc-k">สี</span><span className="vc-v">{v.color || '-'}</span></div>
+                              <div className="vc-kv"><span className="vc-k">ที่จอด</span><span className="vc-v">{v.parking_location || '-'}</span></div>
+                              <div className="vc-kv"><span className="vc-k">Lock</span><span className="vc-v">{v.parking_lock_no || '-'}</span></div>
+                              <div className="vc-kv vc-kv--full"><span className="vc-k">ค่าจอด/เดือน</span><span className="vc-v">฿{v.parking_fee > 0 ? formatMoney(v.parking_fee) : '0'}</span></div>
                             </div>
                           </div>
                         </div>
@@ -1431,13 +1433,12 @@ export default function ResidentLayout() {
                               <button className="btn btn-xs btn-a" onClick={() => openEditVehicleRequest(v)}>✏️ ขอแก้ไข</button>
                             </div>
                           </div>
-                          <div className="ig">
-                            <div className="ii"><div className="ik">ยี่ห้อ</div><div className="iv">{v.brand || '-'}</div></div>
-                            <div className="ii"><div className="ik">รุ่น</div><div className="iv">{v.model || '-'}</div></div>
-                            <div className="ii"><div className="ik">สี</div><div className="iv">{v.color || '-'}</div></div>
-                            <div className="ii"><div className="ik">ที่จอด</div><div className="iv">{v.parking_location || '-'}</div></div>
-                            <div className="ii"><div className="ik">Lock No.</div><div className="iv">{v.parking_lock_no || '-'}</div></div>
-                            <div className="ii"><div className="ik">ค่าจอด/เดือน</div><div className="iv">฿{v.parking_fee > 0 ? formatMoney(v.parking_fee) : '0'}</div></div>
+                          <div className="vc-kv-grid">
+                            <div className="vc-kv"><span className="vc-k">ยี่ห้อ/รุ่น</span><span className="vc-v">{[v.brand, v.model].filter(Boolean).join(' ') || '-'}</span></div>
+                            <div className="vc-kv"><span className="vc-k">สี</span><span className="vc-v">{v.color || '-'}</span></div>
+                            <div className="vc-kv"><span className="vc-k">ที่จอด</span><span className="vc-v">{v.parking_location || '-'}</span></div>
+                            <div className="vc-kv"><span className="vc-k">Lock</span><span className="vc-v">{v.parking_lock_no || '-'}</span></div>
+                            <div className="vc-kv vc-kv--full"><span className="vc-k">ค่าจอด/เดือน</span><span className="vc-v">฿{v.parking_fee > 0 ? formatMoney(v.parking_fee) : '0'}</span></div>
                           </div>
                         </div>
                       </div>

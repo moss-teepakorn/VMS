@@ -10,6 +10,7 @@ import {
   uploadVillageLogo,
   uploadJuristicSignature,
 } from '../../lib/systemConfig'
+import './AdminConfig.css'
 
 const NUMBER_FIELDS = [
   'fee_rate_per_sqw',
@@ -350,7 +351,7 @@ const AdminConfig = () => {
   }
 
   return (
-    <div className="pane on houses-compact">
+    <div className="pane on houses-compact cfg-modern">
       <div className="ph">
         <div className="ph-in">
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -363,150 +364,144 @@ const AdminConfig = () => {
         </div>
       </div>
 
-      <div className="card houses-main-card">
-        <div className="ch houses-list-head houses-main-head"><div className="ct">ตั้งค่าระบบ (system_config)</div></div>
-        <div className="cb houses-table-card-body houses-main-body" style={{ maxWidth: '1080px', margin: '0 auto', width: '100%' }}>
-          {loading ? (
-            <div style={{ color: 'var(--mu)' }}>กำลังโหลดข้อมูล...</div>
-          ) : (
-            <>
-              <div className="house-sec" style={{ paddingTop: 0, paddingBottom: 10 }}>
-                <div className="house-sec-title">ข้อมูลนิติบุคคล</div>
-                <div className="house-grid house-grid-3">
-                  <label className="house-field">
-                    <span>ชื่อหมู่บ้าน</span>
-                    <input name="village_name" value={form.village_name || ''} onChange={handleChange} />
-                  </label>
-                  <label className="house-field house-field-span-2">
-                    <span>ชื่อนิติบุคคล</span>
-                    <input name="juristic_name" value={form.juristic_name || ''} onChange={handleChange} />
-                  </label>
-                  <label className="house-field house-field-span-3">
-                    <span>ที่อยู่นิติบุคคล</span>
-                    <textarea name="juristic_address" rows="2" value={form.juristic_address || ''} onChange={handleChange} />
-                  </label>
-                  <label className="house-field">
-                    <span>โทรนิติบุคคล</span>
-                    <input name="juristic_phone" value={form.juristic_phone || ''} onChange={handleChange} />
-                  </label>
-                  <label className="house-field">
-                    <span>อีเมลนิติบุคคล</span>
-                    <input name="juristic_email" value={form.juristic_email || ''} onChange={handleChange} />
-                  </label>
-                  <div className="house-field house-field-span-3" style={{ padding: 0, border: 0, background: 'transparent' }}>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 10 }}>
-                      <div style={{ border: '1px solid var(--bo)', borderRadius: 12, padding: 10, background: '#fff' }}>
-                        <span style={{ display: 'block', marginBottom: 6 }}>โลโก้หน้า Login (PNG/JPG ≤ 50KB)</span>
-                        <input type="file" accept="image/png,image/jpeg,image/webp" onChange={handleLogoFile} />
-                        <div style={{ marginTop: 8, display: 'flex', alignItems: 'center', gap: 8, minHeight: 44 }}>
-                          {logoPreviewUrl ? (
-                            <>
-                              <div style={{ width: 44, height: 44, border: '1px solid var(--bo)', borderRadius: 10, background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
-                                <img src={logoPreviewUrl} alt="login-logo" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                              </div>
-                              <button type="button" className="btn btn-xs btn-dg" onClick={handleRemoveLogo}>ลบโลโก้</button>
-                            </>
-                          ) : (
-                            <div style={{ fontSize: 12, color: 'var(--mu)' }}>ยังไม่มีโลโก้</div>
-                          )}
-                        </div>
-                      </div>
+      <div className="cfg-wrap">
+        {loading ? (
+          <div className="card"><div className="cb" style={{ color: 'var(--mu)' }}>กำลังโหลดข้อมูล...</div></div>
+        ) : (
+          <>
+            <section className="card cfg-section-card">
+              <div className="ch"><div className="ct">ข้อมูลหมู่บ้าน</div></div>
+              <div className="cb cfg-section-body cfg-grid cfg-grid-2">
+                <label className="cfg-field">
+                  <span>ชื่อหมู่บ้าน</span>
+                  <input name="village_name" placeholder="กรอกชื่อหมู่บ้าน" value={form.village_name || ''} onChange={handleChange} />
+                </label>
+                <label className="cfg-field">
+                  <span>ชื่อนิติบุคคล</span>
+                  <input name="juristic_name" placeholder="กรอกชื่อนิติบุคคล" value={form.juristic_name || ''} onChange={handleChange} />
+                </label>
+                <label className="cfg-field cfg-span-full">
+                  <span>ที่อยู่นิติบุคคล</span>
+                  <textarea name="juristic_address" rows="2" placeholder="กรอกที่อยู่เต็มของนิติบุคคล" value={form.juristic_address || ''} onChange={handleChange} />
+                </label>
+              </div>
+            </section>
 
-                      <div style={{ border: '1px solid var(--bo)', borderRadius: 12, padding: 10, background: '#fff' }}>
-                        <span style={{ display: 'block', marginBottom: 6 }}>ลายเซ็นนิติ (PNG/JPG)</span>
-                        <input type="file" accept="image/png,image/jpeg,image/webp" onChange={handleSignatureFile} />
-                        <div style={{ marginTop: 8, display: 'flex', alignItems: 'center', gap: 8, minHeight: 44 }}>
-                          {signaturePreviewUrl ? (
-                            <>
-                              <div style={{ width: 120, height: 38, border: '1px solid var(--bo)', borderRadius: 8, background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
-                                <img src={signaturePreviewUrl} alt="juristic-signature" style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />
-                              </div>
-                              <button type="button" className="btn btn-xs btn-dg" onClick={handleRemoveSignature}>ลบลายเซ็น</button>
-                            </>
-                          ) : (
-                            <div style={{ fontSize: 12, color: 'var(--mu)' }}>ยังไม่มีลายเซ็น</div>
-                          )}
-                        </div>
-                      </div>
-                    </div>
+            <section className="card cfg-section-card">
+              <div className="ch"><div className="ct">ข้อมูลติดต่อ</div></div>
+              <div className="cb cfg-section-body cfg-grid cfg-grid-2">
+                <label className="cfg-field">
+                  <span>โทรนิติบุคคล</span>
+                  <input name="juristic_phone" placeholder="ตัวอย่าง: 081-xxx-xxxx" value={form.juristic_phone || ''} onChange={handleChange} />
+                </label>
+                <label className="cfg-field">
+                  <span>อีเมลนิติบุคคล</span>
+                  <input name="juristic_email" placeholder="example@village.com" value={form.juristic_email || ''} onChange={handleChange} />
+                </label>
+              </div>
+            </section>
+
+            <section className="card cfg-section-card">
+              <div className="ch"><div className="ct">โลโก้และลายเซ็น</div></div>
+              <div className="cb cfg-section-body cfg-grid cfg-grid-2">
+                <div className="cfg-upload-box">
+                  <div className="cfg-upload-title">โลโก้ระบบ</div>
+                  <div className="cfg-upload-hint">PNG/JPG/WEBP ขนาดไม่เกิน 50KB</div>
+                  <label className="cfg-upload-btn">
+                    อัปโหลดโลโก้
+                    <input type="file" accept="image/png,image/jpeg,image/webp" onChange={handleLogoFile} />
+                  </label>
+                  <div className="cfg-preview-row">
+                    {logoPreviewUrl ? (
+                      <>
+                        <div className="cfg-logo-preview"><img src={logoPreviewUrl} alt="login-logo" /></div>
+                        <button type="button" className="btn btn-g btn-xs" onClick={handleRemoveLogo}>ลบรูป</button>
+                      </>
+                    ) : <div className="cfg-empty">ยังไม่มีโลโก้</div>}
                   </div>
-                  <label className="house-field">
-                    <span>ธนาคาร</span>
-                    <input name="bank_name" value={form.bank_name || ''} onChange={handleChange} />
-                  </label>
-                  <label className="house-field">
-                    <span>เลขบัญชี</span>
-                    <input name="bank_account_no" value={form.bank_account_no || ''} onChange={handleChange} />
-                  </label>
-                  <label className="house-field house-field-span-2">
-                    <span>ชื่อบัญชี</span>
-                    <input name="bank_account_name" value={form.bank_account_name || ''} onChange={handleChange} />
-                  </label>
                 </div>
-              </div>
 
-              <div className="house-sec" style={{ paddingTop: 10, paddingBottom: 10 }}>
-                <div className="house-sec-title">การคำนวณค่าส่วนกลาง</div>
-                <div className="house-grid house-grid-3">
-                  <label className="house-field"><span>อัตราค่าส่วนกลาง/ตร.ว.</span><input type="number" name="fee_rate_per_sqw" value={form.fee_rate_per_sqw ?? ''} onChange={handleChange} /></label>
-                  <label className="house-field"><span>รอบเก็บ/ปี</span><input type="number" name="fee_periods_per_year" value={form.fee_periods_per_year ?? ''} onChange={handleChange} /></label>
-                  <label className="house-field"><span>วันครบกำหนดชำระ</span><input type="number" name="fee_due_day" value={form.fee_due_day ?? ''} onChange={handleChange} /></label>
-                  <label className="house-field"><span>ค่าขยะ/รอบ</span><input type="number" name="waste_fee_per_period" value={form.waste_fee_per_period ?? ''} onChange={handleChange} /></label>
-                  <label className="house-field"><span>ค่าจอด/คัน</span><input type="number" name="parking_fee_per_vehicle" value={form.parking_fee_per_vehicle ?? ''} onChange={handleChange} /></label>
-                  <label className="house-field"><span>ส่วนลดจ่ายเร็ว (%)</span><input type="number" name="early_pay_discount_pct" value={form.early_pay_discount_pct ?? ''} onChange={handleChange} /></label>
-                  <label className="house-field"><span>ค่าปรับค้างชำระ (%)</span><input type="number" name="overdue_fine_pct" value={form.overdue_fine_pct ?? ''} onChange={handleChange} /></label>
-                  <label className="house-field"><span>ผ่อนผัน (วัน)</span><input type="number" name="overdue_grace_days" value={form.overdue_grace_days ?? ''} onChange={handleChange} /></label>
-                  <label className="house-field"><span>ค่าทวงถาม</span><input type="number" name="notice_fee" value={form.notice_fee ?? ''} onChange={handleChange} /></label>
-                  <label className="house-field house-field-span-3">
-                    <span>ข้อความท้ายใบแจ้งหนี้</span>
-                    <textarea name="invoice_message" value={form.invoice_message || ''} onChange={handleChange} rows="2" />
+                <div className="cfg-upload-box">
+                  <div className="cfg-upload-title">ลายเซ็นนิติบุคคล</div>
+                  <div className="cfg-upload-hint">ใช้แบบอัปโหลดไฟล์เท่านั้น</div>
+                  <label className="cfg-upload-btn">
+                    อัปโหลดลายเซ็น
+                    <input type="file" accept="image/png,image/jpeg,image/webp" onChange={handleSignatureFile} />
                   </label>
-                </div>
-              </div>
-
-              <div className="house-sec" style={{ paddingTop: 10, paddingBottom: 10 }}>
-                <div className="house-sec-title">โซน / เฟส</div>
-                <div className="house-grid house-grid-3">
-                  <label className="house-field"><span>จำนวนโซน</span><input type="number" name="zone_count" value={form.zone_count ?? ''} onChange={handleChange} /></label>
-                  <label className="house-field"><span>จำนวนบ้านทั้งหมด</span><input type="number" name="total_houses" value={form.total_houses ?? ''} onChange={handleChange} /></label>
-                  <label className="house-field"><span>ที่จอดส่วนกลาง</span><input type="number" name="common_parking_slots" value={form.common_parking_slots ?? ''} onChange={handleChange} /></label>
-                </div>
-              </div>
-
-              <div className="house-sec" style={{ borderBottom: 0, paddingTop: 10, paddingBottom: 0 }}>
-                <div className="house-sec-title">ตั้งค่าระบบ</div>
-                <div className="house-grid house-grid-3">
-                  <label className="house-field">
-                    <span>รูปแบบวันที่</span>
-                    <input name="date_format" value={form.date_format || ''} onChange={handleChange} />
-                  </label>
-                  <label className="house-field">
-                    <span>ภาษา</span>
-                    <input name="system_language" value={form.system_language || ''} onChange={handleChange} />
-                  </label>
-                  <div className="house-field house-field-span-3" style={{ gap: '10px' }}>
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '16px' }}>
-                      <label className="cfg-toggle">
-                        <input className="cfg-checkbox" type="checkbox" name="enable_marketplace" checked={Boolean(form.enable_marketplace)} onChange={handleChange} />
-                        <span>เปิด Marketplace</span>
-                      </label>
-                      <label className="cfg-toggle">
-                        <input className="cfg-checkbox" type="checkbox" name="enable_technicians" checked={Boolean(form.enable_technicians)} onChange={handleChange} />
-                        <span>เปิดทำเนียบช่าง</span>
-                      </label>
-                    </div>
+                  <div className="cfg-preview-row">
+                    {signaturePreviewUrl ? (
+                      <>
+                        <div className="cfg-sign-preview"><img src={signaturePreviewUrl} alt="juristic-signature" /></div>
+                        <button type="button" className="btn btn-g btn-xs" onClick={handleRemoveSignature}>ลบรูป</button>
+                      </>
+                    ) : <div className="cfg-empty">ยังไม่มีลายเซ็น</div>}
                   </div>
                 </div>
               </div>
+            </section>
 
-              <div style={{ marginTop: 10, display: 'flex', justifyContent: 'flex-end' }}>
-                <button className="btn btn-p" onClick={handleSave} disabled={saving}>
-                  {saving ? 'กำลังบันทึก...' : 'บันทึกการตั้งค่า'}
-                </button>
+            <section className="card cfg-section-card">
+              <div className="ch"><div className="ct">ข้อมูลธนาคาร</div></div>
+              <div className="cb cfg-section-body cfg-grid cfg-grid-3">
+                <label className="cfg-field">
+                  <span>ธนาคาร</span>
+                  <input name="bank_name" placeholder="เช่น กสิกรไทย" value={form.bank_name || ''} onChange={handleChange} />
+                </label>
+                <label className="cfg-field">
+                  <span>เลขบัญชี</span>
+                  <input name="bank_account_no" placeholder="กรอกเลขบัญชี" value={form.bank_account_no || ''} onChange={handleChange} />
+                </label>
+                <label className="cfg-field">
+                  <span>ชื่อบัญชี</span>
+                  <input name="bank_account_name" placeholder="ชื่อนิติบุคคลหรือชื่อบัญชี" value={form.bank_account_name || ''} onChange={handleChange} />
+                </label>
               </div>
-            </>
-          )}
-        </div>
+            </section>
+
+            <section className="card cfg-section-card">
+              <div className="ch"><div className="ct">การตั้งค่าค่าบริการ</div></div>
+              <div className="cb cfg-section-body cfg-grid cfg-grid-3">
+                <label className="cfg-field"><span>อัตราค่าส่วนกลาง/ตร.ว.</span><input type="number" name="fee_rate_per_sqw" value={form.fee_rate_per_sqw ?? ''} onChange={handleChange} /></label>
+                <label className="cfg-field"><span>รอบเก็บ/ปี</span><input type="number" name="fee_periods_per_year" value={form.fee_periods_per_year ?? ''} onChange={handleChange} /></label>
+                <label className="cfg-field"><span>วันครบกำหนดชำระ</span><input type="number" name="fee_due_day" value={form.fee_due_day ?? ''} onChange={handleChange} /></label>
+                <label className="cfg-field"><span>ค่าขยะ/รอบ</span><input type="number" name="waste_fee_per_period" value={form.waste_fee_per_period ?? ''} onChange={handleChange} /></label>
+                <label className="cfg-field"><span>ค่าจอด/คัน</span><input type="number" name="parking_fee_per_vehicle" value={form.parking_fee_per_vehicle ?? ''} onChange={handleChange} /></label>
+                <label className="cfg-field"><span>ค่าทวงถาม</span><input type="number" name="notice_fee" value={form.notice_fee ?? ''} onChange={handleChange} /></label>
+              </div>
+            </section>
+
+            <section className="card cfg-section-card">
+              <div className="ch"><div className="ct">เงื่อนไขและระบบ</div></div>
+              <div className="cb cfg-section-body cfg-grid cfg-grid-3">
+                <label className="cfg-field"><span>ส่วนลดจ่ายเร็ว (%)</span><input type="number" name="early_pay_discount_pct" value={form.early_pay_discount_pct ?? ''} onChange={handleChange} /></label>
+                <label className="cfg-field"><span>ค่าปรับค้างชำระ (%)</span><input type="number" name="overdue_fine_pct" value={form.overdue_fine_pct ?? ''} onChange={handleChange} /></label>
+                <label className="cfg-field"><span>ผ่อนผัน (วัน)</span><input type="number" name="overdue_grace_days" value={form.overdue_grace_days ?? ''} onChange={handleChange} /></label>
+                <label className="cfg-field cfg-span-full"><span>ข้อความท้ายใบแจ้งหนี้</span><textarea name="invoice_message" rows="2" placeholder="ข้อความแสดงท้ายใบแจ้งหนี้" value={form.invoice_message || ''} onChange={handleChange} /></label>
+                <label className="cfg-field"><span>รูปแบบวันที่</span><input name="date_format" placeholder="เช่น DD/MM/YYYY (พ.ศ.)" value={form.date_format || ''} onChange={handleChange} /></label>
+                <label className="cfg-field"><span>ภาษา</span><input name="system_language" placeholder="เช่น ภาษาไทย" value={form.system_language || ''} onChange={handleChange} /></label>
+                <div className="cfg-field cfg-span-full cfg-toggles">
+                  <label className="cfg-toggle"><input className="cfg-checkbox" type="checkbox" name="enable_marketplace" checked={Boolean(form.enable_marketplace)} onChange={handleChange} /><span>เปิด Marketplace</span></label>
+                  <label className="cfg-toggle"><input className="cfg-checkbox" type="checkbox" name="enable_technicians" checked={Boolean(form.enable_technicians)} onChange={handleChange} /><span>เปิดทำเนียบช่าง</span></label>
+                </div>
+              </div>
+            </section>
+
+            <section className="card cfg-section-card">
+              <div className="ch"><div className="ct">โซน/เฟส</div></div>
+              <div className="cb cfg-section-body cfg-grid cfg-grid-3">
+                <label className="cfg-field"><span>จำนวนโซน</span><input type="number" name="zone_count" value={form.zone_count ?? ''} onChange={handleChange} /></label>
+                <label className="cfg-field"><span>จำนวนบ้านทั้งหมด</span><input type="number" name="total_houses" value={form.total_houses ?? ''} onChange={handleChange} /></label>
+                <label className="cfg-field"><span>ที่จอดส่วนกลาง</span><input type="number" name="common_parking_slots" value={form.common_parking_slots ?? ''} onChange={handleChange} /></label>
+              </div>
+            </section>
+
+            <div className="cfg-sticky-actions">
+              <button className="btn btn-p cfg-save-btn" onClick={handleSave} disabled={saving}>
+                {saving ? 'กำลังบันทึก...' : 'บันทึกการตั้งค่า'}
+              </button>
+            </div>
+          </>
+        )}
       </div>
     </div>
   )

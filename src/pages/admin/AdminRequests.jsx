@@ -185,7 +185,7 @@ const AdminRequests = () => {
         </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '260px 1fr', gap: 16, alignItems: 'start' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '260px 1fr', gap: 16, alignItems: 'start', marginTop: 14 }}>
 
         {/* Left — category list */}
         <div className="card" style={{ position: 'sticky', top: 16 }}>
