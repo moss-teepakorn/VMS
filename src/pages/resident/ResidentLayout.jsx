@@ -1348,9 +1348,7 @@ export default function ResidentLayout() {
                           <span className={`bd ${v.status === 'active' ? 'b-ok' : v.status === 'pending' ? 'b-wn' : 'b-mu'}`}>{v.status === 'active' ? 'ใช้งาน' : v.status === 'pending' ? 'รออนุมัติ' : (v.status || '-')}</span>
                         </div>
                         <div className="vc-line">
-                          {[v.brand, v.model].filter(Boolean).join(' ') || '-'} | สี{v.color || '-'} | จอด: {v.parking_location || '-'}
-                          {v.parking_lock_no ? ` (Lock ${v.parking_lock_no})` : ''}
-                          {v.parking_fee > 0 ? ` | ฿${formatMoney(v.parking_fee)}/เดือน` : ''}
+                          {[v.brand, v.model].filter(Boolean).join(' ') || '-'} | สี{v.color || '-'} | จอด: {v.parking_location || '-'} | Lock: {v.parking_lock_no || '-'} | ค่าจอด: ฿{v.parking_fee > 0 ? formatMoney(v.parking_fee) : '0'}/เดือน
                         </div>
                       </div>
                     ))}
@@ -1429,9 +1427,7 @@ export default function ResidentLayout() {
                         </div>
                       </div>
                       <div className="vc-line">
-                        {[v.brand, v.model].filter(Boolean).join(' ') || '-'} | สี{v.color || '-'} | จอด: {v.parking_location || '-'}
-                        {v.parking_lock_no ? ` (Lock ${v.parking_lock_no})` : ''}
-                        {v.parking_fee > 0 ? ` | ฿${formatMoney(v.parking_fee)}/เดือน` : ''}
+                        {[v.brand, v.model].filter(Boolean).join(' ') || '-'} | สี{v.color || '-'} | จอด: {v.parking_location || '-'} | Lock: {v.parking_lock_no || '-'} | ค่าจอด: ฿{v.parking_fee > 0 ? formatMoney(v.parking_fee) : '0'}/เดือน
                       </div>
                     </div>
                   ))}
