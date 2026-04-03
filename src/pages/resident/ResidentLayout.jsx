@@ -18,9 +18,11 @@ import { listVehicles, listVehicleImages, deleteVehicleImagesByPaths } from '../
 import {
   listVehicleRequests,
   createVehicleRequest,
+  listVehicleRequestImages,
   updateVehicleRequestImageUrls,
   uploadVehicleRequestImages,
   cancelVehicleRequest,
+  deleteVehicleRequestImagesByPaths,
 } from '../../lib/vehicleRequests'
 import { listIssues, createIssue } from '../../lib/issues'
 import { getHouseDetail, updateUser } from '../../lib/users'
@@ -839,8 +841,35 @@ export default function ResidentLayout() {
     setVehicleReqMode('add')
     setVehicleReqTarget(null)
     setVehicleReqForm(EMPTY_VR_FORM)
+    setVehicleReqRemovedPaths([])
     setVehicleReqAttachments([])
     setShowVehicleReqModal(true)
+  }
+
+  async function loadVehicleReqAttachments({ vehicleId = null, requestId = null, includeVehicleImages = false }) {
+    const attachments = []
+
+    if (includeVehicleImages && vehicleId) {
+      const vehicleImages = await listVehicleImages(vehicleId)
+      attachments.push(...vehicleImages.map((img) => ({
+        source: 'existing-vehicle',
+        name: img.name,
+        path: img.path,
+        url: img.url,
+      })))
+    }
+
+    if (requestId) {
+      const requestImages = await listVehicleRequestImages(requestId)
+      attachments.push(...requestImages.map((img) => ({
+        source: 'existing-request',
+        name: img.name,
+        path: img.path,
+        url: img.url,
+      })))
+    }
+
+    setVehicleReqAttachments(attachments)
   }
 
   async function openEditVehicleRequest(vehicle) {
@@ -869,8 +898,7 @@ export default function ResidentLayout() {
     setVehicleReqAttachments([])
     setShowVehicleReqModal(true)
     try {
-      const imgs = await listVehicleImages(vehicle.id)
-      setVehicleReqAttachments(imgs.map((img) => ({ source: 'existing', name: img.name, path: img.path, url: img.url })))
+      await loadVehicleReqAttachments({ vehicleId: vehicle.id, includeVehicleImages: true })
     } catch { /* no existing images or error — leave empty */ }
   }
 
@@ -898,11 +926,11 @@ export default function ResidentLayout() {
     const selectedFiles = Array.from(event.target.files || [])
     event.target.value = ''
     if (selectedFiles.length === 0) return
-    const remaining = MAX_ATTACHMENTS - vehicleReqAttachments.filter((a) => a.source === 'new').length
+    const remaining = MAX_ATTACHMENTS - vehicleReqAttachments.length
     if (remaining <= 0) { await showSwal({ icon: 'warning', title: 'แนบรูปได้สูงสุด 5 รูป' }); return }
     const toProcess = selectedFiles.slice(0, remaining)
     try {
-      const startIdx = vehicleReqAttachments.filter((a) => a.source === 'new').length + 1
+      const startIdx = vehicleReqAttachments.length + 1
       const prepared = []
       for (let i = 0; i < toProcess.length; i++) {
         const resized = await resizeImageToLimit(toProcess[i], startIdx + i)
@@ -918,7 +946,7 @@ export default function ResidentLayout() {
     setVehicleReqAttachments((cur) => {
       const next = cur.filter((item) => item !== target)
       if (target.source === 'new' && target.url) URL.revokeObjectURL(target.url)
-      if (target.source === 'existing' && target.path) {
+      if ((target.source === 'existing-vehicle' || target.source === 'existing-request') && target.path) {
         setVehicleReqRemovedPaths((prev) => (prev.includes(target.path) ? prev : [...prev, target.path]))
       }
       return next
@@ -936,7 +964,7 @@ export default function ResidentLayout() {
     if (vehicleReqMode === 'add' && vehicleReqForm.brand === 'อื่นๆ' && !vehicleReqForm.brand_other.trim()) {
       await showSwal({ icon: 'warning', title: 'กรุณากรอกยี่ห้อรถ' }); return
     }
-    if (vehicleReqMode === 'add' && vehicleReqAttachments.filter((a) => a.source === 'new').length === 0) {
+    if (vehicleReqMode === 'add' && vehicleReqAttachments.length === 0) {
       await showSwal({ icon: 'warning', title: 'กรุณาแนบรูปรถอย่างน้อย 1 รูป' }); return
     }
 
@@ -967,14 +995,25 @@ export default function ResidentLayout() {
 
       const req = await createVehicleRequest(payload)
 
+      const retainedRequestImageUrls = vehicleReqAttachments
+        .filter((a) => a.source === 'existing-request' && a.url)
+        .map((a) => a.url)
       const newFiles = vehicleReqAttachments.filter((a) => a.source === 'new' && a.file).map((a) => a.file)
+      let uploadedUrls = []
       if (newFiles.length > 0) {
-        const urls = await uploadVehicleRequestImages(req.id, newFiles)
-        await updateVehicleRequestImageUrls(req.id, urls)
+        uploadedUrls = await uploadVehicleRequestImages(req.id, newFiles)
+      }
+
+      const imageUrls = [...retainedRequestImageUrls, ...uploadedUrls]
+      if (imageUrls.length > 0) {
+        await updateVehicleRequestImageUrls(req.id, imageUrls)
       }
 
       if (vehicleReqRemovedPaths.length > 0) {
-        await deleteVehicleImagesByPaths(vehicleReqRemovedPaths).catch(() => {})
+        const vehiclePaths = vehicleReqRemovedPaths.filter((path) => !String(path || '').startsWith('requests/'))
+        const requestPaths = vehicleReqRemovedPaths.filter((path) => String(path || '').startsWith('requests/'))
+        if (vehiclePaths.length > 0) await deleteVehicleImagesByPaths(vehiclePaths).catch(() => {})
+        if (requestPaths.length > 0) await deleteVehicleRequestImagesByPaths(requestPaths).catch(() => {})
       }
 
       await showSwal({ icon: 'success', title: vehicleReqMode === 'add' ? 'ส่งคำขอเพิ่มรถแล้ว' : 'ส่งคำขอแก้ไขรถแล้ว', text: 'รอนิติอนุมัติ', timer: 1600, showConfirmButton: false })
@@ -1004,7 +1043,7 @@ export default function ResidentLayout() {
     }
   }
 
-  function openRejectedVehicleReq(req) {
+  async function openRejectedVehicleReq(req) {
     const [prefix = '', number = ''] = String(req.license_plate || '').split('-')
 
     if (req.request_type === 'add') {
@@ -1032,6 +1071,9 @@ export default function ResidentLayout() {
       setVehicleReqRemovedPaths([])
       setVehicleReqAttachments([])
       setShowVehicleReqModal(true)
+      try {
+        await loadVehicleReqAttachments({ requestId: req.id })
+      } catch { /* ignore image load errors */ }
       return
     }
 
@@ -1072,6 +1114,9 @@ export default function ResidentLayout() {
     setVehicleReqRemovedPaths([])
     setVehicleReqAttachments([])
     setShowVehicleReqModal(true)
+    try {
+      await loadVehicleReqAttachments({ vehicleId: target.id, requestId: req.id, includeVehicleImages: true })
+    } catch { /* ignore image load errors */ }
   }
 
   return (
@@ -2230,7 +2275,9 @@ export default function ResidentLayout() {
                           <button type="button" onClick={() => showSwal({ imageUrl: att.url, showConfirmButton: false, showCloseButton: true, width: 'auto', background: '#0f172a' })} style={{ width: 64, height: 64, borderRadius: 8, border: '1px solid var(--bo)', background: '#fff', padding: 0, overflow: 'hidden', cursor: 'pointer' }}>
                             <img src={att.url} alt={att.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                           </button>
-                          <div style={{ fontSize: 10.5, color: 'var(--mu)', marginTop: 2, textAlign: 'center' }}>{att.source === 'existing' ? 'เดิม' : 'ใหม่'}</div>
+                          <div style={{ fontSize: 10.5, color: 'var(--mu)', marginTop: 2, textAlign: 'center' }}>
+                            {att.source === 'existing-vehicle' ? 'เดิมในระบบ' : att.source === 'existing-request' ? 'รูปคำขอเดิม' : 'ใหม่'}
+                          </div>
                           <button type="button" onClick={() => handleRemoveVehicleReqAttachment(att)} className="btn btn-xs btn-dg" style={{ marginTop: 4, width: '100%' }}>ลบ</button>
                         </div>
                       ))}

@@ -124,6 +124,46 @@ export async function updateVehicleRequestImageUrls(id, imageUrls) {
   return data
 }
 
+export async function listVehicleRequestImages(requestId) {
+  const folder = `requests/${String(requestId || '').trim()}`
+  if (folder === 'requests/') return []
+
+  const { data, error } = await supabase.storage
+    .from(REQUEST_IMAGE_BUCKET)
+    .list(folder, { limit: 20, sortBy: { column: 'name', order: 'asc' } })
+
+  if (error) {
+    if (String(error.message || '').toLowerCase().includes('not found')) return []
+    throw error
+  }
+
+  return (data || [])
+    .filter((item) => item.name)
+    .map((item) => {
+      const path = `${folder}/${item.name}`
+      const { data: publicUrlData } = supabase.storage
+        .from(REQUEST_IMAGE_BUCKET)
+        .getPublicUrl(path)
+
+      return {
+        name: item.name,
+        path,
+        url: publicUrlData?.publicUrl || '',
+      }
+    })
+}
+
+export async function deleteVehicleRequestImagesByPaths(paths) {
+  if (!Array.isArray(paths) || paths.length === 0) return true
+
+  const { error } = await supabase.storage
+    .from(REQUEST_IMAGE_BUCKET)
+    .remove(paths)
+
+  if (error) throw error
+  return true
+}
+
 export async function updateVehicleRequestStatus(id, { status, adminNote = null }) {
   const updates = {
     status,
