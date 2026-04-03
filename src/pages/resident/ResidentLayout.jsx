@@ -1342,23 +1342,18 @@ export default function ResidentLayout() {
                     ) : houseVehicles.length === 0 ? (
                       <div style={{ color: 'var(--mu)', textAlign: 'center', padding: '16px 0' }}>ยังไม่มีข้อมูลรถ</div>
                     ) : houseVehicles.map((v) => (
-                        <div key={v.id} className="vc">
-                          <div className="vc-ico">{vehicleTypeIcon(v.vehicle_type)}</div>
-                          <div style={{ flex: 1, minWidth: 0 }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginBottom: 8 }}>
-                              <div className="vc-pl">{v.license_plate} <span style={{ fontSize: 12, color: 'var(--mu)', fontWeight: 400 }}>{v.province || ''}</span></div>
-                              <span className={`bd ${v.status === 'active' ? 'b-ok' : v.status === 'pending' ? 'b-wn' : 'b-mu'}`}>{v.status === 'active' ? 'ใช้งาน' : v.status === 'pending' ? 'รออนุมัติ' : (v.status || '-')}</span>
-                            </div>
-                            <div className="vc-kv-grid">
-                              <div className="vc-kv"><span className="vc-k">ยี่ห้อ/รุ่น</span><span className="vc-v">{[v.brand, v.model].filter(Boolean).join(' ') || '-'}</span></div>
-                              <div className="vc-kv"><span className="vc-k">สี</span><span className="vc-v">{v.color || '-'}</span></div>
-                              <div className="vc-kv"><span className="vc-k">ที่จอด</span><span className="vc-v">{v.parking_location || '-'}</span></div>
-                              <div className="vc-kv"><span className="vc-k">Lock</span><span className="vc-v">{v.parking_lock_no || '-'}</span></div>
-                              <div className="vc-kv vc-kv--full"><span className="vc-k">ค่าจอด/เดือน</span><span className="vc-v">฿{v.parking_fee > 0 ? formatMoney(v.parking_fee) : '0'}</span></div>
-                            </div>
-                          </div>
+                      <div key={v.id} className="vc vc-compact">
+                        <div className="vc-row">
+                          <div className="vc-pl"><span className="vc-ico">{vehicleTypeIcon(v.vehicle_type)}</span> {v.license_plate || '-'} <span className="vc-province">{v.province || '-'}</span></div>
+                          <span className={`bd ${v.status === 'active' ? 'b-ok' : v.status === 'pending' ? 'b-wn' : 'b-mu'}`}>{v.status === 'active' ? 'ใช้งาน' : v.status === 'pending' ? 'รออนุมัติ' : (v.status || '-')}</span>
                         </div>
-                      ))}
+                        <div className="vc-line">
+                          {[v.brand, v.model].filter(Boolean).join(' ') || '-'} | สี{v.color || '-'} | จอด: {v.parking_location || '-'}
+                          {v.parking_lock_no ? ` (Lock ${v.parking_lock_no})` : ''}
+                          {v.parking_fee > 0 ? ` | ฿${formatMoney(v.parking_fee)}/เดือน` : ''}
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 </div>
               </div>
@@ -1367,18 +1362,20 @@ export default function ResidentLayout() {
 
           {activeSection === 'vehicles' && (
             <>
-              <div className="ph" style={{ marginBottom: 18 }}>
+              <div className="ph ph-veh-head" style={{ marginBottom: 12 }}>
                 <div className="ph-in">
                   <div style={{ display: 'flex', alignItems: 'center', gap: 11 }}>
                     <div className="ph-ico">🚗</div>
-                    <div><div className="ph-h1">ข้อมูลรถของฉัน</div><div className="ph-sub">ยานพาหนะที่ลงทะเบียนไว้</div></div>
+                    <div><div className="ph-h1">ข้อมูลรถของฉัน</div><div className="ph-sub">รายการรถที่ลงทะเบียนในบ้านของฉัน</div></div>
                   </div>
                   <div className="ph-acts">
-                    <button className="btn btn-w btn-sm" onClick={openAddVehicleRequest}>+ ขอเพิ่มรถ</button>
+                    <button className="btn btn-p btn-sm" onClick={openAddVehicleRequest}>+ เพิ่มรถ</button>
                   </div>
                 </div>
               </div>
-              <div className="al al-i">ℹ️ การขอแก้ไขข้อมูลรถต้องผ่านนิติก่อนจึงจะมีผล</div>
+              {vehicleRequestsLoaded && vehicleRequests.some((r) => r.status === 'pending' || r.status === 'rejected') && (
+                <div className="veh-note">ℹ️ คำขอแก้ไขรถต้องรอนิติอนุมัติก่อนมีผล</div>
+              )}
 
               {/* Pending requests block */}
               {vehicleRequestsLoaded && vehicleRequests.filter((r) => r.status === 'pending' || r.status === 'rejected').length > 0 && (
@@ -1423,26 +1420,21 @@ export default function ResidentLayout() {
                   ) : houseVehicles.length === 0 ? (
                     <div style={{ color: 'var(--mu)', textAlign: 'center', padding: '20px 0' }}>ยังไม่มีข้อมูลรถ</div>
                   ) : houseVehicles.map((v) => (
-                      <div key={v.id} className="vc">
-                        <div className="vc-ico">{vehicleTypeIcon(v.vehicle_type)}</div>
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginBottom: 8 }}>
-                            <div className="vc-pl">{v.license_plate} <span style={{ fontSize: 12, color: 'var(--mu)', fontWeight: 400 }}>{v.province || ''}</span></div>
-                            <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
-                              <span className={`bd ${v.status === 'active' ? 'b-ok' : v.status === 'pending' ? 'b-wn' : 'b-mu'}`}>{v.status === 'active' ? 'ใช้งาน' : v.status === 'pending' ? 'รออนุมัติ' : (v.status || '-')}</span>
-                              <button className="btn btn-xs btn-a" onClick={() => openEditVehicleRequest(v)}>✏️ ขอแก้ไข</button>
-                            </div>
-                          </div>
-                          <div className="vc-kv-grid">
-                            <div className="vc-kv"><span className="vc-k">ยี่ห้อ/รุ่น</span><span className="vc-v">{[v.brand, v.model].filter(Boolean).join(' ') || '-'}</span></div>
-                            <div className="vc-kv"><span className="vc-k">สี</span><span className="vc-v">{v.color || '-'}</span></div>
-                            <div className="vc-kv"><span className="vc-k">ที่จอด</span><span className="vc-v">{v.parking_location || '-'}</span></div>
-                            <div className="vc-kv"><span className="vc-k">Lock</span><span className="vc-v">{v.parking_lock_no || '-'}</span></div>
-                            <div className="vc-kv vc-kv--full"><span className="vc-k">ค่าจอด/เดือน</span><span className="vc-v">฿{v.parking_fee > 0 ? formatMoney(v.parking_fee) : '0'}</span></div>
-                          </div>
+                    <div key={v.id} className="vc vc-compact">
+                      <div className="vc-row">
+                        <div className="vc-pl"><span className="vc-ico">{vehicleTypeIcon(v.vehicle_type)}</span> {v.license_plate || '-'} <span className="vc-province">{v.province || '-'}</span></div>
+                        <div className="vc-actions">
+                          <span className={`bd ${v.status === 'active' ? 'b-ok' : v.status === 'pending' ? 'b-wn' : 'b-mu'}`}>{v.status === 'active' ? 'ใช้งาน' : v.status === 'pending' ? 'รออนุมัติ' : (v.status || '-')}</span>
+                          <button className="btn btn-xs btn-a" onClick={() => openEditVehicleRequest(v)}>แก้ไข</button>
                         </div>
                       </div>
-                    ))}
+                      <div className="vc-line">
+                        {[v.brand, v.model].filter(Boolean).join(' ') || '-'} | สี{v.color || '-'} | จอด: {v.parking_location || '-'}
+                        {v.parking_lock_no ? ` (Lock ${v.parking_lock_no})` : ''}
+                        {v.parking_fee > 0 ? ` | ฿${formatMoney(v.parking_fee)}/เดือน` : ''}
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </div>
             </>
