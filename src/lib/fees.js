@@ -248,7 +248,7 @@ export async function listHouseFees(houseId, { status = 'all', year = 'all' } = 
 
   let query = supabase
     .from('fees')
-    .select('id, house_id, year, period, invoice_date, due_date, status, total_amount, note, created_at')
+    .select('id, house_id, year, period, invoice_date, due_date, status, fee_common, fee_parking, fee_waste, fee_overdue_common, fee_overdue_fine, fee_overdue_notice, fee_fine, fee_notice, fee_violation, fee_other, total_amount, note, created_at')
     .eq('house_id', houseId)
     .order('year', { ascending: false })
     .order('created_at', { ascending: false })

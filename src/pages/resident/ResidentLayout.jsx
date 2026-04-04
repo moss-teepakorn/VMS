@@ -597,6 +597,32 @@ export default function ResidentLayout() {
     return itemTotal > 0 ? itemTotal : Number(row?.amount || 0)
   }
 
+  const feeItemDefs = [
+    { key: 'fee_common', label: 'ค่าส่วนกลาง' },
+    { key: 'fee_parking', label: 'ค่าจอดรถ' },
+    { key: 'fee_waste', label: 'ค่าขยะ' },
+    { key: 'fee_overdue_common', label: 'ยอดค้างยกมา' },
+    { key: 'fee_overdue_fine', label: 'ค่าปรับยอดค้าง' },
+    { key: 'fee_overdue_notice', label: 'ค่าทวงถามยอดค้าง' },
+    { key: 'fee_fine', label: 'ค่าปรับ' },
+    { key: 'fee_notice', label: 'ค่าทวงถาม' },
+    { key: 'fee_violation', label: 'ค่ากระทำผิด' },
+    { key: 'fee_other', label: 'ค่าอื่นๆ' },
+  ]
+
+  function getInvoiceFeeItemRows(fee) {
+    return feeItemDefs
+      .map((item) => ({
+        ...item,
+        amount: Number(fee?.[item.key] || 0),
+      }))
+      .filter((item) => item.amount !== 0)
+  }
+
+  function getPaymentTypeLabel(row) {
+    return row?.fee_id ? 'ค่าส่วนกลาง' : 'ค่าอื่นๆ'
+  }
+
   function openHtmlInWindow(html) {
     const w = window.open('', '_blank', 'width=1100,height=900')
     if (!w) return null
@@ -690,6 +716,25 @@ export default function ResidentLayout() {
     const fmtDate = (v) => v ? new Date(v).toLocaleDateString('th-TH', { year: 'numeric', month: 'short', day: 'numeric' }) : '-'
     const fmtMoney = (v) => Number(v || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
     const totalAmount = Number(fee.total_amount || 0)
+    const invoiceRows = getInvoiceFeeItemRows(fee)
+    const renderRows = () => {
+      if (invoiceRows.length === 0) {
+        return `
+          <tr>
+            <td class="c">1</td>
+            <td>ไม่มีรายการเรียกเก็บ</td>
+            <td class="r">0.00</td>
+          </tr>
+        `
+      }
+      return invoiceRows.map((item, index) => `
+        <tr>
+          <td class="c">${index + 1}</td>
+          <td>${item.label}</td>
+          <td class="r">${fmtMoney(item.amount)}</td>
+        </tr>
+      `).join('')
+    }
     const renderSheet = (copyLabel) => `
       <div class="sheet">
         <div class="head">
@@ -724,13 +769,7 @@ export default function ResidentLayout() {
                 <th class="r" style="width:180px;">จำนวนเงิน (บาท)</th>
               </tr>
             </thead>
-            <tbody>
-              <tr>
-                <td class="c">1</td>
-                <td>ค่าส่วนกลาง งวด ${periodText}</td>
-                <td class="r">${fmtMoney(totalAmount)}</td>
-              </tr>
-            </tbody>
+            <tbody>${renderRows()}</tbody>
             <tfoot>
               <tr>
                 <td colspan="2" class="r"><strong>รวมทั้งสิ้น</strong></td>
@@ -779,7 +818,7 @@ export default function ResidentLayout() {
   }
 
   function buildResidentReceiptHtml(payment) {
-    const receiptNo = `REC-${String(payment?.id || '').slice(0, 8).toUpperCase()}`
+    const receiptNo = payment?.receipt_no || `REC-${String(payment?.id || '').slice(0, 8).toUpperCase()}`
     const logoSrc = setup.loginCircleLogoUrl || setup.villageLogoUrl || ''
     const ownerName = houseDetail?.owner_name || profile?.full_name || '-'
     const fmtDate = (v) => v ? new Date(v).toLocaleDateString('th-TH', { year: 'numeric', month: 'short', day: 'numeric' }) : '-'
@@ -787,6 +826,8 @@ export default function ResidentLayout() {
     const breakdown = getPaymentBreakdown(payment)
     const totalPaid = getPaymentAmount(payment)
     const periodLabel = payment.fees ? `งวด ${formatFeePeriodLabel(payment.fees)}` : 'รับชำระทั่วไป'
+    const paymentType = getPaymentTypeLabel(payment)
+    const receiptDocTitle = paymentType === 'ค่าส่วนกลาง' ? 'ใบเสร็จรับเงินค่าส่วนกลาง' : 'ใบเสร็จรับเงินค่าอื่นๆ'
     const renderRows = () => {
       if (breakdown.length > 0) {
         return breakdown.map((item, idx) => `
@@ -800,7 +841,7 @@ export default function ResidentLayout() {
       return `
         <tr>
           <td class="c">1</td>
-          <td>ค่าส่วนกลาง ${periodLabel}</td>
+          <td>${paymentType} ${periodLabel}</td>
           <td class="r">${fmtMoney(totalPaid)}</td>
         </tr>
       `
@@ -811,7 +852,7 @@ export default function ResidentLayout() {
           <div class="brand">
             ${logoSrc ? `<div class="logo-wrap"><img src="${logoSrc}" alt="logo" /></div>` : ''}
             <div>
-              <div class="doc">ใบเสร็จรับเงินค่าส่วนกลาง</div>
+              <div class="doc">${receiptDocTitle}</div>
               <div class="village">${setup.villageName || 'The Greenfield'}</div>
               <div class="sub">${setup.address || '-'}</div>
             </div>
@@ -827,6 +868,7 @@ export default function ResidentLayout() {
           <div class="grid">
             <div><span>บ้านเลขที่</span><strong>${houseNo || '-'}</strong></div>
             <div><span>ชื่อผู้ชำระ</span><strong>${ownerName}</strong></div>
+            <div><span>ประเภทการชำระ</span><strong>${paymentType}</strong></div>
             <div><span>รอบใบแจ้งหนี้</span><strong>${periodLabel}</strong></div>
             <div><span>วิธีชำระ</span><strong>${formatMethod(payment.payment_method)}</strong></div>
           </div>
@@ -866,7 +908,7 @@ export default function ResidentLayout() {
     return `
       <html>
         <head>
-          <title>ใบเสร็จรับเงิน ${receiptNo}</title>
+          <title>${receiptDocTitle} ${receiptNo}</title>
           <link rel="preconnect" href="https://fonts.googleapis.com">
           <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
           <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;700&display=swap" rel="stylesheet">
@@ -1960,6 +2002,7 @@ export default function ResidentLayout() {
               <div className="fee-invoice-table">
                 <div className="fee-invoice-head">
                   <div>งวด</div>
+                  <div>ประเภท</div>
                   <div>ครบกำหนด</div>
                   <div>ยอด</div>
                   <div>สถานะ</div>
@@ -1977,6 +2020,9 @@ export default function ResidentLayout() {
                     <div key={fee.id} className={`fee-invoice-row tone-${tone}`}>
                       <div className="fee-invoice-cell">
                         <div className="fee-cell-main">{formatFeePeriodLabel(fee)}</div>
+                      </div>
+                      <div className="fee-invoice-cell">
+                        <div className="fee-cell-main">ค่าส่วนกลาง</div>
                       </div>
                       <div className="fee-invoice-cell">
                         <div className="fee-cell-main">{formatDate(fee.due_date)}</div>
@@ -2037,7 +2083,7 @@ export default function ResidentLayout() {
                         <div className="fee-payment-col fee-payment-col--status">
                           <span className={badge.className}>{badge.label}</span>
                           {canPrintReceipt && (
-                            <button className="btn btn-xs btn-g fee-receipt-btn" onClick={(e) => { e.preventDefault(); handlePrintReceipt(row) }}>🖨 ใบเสร็จ</button>
+                            <button className="btn btn-xs btn-g" onClick={(e) => { e.preventDefault(); handlePrintReceipt(row) }}>🖨 ใบเสร็จ</button>
                           )}
                         </div>
                       </summary>
