@@ -3,6 +3,23 @@ import { supabase } from './supabase'
 const VIOLATION_IMAGE_BUCKET = 'violation-images'
 const MAX_VIOLATION_IMAGE_BYTES = 100 * 1024
 
+function normalizeConversationMessage(value) {
+  return String(value || '').replace(/\s+/g, ' ').trim()
+}
+
+function formatConversationEntry(actor, message, timestamp = new Date().toISOString()) {
+  return `[${timestamp}] ${actor}: ${message}`
+}
+
+function appendConversationLog(existingText, incomingText, actor) {
+  const message = normalizeConversationMessage(incomingText)
+  const existing = String(existingText || '').trim()
+  if (!message) return existing || null
+  if (existing && existing === message) return existing
+  const entry = formatConversationEntry(actor, message)
+  return existing ? `${existing}\n${entry}` : entry
+}
+
 export async function listViolations({ status = 'all', search = '' } = {}) {
   const { data, error } = await supabase
     .from('violations')
@@ -44,8 +61,8 @@ export async function createViolation(payload) {
     fine_amount: Number(payload.fine_amount || 0),
     report_no: reportNo,
     report_date: reportDate,
-    admin_note: payload.admin_note?.trim() || null,
-    resident_note: payload.resident_note?.trim() || null,
+    admin_note: appendConversationLog('', payload.admin_note, 'นิติ'),
+    resident_note: appendConversationLog('', payload.resident_note, 'ลูกบ้าน'),
     resident_updated_at: payload.resident_updated_at || null,
   }
 
@@ -61,6 +78,30 @@ export async function createViolation(payload) {
 
 export async function updateViolation(id, updates) {
   const patch = { ...updates }
+
+  const hasAdminNote = Object.prototype.hasOwnProperty.call(patch, 'admin_note')
+  const hasResidentNote = Object.prototype.hasOwnProperty.call(patch, 'resident_note')
+
+  if (hasAdminNote || hasResidentNote) {
+    const { data: current, error: currentError } = await supabase
+      .from('violations')
+      .select('admin_note, resident_note')
+      .eq('id', id)
+      .maybeSingle()
+
+    if (currentError) throw currentError
+
+    if (hasAdminNote) {
+      patch.admin_note = appendConversationLog(current?.admin_note, patch.admin_note, 'นิติ')
+    }
+
+    if (hasResidentNote) {
+      patch.resident_note = appendConversationLog(current?.resident_note, patch.resident_note, 'ลูกบ้าน')
+      if (normalizeConversationMessage(patch.resident_note)) {
+        patch.resident_updated_at = new Date().toISOString()
+      }
+    }
+  }
 
   if (!patch.report_no) {
     const baseDate = patch.report_date || new Date().toISOString().slice(0, 10)
@@ -224,9 +265,17 @@ export async function listHouseViolations(houseId, { status = 'all', search = ''
 }
 
 export async function residentUpdateViolation(id, payload = {}) {
+  const { data: current, error: currentError } = await supabase
+    .from('violations')
+    .select('resident_note')
+    .eq('id', id)
+    .maybeSingle()
+
+  if (currentError) throw currentError
+
   const patch = {
     status: payload.status || 'in_progress',
-    resident_note: payload.resident_note?.trim() || null,
+    resident_note: appendConversationLog(current?.resident_note, payload.resident_note, 'ลูกบ้าน'),
     resident_updated_at: new Date().toISOString(),
   }
 

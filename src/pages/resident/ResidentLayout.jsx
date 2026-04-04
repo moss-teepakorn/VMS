@@ -227,6 +227,7 @@ export default function ResidentLayout() {
   const [violations, setViolations] = useState([])
   const [statusFilter, setStatusFilter] = useState('all')
   const [searchTerm, setSearchTerm] = useState('')
+  const [notifDateFilter, setNotifDateFilter] = useState('all')
   const [loading, setLoading] = useState(false)
   const [showViolationModal, setShowViolationModal] = useState(false)
   const [saving, setSaving] = useState(false)
@@ -535,6 +536,85 @@ export default function ResidentLayout() {
     if (status === 'closed') return { className: 'bd b-ok', label: 'ปิดงานแล้ว' }
     if (status === 'cancelled') return { className: 'bd b-dg', label: 'ยกเลิก' }
     return { className: 'bd b-mu', label: status }
+  }
+
+  function getViolationStatusBadge(status) {
+    if (status === 'resolved') return { className: 'bd b-ok', label: 'เสร็จแล้ว' }
+    if (status === 'in_progress') return { className: 'bd b-pr', label: 'กำลังดำเนินการ' }
+    if (status === 'pending') return { className: 'bd b-dg', label: 'ค้าง' }
+    if (status === 'not_fixed') return { className: 'bd b-dg', label: 'ไม่แก้ไข' }
+    if (status === 'cancelled') return { className: 'bd b-mu', label: 'ยกเลิก' }
+    return { className: 'bd b-mu', label: status || '-' }
+  }
+
+  function getViolationTypeBadgeClass(type) {
+    const text = String(type || '').toLowerCase()
+    if (text.includes('จอดรถ')) return 'bd b-pr'
+    if (text.includes('เสียง')) return 'bd b-wn'
+    if (text.includes('ขยะ')) return 'bd b-ac'
+    return 'bd b-mu'
+  }
+
+  function parseConversationEntries(rawText, side) {
+    const lines = String(rawText || '').split('\n').map((line) => line.trim()).filter(Boolean)
+    const entries = []
+    const pattern = /^\[([^\]]+)\]\s*(.+?):\s*(.+)$/
+    lines.forEach((line, index) => {
+      const matched = line.match(pattern)
+      if (matched) {
+        const when = new Date(matched[1])
+        entries.push({
+          id: `${side}-${index}`,
+          side,
+          actor: matched[2] || (side === 'admin' ? 'นิติ' : 'ลูกบ้าน'),
+          text: matched[3] || '-',
+          at: Number.isNaN(when.getTime()) ? null : when,
+        })
+      } else {
+        entries.push({
+          id: `${side}-${index}`,
+          side,
+          actor: side === 'admin' ? 'นิติ' : 'ลูกบ้าน',
+          text: line,
+          at: null,
+        })
+      }
+    })
+    return entries
+  }
+
+  function getViolationConversation(violation) {
+    const initial = {
+      id: `${violation.id}-created`,
+      side: 'system',
+      actor: 'ระบบ',
+      text: 'สร้างรายการแจ้งเตือน',
+      at: violation.created_at ? new Date(violation.created_at) : null,
+    }
+    const entries = [
+      initial,
+      ...parseConversationEntries(violation.admin_note, 'admin'),
+      ...parseConversationEntries(violation.resident_note, 'resident'),
+    ]
+    return entries.sort((left, right) => {
+      const leftTime = left.at ? left.at.getTime() : 0
+      const rightTime = right.at ? right.at.getTime() : 0
+      return leftTime - rightTime
+    })
+  }
+
+  function isViolationWithinDateFilter(violation, filterValue) {
+    if (!filterValue || filterValue === 'all') return true
+    const baseDate = new Date(violation.created_at || violation.due_date || violation.resident_updated_at || 0)
+    if (Number.isNaN(baseDate.getTime())) return false
+    const now = new Date()
+    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+    const entryStart = new Date(baseDate.getFullYear(), baseDate.getMonth(), baseDate.getDate())
+    if (filterValue === 'today') return entryStart.getTime() === todayStart.getTime()
+    const diffDays = Math.floor((todayStart.getTime() - entryStart.getTime()) / (1000 * 60 * 60 * 24))
+    if (filterValue === '7d') return diffDays >= 0 && diffDays <= 7
+    if (filterValue === '30d') return diffDays >= 0 && diffDays <= 30
+    return true
   }
 
   function formatDate(value) {
@@ -947,6 +1027,7 @@ export default function ResidentLayout() {
   const inProgressViolations = violations.filter((v) => v.status === 'pending' || v.status === 'in_progress')
   const latestViolation = violations[0] || null
   const pendingIssues = issues.filter((i) => i.status === 'pending' || i.status === 'in_progress')
+  const filteredNotifViolations = violations.filter((violation) => isViolationWithinDateFilter(violation, notifDateFilter))
   const latestAnnouncements = announcements.slice(0, 3)
   const houseAreaSqw = Number(houseDetail?.area_sqw ?? houseDetail?.area ?? 0)
   const houseAnnualFee = Number(houseDetail?.annual_fee || (houseAreaSqw > 0 ? houseAreaSqw * 12 * Number(houseDetail?.fee_rate || 0) : 0))
@@ -1045,7 +1126,7 @@ export default function ResidentLayout() {
 
   async function openViolationModal(item) {
     setEditingViolation(item)
-    setResidentNote(item.resident_note || '')
+    setResidentNote('')
     try {
       const imgs = await listViolationImages(item.id)
       setAttachments(imgs.map((img) => ({ ...img, source: 'existing' })))
@@ -2458,55 +2539,75 @@ export default function ResidentLayout() {
 
           {activeSection === 'notif' && (
             <>
-              <div className="ph" style={{ marginBottom: 18 }}>
+              <div className="ph notif-head" style={{ marginBottom: 12 }}>
                 <div className="ph-in">
                   <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                     <div className="ph-ico">⚠️</div>
                     <div><div className="ph-h1">การแจ้งเตือนจากนิติ</div><div className="ph-sub">การกระทำผิดและข้อมูลสำคัญ</div></div>
                   </div>
+                  <div className="ph-acts">
+                    <button className="btn btn-p btn-sm" onClick={() => { setShowIssueForm(true); navTo('issue') }}>+ แจ้งเตือนใหม่</button>
+                  </div>
                 </div>
               </div>
 
-              <div className="card" style={{ marginBottom: 14 }}>
-                <div className="ch"><div className="ct">ค้นหา</div></div>
-                <div className="cb" style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-                  <input className="fi" style={{ flex: 1, minWidth: 200 }} type="text" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} placeholder="ค้นหา ประเภท / รายละเอียด" />
-                  <select className="fs" style={{ flex: 1, minWidth: 140 }} value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
+              <div className="card notif-search-card" style={{ marginBottom: 14 }}>
+                <div className="cb notif-search-row">
+                  <div className="notif-input-wrap">
+                    <span className="notif-input-icon">🔍</span>
+                    <input className="fi notif-input" type="text" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} placeholder="ค้นหา ประเภท / รายละเอียด" />
+                  </div>
+                  <select className="fs notif-select" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
                     <option value="all">ทุกสถานะ</option>
                     <option value="pending">รอดำเนินการ</option>
                     <option value="in_progress">กำลังดำเนินการ</option>
+                    <option value="not_fixed">ไม่แก้ไข</option>
                     <option value="resolved">แก้ไขแล้ว</option>
                     <option value="cancelled">ยกเลิก</option>
                   </select>
-                  <button className="btn btn-a btn-sm" onClick={() => loadViolations({ status: statusFilter, search: searchTerm })}>ค้นหา</button>
+                  <select className="fs notif-select" value={notifDateFilter} onChange={(e) => setNotifDateFilter(e.target.value)}>
+                    <option value="all">ทุกช่วงเวลา</option>
+                    <option value="today">วันนี้</option>
+                    <option value="7d">7 วันล่าสุด</option>
+                    <option value="30d">30 วันล่าสุด</option>
+                  </select>
+                  <button className="btn btn-p btn-sm notif-search-btn" onClick={() => loadViolations({ status: statusFilter, search: searchTerm })}>ค้นหา</button>
                 </div>
               </div>
 
-              <div className="card">
-                <div className="ch"><div className="ct">รายการแจ้งเตือน ({violations.length} รายการ)</div></div>
-                <div className="cb" style={{ padding: 0 }}>
-                  <div className="tw">
+              <div className="card notif-list-card">
+                <div className="ch"><div className="ct notif-card-title">รายการแจ้งเตือน ({filteredNotifViolations.length} รายการ)</div></div>
+                <div className="cb notif-table-wrap" style={{ padding: 0 }}>
+                  <div className="tw notif-table-scroll">
                     <table>
-                      <thead><tr><th>ประเภท</th><th>รายละเอียด</th><th>หมายเหตุนิติ</th><th>ลูกบ้านอัปเดต</th><th>กำหนด</th><th>สถานะ</th><th></th></tr></thead>
+                      <thead><tr><th>ประเภท</th><th>รายละเอียด</th><th>โต้ตอบล่าสุด</th><th>กำหนด</th><th>สถานะ</th><th>การจัดการ</th></tr></thead>
                       <tbody>
                         {loading ? (
-                          <tr><td colSpan="7" style={{ textAlign: 'center', color: 'var(--mu)', padding: 20 }}>กำลังโหลด...</td></tr>
-                        ) : violations.length === 0 ? (
-                          <tr><td colSpan="7" style={{ textAlign: 'center', color: 'var(--mu)', padding: 20 }}>ไม่พบข้อมูล</td></tr>
-                        ) : violations.map((item) => {
-                          const badge = getStatusBadge(item.status)
+                          Array.from({ length: 5 }).map((_, index) => (
+                            <tr key={`sk-${index}`} className="notif-skeleton-row"><td colSpan="6"><div className="notif-skeleton-line" /></td></tr>
+                          ))
+                        ) : filteredNotifViolations.length === 0 ? (
+                          <tr><td colSpan="6" style={{ textAlign: 'center', color: 'var(--mu)', padding: 20 }}>ไม่พบข้อมูล</td></tr>
+                        ) : filteredNotifViolations.map((item) => {
+                          const statusBadge = getViolationStatusBadge(item.status)
+                          const convo = getViolationConversation(item)
+                          const latestRound = convo[convo.length - 1]
                           return (
-                            <tr key={item.id}>
-                              <td>{item.type || '-'}</td>
+                            <tr key={item.id} className="notif-row" onClick={() => openViolationModal(item)}>
+                              <td><span className={getViolationTypeBadgeClass(item.type)}>{item.type || '-'}</span></td>
                               <td style={{ maxWidth: 180, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.detail || '-'}</td>
-                              <td style={{ maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.admin_note || '-'}</td>
                               <td>
-                                <div style={{ maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.resident_note || '-'}</div>
-                                <div style={{ fontSize: '11px', color: 'var(--mu)' }}>{formatDate(item.resident_updated_at)}</div>
+                                <div style={{ maxWidth: 210, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontWeight: 600 }}>{latestRound?.text || '-'}</div>
+                                <div style={{ fontSize: '11px', color: 'var(--mu)' }}>{latestRound?.actor || '-'} • {latestRound?.at ? formatDate(latestRound.at) : '-'}</div>
                               </td>
                               <td>{formatDate(item.due_date)}</td>
-                              <td><span className={badge.className}>{badge.label}</span></td>
-                              <td><button className="btn btn-xs btn-a" onClick={() => openViolationModal(item)}>อัปเดต</button></td>
+                              <td><span className={statusBadge.className}>{statusBadge.label}</span></td>
+                              <td>
+                                <div style={{ display: 'flex', gap: 6 }}>
+                                  <button className="btn btn-xs btn-a" onClick={(e) => { e.stopPropagation(); openViolationModal(item) }}>✏️ อัปเดต</button>
+                                  <button className="btn btn-xs btn-g" onClick={(e) => { e.stopPropagation(); openViolationModal(item) }}>👁 ดู</button>
+                                </div>
+                              </td>
                             </tr>
                           )
                         })}
@@ -2515,6 +2616,29 @@ export default function ResidentLayout() {
                   </div>
                 </div>
               </div>
+
+              {!loading && filteredNotifViolations.map((item) => {
+                const rounds = getViolationConversation(item)
+                return (
+                  <details key={`log-${item.id}`} className="card notif-log-card">
+                    <summary className="notif-log-summary">
+                      <span style={{ fontWeight: 700 }}>🧠 ประวัติการโต้ตอบ • {item.type || '-'}</span>
+                      <span style={{ color: 'var(--mu)', fontSize: 12 }}>{rounds.length} รายการ</span>
+                    </summary>
+                    <div className="notif-log-list">
+                      {rounds.map((entry) => (
+                        <div key={`${item.id}-${entry.id}`} className={`notif-log-item side-${entry.side}`}>
+                          <div className="notif-log-head">
+                            <strong>{entry.actor}</strong>
+                            <span>{entry.at ? formatDate(entry.at) : '-'}</span>
+                          </div>
+                          <div className="notif-log-text">{entry.text}</div>
+                        </div>
+                      ))}
+                    </div>
+                  </details>
+                )
+              })}
             </>
           )}
 
@@ -2818,11 +2942,26 @@ export default function ResidentLayout() {
               <form onSubmit={handleResidentSubmit}>
                 <div className="house-md-body">
                   <section className="house-sec">
+                    <div className="house-sec-title">ประวัติการโต้ตอบ</div>
+                    <div className="notif-log-list">
+                      {getViolationConversation(editingViolation || {}).map((entry, index) => (
+                        <div key={`md-log-${entry.id || index}`} className={`notif-log-item side-${entry.side || 'system'}`}>
+                          <div className="notif-log-head">
+                            <strong>{entry.actor}</strong>
+                            <span>{entry.at ? formatDate(entry.at) : '-'}</span>
+                          </div>
+                          <div className="notif-log-text">{entry.text}</div>
+                        </div>
+                      ))}
+                    </div>
+                  </section>
+
+                  <section className="house-sec">
                     <div className="house-sec-title">ข้อความอัปเดต</div>
                     <div className="house-grid house-grid-1">
                       <label className="house-field">
                         <span>รายละเอียดที่ต้องการแจ้งกลับ *</span>
-                        <textarea value={residentNote} onChange={(e) => setResidentNote(e.target.value)} rows="4" placeholder="เช่น ได้แก้ไขแล้ว กำลังรอตรวจสอบ" />
+                        <textarea value={residentNote} onChange={(e) => setResidentNote(e.target.value)} rows="4" placeholder="พิมพ์ข้อความรอบใหม่ เช่น ได้แก้ไขแล้ว กำลังรอตรวจสอบ" />
                       </label>
                     </div>
                   </section>

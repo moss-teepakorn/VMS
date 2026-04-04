@@ -303,7 +303,7 @@ const AdminViolations = () => {
       report_date: item.report_date || '',
       warning_count: String(item.warning_count ?? 0),
       fine_amount: String(item.fine_amount ?? 0),
-      admin_note: item.admin_note || '',
+      admin_note: '',
       resident_note: item.resident_note || '',
     })
     try {
@@ -454,7 +454,6 @@ const AdminViolations = () => {
         warning_count: warningCount,
         fine_amount: fineAmount,
         admin_note: form.admin_note,
-        resident_note: form.resident_note || null,
       }
       if (editingItem) {
         const updated = await updateViolation(editingItem.id, payload)
@@ -1127,12 +1126,12 @@ const AdminViolations = () => {
                       <textarea name="detail" value={form.detail} onChange={handleChange} rows="3" placeholder="อธิบายรายละเอียด" />
                     </label>
                     <label className="house-field">
-                      <span>หมายเหตุ admin</span>
-                      <textarea name="admin_note" value={form.admin_note} onChange={handleChange} rows="3" placeholder="บันทึกของเจ้าหน้าที่" />
+                      <span>ข้อความตอบกลับรอบนี้จากนิติ</span>
+                      <textarea name="admin_note" value={form.admin_note} onChange={handleChange} rows="3" placeholder="พิมพ์ข้อความรอบใหม่ ระบบจะเก็บประวัติให้อัตโนมัติ" />
                     </label>
                     <label className="house-field">
-                      <span>อัปเดตจากลูกบ้าน</span>
-                      <textarea name="resident_note" value={form.resident_note} onChange={handleChange} rows="3" placeholder="ข้อความอัปเดตจากลูกบ้าน" />
+                      <span>ประวัติข้อความจากลูกบ้าน</span>
+                      <textarea name="resident_note" value={form.resident_note} onChange={handleChange} rows="3" placeholder="ยังไม่มีข้อความจากลูกบ้าน" readOnly />
                     </label>
                   </div>
                 </section>
