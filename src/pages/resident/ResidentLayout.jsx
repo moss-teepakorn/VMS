@@ -233,6 +233,7 @@ export default function ResidentLayout() {
   const [saving, setSaving] = useState(false)
   const [editingViolation, setEditingViolation] = useState(null)
   const [residentNote, setResidentNote] = useState('')
+  const [residentViolationStatus, setResidentViolationStatus] = useState('in_progress')
   const [attachments, setAttachments] = useState([])
 
   const [announcements, setAnnouncements] = useState([])
@@ -539,10 +540,11 @@ export default function ResidentLayout() {
   }
 
   function getViolationStatusBadge(status) {
-    if (status === 'resolved') return { className: 'bd b-ok', label: 'เสร็จแล้ว' }
+    if (status === 'new' || status === 'pending') return { className: 'bd b-dg', label: 'ยังไม่ดำเนินการ' }
     if (status === 'in_progress') return { className: 'bd b-pr', label: 'กำลังดำเนินการ' }
-    if (status === 'pending') return { className: 'bd b-dg', label: 'ค้าง' }
-    if (status === 'not_fixed') return { className: 'bd b-dg', label: 'ไม่แก้ไข' }
+    if (status === 'resolved') return { className: 'bd b-ok', label: 'ดำเนินการแล้ว' }
+    if (status === 'not_fixed') return { className: 'bd b-wn', label: 'ส่งกลับไปดำเนินการใหม่' }
+    if (status === 'closed') return { className: 'bd b-ok', label: 'ปิดรายการ' }
     if (status === 'cancelled') return { className: 'bd b-mu', label: 'ยกเลิก' }
     return { className: 'bd b-mu', label: status || '-' }
   }
@@ -1127,6 +1129,8 @@ export default function ResidentLayout() {
   async function openViolationModal(item) {
     setEditingViolation(item)
     setResidentNote('')
+    if (item.status === 'resolved') setResidentViolationStatus('resolved')
+    else setResidentViolationStatus('in_progress')
     try {
       const imgs = await listViolationImages(item.id)
       setAttachments(imgs.map((img) => ({ ...img, source: 'existing' })))
@@ -1141,6 +1145,7 @@ export default function ResidentLayout() {
     setShowViolationModal(false)
     setEditingViolation(null)
     setResidentNote('')
+    setResidentViolationStatus('in_progress')
     setAttachments([])
   }
 
@@ -1236,10 +1241,11 @@ export default function ResidentLayout() {
   async function handleResidentSubmit(event) {
     event.preventDefault()
     if (!editingViolation) return
+    if (editingViolation.status === 'closed') { await showSwal({ icon: 'info', title: 'รายการนี้ปิดแล้ว', text: 'ไม่สามารถอัปเดตเพิ่มเติมได้' }); return }
     if (!residentNote.trim()) { await showSwal({ icon: 'warning', title: 'กรุณากรอกข้อความอัปเดต' }); return }
     try {
       setSaving(true)
-      await residentUpdateViolation(editingViolation.id, { status: 'in_progress', resident_note: residentNote })
+      await residentUpdateViolation(editingViolation.id, { status: residentViolationStatus, resident_note: residentNote })
       const newFiles = attachments.filter((item) => item.source === 'new' && item.file).map((item) => item.file)
       if (newFiles.length > 0) await uploadViolationImages(editingViolation.id, newFiles)
       await showSwal({ icon: 'success', title: 'อัปเดตสำเร็จ', timer: 1400, showConfirmButton: false })
@@ -2559,10 +2565,11 @@ export default function ResidentLayout() {
                   </div>
                   <select className="fs notif-select" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
                     <option value="all">ทุกสถานะ</option>
-                    <option value="pending">รอดำเนินการ</option>
+                    <option value="new">ยังไม่ดำเนินการ</option>
                     <option value="in_progress">กำลังดำเนินการ</option>
-                    <option value="not_fixed">ไม่แก้ไข</option>
-                    <option value="resolved">แก้ไขแล้ว</option>
+                    <option value="resolved">ดำเนินการแล้ว</option>
+                    <option value="not_fixed">ส่งกลับไปดำเนินการใหม่</option>
+                    <option value="closed">ปิดรายการ</option>
                     <option value="cancelled">ยกเลิก</option>
                   </select>
                   <select className="fs notif-select" value={notifDateFilter} onChange={(e) => setNotifDateFilter(e.target.value)}>
@@ -2579,7 +2586,7 @@ export default function ResidentLayout() {
                 <div className="ch"><div className="ct notif-card-title">รายการแจ้งเตือน ({filteredNotifViolations.length} รายการ)</div></div>
                 <div className="cb notif-table-wrap" style={{ padding: 0 }}>
                   <div className="tw notif-table-scroll">
-                    <table>
+                    <table style={{ width: '100%', minWidth: '1080px' }}>
                       <thead><tr><th>ประเภท</th><th>รายละเอียด</th><th>โต้ตอบล่าสุด</th><th>กำหนด</th><th>สถานะ</th><th>การจัดการ</th></tr></thead>
                       <tbody>
                         {loading ? (
@@ -2960,8 +2967,15 @@ export default function ResidentLayout() {
                     <div className="house-sec-title">ข้อความอัปเดต</div>
                     <div className="house-grid house-grid-1">
                       <label className="house-field">
+                        <span>สถานะงานที่ลูกบ้านแจ้งกลับ</span>
+                        <select value={residentViolationStatus} onChange={(e) => setResidentViolationStatus(e.target.value)} disabled={editingViolation?.status === 'closed'}>
+                          <option value="in_progress">กำลังดำเนินการ</option>
+                          <option value="resolved">แก้ไขแล้ว</option>
+                        </select>
+                      </label>
+                      <label className="house-field">
                         <span>รายละเอียดที่ต้องการแจ้งกลับ *</span>
-                        <textarea value={residentNote} onChange={(e) => setResidentNote(e.target.value)} rows="4" placeholder="พิมพ์ข้อความรอบใหม่ เช่น ได้แก้ไขแล้ว กำลังรอตรวจสอบ" />
+                        <textarea value={residentNote} onChange={(e) => setResidentNote(e.target.value)} rows="4" placeholder="พิมพ์ข้อความรอบใหม่ เช่น ได้แก้ไขแล้ว กำลังรอตรวจสอบ" disabled={editingViolation?.status === 'closed'} />
                       </label>
                     </div>
                   </section>
@@ -2970,7 +2984,7 @@ export default function ResidentLayout() {
                     <div className="house-sec-title">รูปแนบจากลูกบ้าน (สูงสุด 5 รูป)</div>
                     <label className="house-field">
                       <span>แนบไฟล์รูปภาพ</span>
-                      <input type="file" accept="image/*" multiple onChange={handleAttachFiles} />
+                      <input type="file" accept="image/*" multiple onChange={handleAttachFiles} disabled={editingViolation?.status === 'closed'} />
                     </label>
                     <div style={{ marginTop: '8px', fontSize: '12px', color: 'var(--mu)' }}>
                       ระบบย่อไฟล์ไม่เกิน 100KB อัตโนมัติ
@@ -2993,7 +3007,7 @@ export default function ResidentLayout() {
                 </div>
                 <div className="house-md-foot">
                   <button className="btn btn-g" type="button" onClick={() => closeViolationModal()}>ยกเลิก</button>
-                  <button className="btn btn-p" type="submit" disabled={saving}>{saving ? 'กำลังบันทึก...' : 'ส่งอัปเดต'}</button>
+                  <button className="btn btn-p" type="submit" disabled={saving || editingViolation?.status === 'closed'}>{editingViolation?.status === 'closed' ? 'รายการปิดแล้ว' : (saving ? 'กำลังบันทึก...' : 'ส่งอัปเดต')}</button>
                 </div>
               </form>
             </div>

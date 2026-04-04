@@ -20,6 +20,14 @@ function appendConversationLog(existingText, incomingText, actor) {
   return existing ? `${existing}\n${entry}` : entry
 }
 
+function matchesViolationStatus(currentStatus, filterStatus) {
+  if (filterStatus === 'all') return true
+  if (filterStatus === 'new' || filterStatus === 'pending') {
+    return currentStatus === 'new' || currentStatus === 'pending'
+  }
+  return currentStatus === filterStatus
+}
+
 export async function listViolations({ status = 'all', search = '' } = {}) {
   const { data, error } = await supabase
     .from('violations')
@@ -30,7 +38,7 @@ export async function listViolations({ status = 'all', search = '' } = {}) {
 
   const keyword = (search || '').trim().toLowerCase()
   return (data ?? []).filter((item) => {
-    if (status !== 'all' && item.status !== status) return false
+    if (!matchesViolationStatus(item.status, status)) return false
     if (!keyword) return true
     const searchable = [
       item.type,
@@ -55,7 +63,7 @@ export async function createViolation(payload) {
     type: payload.type?.trim() || null,
     detail: payload.detail?.trim() || null,
     occurred_at: payload.occurred_at || null,
-    status: payload.status || 'pending',
+    status: payload.status || 'new',
     due_date: payload.due_date || null,
     warning_count: Number(payload.warning_count || 0),
     fine_amount: Number(payload.fine_amount || 0),
@@ -254,7 +262,7 @@ export async function listHouseViolations(houseId, { status = 'all', search = ''
 
   const keyword = (search || '').trim().toLowerCase()
   return (data ?? []).filter((item) => {
-    if (status !== 'all' && item.status !== status) return false
+    if (!matchesViolationStatus(item.status, status)) return false
     if (!keyword) return true
     const searchable = [item.type, item.detail, item.admin_note, item.resident_note]
       .filter(Boolean)
@@ -273,8 +281,10 @@ export async function residentUpdateViolation(id, payload = {}) {
 
   if (currentError) throw currentError
 
+  const residentStatus = payload.status === 'resolved' ? 'resolved' : 'in_progress'
+
   const patch = {
-    status: payload.status || 'in_progress',
+    status: residentStatus,
     resident_note: appendConversationLog(current?.resident_note, payload.resident_note, 'ลูกบ้าน'),
     resident_updated_at: new Date().toISOString(),
   }

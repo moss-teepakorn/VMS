@@ -165,6 +165,7 @@
 
 .notif-table-wrap {
   padding: 16px;
+  width: 100%;
 }
 
 .notif-table-scroll {
@@ -172,6 +173,7 @@
   overflow: auto;
   border: 1px solid var(--bo);
   border-radius: 10px;
+  width: 100%;
 }
 
 .notif-table-scroll table th {

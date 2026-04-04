@@ -28,7 +28,7 @@ const EMPTY_FORM = {
   type_other: '',
   detail: '',
   occurred_at: '',
-  status: 'pending',
+  status: 'new',
   due_date: '',
   report_no: '',
   report_date: '',
@@ -265,10 +265,12 @@ const AdminViolations = () => {
   }, [])
 
   const getStatusBadge = (status) => {
-    if (status === 'resolved') return { className: 'bd b-ok', label: 'แก้ไขแล้ว' }
-    if (status === 'in_progress') return { className: 'bd b-ac', label: 'กำลังดำเนินการ' }
-    if (status === 'not_fixed') return { className: 'bd b-er', label: 'ไม่แก้ไข' }
-    if (status === 'pending') return { className: 'bd b-wn', label: 'รอดำเนินการ' }
+    if (status === 'new') return { className: 'bd b-dg', label: 'ใหม่ (รอดำเนินการ)' }
+    if (status === 'resolved') return { className: 'bd b-ok', label: 'ลูกบ้านแจ้งว่าแก้ไขแล้ว' }
+    if (status === 'in_progress') return { className: 'bd b-ac', label: 'ลูกบ้านกำลังดำเนินการ' }
+    if (status === 'not_fixed') return { className: 'bd b-wn', label: 'ส่งกลับไปดำเนินการใหม่' }
+    if (status === 'pending') return { className: 'bd b-dg', label: 'ใหม่ (รอดำเนินการ)' }
+    if (status === 'closed') return { className: 'bd b-ok', label: 'ปิดรายการ' }
     if (status === 'cancelled') return { className: 'bd b-dg', label: 'ยกเลิก' }
     return { className: 'bd b-mu', label: status }
   }
@@ -297,7 +299,7 @@ const AdminViolations = () => {
       type_other: baseType === 'อื่นๆ' ? (item.type || '') : '',
       detail: item.detail || '',
       occurred_at: item.occurred_at || '',
-      status: item.status || 'pending',
+      status: item.status || 'new',
       due_date: item.due_date || '',
       report_no: item.report_no || '',
       report_date: item.report_date || '',
@@ -917,7 +919,7 @@ const AdminViolations = () => {
   }
 
   return (
-    <div className="pane on houses-compact">
+    <div className="pane on houses-compact violations-page">
       <div className="ph">
         <div className="ph-in">
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -938,10 +940,11 @@ const AdminViolations = () => {
           />
           <select className="houses-filter-select" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
             <option value="all">ทุกสถานะ</option>
-            <option value="pending">รอดำเนินการ</option>
-            <option value="in_progress">กำลังดำเนินการ</option>
-            <option value="not_fixed">ไม่แก้ไข</option>
-            <option value="resolved">แก้ไขแล้ว</option>
+            <option value="new">ใหม่ (รอดำเนินการ)</option>
+            <option value="in_progress">ลูกบ้านกำลังดำเนินการ</option>
+            <option value="not_fixed">ส่งกลับไปดำเนินการใหม่</option>
+            <option value="resolved">ลูกบ้านแจ้งว่าแก้ไขแล้ว</option>
+            <option value="closed">ปิดรายการ</option>
             <option value="cancelled">ยกเลิก</option>
           </select>
           <button className="btn btn-a btn-sm houses-filter-btn" onClick={() => loadData({ status: statusFilter, search: searchTerm })}>ค้นหา</button>
@@ -1088,10 +1091,12 @@ const AdminViolations = () => {
                     <label className="house-field">
                       <span>สถานะ</span>
                       <select name="status" value={form.status} onChange={handleChange}>
-                        <option value="pending">รอดำเนินการ</option>
-                        <option value="in_progress">กำลังดำเนินการ</option>
-                        <option value="not_fixed">ไม่แก้ไข</option>
-                        <option value="resolved">แก้ไขแล้ว</option>
+                        <option value="new">ใหม่ (รอดำเนินการ)</option>
+                        {(form.status === 'in_progress' || form.status === 'resolved') && (
+                          <option value={form.status}>{form.status === 'in_progress' ? 'ลูกบ้านกำลังดำเนินการ' : 'ลูกบ้านแจ้งว่าแก้ไขแล้ว'}</option>
+                        )}
+                        <option value="not_fixed">ส่งกลับไปดำเนินการใหม่</option>
+                        <option value="closed">ปิดรายการ</option>
                         <option value="cancelled">ยกเลิก</option>
                       </select>
                     </label>
