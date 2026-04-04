@@ -24,7 +24,7 @@ import {
   cancelVehicleRequest,
   deleteVehicleRequestImagesByPaths,
 } from '../../lib/vehicleRequests'
-import { listIssues, createIssue } from '../../lib/issues'
+import { listIssues, createIssue, uploadIssueImages, updateIssue } from '../../lib/issues'
 import { getHouseDetail, updateUser } from '../../lib/users'
 import { getSetupConfig, applyDocumentTitle } from '../../lib/setup'
 import { insertPageViewLog } from '../../lib/loginLogs'
@@ -41,6 +41,7 @@ const MAX_ATTACHMENTS = 5
 const MAX_IMAGE_SIZE_BYTES = 100 * 1024
 const MAX_IMAGE_TARGET_BYTES = 95 * 1024
 const REJECT_PREFIX = '[REJECT] '
+const ISSUE_CATEGORY_OPTIONS = ['ทั่วไป', 'ไฟฟ้า', 'ประปา', 'ความปลอดภัย', 'ความสะอาด', 'โครงสร้าง', 'ถนน', 'อื่นๆ']
 
 function getRejectedReason(note) {
   const raw = String(note || '')
@@ -244,7 +245,8 @@ export default function ResidentLayout() {
   const [houseDetailLoaded, setHouseDetailLoaded] = useState(false)
 
   const [showIssueForm, setShowIssueForm] = useState(false)
-  const [issueForm, setIssueForm] = useState({ title: '', detail: '', category: 'general' })
+  const [issueForm, setIssueForm] = useState({ title: '', detail: '', category: 'ทั่วไป' })
+  const [issueAttachments, setIssueAttachments] = useState([])
   const [issueSubmitting, setIssueSubmitting] = useState(false)
 
   const [profileForm, setProfileForm] = useState({ full_name: '', phone: '', email: '' })
@@ -527,9 +529,10 @@ export default function ResidentLayout() {
   }
 
   function getStatusBadge(status) {
-    if (status === 'resolved') return { className: 'bd b-ok', label: 'แก้ไขแล้ว' }
+    if (status === 'resolved') return { className: 'bd b-pr', label: 'รอประเมิน' }
     if (status === 'in_progress') return { className: 'bd b-pr', label: 'กำลังดำเนินการ' }
     if (status === 'pending') return { className: 'bd b-wn', label: 'รอดำเนินการ' }
+    if (status === 'closed') return { className: 'bd b-ok', label: 'ปิดงานแล้ว' }
     if (status === 'cancelled') return { className: 'bd b-dg', label: 'ยกเลิก' }
     return { className: 'bd b-mu', label: status }
   }
@@ -1173,9 +1176,20 @@ export default function ResidentLayout() {
     if (!issueForm.title.trim()) { await showSwal({ icon: 'warning', title: 'กรุณากรอกหัวข้อปัญหา' }); return }
     setIssueSubmitting(true)
     try {
-      await createIssue({ house_id: profile?.house_id, title: issueForm.title, detail: issueForm.detail, category: issueForm.category, status: 'pending' })
+      const created = await createIssue({ house_id: profile?.house_id, title: issueForm.title, detail: issueForm.detail, category: issueForm.category, status: 'pending' })
+      const newFiles = issueAttachments.filter((item) => item.source === 'new' && item.file).map((item) => item.file)
+      if (newFiles.length > 0) {
+        const uploaded = await uploadIssueImages(created.id, newFiles)
+        if (uploaded.length > 0) {
+          await updateIssue(created.id, { image_url: uploaded[0].url || null })
+        }
+      }
       await showSwal({ icon: 'success', title: 'ส่งคำร้องแล้ว', text: 'นิติจะดำเนินการและแจ้งกลับ', timer: 1600, showConfirmButton: false })
-      setIssueForm({ title: '', detail: '', category: 'general' })
+      issueAttachments.forEach((item) => {
+        if (item.source === 'new' && item.url) URL.revokeObjectURL(item.url)
+      })
+      setIssueAttachments([])
+      setIssueForm({ title: '', detail: '', category: 'ทั่วไป' })
       setShowIssueForm(false)
       const all = await listIssues()
       setIssues(all.filter((i) => i.house_id === profile.house_id))
@@ -1183,6 +1197,148 @@ export default function ResidentLayout() {
       await showSwal({ icon: 'error', title: 'ส่งคำร้องไม่สำเร็จ', text: error.message })
     } finally {
       setIssueSubmitting(false)
+    }
+  }
+
+  function formatIssueFileName(index) {
+    const now = new Date()
+    const date = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}`
+    const time = `${String(now.getHours()).padStart(2, '0')}${String(now.getMinutes()).padStart(2, '0')}${String(now.getSeconds()).padStart(2, '0')}`
+    return `ISS_RES_${date}_${time}_${String(index).padStart(3, '0')}.jpg`
+  }
+
+  async function resizeIssueImageToLimit(file, sequence) {
+    const image = await readImageElement(file)
+    const canvas = document.createElement('canvas')
+    const context = canvas.getContext('2d')
+    if (!context) throw new Error('ไม่สามารถประมวลผลรูปภาพได้')
+
+    let width = image.width
+    let height = image.height
+    const maxDimension = 1600
+    if (width > maxDimension || height > maxDimension) {
+      const scale = Math.min(maxDimension / width, maxDimension / height)
+      width = Math.round(width * scale)
+      height = Math.round(height * scale)
+    }
+    canvas.width = width
+    canvas.height = height
+    context.drawImage(image, 0, 0, width, height)
+
+    let quality = 0.9
+    let blob = await canvasToBlob(canvas, quality)
+    while (blob && blob.size > MAX_IMAGE_TARGET_BYTES && quality > 0.25) {
+      quality -= 0.08
+      blob = await canvasToBlob(canvas, quality)
+    }
+
+    while (blob && blob.size > MAX_IMAGE_TARGET_BYTES && (canvas.width > 480 || canvas.height > 480)) {
+      canvas.width = Math.round(canvas.width * 0.9)
+      canvas.height = Math.round(canvas.height * 0.9)
+      context.clearRect(0, 0, canvas.width, canvas.height)
+      context.drawImage(image, 0, 0, canvas.width, canvas.height)
+      quality = 0.82
+      blob = await canvasToBlob(canvas, quality)
+      while (blob && blob.size > MAX_IMAGE_TARGET_BYTES && quality > 0.25) {
+        quality -= 0.08
+        blob = await canvasToBlob(canvas, quality)
+      }
+    }
+
+    if (!blob || blob.size > MAX_IMAGE_SIZE_BYTES) {
+      throw new Error(`ไม่สามารถย่อรูป ${file.name} ได้`)
+    }
+
+    return new File([blob], formatIssueFileName(sequence), { type: 'image/jpeg' })
+  }
+
+  async function handleIssueAttachFiles(event) {
+    const selectedFiles = Array.from(event.target.files || [])
+    event.target.value = ''
+    if (selectedFiles.length === 0) return
+
+    const remainingSlots = MAX_ATTACHMENTS - issueAttachments.length
+    if (remainingSlots <= 0) {
+      await showSwal({ icon: 'warning', title: 'แนบรูปได้สูงสุด 5 รูป' })
+      return
+    }
+
+    const filesToProcess = selectedFiles.slice(0, remainingSlots)
+    if (selectedFiles.length > remainingSlots) {
+      await showSwal({ icon: 'info', title: `รับได้แค่ ${remainingSlots} รูป` })
+    }
+
+    try {
+      const startIndex = issueAttachments.length + 1
+      const prepared = []
+      for (let i = 0; i < filesToProcess.length; i += 1) {
+        const resizedFile = await resizeIssueImageToLimit(filesToProcess[i], startIndex + i)
+        prepared.push({
+          source: 'new',
+          name: resizedFile.name,
+          file: resizedFile,
+          url: URL.createObjectURL(resizedFile),
+        })
+      }
+      setIssueAttachments((cur) => [...cur, ...prepared])
+    } catch (error) {
+      await showSwal({ icon: 'error', title: 'แนบรูปไม่สำเร็จ', text: error.message })
+    }
+  }
+
+  function handleIssueRemoveAttachment(target) {
+    setIssueAttachments((cur) => {
+      const next = cur.filter((item) => item !== target)
+      if (target.source === 'new' && target.url) URL.revokeObjectURL(target.url)
+      return next
+    })
+  }
+
+  async function handleResidentRateIssue(issue) {
+    const result = await showSwal({
+      title: 'ให้คะแนนการแก้ไขปัญหา',
+      html: `
+        <select id="resident-issue-rating" class="swal2-input" style="margin: 0 0 10px 0; width: 100%;">
+          <option value="">เลือกคะแนน</option>
+          <option value="1">1 - ต้องปรับปรุง</option>
+          <option value="2">2 - พอใจน้อย</option>
+          <option value="3">3 - ปานกลาง</option>
+          <option value="4">4 - ดี</option>
+          <option value="5">5 - ดีมาก</option>
+        </select>
+        <input id="resident-issue-rating-note" class="swal2-input" placeholder="เหตุผลประกอบคะแนน (ไม่บังคับ)">
+      `,
+      showCancelButton: true,
+      confirmButtonText: 'ให้คะแนนและปิดงาน',
+      cancelButtonText: 'ยกเลิก',
+      preConfirm: () => {
+        const ratingEl = document.getElementById('resident-issue-rating')
+        const noteEl = document.getElementById('resident-issue-rating-note')
+        const rating = Number(ratingEl?.value || 0)
+        if (!rating || rating < 1 || rating > 5) {
+          Swal.showValidationMessage('กรุณาเลือกคะแนน 1-5')
+          return null
+        }
+        return {
+          rating,
+          rating_note: String(noteEl?.value || '').trim() || null,
+        }
+      },
+    })
+
+    if (!result.isConfirmed || !result.value) return
+
+    try {
+      await updateIssue(issue.id, {
+        rating: result.value.rating,
+        rating_note: result.value.rating_note,
+        status: 'closed',
+      })
+      await showSwal({ icon: 'success', title: 'ให้คะแนนเรียบร้อย', text: 'ระบบปิดงานให้แล้ว', timer: 1400, showConfirmButton: false })
+      const all = await listIssues()
+      setIssues(all.filter((i) => i.house_id === profile.house_id))
+    } catch (error) {
+      await showSwal({ icon: 'error', title: 'บันทึกคะแนนไม่สำเร็จ', text: error.message })
     }
   }
 
@@ -2161,19 +2317,52 @@ export default function ResidentLayout() {
                       <div className="fg">
                         <label className="fl">หมวดหมู่</label>
                         <select className="fs" value={issueForm.category} onChange={(e) => setIssueForm((p) => ({ ...p, category: e.target.value }))}>
-                          <option value="general">ทั่วไป</option>
-                          <option value="electrical">ไฟฟ้า</option>
-                          <option value="plumbing">ประปา</option>
-                          <option value="security">ความปลอดภัย</option>
-                          <option value="cleaning">ทำความสะอาด</option>
-                          <option value="structure">โครงสร้าง</option>
+                          {ISSUE_CATEGORY_OPTIONS.map((category) => (
+                            <option key={category} value={category}>{category}</option>
+                          ))}
                         </select>
+                      </div>
+                      <div className="fg">
+                        <label className="fl">แนบรูปภาพ (ไม่บังคับ)</label>
+                        <input className="fi" type="file" accept="image/*" multiple onChange={handleIssueAttachFiles} disabled={issueAttachments.length >= MAX_ATTACHMENTS} />
+                        <div style={{ marginTop: 6, fontSize: 11.5, color: 'var(--mu)' }}>
+                          แนบแล้ว {issueAttachments.length}/{MAX_ATTACHMENTS} รูป • ระบบย่อไฟล์ไม่เกิน 100KB อัตโนมัติ
+                        </div>
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 6 }}>
+                          {issueAttachments.length === 0 ? (
+                            <div style={{ fontSize: 11.5, color: 'var(--mu)' }}>ยังไม่มีรูปแนบ</div>
+                          ) : issueAttachments.map((img, idx) => (
+                            <div key={`${img.name}-${idx}`} style={{ width: 64 }}>
+                              <button
+                                type="button"
+                                onClick={() => handlePreviewAttachment(img)}
+                                style={{ width: 64, height: 64, borderRadius: 8, border: '1px solid var(--bo)', background: '#fff', padding: 0, overflow: 'hidden', cursor: 'pointer' }}
+                              >
+                                <img src={img.url} alt={img.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                              </button>
+                              <button type="button" className="btn btn-xs btn-dg" onClick={() => handleIssueRemoveAttachment(img)} style={{ marginTop: 4, width: '100%' }}>ลบ</button>
+                            </div>
+                          ))}
+                        </div>
                       </div>
                       <div style={{ display: 'flex', gap: 8 }}>
                         <button className="btn btn-p btn-sm" type="submit" disabled={issueSubmitting}>
                           {issueSubmitting ? 'กำลังส่ง...' : '📤 ส่งคำร้อง'}
                         </button>
-                        <button className="btn btn-g btn-sm" type="button" onClick={() => setShowIssueForm(false)}>ยกเลิก</button>
+                        <button
+                          className="btn btn-g btn-sm"
+                          type="button"
+                          onClick={() => {
+                            issueAttachments.forEach((item) => {
+                              if (item.source === 'new' && item.url) URL.revokeObjectURL(item.url)
+                            })
+                            setIssueAttachments([])
+                            setIssueForm({ title: '', detail: '', category: 'ทั่วไป' })
+                            setShowIssueForm(false)
+                          }}
+                        >
+                          ยกเลิก
+                        </button>
                       </div>
                     </form>
                   </div>
@@ -2198,6 +2387,12 @@ export default function ResidentLayout() {
                           {issue.detail}
                         </div>
                       )}
+                      {issue.rating != null && (
+                        <div style={{ fontSize: '12px', color: 'var(--tx)', marginBottom: 10, background: 'var(--prl)', borderRadius: 7, padding: '8px 10px' }}>
+                          ⭐ คะแนนลูกบ้าน: {renderStars(issue.rating)} ({issue.rating}/5)
+                          {issue.rating_note ? ` · ${issue.rating_note}` : ''}
+                        </div>
+                      )}
                       <div style={{ background: 'var(--bg)', borderRadius: 9, padding: 11 }}>
                         <div style={{ fontSize: '10.5px', fontWeight: 800, color: 'var(--mu)', textTransform: 'uppercase', letterSpacing: '.06em', marginBottom: 9 }}>ความคืบหน้า</div>
                         <div className="tl">
@@ -2218,12 +2413,21 @@ export default function ResidentLayout() {
                             </div>
                           )}
                           <div className="tli">
-                            <div className={`tld ${issue.status === 'resolved' ? 'td-done' : 'td-pend'}`} />
-                            <div className="tl-l" style={{ color: issue.status === 'resolved' ? 'var(--tx)' : 'var(--mu)' }}>เสร็จสิ้น</div>
+                            <div className={`tld ${issue.status === 'resolved' || issue.status === 'closed' ? 'td-done' : 'td-pend'}`} />
+                            <div className="tl-l" style={{ color: issue.status === 'resolved' || issue.status === 'closed' ? 'var(--tx)' : 'var(--mu)' }}>เสร็จสิ้น</div>
                             {issue.resolved_at && <div className="tl-s">{formatDate(issue.resolved_at)}</div>}
+                          </div>
+                          <div className="tli">
+                            <div className={`tld ${issue.status === 'closed' ? 'td-done' : 'td-pend'}`} />
+                            <div className="tl-l" style={{ color: issue.status === 'closed' ? 'var(--tx)' : 'var(--mu)' }}>ปิดงาน</div>
                           </div>
                         </div>
                       </div>
+                      {issue.status === 'resolved' && issue.rating == null && (
+                        <div style={{ marginTop: 10, display: 'flex', justifyContent: 'flex-end' }}>
+                          <button className="btn btn-xs btn-a" onClick={() => handleResidentRateIssue(issue)}>⭐ ให้คะแนนและปิดงาน</button>
+                        </div>
+                      )}
                     </div>
                   </div>
                 ))}

@@ -867,6 +867,11 @@
   padding: 0 14px;
 }
 
+.houses-filter-select.issue-select-wide {
+  width: 182px;
+  min-width: 182px;
+}
+
 .houses-list-head {
   display: flex;
   justify-content: space-between;

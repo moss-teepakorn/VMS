@@ -3,6 +3,23 @@ import { supabase } from './supabase'
 const ISSUE_IMAGE_BUCKET = 'issue-images'
 const MAX_ISSUE_IMAGE_BYTES = 100 * 1024
 
+const ISSUE_CATEGORY_LABELS = {
+  general: 'ทั่วไป',
+  electrical: 'ไฟฟ้า',
+  plumbing: 'ประปา',
+  security: 'ความปลอดภัย',
+  cleaning: 'ความสะอาด',
+  structure: 'โครงสร้าง',
+  road: 'ถนน',
+  other: 'อื่นๆ',
+}
+
+function normalizeIssueCategory(category) {
+  const raw = String(category || '').trim()
+  if (!raw) return 'อื่นๆ'
+  return ISSUE_CATEGORY_LABELS[raw] || raw
+}
+
 export async function listIssues({ status = 'all', category = 'all', search = '' } = {}) {
   const { data, error } = await supabase
     .from('issues')
@@ -11,15 +28,20 @@ export async function listIssues({ status = 'all', category = 'all', search = ''
 
   if (error) throw error
 
+  const normalizedRows = (data ?? []).map((item) => ({
+    ...item,
+    category: normalizeIssueCategory(item.category),
+  }))
+
   const keyword = (search || '').trim().toLowerCase()
-  return (data ?? []).filter((item) => {
+  return normalizedRows.filter((item) => {
     if (status !== 'all' && item.status !== status) return false
-    if (category !== 'all' && item.category !== category) return false
+    if (category !== 'all' && normalizeIssueCategory(item.category) !== category) return false
     if (!keyword) return true
     const searchable = [
       item.title,
       item.detail,
-      item.category,
+      normalizeIssueCategory(item.category),
       item.houses?.house_no,
       item.houses?.owner_name,
       item.houses?.soi,
@@ -36,7 +58,7 @@ export async function createIssue(payload) {
     house_id: payload.house_id || null,
     title: payload.title?.trim() || null,
     detail: payload.detail?.trim() || null,
-    category: payload.category || null,
+    category: normalizeIssueCategory(payload.category),
     status: payload.status || 'pending',
     admin_note: payload.admin_note?.trim() || null,
   }
@@ -53,6 +75,9 @@ export async function createIssue(payload) {
 
 export async function updateIssue(id, updates) {
   const patch = { ...updates }
+  if (Object.prototype.hasOwnProperty.call(patch, 'category')) {
+    patch.category = normalizeIssueCategory(patch.category)
+  }
   if (patch.status === 'resolved' && !patch.resolved_at) {
     patch.resolved_at = new Date().toISOString()
   }

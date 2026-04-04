@@ -18,6 +18,7 @@ const ISSUE_STATUSES = [
   { value: 'resolved', label: 'แก้ไขแล้ว', badge: 'bd b-ok' },
   { value: 'closed', label: 'ปิดเรื่อง', badge: 'bd b-dg' },
 ]
+const ISSUE_EDIT_STATUSES = ISSUE_STATUSES.filter((item) => item.value !== 'closed')
 
 const EMPTY_FORM = {
   house_id: '',
@@ -26,8 +27,6 @@ const EMPTY_FORM = {
   category: 'ไฟฟ้า',
   status: 'pending',
   admin_note: '',
-  rating: '',
-  rating_note: '',
 }
 
 const MAX_ATTACHMENTS = 5
@@ -106,8 +105,6 @@ const AdminIssues = () => {
       category: item.category || 'ไฟฟ้า',
       status: item.status || 'pending',
       admin_note: item.admin_note || '',
-      rating: item.rating != null ? String(item.rating) : '',
-      rating_note: item.rating_note || '',
     })
     try {
       const imgs = await listIssueImages(item.id)
@@ -235,8 +232,6 @@ const AdminIssues = () => {
         category: form.category,
         status: form.status,
         admin_note: form.admin_note,
-        rating: form.rating ? Number(form.rating) : null,
-        rating_note: form.rating_note,
       }
       if (editingItem) {
         const updated = await updateIssue(editingItem.id, payload)
@@ -304,11 +299,11 @@ const AdminIssues = () => {
             onChange={(e) => setSearchTerm(e.target.value)}
             placeholder="ค้นหา หัวข้อ / รายละเอียด / บ้าน"
           />
-          <select className="houses-filter-select" value={categoryFilter} onChange={(e) => setCategoryFilter(e.target.value)}>
+          <select className="houses-filter-select issue-select-wide" value={categoryFilter} onChange={(e) => setCategoryFilter(e.target.value)}>
             <option value="all">ทุกหมวด</option>
             {ISSUE_CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
           </select>
-          <select className="houses-filter-select" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
+          <select className="houses-filter-select issue-select-wide" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
             <option value="all">ทุกสถานะ</option>
             {ISSUE_STATUSES.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
           </select>
@@ -409,26 +404,26 @@ const AdminIssues = () => {
               <div className="house-md-body">
                 <section className="house-sec">
                   <div className="house-sec-title">ข้อมูลปัญหา</div>
-                  <div className="house-grid house-grid-3">
-                    <label className="house-field">
+                  <div className="house-grid house-grid-2">
+                    <label className="house-field house-field-span-2">
                       <span>บ้าน</span>
-                      <select name="house_id" value={form.house_id} onChange={handleChange}>
+                      <select className="issue-select-wide" name="house_id" value={form.house_id} onChange={handleChange}>
                         {houseOptions.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
                       </select>
                     </label>
                     <label className="house-field">
                       <span>หมวดปัญหา</span>
-                      <select name="category" value={form.category} onChange={handleChange}>
+                      <select className="issue-select-wide" name="category" value={form.category} onChange={handleChange}>
                         {ISSUE_CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
                       </select>
                     </label>
                     <label className="house-field">
                       <span>สถานะ</span>
-                      <select name="status" value={form.status} onChange={handleChange}>
-                        {ISSUE_STATUSES.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
+                      <select className="issue-select-wide" name="status" value={form.status} onChange={handleChange}>
+                        {ISSUE_EDIT_STATUSES.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
                       </select>
                     </label>
-                    <label className="house-field house-field-span-3">
+                    <label className="house-field house-field-span-2">
                       <span>หัวข้อปัญหา *</span>
                       <input name="title" value={form.title} onChange={handleChange} placeholder="เช่น ไฟฟ้าดับในซอย 3" />
                     </label>
@@ -445,27 +440,6 @@ const AdminIssues = () => {
                     <label className="house-field">
                       <span>หมายเหตุ admin</span>
                       <textarea name="admin_note" value={form.admin_note} onChange={handleChange} rows="3" placeholder="บันทึกของเจ้าหน้าที่" />
-                    </label>
-                  </div>
-                </section>
-
-                <section className="house-sec">
-                  <div className="house-sec-title">ผลประเมิน (กรณีแก้ไขแล้ว)</div>
-                  <div className="house-grid house-grid-3">
-                    <label className="house-field">
-                      <span>คะแนนความพึงพอใจ (1-5)</span>
-                      <select name="rating" value={form.rating} onChange={handleChange}>
-                        <option value="">ยังไม่ประเมิน</option>
-                        <option value="1">1 - ต้องปรับปรุง</option>
-                        <option value="2">2 - พอใจน้อย</option>
-                        <option value="3">3 - ปานกลาง</option>
-                        <option value="4">4 - ดี</option>
-                        <option value="5">5 - ดีมาก</option>
-                      </select>
-                    </label>
-                    <label className="house-field house-field-span-2">
-                      <span>เหตุผลการประเมิน</span>
-                      <input name="rating_note" value={form.rating_note} onChange={handleChange} placeholder="เหตุผลประกอบคะแนน" />
                     </label>
                   </div>
                 </section>
