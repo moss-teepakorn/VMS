@@ -14,6 +14,7 @@ import AdminAnnouncements from './pages/admin/AdminAnnouncements'
 import AdminReports from './pages/admin/AdminReports'
 import AdminTechnicians from './pages/admin/AdminTechnicians'
 import AdminMarketplace from './pages/admin/AdminMarketplace'
+import AdminRules from './pages/admin/AdminRules'
 import AdminConfig from './pages/admin/AdminConfig'
 import AdminUsers from './pages/admin/AdminUsers'
 import AdminLogs from './pages/admin/AdminLogs'
@@ -98,6 +99,7 @@ function AppRoutes() {
         <Route path="requests" element={<AdminRequests />} />
         <Route path="issues" element={<AdminIssues />} />
         <Route path="violations" element={<AdminViolations />} />
+        <Route path="rules" element={<AdminRules />} />
         <Route path="announcements" element={<AdminAnnouncements />} />
         <Route path="reports" element={<AdminReports />} />
         <Route path="reports/payments" element={<AdminReportPayments />} />

@@ -2,6 +2,7 @@ import { supabase } from './supabase'
 
 const ANNOUNCEMENT_IMAGE_BUCKET = 'announcement-images'
 const MAX_ANNOUNCEMENT_IMAGE_BYTES = 100 * 1024
+const RULE_PREFIX = 'RULEDOC::'
 
 export async function listAnnouncements({ type = 'all', search = '' } = {}) {
   const { data, error } = await supabase
@@ -14,6 +15,7 @@ export async function listAnnouncements({ type = 'all', search = '' } = {}) {
 
   const keyword = (search || '').trim().toLowerCase()
   return (data ?? []).filter((item) => {
+    if (String(item.content || '').startsWith(RULE_PREFIX)) return false
     if (type !== 'all' && item.type !== type) return false
     if (!keyword) return true
     const searchable = [item.title, item.content]

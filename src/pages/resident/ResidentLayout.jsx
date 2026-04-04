@@ -25,6 +25,7 @@ import {
   deleteVehicleRequestImagesByPaths,
 } from '../../lib/vehicleRequests'
 import { listIssues, createIssue, uploadIssueImages, updateIssue } from '../../lib/issues'
+import { listRuleDocuments } from '../../lib/rules'
 import { getHouseDetail, updateUser } from '../../lib/users'
 import { getSetupConfig, applyDocumentTitle } from '../../lib/setup'
 import { insertPageViewLog } from '../../lib/loginLogs'
@@ -135,11 +136,19 @@ const THEMES = ['normal', 'dark', 'rose', 'sage', 'sand', 'violet', 'teal', 'cor
 
 const NAV_GROUPS = [
   {
-    section: 'หลัก',
+    section: 'กฎระเบียบ',
+    tone: 'insight',
+    sectionIcon: '📘',
+    items: [
+      { key: 'rules', icon: '📘', label: 'กฎระเบียบ' },
+    ],
+  },
+  {
+    section: 'หน้าหลัก',
     tone: 'core',
     sectionIcon: '🏠',
     items: [
-      { key: 'dash', icon: '🏡', label: 'หน้าแรก' },
+      { key: 'dash', icon: '🏡', label: 'หน้าหลัก' },
       { key: 'house', icon: '🏠', label: 'ข้อมูลบ้านของฉัน' },
       { key: 'vehicles', icon: '🚗', label: 'ข้อมูลรถ' },
       { key: 'fees', icon: '💳', label: 'ค่าส่วนกลาง' },
@@ -169,7 +178,8 @@ const NAV_GROUPS = [
 ]
 
 const SECTION_TITLE = {
-  dash: (hn) => ({ main: 'หน้าแรก', sub: `บ้าน ${hn}` }),
+  rules: () => ({ main: 'กฎระเบียบ', sub: 'เอกสารกฎและระเบียบการอยู่อาศัย' }),
+  dash: (hn) => ({ main: 'หน้าหลัก', sub: `บ้าน ${hn}` }),
   house: () => ({ main: 'ข้อมูลบ้าน', sub: 'บ้านของฉัน' }),
   vehicles: () => ({ main: 'ข้อมูลรถ', sub: 'รถของฉัน' }),
   fees: () => ({ main: 'ค่าส่วนกลาง', sub: 'การชำระเงิน' }),
@@ -274,7 +284,8 @@ export default function ResidentLayout() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(() => localStorage.getItem('vms-res-sidebar-collapsed') === '1')
   const [menuSearch, setMenuSearch] = useState('')
   const [sectionOpen, setSectionOpen] = useState({
-    หลัก: true,
+    กฎระเบียบ: true,
+    หน้าหลัก: true,
     ข้อมูล: false,
     บัญชี: false,
   })
@@ -306,6 +317,7 @@ export default function ResidentLayout() {
   const [attachments, setAttachments] = useState([])
 
   const [announcements, setAnnouncements] = useState([])
+  const [ruleDocs, setRuleDocs] = useState([])
   const [workReports, setWorkReports] = useState([])
   const [technicians, setTechnicians] = useState([])
   const [marketplace, setMarketplace] = useState([])
@@ -507,6 +519,9 @@ export default function ResidentLayout() {
   useEffect(() => { loadViolations() }, [profile?.house_id])
 
   useEffect(() => {
+    if (activeSection === 'rules' && ruleDocs.length === 0) {
+      listRuleDocuments().then(setRuleDocs).catch(() => {})
+    }
     if (activeSection === 'news' && announcements.length === 0) {
       listAnnouncements().then(setAnnouncements).catch(() => {})
     }
@@ -1145,6 +1160,8 @@ export default function ResidentLayout() {
   })
 
   const myPendingMarketCount = residentVisibleMarket.filter((m) => String(m.house_id || '') === String(profile?.house_id || '') && m.status === 'pending').length
+  const villageRuleDocs = ruleDocs.filter((item) => item.category === 'village')
+  const livingRuleDocs = ruleDocs.filter((item) => item.category === 'living')
 
   const titleFn = SECTION_TITLE[activeSection] || SECTION_TITLE.dash
   const titleData = titleFn(houseNo)
@@ -2168,6 +2185,64 @@ export default function ResidentLayout() {
         </div>
 
         <div className="page">
+
+          {activeSection === 'rules' && (
+            <>
+              <div className="ph" style={{ marginBottom: 18 }}>
+                <div className="ph-in">
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                    <div className="ph-ico">📘</div>
+                    <div>
+                      <div className="ph-h1">กฎระเบียบ</div>
+                      <div className="ph-sub">เอกสารที่นิติประกาศให้ลูกบ้านอ่าน (ไฟล์ PDF)</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="card" style={{ marginBottom: 12 }}>
+                <div className="ch"><div className="ch-ico">🏘️</div><div className="ct">กฎระเบียบหมู่บ้าน ({villageRuleDocs.length} เรื่อง)</div></div>
+                <div className="cb" style={{ padding: 14 }}>
+                  {villageRuleDocs.length === 0 ? (
+                    <div style={{ color: 'var(--mu)', textAlign: 'center', padding: '8px 0' }}>ยังไม่มีข้อมูล</div>
+                  ) : villageRuleDocs.map((item) => (
+                    <div key={item.id} className="ann">
+                      <div className="ann-dot ad-gen" />
+                      <div style={{ flex: 1 }}>
+                        <div className="ann-t">{item.title}</div>
+                        {item.description && <div className="ann-b">{item.description}</div>}
+                        <div className="ann-d">{formatDate(item.announcement_date || item.created_at)}</div>
+                      </div>
+                      {item.pdf_url && (
+                        <a href={item.pdf_url} target="_blank" rel="noreferrer" className="btn btn-sm btn-o" style={{ textDecoration: 'none', whiteSpace: 'nowrap' }}>📄 เปิด PDF</a>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="card">
+                <div className="ch"><div className="ch-ico">🏠</div><div className="ct">ระเบียบการอยู่อาศัย ({livingRuleDocs.length} เรื่อง)</div></div>
+                <div className="cb" style={{ padding: 14 }}>
+                  {livingRuleDocs.length === 0 ? (
+                    <div style={{ color: 'var(--mu)', textAlign: 'center', padding: '8px 0' }}>ยังไม่มีข้อมูล</div>
+                  ) : livingRuleDocs.map((item) => (
+                    <div key={item.id} className="ann">
+                      <div className="ann-dot ad-evt" />
+                      <div style={{ flex: 1 }}>
+                        <div className="ann-t">{item.title}</div>
+                        {item.description && <div className="ann-b">{item.description}</div>}
+                        <div className="ann-d">{formatDate(item.announcement_date || item.created_at)}</div>
+                      </div>
+                      {item.pdf_url && (
+                        <a href={item.pdf_url} target="_blank" rel="noreferrer" className="btn btn-sm btn-o" style={{ textDecoration: 'none', whiteSpace: 'nowrap' }}>📄 เปิด PDF</a>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </>
+          )}
 
           {activeSection === 'dash' && (
             <>

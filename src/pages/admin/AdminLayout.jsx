@@ -146,7 +146,7 @@ const AdminLayout = () => {
     ]},
     { section: 'การเงิน', tone: 'operation', sectionIcon: '💰', items: [
       { id: 'fees', label: 'ค่าส่วนกลาง', icon: '💵', path: '/admin/fees' },
-      { id: 'payments', label: 'ชำระเงิน', icon: '💳', path: '/admin/payments' },
+      { id: 'payments', label: 'ชำระค่าส่วนกลาง', icon: '💳', path: '/admin/payments' },
       { id: 'receive-payments', label: 'รับชำระเงิน', icon: '💳', path: '/admin/receive-payments' },
       { id: 'disbursements', label: 'การจ่ายเงิน', icon: '📤', path: '/admin/disbursements' },
     ]},
@@ -154,6 +154,7 @@ const AdminLayout = () => {
       { id: 'req', label: 'คำขอแก้ไข', icon: '📝', path: '/admin/requests' },
       { id: 'issues', label: 'จัดการปัญหา', icon: '🔧', path: '/admin/issues' },
       { id: 'vio', label: 'แจ้งกระทำผิด', icon: '⚠️', path: '/admin/violations' },
+      { id: 'rules', label: 'กฎระเบียบ', icon: '📘', path: '/admin/rules' },
       { id: 'ann', label: 'ประกาศ', icon: '📢', path: '/admin/announcements' },
       { id: 'rep', label: 'ผลงาน', icon: '🏆', path: '/admin/work-reports' },
       { id: 'tech', label: 'ทำเนียบช่าง', icon: '🔨', path: '/admin/technicians' },
