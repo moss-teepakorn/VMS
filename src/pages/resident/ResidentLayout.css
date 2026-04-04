@@ -181,7 +181,7 @@
 
 .fee-payment-head,
 .fee-payment-summary {
-  grid-template-columns: 1fr 1fr .8fr .9fr;
+  grid-template-columns: 1fr 1fr .9fr .8fr .9fr;
   gap: 14px;
 }
 
@@ -274,7 +274,13 @@
 .fee-payment-col--status {
   display: flex;
   flex-direction: column;
+  align-items: flex-start;
   gap: 4px;
+}
+
+.fee-payment-col--status .btn {
+  width: auto;
+  align-self: flex-start;
 }
 
 .fee-payment-detail {

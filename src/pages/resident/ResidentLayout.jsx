@@ -2051,6 +2051,7 @@ export default function ResidentLayout() {
                 <div className="fee-payment-head">
                   <div>วันที่ / งวด</div>
                   <div>จำนวนเงิน</div>
+                  <div>ประเภท</div>
                   <div>วิธี</div>
                   <div>สถานะ</div>
                 </div>
@@ -2063,6 +2064,7 @@ export default function ResidentLayout() {
                   const badge = getPaymentStatusBadge(row)
                   const breakdown = getPaymentBreakdown(row)
                   const amount = getPaymentAmount(row)
+                  const paymentType = getPaymentTypeLabel(row)
                   const rejectedReason = getRejectedReason(row.note)
                   const cleanNote = getCleanPaymentNote(row.note)
                   const hasDetails = breakdown.length > 0 || row.slip_url || rejectedReason || cleanNote
@@ -2076,6 +2078,9 @@ export default function ResidentLayout() {
                         </div>
                         <div className="fee-payment-col fee-payment-col--amount">
                           <div className="fee-cell-main fee-amount-strong">฿{formatMoney(amount)}</div>
+                        </div>
+                        <div className="fee-payment-col">
+                          <div className="fee-cell-main">{paymentType}</div>
                         </div>
                         <div className="fee-payment-col">
                           <div className="fee-cell-main">{formatMethod(row.payment_method)}</div>
