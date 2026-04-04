@@ -870,6 +870,7 @@
 .houses-filter-select.issue-select-wide {
   width: 182px;
   min-width: 182px;
+  height: 39px;
 }
 
 .houses-list-head {

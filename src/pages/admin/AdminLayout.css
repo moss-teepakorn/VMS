@@ -1705,6 +1705,8 @@ button, input, select, textarea {
 
 .house-field select.issue-select-wide {
   min-width: 180px;
+  min-height: 39px;
+  height: 39px;
 }
 
 .house-field textarea {

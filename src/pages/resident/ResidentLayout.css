@@ -68,6 +68,28 @@
 .filter-chip.on { background: var(--prb); color: #fff; border-color: transparent; }
 .rating-stars { color: #F59E0B; font-size: 13px; }
 
+.issue-collapsible-card {
+  overflow: hidden;
+}
+
+.issue-collapsible-summary {
+  list-style: none;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  cursor: pointer;
+}
+
+.issue-collapsible-summary::-webkit-details-marker {
+  display: none;
+}
+
+.issue-collapsible-card[open] .issue-collapsible-summary {
+  border-bottom: 1px solid var(--bo);
+}
+
 /* ── MARKETPLACE CARDS ── */
 .mkt-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(195px, 1fr)); gap: 12px; margin-bottom: 16px; }
 .r-mcard { background: var(--card); border: 1.5px solid var(--bo); border-radius: var(--r); overflow: hidden; cursor: pointer; transition: box-shadow .15s, transform .15s; display: flex; flex-direction: column; }

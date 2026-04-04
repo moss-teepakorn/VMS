@@ -2372,8 +2372,9 @@ export default function ResidentLayout() {
               <div style={{ display: 'flex', flexDirection: 'column', gap: 11 }}>
                 {issues.length === 0 ? (
                   <div className="card"><div className="cb" style={{ textAlign: 'center', color: 'var(--mu)', padding: '24px 0' }}>ยังไม่มีการแจ้งปัญหา<br /><span style={{ fontSize: 12 }}>กดปุ่ม "+ แจ้งปัญหาใหม่" ด้านบนเพื่อเริ่ม</span></div></div>
-                ) : issues.map((issue) => (
-                  <div key={issue.id} className="card">
+                ) : issues.map((issue) => {
+                  const isClosedIssue = issue.status === 'closed'
+                  const content = (
                     <div className="cb" style={{ padding: '13px 15px' }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: 7, marginBottom: 11 }}>
                         <div>
@@ -2429,8 +2430,28 @@ export default function ResidentLayout() {
                         </div>
                       )}
                     </div>
-                  </div>
-                ))}
+                  )
+
+                  if (isClosedIssue) {
+                    return (
+                      <details key={issue.id} className="card issue-collapsible-card">
+                        <summary className="issue-collapsible-summary">
+                          <div style={{ minWidth: 0 }}>
+                            <div style={{ fontSize: '13px', fontWeight: 800, color: 'var(--tx)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>🔦 {issue.title}</div>
+                            <div style={{ fontSize: '11px', color: 'var(--mu)', marginTop: 2 }}>แจ้ง {formatDate(issue.created_at)} · {issue.category || 'ทั่วไป'}</div>
+                          </div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+                            {issue.rating != null && <span style={{ fontSize: '11px', color: 'var(--mu)' }}>{issue.rating}/5</span>}
+                            <span className={getStatusBadge(issue.status).className}>{getStatusBadge(issue.status).label}</span>
+                          </div>
+                        </summary>
+                        {content}
+                      </details>
+                    )
+                  }
+
+                  return <div key={issue.id} className="card">{content}</div>
+                })}
               </div>
             </>
           )}

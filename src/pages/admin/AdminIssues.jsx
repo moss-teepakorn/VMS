@@ -18,7 +18,6 @@ const ISSUE_STATUSES = [
   { value: 'resolved', label: 'แก้ไขแล้ว', badge: 'bd b-ok' },
   { value: 'closed', label: 'ปิดเรื่อง', badge: 'bd b-dg' },
 ]
-const ISSUE_EDIT_STATUSES = ISSUE_STATUSES.filter((item) => item.value !== 'closed')
 
 const EMPTY_FORM = {
   house_id: '',
@@ -56,6 +55,7 @@ const AdminIssues = () => {
   const [form, setForm] = useState(EMPTY_FORM)
   const [attachments, setAttachments] = useState([])
   const [removedImagePaths, setRemovedImagePaths] = useState([])
+  const isClosedEditing = editingItem?.status === 'closed'
 
   const houseOptions = useMemo(() => ([
     { value: '', label: 'เลือกบ้าน (ถ้ามี)' },
@@ -407,25 +407,25 @@ const AdminIssues = () => {
                   <div className="house-grid house-grid-2">
                     <label className="house-field house-field-span-2">
                       <span>บ้าน</span>
-                      <select className="issue-select-wide" name="house_id" value={form.house_id} onChange={handleChange}>
+                      <select className="issue-select-wide" name="house_id" value={form.house_id} onChange={handleChange} disabled={isClosedEditing}>
                         {houseOptions.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
                       </select>
                     </label>
                     <label className="house-field">
                       <span>หมวดปัญหา</span>
-                      <select className="issue-select-wide" name="category" value={form.category} onChange={handleChange}>
+                      <select className="issue-select-wide" name="category" value={form.category} onChange={handleChange} disabled={isClosedEditing}>
                         {ISSUE_CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
                       </select>
                     </label>
                     <label className="house-field">
                       <span>สถานะ</span>
-                      <select className="issue-select-wide" name="status" value={form.status} onChange={handleChange}>
-                        {ISSUE_EDIT_STATUSES.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
+                      <select className="issue-select-wide" name="status" value={form.status} onChange={handleChange} disabled={isClosedEditing}>
+                        {ISSUE_STATUSES.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
                       </select>
                     </label>
                     <label className="house-field house-field-span-2">
                       <span>หัวข้อปัญหา *</span>
-                      <input name="title" value={form.title} onChange={handleChange} placeholder="เช่น ไฟฟ้าดับในซอย 3" />
+                      <input name="title" value={form.title} onChange={handleChange} placeholder="เช่น ไฟฟ้าดับในซอย 3" disabled={isClosedEditing} />
                     </label>
                   </div>
                 </section>
@@ -435,11 +435,11 @@ const AdminIssues = () => {
                   <div className="house-grid house-grid-2">
                     <label className="house-field">
                       <span>รายละเอียดปัญหา</span>
-                      <textarea name="detail" value={form.detail} onChange={handleChange} rows="3" placeholder="อธิบายปัญหาที่พบ" />
+                      <textarea name="detail" value={form.detail} onChange={handleChange} rows="3" placeholder="อธิบายปัญหาที่พบ" disabled={isClosedEditing} />
                     </label>
                     <label className="house-field">
                       <span>หมายเหตุ admin</span>
-                      <textarea name="admin_note" value={form.admin_note} onChange={handleChange} rows="3" placeholder="บันทึกของเจ้าหน้าที่" />
+                      <textarea name="admin_note" value={form.admin_note} onChange={handleChange} rows="3" placeholder="บันทึกของเจ้าหน้าที่" disabled={isClosedEditing} />
                     </label>
                   </div>
                 </section>
@@ -449,7 +449,7 @@ const AdminIssues = () => {
                   <div className="house-grid house-grid-3">
                     <label className="house-field house-field-span-3">
                       <span>แนบไฟล์รูปภาพ</span>
-                      <input type="file" accept="image/*" multiple onChange={handleAttachFiles} disabled={attachments.length >= MAX_ATTACHMENTS} />
+                      <input type="file" accept="image/*" multiple onChange={handleAttachFiles} disabled={isClosedEditing || attachments.length >= MAX_ATTACHMENTS} />
                     </label>
                   </div>
                   <div style={{ marginTop: '8px', fontSize: '12px', color: 'var(--mu)' }}>
@@ -463,7 +463,7 @@ const AdminIssues = () => {
                         <button type="button" onClick={() => handlePreviewAttachment(img)} style={{ width: '64px', height: '64px', borderRadius: '8px', border: '1px solid var(--bo)', background: '#fff', padding: 0, overflow: 'hidden', cursor: 'pointer' }}>
                           <img src={img.url} alt={img.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                         </button>
-                        <button type="button" className="btn btn-xs btn-dg" onClick={() => handleRemoveAttachment(img)} style={{ marginTop: '4px', width: '100%' }}>ลบ</button>
+                        <button type="button" className="btn btn-xs btn-dg" onClick={() => handleRemoveAttachment(img)} style={{ marginTop: '4px', width: '100%' }} disabled={isClosedEditing}>ลบ</button>
                       </div>
                     ))}
                   </div>
@@ -471,7 +471,7 @@ const AdminIssues = () => {
               </div>
               <div className="house-md-foot">
                 <button className="btn btn-g" type="button" onClick={() => closeModal()}>ยกเลิก</button>
-                <button className="btn btn-p" type="submit" disabled={saving}>{saving ? 'กำลังบันทึก...' : 'บันทึก'}</button>
+                <button className="btn btn-p" type="submit" disabled={saving || isClosedEditing}>{isClosedEditing ? 'ปิดรายการแล้ว' : (saving ? 'กำลังบันทึก...' : 'บันทึก')}</button>
               </div>
             </form>
           </div>
