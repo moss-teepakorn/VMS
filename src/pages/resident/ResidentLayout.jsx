@@ -13,7 +13,7 @@ import { createPayment, listHouseFees, listHousePayments } from '../../lib/fees'
 import { listAnnouncements } from '../../lib/announcements'
 import { listWorkReports } from '../../lib/workReports'
 import { listTechnicians } from '../../lib/technicians'
-import { listMarketplace } from '../../lib/marketplace'
+import { createMarketplaceItem, listMarketplace, listMarketplaceImages, updateMarketplaceItem, uploadMarketplaceImages } from '../../lib/marketplace'
 import { listVehicles, listVehicleImages, deleteVehicleImagesByPaths } from '../../lib/vehicles'
 import {
   listVehicleRequests,
@@ -42,6 +42,31 @@ const MAX_IMAGE_SIZE_BYTES = 100 * 1024
 const MAX_IMAGE_TARGET_BYTES = 95 * 1024
 const REJECT_PREFIX = '[REJECT] '
 const ISSUE_CATEGORY_OPTIONS = ['ทั่วไป', 'ไฟฟ้า', 'ประปา', 'ความปลอดภัย', 'ความสะอาด', 'โครงสร้าง', 'ถนน', 'อื่นๆ']
+const MARKETPLACE_MAX_ATTACHMENTS = 2
+const MARKET_CATEGORY_OPTIONS = [
+  'อาหารและเครื่องดื่ม',
+  'ผักผลไม้',
+  'ของใช้ในบ้าน',
+  'เครื่องใช้ไฟฟ้า',
+  'อิเล็กทรอนิกส์',
+  'มือถือและอุปกรณ์',
+  'คอมพิวเตอร์และไอที',
+  'เฟอร์นิเจอร์',
+  'เสื้อผ้าแฟชั่น',
+  'รองเท้าและกระเป๋า',
+  'เครื่องสำอางความงาม',
+  'สุขภาพและยา',
+  'แม่และเด็ก',
+  'สัตว์เลี้ยง',
+  'หนังสือและเครื่องเขียน',
+  'กีฬาและฟิตเนส',
+  'ยานยนต์และอะไหล่',
+  'งานซ่อมและบริการ',
+  'อสังหาฯ/เช่า',
+  'มือสองทั่วไป',
+  'งานฝีมือ',
+  'อื่นๆ',
+]
 
 function getRejectedReason(note) {
   const raw = String(note || '')
@@ -196,6 +221,50 @@ function marketBadgeLabel(lt) {
   return 'ขาย'
 }
 
+function isImageLink(url) {
+  const value = String(url || '').toLowerCase()
+  return /\.(png|jpe?g|gif|webp|svg)(\?|#|$)/.test(value)
+}
+
+function getFileKind(url) {
+  const value = String(url || '').toLowerCase()
+  if (/\.(pdf)(\?|#|$)/.test(value)) return { icon: '📄', label: 'PDF' }
+  if (/\.(doc|docx)(\?|#|$)/.test(value)) return { icon: '📝', label: 'DOC' }
+  if (/\.(xls|xlsx|csv)(\?|#|$)/.test(value)) return { icon: '📊', label: 'XLS' }
+  if (/\.(ppt|pptx)(\?|#|$)/.test(value)) return { icon: '📈', label: 'PPT' }
+  if (/\.(zip|rar|7z)(\?|#|$)/.test(value)) return { icon: '🗜️', label: 'ZIP' }
+  if (/\.(txt)(\?|#|$)/.test(value)) return { icon: '📄', label: 'TXT' }
+  return { icon: '📎', label: 'FILE' }
+}
+
+function extractUrlsFromText(text) {
+  const matches = String(text || '').match(/https?:\/\/[^\s)\]]+/g) || []
+  const clean = matches.map((url) => url.replace(/[),.;]+$/, ''))
+  return Array.from(new Set(clean))
+}
+
+function buildAttachmentItems({ imageUrls = [], text = '', maxItems = 6 }) {
+  const fromImages = (Array.isArray(imageUrls) ? imageUrls : [])
+    .filter(Boolean)
+    .map((url, index) => ({ id: `img-${index}`, url, isImage: true, title: `รูปแนบ ${index + 1}` }))
+  const fromText = extractUrlsFromText(text).map((url, index) => ({
+    id: `txt-${index}`,
+    url,
+    isImage: isImageLink(url),
+    title: `ไฟล์แนบ ${index + 1}`,
+  }))
+
+  const dedup = []
+  const seen = new Set()
+  for (const item of [...fromImages, ...fromText]) {
+    if (!item.url || seen.has(item.url)) continue
+    seen.add(item.url)
+    dedup.push(item)
+    if (dedup.length >= maxItems) break
+  }
+  return dedup
+}
+
 export default function ResidentLayout() {
   const navigate = useNavigate()
   const { profile, logout } = useAuth()
@@ -260,8 +329,18 @@ export default function ResidentLayout() {
   const [showConfPw, setShowConfPw] = useState(false)
 
   const [techSearch, setTechSearch] = useState('')
+  const [selectedTech, setSelectedTech] = useState(null)
   const [marketSearch, setMarketSearch] = useState('')
   const [marketFilter, setMarketFilter] = useState('all')
+  const [showMarketPostModal, setShowMarketPostModal] = useState(false)
+  const [marketPosting, setMarketPosting] = useState(false)
+  const [marketPostForm, setMarketPostForm] = useState({ title: '', detail: '', category: '', listing_type: 'sell', price: '', contact: '', status: 'pending' })
+  const [marketPostAttachments, setMarketPostAttachments] = useState([])
+  const [showMarketDetailModal, setShowMarketDetailModal] = useState(false)
+  const [marketDetailItem, setMarketDetailItem] = useState(null)
+  const [marketDetailImages, setMarketDetailImages] = useState([])
+  const [marketDetailIndex, setMarketDetailIndex] = useState(0)
+  const [marketDetailLoading, setMarketDetailLoading] = useState(false)
 
   // Vehicle request states
   const [vehicleRequests, setVehicleRequests] = useState([])
@@ -373,6 +452,12 @@ export default function ResidentLayout() {
     return () => document.removeEventListener('mousedown', handle)
   }, [setupOpen])
 
+  useEffect(() => () => {
+    marketPostAttachments.forEach((item) => {
+      if (item?.url && String(item.url).startsWith('blob:')) URL.revokeObjectURL(item.url)
+    })
+  }, [marketPostAttachments])
+
   useEffect(() => {
     const fn = () => { if (window.innerWidth >= 1024) setSidebarOpen(false) }
     window.addEventListener('resize', fn)
@@ -432,7 +517,7 @@ export default function ResidentLayout() {
       listTechnicians().then(setTechnicians).catch(() => {})
     }
     if (activeSection === 'market' && marketplace.length === 0) {
-      listMarketplace({ status: 'active' }).then(setMarketplace).catch(() => {})
+      listMarketplace({ status: 'all' }).then(setMarketplace).catch(() => {})
     }
     if (activeSection === 'issue' && issues.length === 0 && profile?.house_id) {
       listIssues().then((all) => setIssues(all.filter((i) => String(i.house_id) === String(profile.house_id)))).catch(() => {})
@@ -1039,18 +1124,27 @@ export default function ResidentLayout() {
     .join(' · ')
 
   const filteredTechs = technicians.filter((t) => {
+    if (t.status && t.status !== 'approved' && t.status !== 'active') return false
     if (!techSearch) return true
     const kw = techSearch.toLowerCase()
     const skills = (t.technician_services || []).map((s) => s.skill).join(' ')
     return [t.name, t.phone, skills].join(' ').toLowerCase().includes(kw)
   })
 
-  const filteredMarket = marketplace.filter((m) => {
+  const residentVisibleMarket = marketplace.filter((m) => {
+    const isPublic = m.status === 'approved' || m.status === 'active'
+    const isOwnPending = String(m.house_id || '') === String(profile?.house_id || '') && m.status === 'pending'
+    return isPublic || isOwnPending
+  })
+
+  const filteredMarket = residentVisibleMarket.filter((m) => {
     if (marketFilter !== 'all' && m.listing_type !== marketFilter) return false
     if (!marketSearch) return true
     const kw = marketSearch.toLowerCase()
     return [m.title, m.category, m.contact].join(' ').toLowerCase().includes(kw)
   })
+
+  const myPendingMarketCount = residentVisibleMarket.filter((m) => String(m.house_id || '') === String(profile?.house_id || '') && m.status === 'pending').length
 
   const titleFn = SECTION_TITLE[activeSection] || SECTION_TITLE.dash
   const titleData = titleFn(houseNo)
@@ -1058,6 +1152,145 @@ export default function ResidentLayout() {
   function navTo(key) {
     setActiveSection(key)
     setSidebarOpen(false)
+  }
+
+  function openTechModal(item) {
+    setSelectedTech(item)
+  }
+
+  function closeTechModal() {
+    setSelectedTech(null)
+  }
+
+  function openMarketPostModal() {
+    setMarketPostForm({
+      title: '',
+      detail: '',
+      category: '',
+      listing_type: 'sell',
+      price: '',
+      contact: profile?.phone || '',
+      status: 'pending',
+    })
+    marketPostAttachments.forEach((item) => {
+      if (item?.url && String(item.url).startsWith('blob:')) URL.revokeObjectURL(item.url)
+    })
+    setMarketPostAttachments([])
+    setShowMarketPostModal(true)
+  }
+
+  function closeMarketPostModal() {
+    if (marketPosting) return
+    marketPostAttachments.forEach((item) => {
+      if (item?.url && String(item.url).startsWith('blob:')) URL.revokeObjectURL(item.url)
+    })
+    setMarketPostAttachments([])
+    setShowMarketPostModal(false)
+  }
+
+  async function handleMarketPostAttachFiles(e) {
+    const files = Array.from(e.target.files || [])
+    e.target.value = ''
+    if (files.length === 0) return
+
+    const remainingSlots = MARKETPLACE_MAX_ATTACHMENTS - marketPostAttachments.length
+    if (remainingSlots <= 0) {
+      await showSwal({ icon: 'warning', title: 'แนบรูปได้สูงสุด 2 รูป' })
+      return
+    }
+    const filesToProcess = files.slice(0, remainingSlots)
+    if (files.length > remainingSlots) {
+      await showSwal({ icon: 'info', title: `รับได้แค่ ${remainingSlots} รูป`, text: 'ระบบจะใช้เฉพาะรูปชุดแรก' })
+    }
+
+    try {
+      const prepared = []
+      const startIndex = marketPostAttachments.length + 1
+      for (let i = 0; i < filesToProcess.length; i += 1) {
+        const resized = await resizeIssueImageToLimit(filesToProcess[i], startIndex + i)
+        prepared.push({ source: 'new', name: resized.name, file: resized, url: URL.createObjectURL(resized) })
+      }
+      setMarketPostAttachments((cur) => [...cur, ...prepared])
+    } catch (error) {
+      await showSwal({ icon: 'error', title: 'ประมวลผลรูปไม่สำเร็จ', text: error.message })
+    }
+  }
+
+  function handleMarketPostRemoveAttachment(target) {
+    setMarketPostAttachments((cur) => {
+      const next = cur.filter((item) => item !== target)
+      if (target?.url && String(target.url).startsWith('blob:')) URL.revokeObjectURL(target.url)
+      return next
+    })
+  }
+
+  async function submitMarketPost(e) {
+    e.preventDefault()
+    if (!profile?.house_id) { await showSwal({ icon: 'warning', title: 'ไม่พบบ้านของผู้ใช้งาน' }); return }
+    if (!marketPostForm.title.trim()) { await showSwal({ icon: 'warning', title: 'กรุณากรอกชื่อสินค้า/รายการ' }); return }
+
+    try {
+      setMarketPosting(true)
+      const created = await createMarketplaceItem({
+        house_id: profile.house_id,
+        title: marketPostForm.title,
+        detail: marketPostForm.detail,
+        category: marketPostForm.category,
+        listing_type: marketPostForm.listing_type,
+        price: Number(String(marketPostForm.price || '').replace(/,/g, '')) || 0,
+        contact: marketPostForm.contact,
+        image_url: null,
+        status: 'pending',
+      })
+
+      const newFiles = marketPostAttachments.filter((item) => item.source === 'new' && item.file).map((item) => item.file)
+      if (newFiles.length > 0) {
+        const uploaded = await uploadMarketplaceImages(created.id, newFiles)
+        const firstUrl = uploaded[0]?.url || null
+        if (firstUrl) await updateMarketplaceItem(created.id, { image_url: firstUrl })
+      }
+
+      await showSwal({
+        icon: 'success',
+        title: 'ส่งโพสต์เรียบร้อย',
+        text: 'รายการของคุณรอการอนุมัติจากนิติ ก่อนแสดงเป็นโพสต์สาธารณะ',
+      })
+
+      closeMarketPostModal()
+      const latest = await listMarketplace({ status: 'all' })
+      setMarketplace(latest)
+    } catch (error) {
+      await showSwal({ icon: 'error', title: 'ส่งโพสต์ไม่สำเร็จ', text: error.message })
+    } finally {
+      setMarketPosting(false)
+    }
+  }
+
+  async function openMarketDetailModal(item) {
+    setMarketDetailItem(item)
+    setMarketDetailImages(item.image_url ? [{ url: item.image_url, name: 'ภาพหลัก' }] : [])
+    setMarketDetailIndex(0)
+    setShowMarketDetailModal(true)
+    try {
+      setMarketDetailLoading(true)
+      const images = await listMarketplaceImages(item.id)
+      if (images.length > 0) {
+        setMarketDetailImages(images)
+        setMarketDetailIndex(0)
+      }
+    } catch {
+      // Keep first image fallback from row data.
+    } finally {
+      setMarketDetailLoading(false)
+    }
+  }
+
+  function closeMarketDetailModal() {
+    setShowMarketDetailModal(false)
+    setMarketDetailItem(null)
+    setMarketDetailImages([])
+    setMarketDetailIndex(0)
+    setMarketDetailLoading(false)
   }
 
   function isSectionCurrent(section) {
@@ -2665,14 +2898,32 @@ export default function ResidentLayout() {
                   {announcements.length === 0 ? (
                     <div style={{ color: 'var(--mu)', textAlign: 'center', padding: '16px 0' }}>ยังไม่มีประกาศ</div>
                   ) : announcements.map((ann) => (
-                    <div key={ann.id} className="ann">
-                      <div className={`ann-dot ${getAnnDotClass(ann.type)}`} />
-                      <div style={{ flex: 1 }}>
-                        <div className="ann-t">{ann.is_pinned ? '📌 ' : ''}{ann.title}</div>
-                        {ann.content && <div className="ann-b">{ann.content}</div>}
-                        <div className="ann-d">{formatDate(ann.announcement_date || ann.created_at)} · {getTypeLabel(ann.type)}</div>
-                      </div>
-                    </div>
+                    (() => {
+                      const attachments = buildAttachmentItems({ imageUrls: [ann.image_url], text: ann.content, maxItems: 4 })
+                      return (
+                        <div key={ann.id} className="ann">
+                          <div className={`ann-dot ${getAnnDotClass(ann.type)}`} />
+                          <div style={{ flex: 1 }}>
+                            <div className="ann-t">{ann.is_pinned ? '📌 ' : ''}{ann.title}</div>
+                            {ann.content && <div className="ann-b">{ann.content}</div>}
+                            {attachments.length > 0 && (
+                              <div className="ann-attachments">
+                                {attachments.map((att) => (
+                                  <a key={`${ann.id}-${att.id}`} href={att.url} target="_blank" rel="noreferrer" className="ann-attach-item">
+                                    {att.isImage ? (
+                                      <img src={att.url} alt={att.title} className="ann-attach-thumb" />
+                                    ) : (
+                                      <span className="ann-attach-file">{getFileKind(att.url).icon} {getFileKind(att.url).label}</span>
+                                    )}
+                                  </a>
+                                ))}
+                              </div>
+                            )}
+                            <div className="ann-d">{formatDate(ann.announcement_date || ann.created_at)} · {getTypeLabel(ann.type)}</div>
+                          </div>
+                        </div>
+                      )
+                    })()
                   ))}
                 </div>
               </div>
@@ -2697,12 +2948,27 @@ export default function ResidentLayout() {
                   ) : workReports.map((rp) => {
                     const MONTH_TH = ['', 'ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.']
                     const monthName = MONTH_TH[rp.month] || rp.month
+                    const imageUrls = Array.isArray(rp.image_urls) ? rp.image_urls : []
+                    const attachments = buildAttachmentItems({ imageUrls, text: rp.detail, maxItems: 6 })
                     return (
                       <div key={rp.id} className="ann">
                         <div className="ann-dot ad-evt" />
                         <div style={{ flex: 1 }}>
                           <div className="ann-t">รายงาน {monthName} {rp.year}</div>
                           {rp.summary && <div className="ann-b">{rp.summary}</div>}
+                          {attachments.length > 0 && (
+                            <div className="ann-attachments">
+                              {attachments.map((att) => (
+                                <a key={`${rp.id}-${att.id}`} href={att.url} target="_blank" rel="noreferrer" className="ann-attach-item">
+                                  {att.isImage ? (
+                                    <img src={att.url} alt={att.title} className="ann-attach-thumb" />
+                                  ) : (
+                                    <span className="ann-attach-file">{getFileKind(att.url).icon} {getFileKind(att.url).label}</span>
+                                  )}
+                                </a>
+                              ))}
+                            </div>
+                          )}
                           <div className="ann-d">{formatDate(rp.created_at)} · {rp.category || 'บำรุงรักษา'}</div>
                         </div>
                       </div>
@@ -2735,7 +3001,7 @@ export default function ResidentLayout() {
                   {filteredTechs.map((t) => {
                     const skills = t.technician_services || []
                     return (
-                      <div key={t.id} className="tech-card">
+                      <button key={t.id} type="button" className="tech-card tech-card-btn" onClick={() => openTechModal(t)}>
                         <div style={{ display: 'flex', gap: 11, alignItems: 'flex-start' }}>
                           <div className="tech-avatar">{t.avatar_url ? <img src={t.avatar_url} alt={t.name} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 12 }} /> : '🔨'}</div>
                           <div style={{ flex: 1, minWidth: 0 }}>
@@ -2754,14 +3020,8 @@ export default function ResidentLayout() {
                             {skills.map((s) => <span key={s.id} className="tech-tag">{s.skill}</span>)}
                           </div>
                         )}
-                        {t.phone && (
-                          <div style={{ marginTop: 9 }}>
-                            <a href={`tel:${t.phone.replace(/[^0-9]/g, '')}`} style={{ textDecoration: 'none' }}>
-                              <button className="btn btn-p btn-sm" style={{ width: '100%' }}>📞 โทรหา</button>
-                            </a>
-                          </div>
-                        )}
-                      </div>
+                        <div style={{ marginTop: 9, fontSize: 12, color: 'var(--mu)' }}>แตะเพื่อดูรายละเอียด</div>
+                      </button>
                     )
                   })}
                 </div>
@@ -2777,8 +3037,15 @@ export default function ResidentLayout() {
                     <div className="ph-ico">🛒</div>
                     <div><div className="ph-h1">ตลาดชุมชน</div><div className="ph-sub">ซื้อ-ขาย-แจก-เช่า ในหมู่บ้าน</div></div>
                   </div>
+                  <div className="ph-acts" style={{ gap: 8 }}>
+                    <button className="btn btn-w btn-sm" onClick={openMarketPostModal}>+ โพสต์ขายของ</button>
+                  </div>
                 </div>
               </div>
+
+              {myPendingMarketCount > 0 && (
+                <div className="al al-i">ℹ️ โพสต์ของคุณที่รออนุมัติอยู่ {myPendingMarketCount} รายการ (จะแสดงสาธารณะหลังนิติอนุมัติ)</div>
+              )}
 
               <div style={{ display: 'flex', gap: 7, marginBottom: 14, flexWrap: 'wrap' }}>
                 <input className="fi" style={{ flex: 1, minWidth: 150 }} value={marketSearch} onChange={(e) => setMarketSearch(e.target.value)} placeholder="🔍 ค้นหาสินค้า..." />
@@ -2795,7 +3062,7 @@ export default function ResidentLayout() {
               ) : (
                 <div className="mkt-grid">
                   {filteredMarket.map((item) => (
-                    <div key={item.id} className="r-mcard">
+                    <button key={item.id} type="button" className="r-mcard" onClick={() => openMarketDetailModal(item)}>
                       <div className="r-mcard-img">
                         {item.image_url ? <img src={item.image_url} alt={item.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : '🛒'}
                         <span className={`r-mcard-badge ${marketBadgeClass(item.listing_type)}`}>{marketBadgeLabel(item.listing_type)}</span>
@@ -2809,9 +3076,10 @@ export default function ResidentLayout() {
                         <div className="r-mcard-meta">
                           {item.houses?.house_no ? `บ้าน ${item.houses.house_no}` : ''}{item.houses?.soi ? ` ซอย ${item.houses.soi}` : ''} · {formatDate(item.created_at)}
                         </div>
+                        {item.status === 'pending' && <div style={{ marginTop: 4, fontSize: 11.5, color: 'var(--wn)', fontWeight: 700 }}>รออนุมัติจากนิติ</div>}
                         {item.contact && <div style={{ marginTop: 5, fontSize: '12px' }}>📞 {item.contact}</div>}
                       </div>
-                    </div>
+                    </button>
                   ))}
                 </div>
               )}
@@ -3156,6 +3424,195 @@ export default function ResidentLayout() {
                   </button>
                 </div>
               </form>
+            </div>
+          </div>
+        )}
+
+        {selectedTech && (
+          <div className="house-mo">
+            <div className="house-md house-md--sm tech-detail-modal">
+              <div className="house-md-head">
+                <div>
+                  <div className="house-md-title">🔨 รายละเอียดช่าง</div>
+                  <div className="house-md-sub">{selectedTech.name || '-'}</div>
+                </div>
+              </div>
+              <div className="house-md-body">
+                <section className="house-sec">
+                  <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+                    <div className="tech-avatar" style={{ width: 62, height: 62 }}>
+                      {selectedTech.avatar_url ? <img src={selectedTech.avatar_url} alt={selectedTech.name} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 12 }} /> : '🔨'}
+                    </div>
+                    <div>
+                      <div className="tech-name" style={{ fontSize: 16 }}>{selectedTech.name || '-'}</div>
+                      <div className="tech-phone">📞 {selectedTech.phone || '-'}</div>
+                      <div className="tech-phone">💬 LINE: {selectedTech.line_id || '-'}</div>
+                      {selectedTech.rating != null && (
+                        <div style={{ marginTop: 3 }}>
+                          <span className="rating-stars">{renderStars(selectedTech.rating)}</span>
+                          <span style={{ fontSize: 11, color: 'var(--mu)' }}> {Number(selectedTech.rating || 0).toFixed(1)} ({selectedTech.review_count || 0})</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </section>
+
+                <section className="house-sec">
+                  <div className="house-sec-title">บริการและราคา</div>
+                  <div className="tech-tags" style={{ marginTop: 0 }}>
+                    {(selectedTech.technician_services || []).length === 0 ? (
+                      <span style={{ fontSize: 12, color: 'var(--mu)' }}>ยังไม่ได้ระบุบริการ</span>
+                    ) : (selectedTech.technician_services || []).map((svc) => (
+                      <span key={svc.id} className="tech-tag">
+                        {svc.skill}
+                        {(Number(svc.price_min || 0) > 0 || Number(svc.price_max || 0) > 0) && ` • ฿${formatMoney(svc.price_min || 0)}-${formatMoney(svc.price_max || 0)}`}
+                      </span>
+                    ))}
+                  </div>
+                  {selectedTech.note && <div style={{ marginTop: 10, fontSize: 12.5, color: 'var(--tx)', whiteSpace: 'pre-wrap' }}>หมายเหตุ: {selectedTech.note}</div>}
+                </section>
+              </div>
+              <div className="house-md-foot">
+                <button className="btn btn-g" type="button" onClick={closeTechModal}>ปิด</button>
+                {selectedTech.phone && (
+                  <a href={`tel:${String(selectedTech.phone).replace(/[^0-9]/g, '')}`} style={{ textDecoration: 'none' }}>
+                    <button className="btn btn-p" type="button">📞 โทรหา</button>
+                  </a>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {showMarketPostModal && (
+          <div className="house-mo">
+            <div className="house-md house-md--md">
+              <div className="house-md-head">
+                <div>
+                  <div className="house-md-title">🛒 โพสต์ขายของในตลาดชุมชน</div>
+                  <div className="house-md-sub">โพสต์จะต้องผ่านการอนุมัติจากนิติก่อนแสดงสาธารณะ</div>
+                </div>
+              </div>
+              <form onSubmit={submitMarketPost}>
+                <div className="house-md-body">
+                  <section className="house-sec">
+                    <div className="house-grid house-grid-3">
+                      <label className="house-field house-field-span-2">
+                        <span>ชื่อสินค้า/บริการ *</span>
+                        <input value={marketPostForm.title} onChange={(e) => setMarketPostForm((cur) => ({ ...cur, title: e.target.value }))} placeholder="เช่น โต๊ะทำงานมือสอง" />
+                      </label>
+                      <label className="house-field">
+                        <span>ประเภท</span>
+                        <select value={marketPostForm.listing_type} onChange={(e) => setMarketPostForm((cur) => ({ ...cur, listing_type: e.target.value }))}>
+                          <option value="sell">ขาย</option>
+                          <option value="free">ให้ฟรี</option>
+                          <option value="rent">ให้เช่า</option>
+                          <option value="wanted">ต้องการ</option>
+                        </select>
+                      </label>
+                      <label className="house-field">
+                        <span>หมวดหมู่</span>
+                        <select value={marketPostForm.category} onChange={(e) => setMarketPostForm((cur) => ({ ...cur, category: e.target.value }))}>
+                          <option value="">เลือกหมวดหมู่</option>
+                          {MARKET_CATEGORY_OPTIONS.map((cat) => <option key={cat} value={cat}>{cat}</option>)}
+                        </select>
+                      </label>
+                      <label className="house-field">
+                        <span>ราคา (บาท)</span>
+                        <input type="number" min="0" value={marketPostForm.price} onChange={(e) => setMarketPostForm((cur) => ({ ...cur, price: e.target.value }))} placeholder="0" />
+                      </label>
+                      <label className="house-field">
+                        <span>ติดต่อ</span>
+                        <input value={marketPostForm.contact} onChange={(e) => setMarketPostForm((cur) => ({ ...cur, contact: e.target.value }))} placeholder="เบอร์โทรหรือ Line" />
+                      </label>
+                      <label className="house-field house-field-span-3">
+                        <span>รายละเอียด</span>
+                        <textarea rows={4} value={marketPostForm.detail} onChange={(e) => setMarketPostForm((cur) => ({ ...cur, detail: e.target.value }))} placeholder="รายละเอียดสินค้า/เงื่อนไข" />
+                      </label>
+                    </div>
+                  </section>
+
+                  <section className="house-sec">
+                    <div className="house-sec-title">รูปสินค้า (สูงสุด 2 รูป)</div>
+                    <label className="house-field">
+                      <span>แนบไฟล์รูปภาพ</span>
+                      <input type="file" accept="image/*" multiple onChange={handleMarketPostAttachFiles} disabled={marketPostAttachments.length >= MARKETPLACE_MAX_ATTACHMENTS} />
+                    </label>
+                    <div style={{ marginTop: 8, fontSize: 12, color: 'var(--mu)' }}>แนบแล้ว {marketPostAttachments.length}/{MARKETPLACE_MAX_ATTACHMENTS} รูป • ระบบย่อไฟล์ไม่เกิน 100KB</div>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 8 }}>
+                      {marketPostAttachments.length === 0 ? (
+                        <div style={{ fontSize: 12, color: 'var(--mu)' }}>ยังไม่มีรูปแนบ</div>
+                      ) : marketPostAttachments.map((img, idx) => (
+                        <div key={`${img.name}-${idx}`} style={{ width: 74 }}>
+                          <button type="button" onClick={() => showSwal({ imageUrl: img.url, showConfirmButton: false, showCloseButton: true, width: 'auto', background: '#0f172a' })} style={{ width: 64, height: 64, borderRadius: 8, border: '1px solid var(--bo)', background: '#fff', padding: 0, overflow: 'hidden', cursor: 'pointer' }}>
+                            <img src={img.url} alt={img.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                          </button>
+                          <button type="button" onClick={() => handleMarketPostRemoveAttachment(img)} className="btn btn-xs btn-dg" style={{ marginTop: 4, width: '100%' }}>ลบ</button>
+                        </div>
+                      ))}
+                    </div>
+                  </section>
+                </div>
+                <div className="house-md-foot">
+                  <button className="btn btn-g" type="button" onClick={closeMarketPostModal} disabled={marketPosting}>ยกเลิก</button>
+                  <button className="btn btn-p" type="submit" disabled={marketPosting}>{marketPosting ? 'กำลังส่ง...' : 'ส่งโพสต์'}</button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+
+        {showMarketDetailModal && marketDetailItem && (
+          <div className="house-mo">
+            <div className="house-md house-md--sm">
+              <div className="house-md-head">
+                <div>
+                  <div className="house-md-title">🔍 รายละเอียดโพสต์</div>
+                  <div className="house-md-sub">{marketDetailItem.title || '-'}</div>
+                </div>
+              </div>
+              <div className="house-md-body">
+                <section className="house-sec">
+                  <div className="tech-tags" style={{ marginTop: 0, marginBottom: 8 }}>
+                    <span className="tech-tag">{marketBadgeLabel(marketDetailItem.listing_type)}</span>
+                    {marketDetailItem.status === 'pending' && <span className="tech-tag wn-tag">รออนุมัติ</span>}
+                  </div>
+                  <div style={{ fontSize: 13, color: 'var(--tx)' }}>{marketDetailItem.category || '-'}</div>
+                  <div className="r-mcard-price" style={{ marginTop: 6 }}>
+                    {marketDetailItem.listing_type === 'free' ? 'ให้ฟรี 🎁' : (marketDetailItem.price ? `฿${formatMoney(marketDetailItem.price)}` : '-')}
+                  </div>
+                  <div style={{ fontSize: 12, color: 'var(--mu)', marginTop: 4 }}>{formatDate(marketDetailItem.created_at)}</div>
+                </section>
+
+                <section className="house-sec">
+                  <div className="house-sec-title">รายละเอียด</div>
+                  <div style={{ fontSize: 13, color: 'var(--tx)', whiteSpace: 'pre-wrap', lineHeight: 1.55 }}>{marketDetailItem.detail || '-'}</div>
+                  {marketDetailItem.contact && <div style={{ marginTop: 10, fontSize: 13 }}>📞 {marketDetailItem.contact}</div>}
+                </section>
+
+                <section className="house-sec">
+                  <div className="house-sec-title">รูปภาพ</div>
+                  {marketDetailLoading ? (
+                    <div style={{ fontSize: 12, color: 'var(--mu)' }}>กำลังโหลดรูป...</div>
+                  ) : marketDetailImages.length === 0 ? (
+                    <div style={{ fontSize: 12, color: 'var(--mu)' }}>ไม่มีรูปแนบ</div>
+                  ) : (
+                    <>
+                      <img src={marketDetailImages[Math.min(marketDetailIndex, marketDetailImages.length - 1)]?.url} alt="market-detail" style={{ width: '100%', height: 220, objectFit: 'contain', border: '1px solid var(--bo)', borderRadius: 10, background: '#fff' }} />
+                      {marketDetailImages.length > 1 && (
+                        <div style={{ display: 'flex', gap: 6, marginTop: 8 }}>
+                          <button type="button" className="btn btn-xs btn-o" onClick={() => setMarketDetailIndex((idx) => Math.max(0, idx - 1))} disabled={marketDetailIndex <= 0}>ก่อนหน้า</button>
+                          <div style={{ fontSize: 12, color: 'var(--mu)', alignSelf: 'center' }}>รูป {marketDetailIndex + 1}/{marketDetailImages.length}</div>
+                          <button type="button" className="btn btn-xs btn-o" onClick={() => setMarketDetailIndex((idx) => Math.min(marketDetailImages.length - 1, idx + 1))} disabled={marketDetailIndex >= marketDetailImages.length - 1}>ถัดไป</button>
+                        </div>
+                      )}
+                    </>
+                  )}
+                </section>
+              </div>
+              <div className="house-md-foot">
+                <button className="btn btn-g" type="button" onClick={closeMarketDetailModal}>ปิด</button>
+              </div>
             </div>
           </div>
         )}
