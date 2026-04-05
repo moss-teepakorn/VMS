@@ -1149,6 +1149,10 @@
   margin-top: 0;
 }
 
+.pane.on .ph + .admin-search-filter-card {
+  margin-top: 12px;
+}
+
 .pane.on .admin-search-filter-card + .card {
   margin-top: 12px;
 }
@@ -2145,6 +2149,10 @@
   white-space: nowrap;
 }
 
+.vehicles-page .houses-mobile-only {
+  margin-top: 8px;
+}
+
 .violations-page .houses-filter-select,
 .violations-page .house-field select {
   min-height: 39px;
@@ -2158,6 +2166,25 @@
 
   .vehicles-page .houses-filter-input {
     grid-column: 1 / -1;
+  }
+}
+
+.issues-page .houses-filter-row {
+  grid-template-columns: minmax(220px, 1fr) 182px 182px 96px;
+}
+
+@media (max-width: 1060px) {
+  .issues-page .houses-filter-row {
+    grid-template-columns: minmax(200px, 1fr) 1fr 1fr auto;
+  }
+
+  .issues-page .houses-filter-input {
+    grid-column: 1 / -1;
+  }
+
+  .issues-page .houses-filter-select.issue-select-wide {
+    width: 100%;
+    min-width: 0;
   }
 }
 
@@ -2182,6 +2209,44 @@
   .vehicles-mobile-list {
     gap: 14px;
     padding: 0;
+  }
+
+  .vehicles-page .houses-filter-row {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-rows: auto auto auto;
+  }
+
+  .vehicles-page .houses-filter-input {
+    grid-column: 1 / -1;
+  }
+
+  .vehicles-page .houses-filter-select {
+    width: 100% !important;
+    min-width: 0;
+  }
+
+  .vehicles-page .houses-filter-btn {
+    grid-column: 1 / -1;
+    width: 100%;
+  }
+
+  .issues-page .houses-filter-row {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-rows: auto auto auto;
+  }
+
+  .issues-page .houses-filter-input {
+    grid-column: 1 / -1;
+  }
+
+  .issues-page .houses-filter-select.issue-select-wide {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .issues-page .houses-filter-btn {
+    grid-column: 1 / -1;
+    width: 100%;
   }
 
   .vehicles-mcard {
