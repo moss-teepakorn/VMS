@@ -3939,7 +3939,7 @@ export default function ResidentLayout() {
         )}
 
         <footer className="fixed bottom-0 right-0 left-0 sm:left-60 bg-white/80 border-t border-slate-200 px-6 py-3 text-center text-xs text-slate-500">
-          <p>{setup.villageName} | version {APP_VERSION} | Built no : {BUILD_SHA} | Built date : {BUILD_DATE}</p>
+          <p>©VMS™ All Rights Reserved 2026 | version {APP_VERSION} | Built no : {BUILD_SHA} | Built date : {BUILD_DATE}</p>
         </footer>
 
       </div>
