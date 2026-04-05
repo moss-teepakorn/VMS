@@ -17,6 +17,7 @@
       } catch (_) {}
 
       // Ignore known runtime noise from browser extensions injected as webextension.js.
+      // This also covers common message-port errors produced by extension content scripts.
       const isExtensionNoise = (message, source) => {
         const msg = String(message || '')
         const src = String(source || '')

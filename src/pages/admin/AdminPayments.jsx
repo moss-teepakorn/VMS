@@ -1113,36 +1113,41 @@ export default function AdminPayments() {
             </div>
           </div>
         </div>
-        <div style={{ marginTop: '10px', display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-          <input
-            type="text"
-            className="houses-filter-input"
-            placeholder="ค้นหา ซอย / บ้าน / วิธีชำระ / สถานะ"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            style={{ flex: '1 1 220px', minWidth: 0 }}
-          />
-          <button className="btn btn-a btn-sm" onClick={loadPayments} disabled={loading} style={{ height: '34px' }}>ค้นหา</button>
-        </div>
-        <div style={{ marginTop: 10, display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center' }}>
-          <span style={{ fontSize: 12, color: '#e2e8f0' }}>ปี:</span>
-          <button
-            type="button"
-            onClick={() => setYearFilter('all')}
-            style={{ border: yearFilter === 'all' ? '2px solid #0c4a6e' : '1px solid rgba(255,255,255,.4)', background: yearFilter === 'all' ? '#eff6ff' : 'rgba(255,255,255,.95)', color: '#0f172a', borderRadius: 8, padding: '7px 12px', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}
-          >
-            ทั้งหมด
-          </button>
-          {yearCards.map((card) => (
+      </div>
+
+      <div className="card report-filter-card admin-search-filter-card">
+        <div className="cb" style={{ padding: 12 }}>
+          <div className="houses-filter-row" style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+            <input
+              type="text"
+              className="houses-filter-input"
+              placeholder="ค้นหา ซอย / บ้าน / วิธีชำระ / สถานะ"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              style={{ flex: '1 1 220px', minWidth: 0 }}
+            />
+            <button className="btn btn-a btn-sm" onClick={loadPayments} disabled={loading} style={{ height: '34px' }}>ค้นหา</button>
+          </div>
+          <div style={{ marginTop: 10, display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center' }}>
+            <span style={{ fontSize: 12, color: 'var(--mu)' }}>ปี:</span>
             <button
-              key={card.value}
               type="button"
-              onClick={() => setYearFilter(card.value)}
-              style={{ border: yearFilter === card.value ? '2px solid #0c4a6e' : '1px solid rgba(255,255,255,.4)', background: yearFilter === card.value ? '#eff6ff' : 'rgba(255,255,255,.95)', color: '#0f172a', borderRadius: 8, padding: '7px 12px', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}
+              onClick={() => setYearFilter('all')}
+              style={{ border: yearFilter === 'all' ? '2px solid #0c4a6e' : '1px solid var(--bo)', background: yearFilter === 'all' ? '#eff6ff' : '#fff', color: '#0f172a', borderRadius: 8, padding: '7px 12px', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}
             >
-              {card.label}
+              ทั้งหมด
             </button>
-          ))}
+            {yearCards.map((card) => (
+              <button
+                key={card.value}
+                type="button"
+                onClick={() => setYearFilter(card.value)}
+                style={{ border: yearFilter === card.value ? '2px solid #0c4a6e' : '1px solid var(--bo)', background: yearFilter === card.value ? '#eff6ff' : '#fff', color: '#0f172a', borderRadius: 8, padding: '7px 12px', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}
+              >
+                {card.label}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
