@@ -30,6 +30,7 @@
 .ann-d { font-size: 11px; color: var(--mu); margin-top: 4px; }
 .ann-attachments { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
 .ann-attach-item { text-decoration: none; }
+.ann-attach-btn { border: none; background: transparent; padding: 0; cursor: pointer; }
 .ann-attach-thumb { width: 42px; height: 42px; object-fit: cover; border-radius: 8px; border: 1px solid var(--bo); background: #fff; display: block; }
 .ann-attach-file { height: 42px; min-width: 62px; border-radius: 8px; border: 1px solid var(--bo); background: var(--bg2); color: var(--tx); padding: 0 10px; font-size: 11px; font-weight: 700; display: inline-flex; align-items: center; }
 

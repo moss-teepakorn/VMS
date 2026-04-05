@@ -353,6 +353,9 @@ export default function ResidentLayout() {
   const [marketDetailImages, setMarketDetailImages] = useState([])
   const [marketDetailIndex, setMarketDetailIndex] = useState(0)
   const [marketDetailLoading, setMarketDetailLoading] = useState(false)
+  const [showPdfViewerModal, setShowPdfViewerModal] = useState(false)
+  const [pdfViewerUrl, setPdfViewerUrl] = useState('')
+  const [pdfViewerTitle, setPdfViewerTitle] = useState('เอกสาร PDF')
 
   // Vehicle request states
   const [vehicleRequests, setVehicleRequests] = useState([])
@@ -1310,6 +1313,38 @@ export default function ResidentLayout() {
     setMarketDetailLoading(false)
   }
 
+  function openPdfViewer(url, title = 'เอกสาร PDF') {
+    const target = String(url || '').trim()
+    if (!target) {
+      showSwal({ icon: 'warning', title: 'ไม่พบไฟล์ PDF' })
+      return
+    }
+    setPdfViewerTitle(title)
+    setPdfViewerUrl(target)
+    setShowPdfViewerModal(true)
+  }
+
+  function closePdfViewer() {
+    setShowPdfViewerModal(false)
+    setPdfViewerUrl('')
+    setPdfViewerTitle('เอกสาร PDF')
+  }
+
+  function openResidentAttachment(url, title = 'เอกสารแนบ') {
+    const target = String(url || '').trim()
+    if (!target) {
+      showSwal({ icon: 'warning', title: 'ไม่พบไฟล์แนบ' })
+      return
+    }
+
+    if (isImageLink(target)) {
+      showSwal({ imageUrl: target, imageAlt: title, showConfirmButton: false, showCloseButton: true, width: 'auto', background: '#0f172a' })
+      return
+    }
+
+    openPdfViewer(target, title)
+  }
+
   function isSectionCurrent(section) {
     if (!section) return false
     return section.items.some((item) => item.key === activeSection)
@@ -2214,7 +2249,7 @@ export default function ResidentLayout() {
                         <div className="ann-d">{formatDate(item.announcement_date || item.created_at)}</div>
                       </div>
                       {item.pdf_url && (
-                        <a href={item.pdf_url} target="_blank" rel="noreferrer" className="btn btn-sm btn-o" style={{ textDecoration: 'none', whiteSpace: 'nowrap' }}>📄 เปิด PDF</a>
+                        <button type="button" className="btn btn-sm btn-o" style={{ whiteSpace: 'nowrap' }} onClick={() => openPdfViewer(item.pdf_url, `เรื่องที่ ${item.topic_no || '-'} ${item.title || ''}`)}>📄 อ่าน PDF</button>
                       )}
                     </div>
                   ))}
@@ -2235,7 +2270,7 @@ export default function ResidentLayout() {
                         <div className="ann-d">{formatDate(item.announcement_date || item.created_at)}</div>
                       </div>
                       {item.pdf_url && (
-                        <a href={item.pdf_url} target="_blank" rel="noreferrer" className="btn btn-sm btn-o" style={{ textDecoration: 'none', whiteSpace: 'nowrap' }}>📄 เปิด PDF</a>
+                        <button type="button" className="btn btn-sm btn-o" style={{ whiteSpace: 'nowrap' }} onClick={() => openPdfViewer(item.pdf_url, `เรื่องที่ ${item.topic_no || '-'} ${item.title || ''}`)}>📄 อ่าน PDF</button>
                       )}
                     </div>
                   ))}
@@ -2661,7 +2696,7 @@ export default function ResidentLayout() {
 
                           {row.slip_url && (
                             <div className="fee-payment-links">
-                              <a href={row.slip_url} target="_blank" rel="noreferrer">ดูหลักฐานการชำระ</a>
+                              <button type="button" className="btn btn-xs btn-o" onClick={() => openResidentAttachment(row.slip_url, 'หลักฐานการชำระเงิน')}>ดูหลักฐานการชำระ</button>
                             </div>
                           )}
 
@@ -2984,13 +3019,13 @@ export default function ResidentLayout() {
                             {attachments.length > 0 && (
                               <div className="ann-attachments">
                                 {attachments.map((att) => (
-                                  <a key={`${ann.id}-${att.id}`} href={att.url} target="_blank" rel="noreferrer" className="ann-attach-item">
+                                  <button key={`${ann.id}-${att.id}`} type="button" className="ann-attach-item ann-attach-btn" onClick={() => openResidentAttachment(att.url, `${ann.title || 'ประกาศ'} - ${att.title || 'ไฟล์แนบ'}`)}>
                                     {att.isImage ? (
                                       <img src={att.url} alt={att.title} className="ann-attach-thumb" />
                                     ) : (
                                       <span className="ann-attach-file">{getFileKind(att.url).icon} {getFileKind(att.url).label}</span>
                                     )}
-                                  </a>
+                                  </button>
                                 ))}
                               </div>
                             )}
@@ -3034,13 +3069,13 @@ export default function ResidentLayout() {
                           {attachments.length > 0 && (
                             <div className="ann-attachments">
                               {attachments.map((att) => (
-                                <a key={`${rp.id}-${att.id}`} href={att.url} target="_blank" rel="noreferrer" className="ann-attach-item">
+                                <button key={`${rp.id}-${att.id}`} type="button" className="ann-attach-item ann-attach-btn" onClick={() => openResidentAttachment(att.url, `${rp.summary || 'ผลงานนิติ'} - ${att.title || 'ไฟล์แนบ'}`)}>
                                   {att.isImage ? (
                                     <img src={att.url} alt={att.title} className="ann-attach-thumb" />
                                   ) : (
                                     <span className="ann-attach-file">{getFileKind(att.url).icon} {getFileKind(att.url).label}</span>
                                   )}
-                                </a>
+                                </button>
                               ))}
                             </div>
                           )}
@@ -3687,6 +3722,32 @@ export default function ResidentLayout() {
               </div>
               <div className="house-md-foot">
                 <button className="btn btn-g" type="button" onClick={closeMarketDetailModal}>ปิด</button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {showPdfViewerModal && (
+          <div className="house-mo">
+            <div className="house-md house-md--xl" style={{ '--house-md-max-w': '1120px', '--house-md-max-h': 'calc(100dvh - 36px)' }}>
+              <div className="house-md-head">
+                <div>
+                  <div className="house-md-title">📄 {pdfViewerTitle}</div>
+                  <div className="house-md-sub">อ่านเอกสารภายในระบบ</div>
+                </div>
+              </div>
+              <div className="house-md-body" style={{ padding: 10, background: '#eef2f7' }}>
+                <div style={{ border: '1px solid var(--bo)', borderRadius: 10, overflow: 'hidden', background: '#fff', height: 'calc(100dvh - 220px)', minHeight: 420 }}>
+                  <iframe
+                    title={pdfViewerTitle}
+                    src={`${pdfViewerUrl}#view=FitH&toolbar=1&navpanes=0`}
+                    style={{ width: '100%', height: '100%', border: 'none' }}
+                  />
+                </div>
+              </div>
+              <div className="house-md-foot">
+                <a href={pdfViewerUrl} target="_blank" rel="noreferrer" className="btn btn-o" style={{ textDecoration: 'none' }}>↗ เปิดแท็บใหม่</a>
+                <button className="btn btn-g" type="button" onClick={closePdfViewer}>ปิด</button>
               </div>
             </div>
           </div>
