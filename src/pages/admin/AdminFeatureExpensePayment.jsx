@@ -410,7 +410,7 @@ export default function AdminFeatureExpensePayment() {
         </div>
 
         <div className="cb houses-table-card-body houses-main-body">
-          <div className="houses-table-wrap houses-main-wrap disbursements-table-wrap">
+          <div className="houses-table-wrap houses-main-wrap disbursements-table-wrap houses-desktop-only">
             <table className="tw houses-table houses-main-table" style={{ width: '100%', minWidth: 840 }}>
               <thead>
                 <tr>
@@ -448,6 +448,37 @@ export default function AdminFeatureExpensePayment() {
                 })}
               </tbody>
             </table>
+          </div>
+
+          <div className="houses-mobile-only" style={{ gap: 10, padding: '4px 0' }}>
+            {loading ? (
+              <div className="mcard-empty">กำลังโหลด...</div>
+            ) : filtered.length === 0 ? (
+              <div className="mcard-empty">ไม่พบรายการ</div>
+            ) : filtered.map((d) => {
+              const labels = (d.disbursement_items || []).map((i) => i.item_label).filter(Boolean)
+              const itemsSummary = labels.length === 0 ? '-' : labels.length <= 2 ? labels.join(', ') : `${labels.slice(0, 2).join(', ')} +${labels.length - 2} รายการ`
+              const canDelete = d.status === 'pending'
+              return (
+                <div key={`m-${d.id}`} className="mcard">
+                  <div className="mcard-top">
+                    <div className="mcard-title">{disburseNoById[d.id] || '-'}</div>
+                    <span className={`bd ${d.status === 'approved' ? 'b-ok' : d.status === 'rejected' ? 'b-dg' : 'b-wn'} mcard-badge`}>{STATUS_MAP[d.status]?.label || d.status || '-'}</span>
+                  </div>
+                  <div className="mcard-body">{recipientLabel(d)}</div>
+                  <div className="mcard-meta">
+                    <span><span className="mcard-label">รายการ</span> {itemsSummary}</span>
+                    <span><span className="mcard-label">วันที่</span> {fmtDate(d.disbursement_date)}</span>
+                    <span><span className="mcard-label">ยอดสุทธิ</span> {fmt2(d.total_amount)} บาท</span>
+                  </div>
+                  <div className="mcard-actions">
+                    <button className="btn btn-xs btn-o" onClick={() => openEdit(d)}>แก้ไข</button>
+                    <button className="btn btn-xs btn-o" onClick={() => handlePrint(d)}>พิมพ์</button>
+                    {canDelete && <button className="btn btn-xs btn-dg" onClick={() => handleDelete(d)}>ลบ</button>}
+                  </div>
+                </div>
+              )
+            })}
           </div>
         </div>
       </div>

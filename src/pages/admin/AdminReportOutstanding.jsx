@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import ReportMockPage from './reports/ReportMockPage'
 import ReportExportButtons from './ReportExportButtons'
 import { getSystemConfig } from '../../lib/systemConfig'
@@ -32,123 +32,129 @@ export default function AdminReportOutstanding() {
   const [setup, setSetup] = useState({})
   const [search, setSearch] = useState('')
 
-  useEffect(() => { getSystemConfig().then(setSetup).catch(() => {}) }, [])
+  useEffect(() => {
+    getSystemConfig().then(setSetup).catch(() => {})
+  }, [])
 
-  const handleShowReport = async () => {
+  const yearOptions = useMemo(() => {
+    const thisYear = new Date().getFullYear()
+    const options = []
+    for (let y = thisYear + 2; y >= thisYear - 5; y -= 1) options.push(y)
+    return options
+  }, [])
+
+  const sumAmount = useMemo(() => rows.reduce((sum, row) => sum + (row.outstandingRaw || 0), 0), [rows])
+
+  const runReport = async () => {
     setError('')
     setLoading(true)
     try {
       const feeData = await listFees({ status: 'all', year })
-      const feeIds = feeData.map(f => f.id)
+      const feeIds = feeData.map((fee) => fee.id)
       const paymentTotals = await listPaymentTotalsByFeeIds(feeIds)
       const approved = paymentTotals.approved || {}
 
-      // filter outstanding (not cancelled and approved < total_amount)
-      const outstandingFees = (feeData || []).filter(f => {
-        if (!f) return false
-        if (f.status === 'cancelled') return false
-        const total = Number(f.total_amount || 0)
-        const appr = Number(approved[f.id] || 0)
-        return total > 0 && appr < total
+      const outstandingFees = (feeData || []).filter((fee) => {
+        if (!fee || fee.status === 'cancelled') return false
+        const total = Number(fee.total_amount || 0)
+        const approvedAmount = Number(approved[fee.id] || 0)
+        return total > 0 && approvedAmount < total
       })
 
-      // map to rows and apply search
-      const mapped = outstandingFees.map(f => {
-        const soi = f.houses?.soi || ''
-        const houseNo = f.houses?.house_no || '-'
-        const owner = f.houses?.owner_name || '-'
-        const total = Number(f.total_amount || 0)
-        const appr = Number(approved[f.id] || 0)
-        const outstanding = Math.max(0, total - appr)
+      const mapped = outstandingFees.map((fee) => {
+        const soi = fee.houses?.soi || ''
+        const houseNo = fee.houses?.house_no || '-'
+        const ownerName = fee.houses?.owner_name || '-'
+        const total = Number(fee.total_amount || 0)
+        const approvedAmount = Number(approved[fee.id] || 0)
+        const outstanding = Math.max(0, total - approvedAmount)
 
-        // compute requested breakdowns from fee fields
-        const common = Number(f.fee_common || 0) + Number(f.fee_overdue_common || 0)
-        const fine = Number(f.fee_fine || 0) + Number(f.fee_overdue_fine || 0)
-        const notice = Number(f.fee_notice || 0) + Number(f.fee_overdue_notice || 0)
+        const common = Number(fee.fee_common || 0) + Number(fee.fee_overdue_common || 0)
+        const fine = Number(fee.fee_fine || 0) + Number(fee.fee_overdue_fine || 0)
+        const notice = Number(fee.fee_notice || 0) + Number(fee.fee_overdue_notice || 0)
 
-        // other = sum of all fee_* fields except the ones used above
         const exclude = new Set([
           'fee_common', 'fee_overdue_common',
           'fee_fine', 'fee_overdue_fine',
           'fee_notice', 'fee_overdue_notice',
         ])
         let other = 0
-        for (const k of Object.keys(f)) {
-          if (!k.startsWith('fee_')) continue
-          if (exclude.has(k)) continue
-          // skip total_amount-like fields
-          if (k === 'fee_total' || k === 'fee_amount' || k === 'fee_sum') continue
-          other += Number(f[k] || 0)
+        for (const key of Object.keys(fee)) {
+          if (!key.startsWith('fee_')) continue
+          if (exclude.has(key)) continue
+          if (key === 'fee_total' || key === 'fee_amount' || key === 'fee_sum') continue
+          other += Number(fee[key] || 0)
         }
 
         return {
-          id: f.id,
+          id: fee.id,
           soi,
           houseNo,
-          ownerName: owner,
-          period: formatPeriod(f.period, f.year),
-          commonOutstanding: common.toLocaleString(),
+          ownerName,
+          period: formatPeriod(fee.period, fee.year),
+          commonOutstanding: common.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
           commonOutstandingRaw: common,
-          fineOutstanding: fine.toLocaleString(),
+          fineOutstanding: fine.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
           fineOutstandingRaw: fine,
-          noticeOutstanding: notice.toLocaleString(),
+          noticeOutstanding: notice.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
           noticeOutstandingRaw: notice,
-          otherOutstanding: other.toLocaleString(),
+          otherOutstanding: other.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
           otherOutstandingRaw: other,
-          outstanding: outstanding.toLocaleString(),
+          outstanding: outstanding.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
           outstandingRaw: outstanding,
         }
       })
 
       const keyword = String(search || '').trim().toLowerCase()
-      const finalRows = keyword ? mapped.filter(r => (
-        String(r.houseNo || '').toLowerCase().includes(keyword) ||
-        String(r.ownerName || '').toLowerCase().includes(keyword) ||
-        String(r.soi || '').toLowerCase().includes(keyword)
-      )) : mapped
+      const finalRows = keyword
+        ? mapped.filter((row) => (
+          String(row.houseNo || '').toLowerCase().includes(keyword)
+          || String(row.ownerName || '').toLowerCase().includes(keyword)
+          || String(row.soi || '').toLowerCase().includes(keyword)
+        ))
+        : mapped
 
-      // sort by soi (numeric if possible) then houseNo
-      finalRows.sort((a, b) => {
-        const na = parseInt(String(a.soi || '').replace(/[^0-9]/g, ''), 10)
-        const nb = parseInt(String(b.soi || '').replace(/[^0-9]/g, ''), 10)
-        const ca = Number.isFinite(na) ? na : Number.MAX_SAFE_INTEGER
-        const cb = Number.isFinite(nb) ? nb : Number.MAX_SAFE_INTEGER
-        if (ca !== cb) return ca - cb
-        const ha = String(a.houseNo || '')
-        const hb = String(b.houseNo || '')
-        return ha.localeCompare(hb, 'th-TH', { numeric: true })
+      finalRows.sort((left, right) => {
+        const leftSoi = parseInt(String(left.soi || '').replace(/[^0-9]/g, ''), 10)
+        const rightSoi = parseInt(String(right.soi || '').replace(/[^0-9]/g, ''), 10)
+        const normalizedLeftSoi = Number.isFinite(leftSoi) ? leftSoi : Number.MAX_SAFE_INTEGER
+        const normalizedRightSoi = Number.isFinite(rightSoi) ? rightSoi : Number.MAX_SAFE_INTEGER
+        if (normalizedLeftSoi !== normalizedRightSoi) return normalizedLeftSoi - normalizedRightSoi
+        return String(left.houseNo || '').localeCompare(String(right.houseNo || ''), 'th-TH', { numeric: true })
       })
 
       setRows(finalRows)
     } catch (err) {
-      setError(err?.message || 'เกิดข้อผิดพลาดในการโหลดข้อมูล')
       setRows([])
+      setError(err?.message || 'เกิดข้อผิดพลาดในการโหลดข้อมูล')
+    } finally {
+      setLoading(false)
     }
-    setLoading(false)
   }
 
-  const yearOptions = []
-  const thisYear = new Date().getFullYear()
-  for (let y = thisYear + 2; y >= thisYear - 5; y--) yearOptions.push(y)
+  useEffect(() => {
+    runReport()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   return (
     <div className="pane on houses-compact reports-compact">
-      <div className="ph">
-        <div className="ph-in" style={{ display: 'flex', alignItems: 'center', gap: 16, margin: 0, padding: 0, justifyContent: 'flex-start', position: 'relative' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+      <div className="ph report-head">
+        <div className="ph-in report-head-in">
+          <div className="report-head-main">
             <div className="ph-ico">📋</div>
             <div>
-              <div className="ph-h1" style={{ margin: 0, padding: 0 }}>รายงานค่างชำระ</div>
-              <div className="ph-sub" style={{ margin: 0, padding: 0 }}>สรุปยอดค้างชำระ แยกตามบ้านและซอย</div>
+              <div className="ph-h1">รายงานค้างชำระ</div>
+              <div className="ph-sub">สรุปยอดค้างชำระ แยกตามบ้านและซอย</div>
             </div>
           </div>
-          <div style={{ position: 'absolute', right: 24, top: 24 }}>
+          <div className="report-head-actions">
             <ReportExportButtons
               columns={columns}
               rows={rows}
-              reportTitle="รายงานค่างชำระ"
-              filter={{ year }}
-              sumAmount={rows.reduce((s, r) => s + (r.outstandingRaw || 0), 0)}
+              reportTitle="รายงานค้างชำระ"
+              filter={{ year, search }}
+              sumAmount={sumAmount}
               logoUrl={setup.village_logo_url || '/assets/village-logo.svg'}
               footerLabel="ยอดค้างรวม"
             />
@@ -156,28 +162,28 @@ export default function AdminReportOutstanding() {
         </div>
       </div>
 
-      <div style={{ width: '100%', margin: '0px 0px 0px', display: 'flex', justifyContent: 'flex-start' }}>
-        <form
-          className="houses-filter-row"
-          style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: 12, width: '100%', maxWidth: 900 }}
-          onSubmit={e => { e.preventDefault(); handleShowReport(); }}
-        >
-          <label style={{ marginBottom: 0, fontWeight: 500 }}>
-            ค้นหา
-            <input value={search} onChange={e => setSearch(e.target.value)} placeholder="ค้นหา ซอย, บ้านเลขที่, ชื่อ" className="houses-filter-input" style={{ marginLeft: 8 }} />
-          </label>
-          <label style={{ marginBottom: 0, fontWeight: 500 }}>
-            ปี
-            <select value={year} onChange={e => setYear(Number(e.target.value))} className="houses-filter-select" style={{ minWidth: 120, height: 36, marginLeft: 8 }}>
-              {yearOptions.map(y => <option key={y} value={y}>{y + 543}</option>)}
-            </select>
-          </label>
-          <button className="btn btn-p" type="submit" style={{ minWidth: 140, height: 36 }}>แสดงรายงาน</button>
-          {error && <span style={{ color: 'red', marginLeft: 8 }}>{error}</span>}
-        </form>
+      <div className="card report-filter-card">
+        <div className="cb" style={{ padding: 12 }}>
+          <form className="report-filter-grid" onSubmit={(event) => { event.preventDefault(); runReport() }}>
+            <label className="house-field" style={{ margin: 0 }}>
+              <span>ค้นหา (ซอย / บ้าน / ชื่อ)</span>
+              <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="เช่น 99/7 หรือ สมชาย" />
+            </label>
+            <label className="house-field" style={{ margin: 0 }}>
+              <span>ปี</span>
+              <select value={year} onChange={(event) => setYear(Number(event.target.value))}>
+                {yearOptions.map((value) => <option key={value} value={value}>{value + 543}</option>)}
+              </select>
+            </label>
+            <div className="report-filter-action">
+              <button className="btn btn-p" type="submit" style={{ minWidth: 120 }}>แสดงรายงาน</button>
+            </div>
+          </form>
+          {error && <div style={{ marginTop: 8, color: '#dc2626', fontSize: 12 }}>{error}</div>}
+        </div>
       </div>
 
-      <ReportMockPage columns={columns} rows={rows} loading={loading} error={error} sumAmount={rows.reduce((s, r) => s + (r.outstandingRaw || 0), 0)} />
+      <ReportMockPage columns={columns} rows={rows} loading={loading} error={error} sumAmount={sumAmount} />
     </div>
   )
 }

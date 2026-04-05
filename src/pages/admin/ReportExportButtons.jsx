@@ -37,22 +37,50 @@ export default function ReportExportButtons({ columns, rows, filter, reportTitle
   };
 
   return (
-    <div style={{ display: 'flex', gap: 8 }}>
+    <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
       <button
         className="btn btn-p"
-        style={{ background: '#27ae60', color: '#fff', border: 'none', fontWeight: 600 }}
+        style={{
+          width: 38,
+          height: 38,
+          minWidth: 38,
+          borderRadius: 10,
+          padding: 0,
+          background: '#16a34a',
+          color: '#fff',
+          border: 'none',
+          fontWeight: 700,
+          display: 'inline-flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
         onClick={handleExportExcel}
         type="button"
+        title="Export Excel"
       >
-        Export Excel
+        📗
       </button>
       <button
         className="btn btn-p"
-        style={{ background: '#e67e22', color: '#fff', border: 'none', fontWeight: 600 }}
+        style={{
+          width: 38,
+          height: 38,
+          minWidth: 38,
+          borderRadius: 10,
+          padding: 0,
+          background: '#ea580c',
+          color: '#fff',
+          border: 'none',
+          fontWeight: 700,
+          display: 'inline-flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
         onClick={handleExportPDF}
         type="button"
+        title="Export PDF"
       >
-        Export PDF
+        📕
       </button>
     </div>
   );

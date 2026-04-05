@@ -184,7 +184,7 @@ const AdminRequests = () => {
   }
 
   return (
-    <div className="pane on">
+    <div className="pane on requests-compact">
       <div className="ph">
         <div className="ph-in">
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
@@ -215,12 +215,12 @@ const AdminRequests = () => {
         </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '260px 1fr', gap: 16, alignItems: 'start', marginTop: 14 }}>
+      <div className="request-layout" style={{ display: 'grid', gridTemplateColumns: '260px 1fr', gap: 16, alignItems: 'start', marginTop: 14 }}>
 
         {/* Left — category list */}
-        <div className="card" style={{ position: 'sticky', top: 16 }}>
+        <div className="card request-filter-card" style={{ position: 'sticky', top: 16 }}>
           <div className="ch"><div className="ch-ico">📋</div><div className="ct">หมวดคำขอ</div></div>
-          <div className="cb" style={{ padding: '8px 0' }}>
+          <div className="cb request-filter-grid" style={{ padding: '8px 0' }}>
             {CATEGORY_LIST.map((cat) => {
               const count = cat.key === 'all'
                 ? pendingAllCount
@@ -261,7 +261,7 @@ const AdminRequests = () => {
         </div>
 
         {/* Right — request detail list */}
-        <div>
+        <div className="request-item-list">
           {loading ? (
             <div className="card"><div className="cb" style={{ textAlign: 'center', color: 'var(--mu)', padding: '24px 0' }}>กำลังโหลด...</div></div>
           ) : filteredRequests.length === 0 ? (

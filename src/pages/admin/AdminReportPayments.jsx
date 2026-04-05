@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import { getSystemConfig } from '../../lib/systemConfig'
 import ReportMockPage from './reports/ReportMockPage'
 import ReportExportButtons from './ReportExportButtons'
@@ -13,23 +13,6 @@ const columns = [
   { key: 'method', label: 'ช่องทางชำระ' },
   { key: 'paidAt', label: 'วันที่ชำระ' },
 ]
-
-function formatPeriod(period, year) {
-  if (!period || !year) return '-'
-  if (period === 'first_half') return `H1/${year + 543}`
-  if (period === 'second_half') return `H2/${year + 543}`
-  if (period === 'full_year') return `เต็มปี/${year + 543}`
-  return `${period}/${year + 543}`
-}
-
-function getCurrentMonth() {
-  const now = new Date()
-  return now.getMonth() + 1
-}
-function getCurrentYear() {
-  const now = new Date()
-  return now.getFullYear()
-}
 
 const monthOptions = [
   { value: 1, label: 'มกราคม' },
@@ -46,6 +29,22 @@ const monthOptions = [
   { value: 12, label: 'ธันวาคม' },
 ]
 
+function formatPeriod(period, year) {
+  if (!period || !year) return '-'
+  if (period === 'first_half') return `H1/${year + 543}`
+  if (period === 'second_half') return `H2/${year + 543}`
+  if (period === 'full_year') return `เต็มปี/${year + 543}`
+  return `${period}/${year + 543}`
+}
+
+function getCurrentMonth() {
+  return new Date().getMonth() + 1
+}
+
+function getCurrentYear() {
+  return new Date().getFullYear()
+}
+
 export default function AdminReportPayments() {
   const [rows, setRows] = useState([])
   const [loading, setLoading] = useState(false)
@@ -53,131 +52,130 @@ export default function AdminReportPayments() {
   const [startMonth, setStartMonth] = useState(getCurrentMonth())
   const [endMonth, setEndMonth] = useState(getCurrentMonth())
   const [year, setYear] = useState(getCurrentYear())
-  const [touched, setTouched] = useState(false)
   const [setup, setSetup] = useState({})
+
   useEffect(() => {
     getSystemConfig().then(setSetup).catch(() => {})
   }, [])
 
-  const handleShowReport = async () => {
-    setTouched(true)
+  const yearOptions = useMemo(() => {
+    const thisYear = getCurrentYear()
+    const options = []
+    for (let y = thisYear + 2; y >= thisYear - 5; y -= 1) options.push(y)
+    return options
+  }, [])
+
+  const sumAmount = useMemo(() => rows.reduce((sum, row) => sum + (row.amountRaw || 0), 0), [rows])
+
+  const runReport = async () => {
     setError('')
     if (startMonth > endMonth) {
-      setError('เดือนเริ่มต้นต้องไม่มากกว่าเดือนสิ้นสุด')
       setRows([])
+      setError('เดือนเริ่มต้นต้องไม่มากกว่าเดือนสิ้นสุด')
       return
     }
+
     setLoading(true)
     try {
       const data = await listPayments({ feeOnly: true })
-      // Filter by selected month range and year
-      const filtered = (data || []).filter((p) => {
-        if (!p.paid_at) return false
-        const paidDate = new Date(p.paid_at)
+      const filtered = (data || []).filter((payment) => {
+        if (!payment.paid_at) return false
+        const paidDate = new Date(payment.paid_at)
         const paidMonth = paidDate.getMonth() + 1
         const paidYear = paidDate.getFullYear()
-        return (
-          paidYear === Number(year) &&
-          paidMonth >= Number(startMonth) &&
-          paidMonth <= Number(endMonth)
-        )
+        return paidYear === Number(year) && paidMonth >= Number(startMonth) && paidMonth <= Number(endMonth)
       })
+
       setRows(
-        filtered.map((p) => ({
-          id: p.id,
-          docNo: p.fees?.id ? `PAY-${String(p.fees.id).slice(-6).padStart(6, '0')}` : '-',
-          houseNo: p.houses?.house_no || '-',
-          ownerName: p.houses?.owner_name || '-',
-          period: formatPeriod(p.fees?.period, p.fees?.year),
-          amount: Number(p.amount || 0).toLocaleString(),
-          amountRaw: Number(p.amount || 0),
-          method: p.payment_method || '-',
-          paidAt: p.paid_at ? p.paid_at.slice(0, 10) : '-',
+        filtered.map((payment) => ({
+          id: payment.id,
+          docNo: payment.fees?.id ? `PAY-${String(payment.fees.id).slice(-6).padStart(6, '0')}` : '-',
+          houseNo: payment.houses?.house_no || '-',
+          ownerName: payment.houses?.owner_name || '-',
+          period: formatPeriod(payment.fees?.period, payment.fees?.year),
+          amount: Number(payment.amount || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+          amountRaw: Number(payment.amount || 0),
+          method: payment.payment_method || '-',
+          paidAt: payment.paid_at ? payment.paid_at.slice(0, 10) : '-',
         }))
       )
     } catch (err) {
-      setError(err?.message || 'เกิดข้อผิดพลาดในการโหลดข้อมูล')
       setRows([])
+      setError(err?.message || 'เกิดข้อผิดพลาดในการโหลดข้อมูล')
+    } finally {
+      setLoading(false)
     }
-    setLoading(false)
   }
 
-  // Generate year options (current year +/- 5)
-  const yearOptions = []
-  const thisYear = getCurrentYear()
-  for (let y = thisYear + 2; y >= thisYear - 5; y--) {
-    yearOptions.push(y)
-  }
+  useEffect(() => {
+    runReport()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   return (
     <div className="pane on houses-compact reports-compact">
-      <div className="ph">
-        <div className="ph-in" style={{ display: 'flex', alignItems: 'center', gap: 16, margin: 0, padding: 0, justifyContent: 'flex-start', position: 'relative' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+      <div className="ph report-head">
+        <div className="ph-in report-head-in">
+          <div className="report-head-main">
             <div className="ph-ico">💳</div>
             <div>
-              <div className="ph-h1" style={{ margin: 0, padding: 0 }}>รายงานการชำระเงิน</div>
-              <div className="ph-sub" style={{ margin: 0, padding: 0 }}>รายการรับชำระค่าส่วนกลาง</div>
+              <div className="ph-h1">รายงานการชำระเงิน</div>
+              <div className="ph-sub">สรุปรายการรับชำระค่าส่วนกลาง</div>
             </div>
           </div>
-          <div style={{ position: 'absolute', right: 24, top: 24 }}>
+          <div className="report-head-actions">
             <ReportExportButtons
               columns={columns}
               rows={rows}
               reportTitle="รายงานการชำระเงิน"
               filter={{
-                startMonthLabel: monthOptions.find(m => m.value === startMonth)?.label,
-                endMonthLabel: monthOptions.find(m => m.value === endMonth)?.label,
-                year
+                startMonthLabel: monthOptions.find((m) => m.value === startMonth)?.label,
+                endMonthLabel: monthOptions.find((m) => m.value === endMonth)?.label,
+                year,
               }}
-              sumAmount={rows.reduce((sum, r) => sum + (r.amountRaw || 0), 0)}
+              sumAmount={sumAmount}
               logoUrl={setup.village_logo_url || '/assets/village-logo.svg'}
               footerLabel="ยอดชำระรวม"
             />
           </div>
         </div>
       </div>
-      <div style={{ width: '100%', margin: '0px 0px 0px', display: 'flex', justifyContent: 'flex-start' }}>
-        <form
-          className="houses-filter-row"
-          style={{
-            display: 'flex',
-            flexDirection: 'row',
-            alignItems: 'center',
-            gap: 20,
-            width: '100%',
-            maxWidth: 700
-          }}
-          onSubmit={e => { e.preventDefault(); handleShowReport(); }}
-        >
-          <label style={{ marginBottom: 0, fontWeight: 500 }}>
-            เดือนเริ่มต้น
-            <select value={startMonth} onChange={e => setStartMonth(Number(e.target.value))} className="houses-filter-select" style={{ minWidth: 120, height: 36, marginLeft: 0 }}>
-              {monthOptions.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
-            </select>
-          </label>
-          <label style={{ marginBottom: 0, fontWeight: 500 }}>
-            ถึงเดือน
-            <select value={endMonth} onChange={e => setEndMonth(Number(e.target.value))} className="houses-filter-select" style={{ minWidth: 120, height: 36, marginLeft: 0 }}>
-              {monthOptions.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
-            </select>
-          </label>
-          <label style={{ marginBottom: 0, fontWeight: 500 }}>
-            ปี
-            <select value={year} onChange={e => setYear(Number(e.target.value))} className="houses-filter-select" style={{ minWidth: 100, height: 36, marginLeft: 0 }}>
-              {yearOptions.map(y => <option key={y} value={y}>{y + 543}</option>)}
-            </select>
-          </label>
-          <button className="btn btn-p" type="submit" style={{ minWidth: 120, height: 36, marginTop: 18 }}>แสดงรายงาน</button>
-          {touched && error && <span style={{ color: 'red', marginLeft: 8 }}>{error}</span>}
-        </form>
+
+      <div className="card report-filter-card">
+        <div className="cb" style={{ padding: 12 }}>
+          <form className="report-filter-grid" onSubmit={(event) => { event.preventDefault(); runReport() }}>
+            <label className="house-field" style={{ margin: 0 }}>
+              <span>เดือนเริ่มต้น</span>
+              <select value={startMonth} onChange={(event) => setStartMonth(Number(event.target.value))}>
+                {monthOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+              </select>
+            </label>
+            <label className="house-field" style={{ margin: 0 }}>
+              <span>ถึงเดือน</span>
+              <select value={endMonth} onChange={(event) => setEndMonth(Number(event.target.value))}>
+                {monthOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+              </select>
+            </label>
+            <label className="house-field" style={{ margin: 0 }}>
+              <span>ปี</span>
+              <select value={year} onChange={(event) => setYear(Number(event.target.value))}>
+                {yearOptions.map((value) => <option key={value} value={value}>{value + 543}</option>)}
+              </select>
+            </label>
+            <div className="report-filter-action">
+              <button className="btn btn-p" type="submit" style={{ minWidth: 120 }}>แสดงรายงาน</button>
+            </div>
+          </form>
+          {error && <div style={{ marginTop: 8, color: '#dc2626', fontSize: 12 }}>{error}</div>}
+        </div>
       </div>
+
       <ReportMockPage
         columns={columns}
         rows={rows}
         loading={loading}
         error={error}
-        sumAmount={rows.reduce((sum, r) => sum + (r.amountRaw || 0), 0)}
+        sumAmount={sumAmount}
       />
     </div>
   )

@@ -224,7 +224,7 @@ export default function AdminRules() {
         </div>
 
         <div className="cb houses-table-card-body houses-main-body">
-          <div style={{ overflowX: 'auto' }}>
+          <div className="houses-desktop-only" style={{ overflowX: 'auto' }}>
             <table className="tw houses-table houses-main-table" style={{ width: '100%', minWidth: '860px' }}>
               <thead>
                 <tr>
@@ -264,6 +264,30 @@ export default function AdminRules() {
                 ))}
               </tbody>
             </table>
+          </div>
+
+          <div className="houses-mobile-only" style={{ gap: 10, padding: '4px 0' }}>
+            {loading ? (
+              <div className="mcard-empty">กำลังโหลด...</div>
+            ) : rules.length === 0 ? (
+              <div className="mcard-empty">ยังไม่มีข้อมูล</div>
+            ) : rules.map((item) => (
+              <div key={`m-${item.id}`} className="mcard">
+                <div className="mcard-top">
+                  <div className="mcard-title">เรื่องที่ {item.topic_no || '-'} · {item.title}</div>
+                  <span className="bd b-pr mcard-badge">{item.category_label}</span>
+                </div>
+                <div className="mcard-meta">
+                  <span><span className="mcard-label">วันที่</span> {formatDate(item.announcement_date || item.created_at)}</span>
+                  <span><span className="mcard-label">รายละเอียด</span> {item.description || '-'}</span>
+                </div>
+                <div className="mcard-actions">
+                  {item.pdf_url && <a href={item.pdf_url} target="_blank" rel="noreferrer" className="btn btn-xs btn-o" style={{ textDecoration: 'none' }}>📄 เปิด PDF</a>}
+                  <button className="btn btn-xs btn-a" onClick={() => openEditModal(item)}>แก้ไข</button>
+                  <button className="btn btn-xs btn-dg" onClick={() => handleDelete(item)}>ลบ</button>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       </div>

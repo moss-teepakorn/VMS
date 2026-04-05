@@ -829,6 +829,41 @@ export default function AdminFeatureReceivePayment() {
               </tbody>
             </table>
           </div>
+
+          <div className="houses-mobile-only" style={{ gap: 10, padding: '4px 0' }}>
+            {loading ? (
+              <div className="mcard-empty">กำลังโหลดข้อมูล...</div>
+            ) : filteredPayments.length === 0 ? (
+              <div className="mcard-empty">ยังไม่มีรายการรับชำระ</div>
+            ) : filteredPayments.map((payment) => {
+              const badge = getStatusBadge(payment)
+              const payerName = payment.payer_name || payment.houses?.owner_name || payment.partners?.name || '-'
+              const itemCount = Array.isArray(payment.payment_items) ? payment.payment_items.length : 0
+              return (
+                <div key={`mobile-${payment.id}`} className="houses-mcard">
+                  <div className="houses-mcard-top">
+                    <div>
+                      <div className="houses-mcard-no">{getReceiptNo(payment)}</div>
+                      <div className="mcard-sub">{payment.houses?.soi ? `ซอย ${payment.houses.soi}` : '-'} · บ้าน {payment.houses?.house_no || '-'}</div>
+                    </div>
+                    <span className={`${badge.className} houses-mcard-badge`}>{badge.label}</span>
+                  </div>
+                  <div className="houses-mcard-owner">{payerName}</div>
+                  <div className="mcard-meta" style={{ marginTop: 4 }}>
+                    <span><span className="mcard-label">จำนวนเงิน</span> ฿{formatMoney(payment.amount)}</span>
+                    <span><span className="mcard-label">วิธีชำระ</span> {formatMethod(payment.payment_method)}</span>
+                    <span><span className="mcard-label">วันที่</span> {formatDateTime(payment.paid_at)}</span>
+                    <span><span className="mcard-label">รายการ</span> {itemCount}</span>
+                  </div>
+                  <div className="mcard-actions">
+                    <button className="btn btn-xs btn-g" onClick={() => openDetail(payment)}>รายละเอียด</button>
+                    <button className="btn btn-xs btn-o" onClick={() => toggleEditable(payment)}>{editableMap[payment.id] ? 'ล็อกแก้ไข' : 'เปลี่ยนสถานะเพื่อแก้ไข'}</button>
+                    <button className="btn btn-xs btn-a" onClick={() => handlePrintReceipt(payment)}>ใบเสร็จ</button>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
         </div>
       </div>
 
