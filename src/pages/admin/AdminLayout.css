@@ -1337,6 +1337,10 @@ button, input, select, textarea {
   flex: 1;
 }
 
+.tb-title-mobile {
+  display: none;
+}
+
 .tb-title .hl {
   color: var(--pr);
 }
@@ -1382,6 +1386,22 @@ button, input, select, textarea {
 
   .sidebar.open {
     transform: translateX(0);
+  }
+
+  .tb-title-desktop,
+  .tb-user-greeting {
+    display: none;
+  }
+
+  .tb-title-mobile {
+    display: block;
+    font-size: 14px;
+    font-weight: 800;
+    color: var(--tx);
+    flex: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 }
 

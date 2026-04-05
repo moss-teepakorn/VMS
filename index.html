@@ -17,16 +17,31 @@
       } catch (_) {}
 
       // Ignore known runtime noise from browser extensions injected as webextension.js.
-      window.addEventListener('error', (event) => {
-        const source = String(event?.filename || '')
-        const message = String(event?.message || '')
-        const isWebExtensionNoise = source.includes('webextension.js')
-          || (message.includes("Cannot read properties of null (reading '1')") && source.includes('extension'))
+      const isExtensionNoise = (message, source) => {
+        const msg = String(message || '')
+        const src = String(source || '')
+        return src.includes('webextension.js')
+          || (msg.includes("Cannot read properties of null (reading '1')") && (src.includes('extension') || src.includes('webextension')))
+      }
 
-        if (!isWebExtensionNoise) return
+      const previousOnError = window.onerror
+      window.onerror = function (message, source, lineno, colno, error) {
+        if (isExtensionNoise(message, source)) return true
+        if (typeof previousOnError === 'function') return previousOnError(message, source, lineno, colno, error)
+        return false
+      }
+
+      window.addEventListener('error', (event) => {
+        if (!isExtensionNoise(event?.message, event?.filename)) return
         if (typeof event.preventDefault === 'function') event.preventDefault()
         if (typeof event.stopImmediatePropagation === 'function') event.stopImmediatePropagation()
       }, true)
+
+      window.addEventListener('unhandledrejection', (event) => {
+        const reasonText = String(event?.reason?.message || event?.reason || '')
+        if (!isExtensionNoise(reasonText, 'webextension.js')) return
+        if (typeof event.preventDefault === 'function') event.preventDefault()
+      })
     </script>
     <script type="module" src="/src/main.jsx"></script>
   </body>

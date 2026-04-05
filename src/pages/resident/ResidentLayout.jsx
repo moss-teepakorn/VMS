@@ -2284,9 +2284,10 @@ export default function ResidentLayout() {
       <div className="main">
         <div className="topbar">
           <div className="tb-ham" onClick={() => setSidebarOpen(!sidebarOpen)}>☰</div>
-          <div className="tb-title">
+          <div className="tb-title tb-title-desktop">
             {titleData.main} — <span className="hl">{titleData.sub}</span>
           </div>
+          <div className="tb-title tb-title-mobile">สวัสดี บ้าน {houseNo || '-'}</div>
           <div className="tb-right">
             <span className="tb-user-name" style={{ fontSize: '13px', fontWeight: 500, color: 'var(--tx)', whiteSpace: 'nowrap', marginRight: '4px' }}>
               {profile?.full_name || profile?.username || ''}

@@ -656,6 +656,10 @@
 .r-setup-row span { color: var(--mu); }
 .r-setup-row strong { color: var(--tx); }
 
+.tb-title-mobile {
+  display: none;
+}
+
 /* ── SIDEBAR ACCOUNT CARD (compact) ── */
 .sb-res-account {
   display: flex; align-items: center; gap: 9px;
@@ -697,6 +701,21 @@
 
   .tb-user-name {
     display: none;
+  }
+
+  .tb-title-desktop {
+    display: none;
+  }
+
+  .tb-title-mobile {
+    display: block;
+    font-size: 14px;
+    font-weight: 800;
+    color: var(--tx);
+    flex: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   .notif-search-row {

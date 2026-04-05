@@ -448,9 +448,10 @@ const AdminLayout = () => {
         {/* Topbar */}
         <div className="topbar">
           <div className="tb-ham" onClick={() => setSidebarOpen(!sidebarOpen)}>☰</div>
-          <div className="tb-title">
+          <div className="tb-title tb-title-desktop">
             {topbarTitle.main} — <span className="hl">{topbarTitle.sub}</span>
           </div>
+          <div className="tb-title tb-title-mobile">สวัสดี ผู้ดูแลระบบ</div>
           <div className="tb-right">
             <div style={{ position: 'relative' }}>
               <div className="tb-ico" id="admin-notify-btn" onClick={() => setNotifyOpen((prev) => !prev)} title="การแจ้งเตือน">🔔</div>
@@ -485,7 +486,7 @@ const AdminLayout = () => {
               )}
             </div>
 
-            <span style={{ fontSize: '13px', fontWeight: 500, whiteSpace: 'nowrap', marginRight: '4px' }}>สวัสดี คุณ{profile?.full_name || profile?.username || ''}</span>
+            <span className="tb-user-greeting" style={{ fontSize: '13px', fontWeight: 500, whiteSpace: 'nowrap', marginRight: '4px' }}>สวัสดี คุณ{profile?.full_name || profile?.username || ''}</span>
             <div className="setup-wrap">
               <div className="tb-ico" onClick={() => setSetupOpen((prev) => !prev)}>⚙️</div>
 
