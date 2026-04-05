@@ -2209,7 +2209,7 @@ export default function ResidentLayout() {
                     <div key={item.id} className="ann">
                       <div className="ann-dot ad-gen" />
                       <div style={{ flex: 1 }}>
-                        <div className="ann-t">{item.title}</div>
+                        <div className="ann-t">เรื่องที่ {item.topic_no || '-'} {item.title}</div>
                         {item.description && <div className="ann-b">{item.description}</div>}
                         <div className="ann-d">{formatDate(item.announcement_date || item.created_at)}</div>
                       </div>
@@ -2230,7 +2230,7 @@ export default function ResidentLayout() {
                     <div key={item.id} className="ann">
                       <div className="ann-dot ad-evt" />
                       <div style={{ flex: 1 }}>
-                        <div className="ann-t">{item.title}</div>
+                        <div className="ann-t">เรื่องที่ {item.topic_no || '-'} {item.title}</div>
                         {item.description && <div className="ann-b">{item.description}</div>}
                         <div className="ann-d">{formatDate(item.announcement_date || item.created_at)}</div>
                       </div>

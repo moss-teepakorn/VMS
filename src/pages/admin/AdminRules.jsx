@@ -16,6 +16,7 @@ const CATEGORY_OPTIONS = [
 
 const EMPTY_FORM = {
   category: 'village',
+  topic_no: '',
   title: '',
   description: '',
 }
@@ -33,6 +34,12 @@ function showSwal(options) {
 function formatDate(str) {
   if (!str) return '-'
   return new Date(str).toLocaleDateString('th-TH', { year: 'numeric', month: 'short', day: 'numeric' })
+}
+
+function nextTopicNo(items, category) {
+  const list = (items || []).filter((item) => item.category === category)
+  const maxNo = list.reduce((max, item) => Math.max(max, Number(item.topic_no || 0)), 0)
+  return maxNo + 1
 }
 
 export default function AdminRules() {
@@ -63,7 +70,7 @@ export default function AdminRules() {
 
   const openAddModal = () => {
     setEditingItem(null)
-    setForm(EMPTY_FORM)
+    setForm({ ...EMPTY_FORM, topic_no: String(nextTopicNo(rules, 'village')) })
     setPdfFile(null)
     setExistingPdf({ url: '', path: '' })
     setShowModal(true)
@@ -73,6 +80,7 @@ export default function AdminRules() {
     setEditingItem(item)
     setForm({
       category: item.category || 'village',
+      topic_no: String(item.topic_no || ''),
       title: item.title || '',
       description: item.description || '',
     })
@@ -107,6 +115,8 @@ export default function AdminRules() {
   const handleSubmit = async (event) => {
     event.preventDefault()
     if (!form.title.trim()) { await showSwal({ icon: 'warning', title: 'กรุณากรอกหัวข้อเรื่อง' }); return }
+    const topicNo = Number(form.topic_no || 0)
+    if (!Number.isFinite(topicNo) || topicNo <= 0) { await showSwal({ icon: 'warning', title: 'กรุณาระบุเลขเรื่องเป็นจำนวนเต็มมากกว่า 0' }); return }
     if (!editingItem && !pdfFile) { await showSwal({ icon: 'warning', title: 'กรุณาแนบไฟล์ PDF' }); return }
 
     try {
@@ -123,6 +133,7 @@ export default function AdminRules() {
       if (editingItem) {
         await updateRuleDocument(editingItem.id, {
           category: form.category,
+          topic_no: topicNo,
           title: form.title,
           description: form.description,
           pdf_url: nextPdfUrl,
@@ -135,6 +146,7 @@ export default function AdminRules() {
       } else {
         await createRuleDocument({
           category: form.category,
+          topic_no: topicNo,
           title: form.title,
           description: form.description,
           pdf_url: nextPdfUrl,
@@ -217,6 +229,7 @@ export default function AdminRules() {
               <thead>
                 <tr>
                   <th>หมวด</th>
+                  <th>เรื่องที่</th>
                   <th>หัวข้อ</th>
                   <th>รายละเอียด</th>
                   <th>ไฟล์ PDF</th>
@@ -226,12 +239,13 @@ export default function AdminRules() {
               </thead>
               <tbody>
                 {loading ? (
-                  <tr><td colSpan="6" style={{ textAlign: 'center', color: 'var(--mu)', padding: '20px' }}>กำลังโหลด...</td></tr>
+                  <tr><td colSpan="7" style={{ textAlign: 'center', color: 'var(--mu)', padding: '20px' }}>กำลังโหลด...</td></tr>
                 ) : rules.length === 0 ? (
-                  <tr><td colSpan="6" style={{ textAlign: 'center', color: 'var(--mu)', padding: '20px' }}>ยังไม่มีข้อมูล</td></tr>
+                  <tr><td colSpan="7" style={{ textAlign: 'center', color: 'var(--mu)', padding: '20px' }}>ยังไม่มีข้อมูล</td></tr>
                 ) : rules.map((item) => (
                   <tr key={item.id}>
                     <td>{item.category_label}</td>
+                    <td>{item.topic_no || '-'}</td>
                     <td><strong>{item.title}</strong></td>
                     <td style={{ maxWidth: '320px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.description || '-'}</td>
                     <td>
@@ -269,9 +283,13 @@ export default function AdminRules() {
                   <div className="house-grid house-grid-2">
                     <label className="house-field">
                       <span>หมวดหมู่ *</span>
-                      <select value={form.category} onChange={(e) => setForm((cur) => ({ ...cur, category: e.target.value }))}>
+                      <select value={form.category} onChange={(e) => setForm((cur) => ({ ...cur, category: e.target.value, topic_no: editingItem ? cur.topic_no : String(nextTopicNo(rules, e.target.value)) }))}>
                         {CATEGORY_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
                       </select>
+                    </label>
+                    <label className="house-field">
+                      <span>เรื่องที่ *</span>
+                      <input type="number" min="1" step="1" value={form.topic_no} onChange={(e) => setForm((cur) => ({ ...cur, topic_no: e.target.value }))} placeholder="เช่น 1" />
                     </label>
                     <label className="house-field">
                       <span>หัวข้อเรื่อง *</span>
