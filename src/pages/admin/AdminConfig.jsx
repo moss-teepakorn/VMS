@@ -480,6 +480,7 @@ const AdminConfig = () => {
                 <label className="cfg-field"><span>รูปแบบวันที่</span><input name="date_format" placeholder="เช่น DD/MM/YYYY (พ.ศ.)" value={form.date_format || ''} onChange={handleChange} /></label>
                 <label className="cfg-field"><span>ภาษา</span><input name="system_language" placeholder="เช่น ภาษาไทย" value={form.system_language || ''} onChange={handleChange} /></label>
                 <div className="cfg-field cfg-span-full cfg-toggles">
+                  <label className="cfg-toggle"><input className="cfg-checkbox" type="checkbox" name="allow_exceed_parking_limit" checked={Boolean(form.allow_exceed_parking_limit)} onChange={handleChange} /><span>อนุญาตเพิ่มรถเกินสิทธิ์จอด</span></label>
                   <label className="cfg-toggle"><input className="cfg-checkbox" type="checkbox" name="enable_marketplace" checked={Boolean(form.enable_marketplace)} onChange={handleChange} /><span>เปิด Marketplace</span></label>
                   <label className="cfg-toggle"><input className="cfg-checkbox" type="checkbox" name="enable_technicians" checked={Boolean(form.enable_technicians)} onChange={handleChange} /><span>เปิดทำเนียบช่าง</span></label>
                 </div>

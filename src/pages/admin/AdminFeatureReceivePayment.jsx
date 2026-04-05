@@ -384,7 +384,7 @@ export default function AdminFeatureReceivePayment() {
           <div class="brand">
             <img src="${setup.loginCircleLogoUrl || villageLogo}" alt="logo" />
             <div>
-              <div class="doc">ใบเสร็จรับเงินค่าส่วนกลาง</div>
+              <div class="doc">ใบเสร็จรับเงิน</div>
               <div class="village">${setup.villageName || 'Village Management System'}</div>
               <div class="sub">${setup.address || '-'}</div>
               <div class="sub">อ้างอิงใบแจ้งหนี้ ${invoiceNo}</div>

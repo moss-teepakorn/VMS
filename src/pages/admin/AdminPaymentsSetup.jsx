@@ -231,7 +231,7 @@ export default function AdminPaymentsSetup() {
           </div>
         </div>
         <div className="cb houses-table-card-body houses-main-body">
-          <div className="houses-table-wrap houses-main-wrap payments-setup-table-wrap">
+          <div className="houses-table-wrap houses-main-wrap payments-setup-table-wrap houses-desktop-only">
             <table className="tw houses-table houses-main-table" style={{ width: '100%', minWidth: 900 }}>
               <thead>
                 <tr>
@@ -266,6 +266,31 @@ export default function AdminPaymentsSetup() {
               </tbody>
             </table>
           </div>
+
+          <div className="houses-mobile-only">
+            {loading ? (
+              <div className="mcard-empty">กำลังโหลดข้อมูล...</div>
+            ) : sortedRows.length === 0 ? (
+              <div className="mcard-empty">ไม่พบข้อมูล</div>
+            ) : sortedRows.map((row) => (
+              <div key={`m-item-${row.id}`} className="mcard">
+                <div className="mcard-top">
+                  <div className="mcard-title">{row.label || '-'}</div>
+                  <span className={`bd ${row.is_active ? 'b-ok' : 'b-mu'} mcard-badge`}>{row.is_active ? 'ใช้งาน' : 'ปิด'}</span>
+                </div>
+                <div className="mcard-meta">
+                  <span><span className="mcard-label">Code</span> {row.code || '-'}</span>
+                  <span><span className="mcard-label">Category</span> {row.category || '-'}</span>
+                  <span><span className="mcard-label">Default Amount</span> {Number(row.default_amount || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                  <span><span className="mcard-label">Description</span> {row.description || '-'}</span>
+                </div>
+                <div className="mcard-actions">
+                  <button className="btn btn-xs btn-o" onClick={() => openEditItemModal(row)}>แก้ไข</button>
+                  <button className="btn btn-xs btn-dg" onClick={() => handleDeleteItem(row.id)}>ลบ</button>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
 
@@ -277,7 +302,7 @@ export default function AdminPaymentsSetup() {
           </div>
         </div>
         <div className="cb houses-table-card-body houses-main-body">
-          <div className="houses-table-wrap houses-main-wrap payments-setup-table-wrap">
+          <div className="houses-table-wrap houses-main-wrap payments-setup-table-wrap houses-desktop-only">
             <table className="tw houses-table houses-main-table" style={{ width: '100%', minWidth: 1100 }}>
               <thead>
                 <tr>
@@ -311,6 +336,31 @@ export default function AdminPaymentsSetup() {
                 ))}
               </tbody>
             </table>
+          </div>
+
+          <div className="houses-mobile-only">
+            {loading ? (
+              <div className="mcard-empty">กำลังโหลดข้อมูล...</div>
+            ) : sortedPartners.length === 0 ? (
+              <div className="mcard-empty">ยังไม่มีคู่ค้า</div>
+            ) : sortedPartners.map((row) => (
+              <div key={`m-partner-${row.id}`} className="mcard">
+                <div className="mcard-top">
+                  <div className="mcard-title">{row.name || '-'}</div>
+                  <span className={`bd ${row.is_active ? 'b-ok' : 'b-mu'} mcard-badge`}>{row.is_active ? 'ใช้งาน' : 'ปิด'}</span>
+                </div>
+                <div className="mcard-meta">
+                  <span><span className="mcard-label">เลขที่ผู้เสียภาษี</span> {row.tax_id || '-'}</span>
+                  <span><span className="mcard-label">เบอร์โทร</span> {row.phone || '-'}</span>
+                  <span><span className="mcard-label">ที่อยู่</span> {row.address || '-'}</span>
+                  <span><span className="mcard-label">รายละเอียด</span> {row.note || '-'}</span>
+                </div>
+                <div className="mcard-actions">
+                  <button className="btn btn-xs btn-o" onClick={() => openEditPartnerModal(row)}>แก้ไข</button>
+                  <button className="btn btn-xs btn-dg" onClick={() => handleDeletePartner(row.id)}>ลบ</button>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       </div>

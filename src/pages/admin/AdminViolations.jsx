@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react'
+import React, { useEffect, useMemo, useRef, useState } from 'react'
 import Swal from 'sweetalert2'
 import { jsPDF } from 'jspdf'
 import html2canvas from 'html2canvas'
@@ -221,6 +221,10 @@ const AdminViolations = () => {
   const [attachments, setAttachments] = useState([])
   const [removedImagePaths, setRemovedImagePaths] = useState([])
   const [reportIdentity, setReportIdentity] = useState(DEFAULT_REPORT_IDENTITY)
+  const [showPrintPreviewModal, setShowPrintPreviewModal] = useState(false)
+  const [printPreviewHtml, setPrintPreviewHtml] = useState('')
+  const [printPreviewTitle, setPrintPreviewTitle] = useState('รายงานการกระทำผิด')
+  const printPreviewIframeRef = useRef(null)
 
   const houseOptions = useMemo(() => ([
     { value: '', label: 'เลือกบ้าน' },
@@ -614,10 +618,10 @@ const AdminViolations = () => {
     return { styles, toolbarHtml, canvasHtml }
   }
 
-  const buildReportPreviewHtml = async (item, images) => {
+  const buildReportPreviewHtml = async (item, images, { includeToolbar = true } = {}) => {
     const signatureSource = reportIdentity.juristic_signature_url || juristicSignature
     const cleanedSignatureSource = await buildCleanedSignatureSource(signatureSource)
-    const { styles, toolbarHtml, canvasHtml } = buildReportDocumentParts(item, images, true, cleanedSignatureSource)
+    const { styles, toolbarHtml, canvasHtml } = buildReportDocumentParts(item, images, includeToolbar, cleanedSignatureSource)
     return `
       <html>
         <head>
@@ -870,33 +874,27 @@ const AdminViolations = () => {
 
   const handleOpenPrintPreview = async (item) => {
     try {
-      window.__downloadViolationImageFromPreview = async (previewWindow) => {
-        try {
-          await downloadViolationReportImageFromPreview(previewWindow, item)
-          await showSwal({ icon: 'success', title: 'ดาวน์โหลด Image สำเร็จ', timer: 1000, showConfirmButton: false })
-        } catch (error) {
-          await showSwal({
-            icon: 'error',
-            title: 'ดาวน์โหลด Image ไม่สำเร็จ',
-            text: `${error.message} (build ${typeof __BUILD_SHA__ !== 'undefined' ? __BUILD_SHA__ : 'unknown'})`,
-          })
-        }
-      }
-
       const images = await listViolationImages(item.id)
-      const html = await buildReportPreviewHtml(item, images)
-      const previewWindow = window.open('', '_blank', 'width=1100,height=840')
-      if (!previewWindow) {
-        await showSwal({ icon: 'warning', title: 'ไม่สามารถเปิดหน้าพรีวิวได้', text: 'กรุณาอนุญาต Pop-up แล้วลองใหม่' })
-        return
-      }
-      previewWindow.document.open()
-      previewWindow.document.write(html)
-      previewWindow.document.close()
-      previewWindow.focus()
+      const html = await buildReportPreviewHtml(item, images, { includeToolbar: false })
+      setPrintPreviewHtml(html)
+      setPrintPreviewTitle(`รายงานการกระทำผิด ${item.report_no || ''}`.trim())
+      setShowPrintPreviewModal(true)
     } catch (error) {
       await showSwal({ icon: 'error', title: 'เปิดพรีวิวไม่สำเร็จ', text: error.message })
     }
+  }
+
+  const closePrintPreviewModal = () => {
+    setShowPrintPreviewModal(false)
+    setPrintPreviewHtml('')
+    setPrintPreviewTitle('รายงานการกระทำผิด')
+  }
+
+  const handlePrintFromModal = () => {
+    const frameWindow = printPreviewIframeRef.current?.contentWindow
+    if (!frameWindow) return
+    frameWindow.focus()
+    frameWindow.print()
   }
 
   const handleDownloadPdf = async (item) => {
@@ -1171,6 +1169,31 @@ const AdminViolations = () => {
                 <button className="btn btn-p" type="submit" disabled={saving}>{saving ? 'กำลังบันทึก...' : 'บันทึก'}</button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {showPrintPreviewModal && (
+        <div className="house-mo" style={{ zIndex: 9950 }}>
+          <div className="house-md" style={{ width: 'min(96vw, 1140px)', maxWidth: '1140px', height: 'min(94vh, 900px)' }}>
+            <div className="house-md-head" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div>
+                <div className="house-md-title">🖨️ {printPreviewTitle}</div>
+                <div className="house-md-sub">ตัวอย่างก่อนพิมพ์ (Responsive Modal)</div>
+              </div>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <button type="button" className="btn btn-a btn-sm" onClick={handlePrintFromModal}>พิมพ์</button>
+                <button type="button" className="btn btn-g btn-sm" onClick={closePrintPreviewModal}>ปิด</button>
+              </div>
+            </div>
+            <div className="house-md-body" style={{ padding: 0, overflow: 'hidden' }}>
+              <iframe
+                ref={printPreviewIframeRef}
+                title={printPreviewTitle}
+                srcDoc={printPreviewHtml}
+                style={{ width: '100%', height: '100%', minHeight: '68vh', border: 'none', background: '#fff' }}
+              />
+            </div>
           </div>
         </div>
       )}

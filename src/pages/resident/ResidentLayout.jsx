@@ -283,7 +283,7 @@ export default function ResidentLayout() {
 
   const [activeSection, setActiveSection] = useState('dash')
   const [sidebarOpen, setSidebarOpen] = useState(false)
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => localStorage.getItem('vms-res-sidebar-collapsed') === '1')
+  const [sidebarCollapsed] = useState(false)
   const [menuSearch, setMenuSearch] = useState('')
   const [sectionOpen, setSectionOpen] = useState({
     กฎระเบียบ: true,
@@ -383,10 +383,6 @@ export default function ResidentLayout() {
     document.body.setAttribute('data-theme', theme)
     localStorage.setItem('vms-theme', theme)
   }, [theme])
-
-  useEffect(() => {
-    localStorage.setItem('vms-res-sidebar-collapsed', sidebarCollapsed ? '1' : '0')
-  }, [sidebarCollapsed])
 
   useEffect(() => {
     const activeGroup = NAV_GROUPS.find((group) => group.items.some((item) => item.key === activeSection))
@@ -2195,14 +2191,6 @@ export default function ResidentLayout() {
             <div className="sb-logo-name">{setup.villageName}</div>
             <div className="sb-logo-sub">Village Management {setup.version || 'v12.3'}</div>
           </div>
-          <button
-            type="button"
-            className="sb-collapse-btn"
-            onClick={() => setSidebarCollapsed((prev) => !prev)}
-            title={sidebarCollapsed ? 'ขยายเมนู' : 'ย่อเมนู'}
-          >
-            {sidebarCollapsed ? '›' : '‹'}
-          </button>
         </div>
 
         <div className="sb-role">
@@ -2283,7 +2271,6 @@ export default function ResidentLayout() {
 
       <div className="main">
         <div className="topbar">
-          <div className="tb-ham" onClick={() => setSidebarOpen(!sidebarOpen)}>☰</div>
           <div className="tb-title tb-title-desktop">
             {titleData.main} — <span className="hl">{titleData.sub}</span>
           </div>

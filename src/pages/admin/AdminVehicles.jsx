@@ -7,6 +7,7 @@ import {
   deleteVehicle,
   deleteVehicleImagesByPaths,
   listVehicleImages,
+  resolveHouseVehicleLimitPolicy,
   listVehicles,
   updateVehicle,
   uploadVehicleImages,
@@ -426,6 +427,16 @@ const AdminVehicles = () => {
         parking_fee: Number(String(form.parking_fee).replace(/,/g, '')) || 0,
         status: form.status,
         note: form.note,
+      }
+
+      if (!editingVehicle) {
+        const policy = await resolveHouseVehicleLimitPolicy(form.house_id, { projectedAdds: 1 })
+        if (policy.isOverLimit && !policy.allowExceedLimit) {
+          throw new Error(`บ้านนี้มีสิทธิ์จอดรถ ${policy.parkingRights} คัน และตั้งค่าไม่อนุญาตให้เพิ่มเกินสิทธิ์`)
+        }
+        if (policy.isOverLimit && policy.allowExceedLimit) {
+          payload.parking_fee = policy.parkingFeePerVehicle
+        }
       }
 
       if (editingVehicle) {

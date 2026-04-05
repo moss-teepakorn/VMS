@@ -81,6 +81,7 @@ export async function createHouse(payload) {
     house_type:     payload.house_type || 'อยู่เอง',
     area_sqw:       payload.area_sqw ? Number(payload.area_sqw) : 0,
     fee_rate:       payload.fee_rate ? Number(payload.fee_rate) : 10,
+    parking_rights: Number.isFinite(Number(payload.parking_rights)) ? Math.max(0, Number(payload.parking_rights)) : 1,
     status:         payload.status || 'normal',
     note:           payload.note?.trim() || null,
   }
@@ -101,6 +102,7 @@ export async function updateHouse(id, updates) {
     address: updates.address?.trim() || null,
     contact_name: updates.contact_name?.trim() || null,
     line_id: updates.line_id?.trim() || null,
+    parking_rights: Number.isFinite(Number(updates.parking_rights)) ? Math.max(0, Number(updates.parking_rights)) : 1,
   }
 
   const { data, error } = await supabase

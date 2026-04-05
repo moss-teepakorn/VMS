@@ -53,6 +53,9 @@ export default function AdminRules() {
   const [form, setForm] = useState(EMPTY_FORM)
   const [pdfFile, setPdfFile] = useState(null)
   const [existingPdf, setExistingPdf] = useState({ url: '', path: '' })
+  const [showPdfViewerModal, setShowPdfViewerModal] = useState(false)
+  const [pdfViewerUrl, setPdfViewerUrl] = useState('')
+  const [pdfViewerTitle, setPdfViewerTitle] = useState('เอกสาร PDF')
 
   const loadData = async (override = {}) => {
     try {
@@ -186,6 +189,23 @@ export default function AdminRules() {
     }
   }
 
+  const openPdfViewer = (url, title) => {
+    const targetUrl = String(url || '').trim()
+    if (!targetUrl) {
+      showSwal({ icon: 'warning', title: 'ไม่พบไฟล์ PDF' })
+      return
+    }
+    setPdfViewerUrl(targetUrl)
+    setPdfViewerTitle(title || 'เอกสาร PDF')
+    setShowPdfViewerModal(true)
+  }
+
+  const closePdfViewer = () => {
+    setShowPdfViewerModal(false)
+    setPdfViewerUrl('')
+    setPdfViewerTitle('เอกสาร PDF')
+  }
+
   return (
     <div className="pane on houses-compact">
       <div className="ph">
@@ -250,7 +270,7 @@ export default function AdminRules() {
                     <td style={{ maxWidth: '320px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.description || '-'}</td>
                     <td>
                       {item.pdf_url ? (
-                        <a href={item.pdf_url} target="_blank" rel="noreferrer" className="btn btn-xs btn-o" style={{ textDecoration: 'none' }}>📄 เปิด PDF</a>
+                        <button type="button" className="btn btn-xs btn-o" onClick={() => openPdfViewer(item.pdf_url, item.title)}>📄 เปิด PDF</button>
                       ) : '-'}
                     </td>
                     <td>{formatDate(item.announcement_date || item.created_at)}</td>
@@ -282,7 +302,7 @@ export default function AdminRules() {
                   <span><span className="mcard-label">รายละเอียด</span> {item.description || '-'}</span>
                 </div>
                 <div className="mcard-actions">
-                  {item.pdf_url && <a href={item.pdf_url} target="_blank" rel="noreferrer" className="btn btn-xs btn-o" style={{ textDecoration: 'none' }}>📄 เปิด PDF</a>}
+                  {item.pdf_url && <button type="button" className="btn btn-xs btn-o" onClick={() => openPdfViewer(item.pdf_url, item.title)}>📄 เปิด PDF</button>}
                   <button className="btn btn-xs btn-a" onClick={() => openEditModal(item)}>แก้ไข</button>
                   <button className="btn btn-xs btn-dg" onClick={() => handleDelete(item)}>ลบ</button>
                 </div>
@@ -341,6 +361,31 @@ export default function AdminRules() {
                 <button className="btn btn-p" type="submit" disabled={saving}>{saving ? 'กำลังบันทึก...' : 'บันทึก'}</button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {showPdfViewerModal && (
+        <div className="house-mo" style={{ zIndex: 9900 }}>
+          <div className="house-md" style={{ width: 'min(96vw, 1120px)', maxWidth: '1120px', height: 'min(92vh, 860px)' }}>
+            <div className="house-md-head" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div>
+                <div className="house-md-title">📄 {pdfViewerTitle}</div>
+                <div className="house-md-sub">แสดงตัวอย่างเอกสาร PDF</div>
+              </div>
+              <button type="button" className="btn btn-g btn-xs" onClick={closePdfViewer}>✕ ปิด</button>
+            </div>
+            <div className="house-md-body" style={{ padding: 0, overflow: 'hidden' }}>
+              {pdfViewerUrl ? (
+                <iframe
+                  title={pdfViewerTitle}
+                  src={pdfViewerUrl}
+                  style={{ width: '100%', height: '100%', minHeight: '66vh', border: 'none', background: '#fff' }}
+                />
+              ) : (
+                <div style={{ padding: 16, color: 'var(--mu)' }}>ไม่พบไฟล์ PDF</div>
+              )}
+            </div>
           </div>
         </div>
       )}

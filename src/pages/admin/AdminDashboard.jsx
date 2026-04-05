@@ -296,15 +296,15 @@ const AdminDashboard = () => {
           <div className="ph-acts">
             <div style={{ display: 'flex', gap: '24px' }}>
               <div style={{ textAlign: 'center', minWidth: '80px' }}>
-                <div style={{ fontSize: '32px', fontWeight: 900, color: '#fff', lineHeight: 1 }}>{data.header.totalHouses}</div>
+                <div style={{ fontSize: '24px', fontWeight: 900, color: '#fff', lineHeight: 1 }}>{data.header.totalHouses}</div>
                 <div style={{ fontSize: '11px', color: 'rgba(255,255,255,.85)', marginTop: '6px', fontWeight: 500 }}>บ้านทั้งหมด</div>
               </div>
               <div style={{ textAlign: 'center', minWidth: '80px' }}>
-                <div style={{ fontSize: '32px', fontWeight: 900, color: '#fff', lineHeight: 1 }}>⭐{data.header.averageRating.toFixed(1)}</div>
+                <div style={{ fontSize: '24px', fontWeight: 900, color: '#fff', lineHeight: 1 }}>⭐{data.header.averageRating.toFixed(1)}</div>
                 <div style={{ fontSize: '11px', color: 'rgba(255,255,255,.85)', marginTop: '6px', fontWeight: 500 }}>คะแนนบริการ</div>
               </div>
               <div style={{ textAlign: 'center', minWidth: '100px' }}>
-                <div style={{ fontSize: '32px', fontWeight: 900, color: '#fff', lineHeight: 1 }}>฿{Math.round(data.header.totalOutstanding / 1000)}K</div>
+                <div style={{ fontSize: '24px', fontWeight: 900, color: '#fff', lineHeight: 1 }}>฿{Math.round(data.header.totalOutstanding / 1000)}K</div>
                 <div style={{ fontSize: '11px', color: 'rgba(255,255,255,.85)', marginTop: '6px', fontWeight: 500 }}>ค้างชำระรวม</div>
               </div>
             </div>

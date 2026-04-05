@@ -36,6 +36,7 @@ const DEFAULT_SYSTEM_CONFIG = {
   fee_due_day: 31,
   waste_fee_per_period: 100,
   parking_fee_per_vehicle: 200,
+  allow_exceed_parking_limit: true,
   early_pay_discount_pct: 3,
   overdue_fine_pct: 10,
   overdue_grace_days: 30,

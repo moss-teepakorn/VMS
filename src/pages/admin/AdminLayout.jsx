@@ -26,7 +26,7 @@ const AdminLayout = () => {
   const location = useLocation()
   const { profile, logout } = useAuth()
   const [sidebarOpen, setSidebarOpen] = useState(false)
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => localStorage.getItem('vms-sidebar-collapsed') === '1')
+  const [sidebarCollapsed] = useState(false)
   const [theme, setTheme] = useState(localStorage.getItem('vms-theme') || 'normal')
   const [setupOpen, setSetupOpen] = useState(false)
   const [menuSearch, setMenuSearch] = useState('')
@@ -73,10 +73,6 @@ const AdminLayout = () => {
     document.body.setAttribute('data-theme', theme)
     localStorage.setItem('vms-theme', theme)
   }, [theme])
-
-  useEffect(() => {
-    localStorage.setItem('vms-sidebar-collapsed', sidebarCollapsed ? '1' : '0')
-  }, [sidebarCollapsed])
 
   useEffect(() => {
     const loadSetup = async () => {
@@ -357,14 +353,6 @@ const AdminLayout = () => {
           <div>
             <div className="sb-logo-name">{setup.villageName}</div>
           </div>
-          <button
-            type="button"
-            className="sb-collapse-btn"
-            onClick={() => setSidebarCollapsed((prev) => !prev)}
-            title={sidebarCollapsed ? 'ขยายเมนู' : 'ย่อเมนู'}
-          >
-            {sidebarCollapsed ? '›' : '‹'}
-          </button>
         </div>
 
         {/* Navigation */}
@@ -447,7 +435,6 @@ const AdminLayout = () => {
       <div className="main">
         {/* Topbar */}
         <div className="topbar">
-          <div className="tb-ham" onClick={() => setSidebarOpen(!sidebarOpen)}>☰</div>
           <div className="tb-title tb-title-desktop">
             {topbarTitle.main} — <span className="hl">{topbarTitle.sub}</span>
           </div>

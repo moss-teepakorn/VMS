@@ -20,6 +20,72 @@ function sortVehicles(items) {
   })
 }
 
+export async function resolveHouseVehicleLimitPolicy(houseId, { includePendingAddRequests = false, projectedAdds = 1 } = {}) {
+  const targetHouseId = String(houseId || '').trim()
+  if (!targetHouseId) {
+    return {
+      parkingRights: 0,
+      allowExceedLimit: true,
+      parkingFeePerVehicle: 0,
+      currentVehicleCount: 0,
+      pendingAddRequestCount: 0,
+      projectedVehicleCount: 0,
+      isOverLimit: false,
+    }
+  }
+
+  const [houseResult, configResult, vehiclesResult, pendingResult] = await Promise.all([
+    supabase
+      .from('houses')
+      .select('parking_rights')
+      .eq('id', targetHouseId)
+      .maybeSingle(),
+    supabase
+      .from('system_config')
+      .select('allow_exceed_parking_limit, parking_fee_per_vehicle')
+      .order('updated_at', { ascending: false })
+      .limit(1)
+      .maybeSingle(),
+    supabase
+      .from('vehicles')
+      .select('id')
+      .eq('house_id', targetHouseId)
+      .neq('status', 'removed'),
+    includePendingAddRequests
+      ? supabase
+        .from('vehicle_requests')
+        .select('id')
+        .eq('house_id', targetHouseId)
+        .eq('status', 'pending')
+        .eq('request_type', 'add')
+      : Promise.resolve({ data: [] }),
+  ])
+
+  if (houseResult.error) throw houseResult.error
+  if (configResult.error) throw configResult.error
+  if (vehiclesResult.error) throw vehiclesResult.error
+  if (pendingResult?.error) throw pendingResult.error
+
+  const parsedRights = Number(houseResult.data?.parking_rights)
+  const parkingRights = Number.isFinite(parsedRights) ? Math.max(0, parsedRights) : 1
+  const allowExceedLimit = configResult.data?.allow_exceed_parking_limit ?? true
+  const parkingFeePerVehicle = Math.max(0, Number(configResult.data?.parking_fee_per_vehicle ?? 0) || 0)
+  const currentVehicleCount = Array.isArray(vehiclesResult.data) ? vehiclesResult.data.length : 0
+  const pendingAddRequestCount = Array.isArray(pendingResult?.data) ? pendingResult.data.length : 0
+  const projectedVehicleCount = currentVehicleCount + pendingAddRequestCount + Math.max(0, Number(projectedAdds || 0))
+  const isOverLimit = projectedVehicleCount > parkingRights
+
+  return {
+    parkingRights,
+    allowExceedLimit,
+    parkingFeePerVehicle,
+    currentVehicleCount,
+    pendingAddRequestCount,
+    projectedVehicleCount,
+    isOverLimit,
+  }
+}
+
 export async function listVehicles({ status = 'all', search = '', soi = 'all', vehicleType = 'all' } = {}) {
   const query = supabase
     .from('vehicles')
@@ -56,6 +122,17 @@ export async function listVehicles({ status = 'all', search = '', soi = 'all', v
 }
 
 export async function createVehicle(payload) {
+  let parkingFee = payload.parking_fee ? Number(payload.parking_fee) : 0
+  if (payload.house_id) {
+    const policy = await resolveHouseVehicleLimitPolicy(payload.house_id, { projectedAdds: 1 })
+    if (policy.isOverLimit && !policy.allowExceedLimit) {
+      throw new Error(`บ้านนี้มีสิทธิ์จอดรถ ${policy.parkingRights} คัน และตั้งค่าไม่อนุญาตให้เพิ่มเกินสิทธิ์`)
+    }
+    if (policy.isOverLimit && policy.allowExceedLimit) {
+      parkingFee = policy.parkingFeePerVehicle
+    }
+  }
+
   const vehicle = {
     house_id: payload.house_id || null,
     license_plate: payload.license_plate?.trim() || null,
@@ -66,7 +143,7 @@ export async function createVehicle(payload) {
     vehicle_type: payload.vehicle_type || 'car',
     parking_location: payload.parking_location || 'ในบ้าน',
     parking_lock_no: payload.parking_lock_no?.trim() || null,
-    parking_fee: payload.parking_fee ? Number(payload.parking_fee) : 0,
+    parking_fee: parkingFee,
     status: payload.status || 'active',
     note: payload.note?.trim() || null,
   }

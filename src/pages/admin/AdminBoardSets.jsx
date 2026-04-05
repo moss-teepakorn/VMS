@@ -164,7 +164,7 @@ export default function AdminBoardSets() {
           </div>
         </div>
         <div className="cb houses-table-card-body houses-main-body">
-          <div className="houses-table-wrap houses-main-wrap payments-setup-table-wrap">
+          <div className="houses-table-wrap houses-main-wrap payments-setup-table-wrap houses-desktop-only">
             <table className="tw houses-table houses-main-table" style={{ width: '100%', minWidth: 720 }}>
               <thead>
                 <tr>
@@ -210,6 +210,40 @@ export default function AdminBoardSets() {
                 })}
               </tbody>
             </table>
+          </div>
+
+          <div className="houses-mobile-only">
+            {loading ? (
+              <div className="mcard-empty">กำลังโหลด...</div>
+            ) : sorted.length === 0 ? (
+              <div className="mcard-empty">ยังไม่มีชุดกรรมการ</div>
+            ) : sorted.map((set) => {
+              const members = (set.board_members || []).sort((a, b) => a.member_no - b.member_no)
+              const chairman = members.find((m) => m.position === 'ประธานกรรมการ')
+              const finance = members.find((m) => m.position === 'กรรมการการเงิน')
+              const memberCount = members.filter((m) => m.full_name).length
+              return (
+                <div key={`m-${set.id}`} className="mcard">
+                  <div className="mcard-top">
+                    <div className="mcard-title">ชุดที่ {set.set_no}</div>
+                    <span className={`bd ${set.is_active ? 'b-ok' : 'b-mu'} mcard-badge`}>{set.is_active ? 'ปัจจุบัน' : 'ไม่ใช้งาน'}</span>
+                  </div>
+                  <div className="mcard-meta">
+                    <span><span className="mcard-label">ประธาน</span> {chairman?.full_name || '-'}</span>
+                    <span><span className="mcard-label">การเงิน</span> {finance?.full_name || '-'}</span>
+                    <span><span className="mcard-label">จำนวนกรรมการ</span> {memberCount}/7</span>
+                    <span><span className="mcard-label">หมายเหตุ</span> {set.note || '-'}</span>
+                  </div>
+                  <div className="mcard-actions">
+                    <button className="btn btn-xs btn-o" onClick={() => openEdit(set)}>แก้ไข</button>
+                    {!set.is_active && (
+                      <button className="btn btn-xs btn-p" onClick={() => handleSetActive(set)}>ตั้งใช้งาน</button>
+                    )}
+                    <button className="btn btn-xs btn-dg" onClick={() => handleDelete(set)}>ลบ</button>
+                  </div>
+                </div>
+              )
+            })}
           </div>
         </div>
       </div>

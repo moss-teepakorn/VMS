@@ -31,6 +31,7 @@ const EMPTY_FORM = {
   line_id: '',
   email: '',
   area_sqw: '',
+  parking_rights: '1',
   house_type: 'อยู่เอง',
   status: 'normal',
   note: '',
@@ -131,6 +132,7 @@ const AdminHouses = () => {
       line_id: house.line_id || '',
       email: house.email || '',
       area_sqw: String(house.area_sqw || ''),
+      parking_rights: String(house.parking_rights ?? 1),
       house_type: house.house_type || 'อยู่เอง',
       status: house.status || 'normal',
       note: house.note || '',
@@ -172,6 +174,7 @@ const AdminHouses = () => {
         line_id: form.line_id,
         email: form.email,
         area_sqw: Number(form.area_sqw || 0),
+        parking_rights: Math.max(0, Number(form.parking_rights || 0)),
         fee_rate: Number(setup.feeRatePerSqw || 0),
         house_type: form.house_type,
         status: form.status,
@@ -323,6 +326,7 @@ const AdminHouses = () => {
                   <th>เจ้าของ / ผู้อยู่อาศัย</th>
                   <th>ประเภท</th>
                   <th>พื้นที่ (ตร.ว.)</th>
+                  <th>สิทธิ์จอดรถ</th>
                   <th>ค่าส่วนกลาง/ปี</th>
                   <th>สถานะ</th>
                   <th></th>
@@ -330,9 +334,9 @@ const AdminHouses = () => {
               </thead>
               <tbody>
                 {loading ? (
-                  <tr><td colSpan="8" style={{ textAlign: 'center', color: 'var(--mu)', padding: '20px' }}>กำลังโหลดข้อมูล...</td></tr>
+                  <tr><td colSpan="9" style={{ textAlign: 'center', color: 'var(--mu)', padding: '20px' }}>กำลังโหลดข้อมูล...</td></tr>
                 ) : houses.length === 0 ? (
-                  <tr><td colSpan="8" style={{ textAlign: 'center', color: 'var(--mu)', padding: '20px' }}>ไม่พบข้อมูลบ้าน</td></tr>
+                  <tr><td colSpan="9" style={{ textAlign: 'center', color: 'var(--mu)', padding: '20px' }}>ไม่พบข้อมูลบ้าน</td></tr>
                 ) : (
                   houses.map((house) => {
                     const badge = getStatusBadge(house.status)
@@ -349,6 +353,7 @@ const AdminHouses = () => {
                         </td>
                         <td>{house.house_type || '-'}</td>
                         <td>{house.area_sqw ? formatDecimal(house.area_sqw) : '-'}</td>
+                        <td>{Number(house.parking_rights ?? 1)}</td>
                         <td>{annualFee}</td>
                         <td><span className={`${badge.className} houses-status houses-status-${house.status}`}>{badge.label}</span></td>
                         <td className="houses-actions-cell">
@@ -389,6 +394,7 @@ const AdminHouses = () => {
                     <div className="houses-mcard-meta">
                       <span><span className="houses-mcard-label">ประเภท</span> {house.house_type || '-'}</span>
                       <span><span className="houses-mcard-label">พื้นที่</span> {house.area_sqw ? formatDecimal(house.area_sqw) : '-'} ตร.ว.</span>
+                      <span><span className="houses-mcard-label">สิทธิ์จอดรถ</span> {Number(house.parking_rights ?? 1)} คัน</span>
                       <span><span className="houses-mcard-label">ค่าส่วนกลาง/ปี</span> {annualFee}</span>
                     </div>
                     <div className="houses-mcard-actions">
@@ -471,6 +477,10 @@ const AdminHouses = () => {
                     <label className="house-field">
                       <span>ขนาด ตร.ว.</span>
                       <input name="area_sqw" type="number" min="0" step="0.01" value={form.area_sqw} onChange={handleChange} placeholder="52" />
+                    </label>
+                    <label className="house-field">
+                      <span>สิทธิ์จอดรถ (คัน)</span>
+                      <input name="parking_rights" type="number" min="0" step="1" value={form.parking_rights} onChange={handleChange} placeholder="1" />
                     </label>
                     <label className="house-field">
                       <span>อัตราค่าส่วนกลางจาก setup</span>

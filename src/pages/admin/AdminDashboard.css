@@ -1396,6 +1396,16 @@
 }
 
 @media (max-width: 700px) {
+  .pane.on .ph .houses-filter-row,
+  .pane.on .ph .page-filter-row,
+  .pane.on .ph .filter-row {
+    background: var(--card);
+    border: 1px solid var(--bo);
+    border-radius: 12px;
+    padding: 10px;
+    box-shadow: var(--sh);
+  }
+
   .houses-filter-row {
     grid-template-columns: 1fr 1fr auto;
     grid-template-rows: auto auto;
@@ -1464,6 +1474,16 @@
 }
 
 @media (min-width: 701px) and (max-width: 980px) {
+  .pane.on .ph .houses-filter-row,
+  .pane.on .ph .page-filter-row,
+  .pane.on .ph .filter-row {
+    background: var(--card);
+    border: 1px solid var(--bo);
+    border-radius: 12px;
+    padding: 10px;
+    box-shadow: var(--sh);
+  }
+
   .houses-filter-row {
     grid-template-columns: 1fr 140px 120px 80px;
   }
