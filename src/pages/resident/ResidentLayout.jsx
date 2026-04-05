@@ -2193,11 +2193,6 @@ export default function ResidentLayout() {
           </div>
         </div>
 
-        <div className="sb-role">
-          <span className="sb-role-dot" />
-          <span className="sb-role-txt">ลูกบ้าน</span>
-        </div>
-
         <div className="sb-search-wrap">
           <div className="sb-search-input-wrap">
             <span className="sb-search-icon">🔍</span>
@@ -2249,13 +2244,6 @@ export default function ResidentLayout() {
         </nav>
 
         <div className="sb-foot">
-          <div className="sb-res-account">
-            <span className="sb-role-dot" />
-            <div>
-              <div className="sb-role-txt" style={{ fontWeight: 700 }}>{profile?.full_name || profile?.username || ''}</div>
-              <div style={{ fontSize: '10px', color: 'var(--sbm)', marginTop: '1px' }}>บ้าน {houseNo}</div>
-            </div>
-          </div>
           {profile?.role === 'admin' && (
             <div className="sb-item" style={{ color: '#34d399', marginBottom: 2 }} onClick={() => navigate('/admin/dashboard')}>
               <span className="sb-ico">🛡️</span>

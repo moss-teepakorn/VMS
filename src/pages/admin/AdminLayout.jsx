@@ -418,10 +418,6 @@ const AdminLayout = () => {
           {/* Account + Logout Card */}
           <div className="sb-foot">
             <div className="sb-account-card">
-              <div className="sb-user" title="ผู้ดูแลระบบ">
-                <span className="sb-role-dot"></span>
-                <span className="sb-role-txt">{roleLabel(profile?.role)}</span>
-              </div>
               <div className="sb-logout sb-logout-danger" onClick={handleLogout} title="ออกจากระบบ">
                 <span style={{ fontSize: '18px' }}>🚪</span>
                 <span className="sb-logout-label">ออกจากระบบ</span>
