@@ -376,7 +376,7 @@ export default function LoginPage() {
           </div>
         </div>
 
-        <div className="text-center text-[11px] font-semibold" style={{ color: loginTheme.footerColor }}>©Workplaze™ All Rights Reserved 2026</div>
+        <div className="text-center text-[11px] font-semibold" style={{ color: loginTheme.footerColor }}>©VMS™ All Rights Reserved 2026</div>
       </div>
     </div>
   )
