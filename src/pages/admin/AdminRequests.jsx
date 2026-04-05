@@ -6,6 +6,13 @@ import {
   updateVehicleRequestStatus,
   cancelVehicleRequest,
 } from '../../lib/vehicleRequests'
+import {
+  listAccountRequests,
+  approveAccountRequest,
+  updateAccountRequestStatus,
+  cancelAccountRequest,
+} from '../../lib/accountRequests'
+import { useAuth } from '../../contexts/AuthContext'
 
 function blurActive() {
   const el = document.activeElement
@@ -38,10 +45,13 @@ const CATEGORY_LIST = [
   { key: 'all', icon: '📋', label: 'ทั้งหมด' },
   { key: 'vehicle_add', icon: '🆕', label: 'ขอเพิ่มรถ' },
   { key: 'vehicle_edit', icon: '✏️', label: 'ขอแก้ไขรถ' },
+  { key: 'account_register', icon: '👤', label: 'ลงทะเบียนผู้ใช้งาน' },
 ]
 
 const AdminRequests = () => {
-  const [requests, setRequests] = useState([])
+  const { profile } = useAuth()
+  const [vehicleRequests, setVehicleRequests] = useState([])
+  const [accountRequests, setAccountRequests] = useState([])
   const [loading, setLoading] = useState(false)
   const [statusFilter, setStatusFilter] = useState('pending')
   const [categoryFilter, setCategoryFilter] = useState('all')
@@ -51,10 +61,13 @@ const AdminRequests = () => {
   const loadRequests = useCallback(async (override = {}) => {
     try {
       setLoading(true)
-      const rows = await listVehicleRequests({
-        status: override.status ?? statusFilter,
-      })
-      setRequests(rows)
+      const status = override.status ?? statusFilter
+      const [vehicleRows, accountRows] = await Promise.all([
+        listVehicleRequests({ status }),
+        listAccountRequests({ status }),
+      ])
+      setVehicleRequests(vehicleRows)
+      setAccountRequests(accountRows)
     } catch (error) {
       await showSwal({ icon: 'error', title: 'โหลดข้อมูลไม่สำเร็จ', text: error.message })
     } finally {
@@ -62,17 +75,26 @@ const AdminRequests = () => {
     }
   }, [statusFilter])
 
-  useEffect(() => { loadRequests() }, [])
+  useEffect(() => {
+    loadRequests()
+  }, [loadRequests])
 
-  const filteredRequests = requests.filter((r) => {
-    if (categoryFilter === 'vehicle_add') return r.request_type === 'add'
-    if (categoryFilter === 'vehicle_edit') return r.request_type === 'edit'
+  const requests = [
+    ...vehicleRequests.map((request) => ({ ...request, __kind: 'vehicle' })),
+    ...accountRequests.map((request) => ({ ...request, __kind: 'account' })),
+  ].sort((left, right) => new Date(right.created_at || 0).getTime() - new Date(left.created_at || 0).getTime())
+
+  const filteredRequests = requests.filter((request) => {
+    if (categoryFilter === 'vehicle_add') return request.__kind === 'vehicle' && request.request_type === 'add'
+    if (categoryFilter === 'vehicle_edit') return request.__kind === 'vehicle' && request.request_type === 'edit'
+    if (categoryFilter === 'account_register') return request.__kind === 'account' && request.request_type === 'register'
     return true
   })
 
-  const pendingVehicleAddCount = requests.filter((r) => r.status === 'pending' && r.request_type === 'add').length
-  const pendingVehicleEditCount = requests.filter((r) => r.status === 'pending' && r.request_type === 'edit').length
-  const pendingAllCount = requests.filter((r) => r.status === 'pending').length
+  const pendingVehicleAddCount = vehicleRequests.filter((request) => request.status === 'pending' && request.request_type === 'add').length
+  const pendingVehicleEditCount = vehicleRequests.filter((request) => request.status === 'pending' && request.request_type === 'edit').length
+  const pendingAccountRegisterCount = accountRequests.filter((request) => request.status === 'pending' && request.request_type === 'register').length
+  const pendingAllCount = pendingVehicleAddCount + pendingVehicleEditCount + pendingAccountRegisterCount
 
   function getApprovalDraft(req) {
     return approvalDrafts[req.id] || {
@@ -91,7 +113,7 @@ const AdminRequests = () => {
     }))
   }
 
-  async function handleApprove(req) {
+  async function handleApproveVehicle(req) {
     const draft = getApprovalDraft(req)
     const approvedRequest = {
       ...req,
@@ -128,13 +150,36 @@ const AdminRequests = () => {
     }
   }
 
+  async function handleApproveAccount(req) {
+    const { isConfirmed } = await showSwal({
+      icon: 'question',
+      title: 'อนุมัติคำขอลงทะเบียน?',
+      text: `จะเปิดใช้งานบัญชี ${req.requested_username || req.profiles?.username || '-'}`,
+      showCancelButton: true,
+      confirmButtonText: 'อนุมัติ',
+      cancelButtonText: 'ยกเลิก',
+    })
+    if (!isConfirmed) return
+
+    try {
+      setSaving(true)
+      await approveAccountRequest(req.id, { reviewedById: profile?.id || null })
+      await showSwal({ icon: 'success', title: 'อนุมัติเรียบร้อย', timer: 1400, showConfirmButton: false })
+      await loadRequests({ status: statusFilter })
+    } catch (error) {
+      await showSwal({ icon: 'error', title: 'อนุมัติไม่สำเร็จ', text: error.message })
+    } finally {
+      setSaving(false)
+    }
+  }
+
   async function handleReject(req) {
     const { isConfirmed, value: reason } = await showSwal({
       icon: 'warning',
       title: 'ปฏิเสธคำขอ',
-      html: '<p style="margin-bottom:8px;font-size:13px;">กรุณาระบุเหตุผล เพื่อให้ลูกบ้านแก้ไขและส่งใหม่</p>',
+      html: '<p style="margin-bottom:8px;font-size:13px;">กรุณาระบุเหตุผล เพื่อให้ผู้ใช้งานแก้ไขและส่งใหม่</p>',
       input: 'textarea',
-      inputPlaceholder: 'เช่น ทะเบียนซ้ำ / ข้อมูลไม่ครบ / รูปไม่ชัดเจน',
+      inputPlaceholder: 'เช่น ข้อมูลไม่ครบ / เบอร์โทรไม่ตรงกับทะเบียนบ้าน',
       inputAttributes: { rows: 3 },
       showCancelButton: true,
       confirmButtonText: 'ปฏิเสธ',
@@ -149,8 +194,12 @@ const AdminRequests = () => {
 
     try {
       setSaving(true)
-      await updateVehicleRequestStatus(req.id, { status: 'rejected', adminNote: reason })
-      await showSwal({ icon: 'info', title: 'ปฏิเสธแล้ว', text: 'ลูกบ้านจะเห็นเหตุผลในระบบ', timer: 1600, showConfirmButton: false })
+      if (req.__kind === 'account') {
+        await updateAccountRequestStatus(req.id, { status: 'rejected', adminNote: reason, reviewedById: profile?.id || null })
+      } else {
+        await updateVehicleRequestStatus(req.id, { status: 'rejected', adminNote: reason })
+      }
+      await showSwal({ icon: 'info', title: 'ปฏิเสธแล้ว', text: 'ผู้ส่งคำขอจะเห็นเหตุผลในระบบ', timer: 1600, showConfirmButton: false })
       await loadRequests({ status: statusFilter })
     } catch (error) {
       await showSwal({ icon: 'error', title: 'ไม่สำเร็จ', text: error.message })
@@ -173,7 +222,11 @@ const AdminRequests = () => {
 
     try {
       setSaving(true)
-      await cancelVehicleRequest(req.id)
+      if (req.__kind === 'account') {
+        await cancelAccountRequest(req.id, { reviewedById: profile?.id || null })
+      } else {
+        await cancelVehicleRequest(req.id)
+      }
       await showSwal({ icon: 'success', title: 'ยกเลิกแล้ว', timer: 1200, showConfirmButton: false })
       await loadRequests({ status: statusFilter })
     } catch (error) {
@@ -191,33 +244,23 @@ const AdminRequests = () => {
             <div className="ph-ico">📝</div>
             <div>
               <div className="ph-h1">คำขอแก้ไข</div>
-              <div className="ph-sub">รายการรอการอนุมัติ ({requests.filter((r) => r.status === 'pending').length} รายการ)</div>
+              <div className="ph-sub">รายการรอการอนุมัติ ({pendingAllCount} รายการ)</div>
             </div>
           </div>
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
-            <select
-              className="fs"
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              style={{ minWidth: 140 }}
-            >
+            <select className="fs" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} style={{ minWidth: 140 }}>
               <option value="pending">รอดำเนินการ</option>
               <option value="approved">อนุมัติแล้ว</option>
               <option value="rejected">ปฏิเสธ</option>
               <option value="cancelled">ยกเลิก</option>
               <option value="all">ทั้งหมด</option>
             </select>
-            <button
-              className="btn btn-a btn-sm"
-              onClick={() => loadRequests({ status: statusFilter })}
-            >🔄 รีเฟรช</button>
+            <button className="btn btn-a btn-sm" onClick={() => loadRequests({ status: statusFilter })}>🔄 รีเฟรช</button>
           </div>
         </div>
       </div>
 
       <div className="request-layout" style={{ display: 'grid', gridTemplateColumns: '260px 1fr', gap: 16, alignItems: 'start', marginTop: 14 }}>
-
-        {/* Left — category list */}
         <div className="card request-filter-card" style={{ position: 'sticky', top: 16 }}>
           <div className="ch"><div className="ch-ico">📋</div><div className="ct">หมวดคำขอ</div></div>
           <div className="cb request-filter-grid" style={{ padding: '8px 0' }}>
@@ -226,7 +269,10 @@ const AdminRequests = () => {
                 ? pendingAllCount
                 : cat.key === 'vehicle_add'
                   ? pendingVehicleAddCount
-                  : pendingVehicleEditCount
+                  : cat.key === 'vehicle_edit'
+                    ? pendingVehicleEditCount
+                    : pendingAccountRegisterCount
+
               return (
                 <div
                   key={cat.key}
@@ -246,9 +292,7 @@ const AdminRequests = () => {
                   }}
                 >
                   <span>{cat.icon} {cat.label}</span>
-                  {count > 0 && (
-                    <span style={{ background: '#ef4444', color: '#fff', borderRadius: 10, padding: '1px 7px', fontSize: 11, fontWeight: 700 }}>{count}</span>
-                  )}
+                  {count > 0 && <span style={{ background: '#ef4444', color: '#fff', borderRadius: 10, padding: '1px 7px', fontSize: 11, fontWeight: 700 }}>{count}</span>}
                 </div>
               )
             })}
@@ -260,7 +304,6 @@ const AdminRequests = () => {
           </div>
         </div>
 
-        {/* Right — request detail list */}
         <div className="request-item-list">
           {loading ? (
             <div className="card"><div className="cb" style={{ textAlign: 'center', color: 'var(--mu)', padding: '24px 0' }}>กำลังโหลด...</div></div>
@@ -271,13 +314,19 @@ const AdminRequests = () => {
               {filteredRequests.map((req) => {
                 const badge = getRequestStatusBadge(req.status)
                 const lockAfter = req.status === 'approved' || req.status === 'cancelled'
+                const isAccountRequest = req.__kind === 'account'
+
                 return (
-                  <div key={req.id} className="card">
+                  <div key={`${req.__kind}-${req.id}`} className="card">
                     <div className="ch" style={{ flexWrap: 'wrap', gap: 8 }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8, flex: 1 }}>
-                        <div className="ch-ico">{req.request_type === 'add' ? '🆕' : '✏️'}</div>
+                        <div className="ch-ico">{isAccountRequest ? '👤' : req.request_type === 'add' ? '🆕' : '✏️'}</div>
                         <div>
-                          <div className="ct">{req.request_type === 'add' ? 'ขอเพิ่มรถ' : 'ขอแก้ไขรถ'} — {req.license_plate || '-'}</div>
+                          <div className="ct">
+                            {isAccountRequest
+                              ? `ลงทะเบียนผู้ใช้งาน — ${req.requested_username || req.profiles?.username || '-'}`
+                              : `${req.request_type === 'add' ? 'ขอเพิ่มรถ' : 'ขอแก้ไขรถ'} — ${req.license_plate || '-'}`}
+                          </div>
                           <div style={{ fontSize: 11.5, color: 'rgba(255,255,255,.65)', marginTop: 2 }}>
                             บ้าน {req.houses?.house_no || '-'} ซอย {req.houses?.soi || '-'} · {formatDate(req.created_at)}
                           </div>
@@ -287,113 +336,114 @@ const AdminRequests = () => {
                     </div>
 
                     <div className="cb" style={{ padding: 14 }}>
-                      {/* request detail */}
-                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(170px, 1fr))', gap: '6px 14px', marginBottom: 12 }}>
-                        {[
-                          { label: 'ทะเบียน', value: req.license_plate },
-                          { label: 'จังหวัด', value: req.province },
-                          { label: 'ยี่ห้อ / รุ่น', value: [req.brand, req.model].filter(Boolean).join(' ') },
-                          { label: 'สี', value: req.color },
-                          { label: 'ประเภทรถ', value: req.vehicle_type },
-                          { label: 'สถานะการใช้', value: req.vehicle_status === 'active' ? 'ใช้งาน' : req.vehicle_status === 'inactive' ? 'ไม่ได้ใช้' : req.vehicle_status },
-                          { label: 'ที่จอด', value: req.parking_location },
-                          { label: 'Lock No.', value: req.parking_lock_no },
-                          { label: 'ค่าจอด', value: req.parking_fee > 0 ? `฿${formatMoney(req.parking_fee)}` : null },
-                        ].filter((f) => f.value).map((f) => (
-                          <div key={f.label} style={{ fontSize: 12.5 }}>
-                            <span style={{ color: 'var(--mu)', fontSize: 11 }}>{f.label}</span>
-                            <div style={{ fontWeight: 600, color: 'var(--tx)', marginTop: 1 }}>{f.value}</div>
-                          </div>
-                        ))}
-                      </div>
-
-                      {req.note && (
-                        <div style={{ background: 'var(--bg)', borderRadius: 8, padding: '7px 10px', fontSize: 12.5, marginBottom: 10 }}>
-                          📝 หมายเหตุลูกบ้าน: {req.note}
-                        </div>
-                      )}
-
-                      {req.status === 'pending' && (
-                        <div style={{ background: '#f8fafc', border: '1px solid var(--bo)', borderRadius: 10, padding: 12, marginBottom: 12 }}>
-                          <div style={{ fontSize: 11, fontWeight: 800, color: 'var(--mu)', textTransform: 'uppercase', letterSpacing: '.05em', marginBottom: 8 }}>ข้อมูลที่นิติกำหนดก่อนอนุมัติ</div>
-                          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 10 }}>
-                            <label style={{ display: 'grid', gap: 4, fontSize: 12.5 }}>
-                              <span style={{ color: 'var(--mu)', fontSize: 11 }}>Lock No.</span>
-                              <input
-                                value={getApprovalDraft(req).parking_lock_no}
-                                onChange={(e) => handleApprovalDraftChange(req, 'parking_lock_no', e.target.value)}
-                                placeholder={req.parking_location === 'ส่วนกลาง' ? 'เช่น A-12' : 'ไม่มีการใช้ Lock No.'}
-                                disabled={req.parking_location !== 'ส่วนกลาง' || saving}
-                              />
-                            </label>
-                            <label style={{ display: 'grid', gap: 4, fontSize: 12.5 }}>
-                              <span style={{ color: 'var(--mu)', fontSize: 11 }}>ค่าจอด</span>
-                              <input
-                                value={getApprovalDraft(req).parking_fee}
-                                onChange={(e) => handleApprovalDraftChange(req, 'parking_fee', e.target.value)}
-                                placeholder="0"
-                                inputMode="numeric"
-                                disabled={saving}
-                              />
-                            </label>
-                          </div>
-                        </div>
-                      )}
-
-                      {/* vehicle images */}
-                      {Array.isArray(req.image_urls) && req.image_urls.length > 0 && (
-                        <div style={{ display: 'flex', gap: 7, flexWrap: 'wrap', marginBottom: 12 }}>
-                          {req.image_urls.map((url, idx) => (
-                            <button
-                              key={`${url}-${idx}`}
-                              type="button"
-                              onClick={() => showSwal({ imageUrl: url, showConfirmButton: false, showCloseButton: true, width: 'auto', background: '#0f172a' })}
-                              style={{ width: 72, height: 72, borderRadius: 8, border: '1px solid var(--bo)', padding: 0, overflow: 'hidden', cursor: 'pointer', background: 'var(--bg)' }}
-                            >
-                              <img src={url} alt={`car-${idx}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                            </button>
+                      {isAccountRequest ? (
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(170px, 1fr))', gap: '6px 14px', marginBottom: 12 }}>
+                          {[
+                            { label: 'Username', value: req.requested_username || req.profiles?.username },
+                            { label: 'บ้านเลขที่', value: req.houses?.house_no },
+                            { label: 'ชื่อเจ้าของบ้าน', value: req.houses?.owner_name },
+                            { label: 'เบอร์โทรบ้าน', value: req.requested_phone || req.houses?.phone },
+                            { label: 'สถานะผู้ใช้', value: req.profiles?.is_active ? 'active' : 'inactive' },
+                          ].filter((f) => f.value).map((f) => (
+                            <div key={f.label} style={{ fontSize: 12.5 }}>
+                              <span style={{ color: 'var(--mu)', fontSize: 11 }}>{f.label}</span>
+                              <div style={{ fontWeight: 600, color: 'var(--tx)', marginTop: 1 }}>{f.value}</div>
+                            </div>
                           ))}
                         </div>
+                      ) : (
+                        <>
+                          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(170px, 1fr))', gap: '6px 14px', marginBottom: 12 }}>
+                            {[
+                              { label: 'ทะเบียน', value: req.license_plate },
+                              { label: 'จังหวัด', value: req.province },
+                              { label: 'ยี่ห้อ / รุ่น', value: [req.brand, req.model].filter(Boolean).join(' ') },
+                              { label: 'สี', value: req.color },
+                              { label: 'ประเภทรถ', value: req.vehicle_type },
+                              { label: 'สถานะการใช้', value: req.vehicle_status === 'active' ? 'ใช้งาน' : req.vehicle_status === 'inactive' ? 'ไม่ได้ใช้' : req.vehicle_status },
+                              { label: 'ที่จอด', value: req.parking_location },
+                              { label: 'Lock No.', value: req.parking_lock_no },
+                              { label: 'ค่าจอด', value: req.parking_fee > 0 ? `฿${formatMoney(req.parking_fee)}` : null },
+                            ].filter((f) => f.value).map((f) => (
+                              <div key={f.label} style={{ fontSize: 12.5 }}>
+                                <span style={{ color: 'var(--mu)', fontSize: 11 }}>{f.label}</span>
+                                <div style={{ fontWeight: 600, color: 'var(--tx)', marginTop: 1 }}>{f.value}</div>
+                              </div>
+                            ))}
+                          </div>
+
+                          {req.note && (
+                            <div style={{ background: 'var(--bg)', borderRadius: 8, padding: '7px 10px', fontSize: 12.5, marginBottom: 10 }}>
+                              📝 หมายเหตุลูกบ้าน: {req.note}
+                            </div>
+                          )}
+
+                          {req.status === 'pending' && (
+                            <div style={{ background: '#f8fafc', border: '1px solid var(--bo)', borderRadius: 10, padding: 12, marginBottom: 12 }}>
+                              <div style={{ fontSize: 11, fontWeight: 800, color: 'var(--mu)', textTransform: 'uppercase', letterSpacing: '.05em', marginBottom: 8 }}>ข้อมูลที่นิติกำหนดก่อนอนุมัติ</div>
+                              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 10 }}>
+                                <label style={{ display: 'grid', gap: 4, fontSize: 12.5 }}>
+                                  <span style={{ color: 'var(--mu)', fontSize: 11 }}>Lock No.</span>
+                                  <input
+                                    value={getApprovalDraft(req).parking_lock_no}
+                                    onChange={(e) => handleApprovalDraftChange(req, 'parking_lock_no', e.target.value)}
+                                    placeholder={req.parking_location === 'ส่วนกลาง' ? 'เช่น A-12' : 'ไม่มีการใช้ Lock No.'}
+                                    disabled={req.parking_location !== 'ส่วนกลาง' || saving}
+                                  />
+                                </label>
+                                <label style={{ display: 'grid', gap: 4, fontSize: 12.5 }}>
+                                  <span style={{ color: 'var(--mu)', fontSize: 11 }}>ค่าจอด</span>
+                                  <input
+                                    value={getApprovalDraft(req).parking_fee}
+                                    onChange={(e) => handleApprovalDraftChange(req, 'parking_fee', e.target.value)}
+                                    placeholder="0"
+                                    inputMode="numeric"
+                                    disabled={saving}
+                                  />
+                                </label>
+                              </div>
+                            </div>
+                          )}
+
+                          {Array.isArray(req.image_urls) && req.image_urls.length > 0 && (
+                            <div style={{ display: 'flex', gap: 7, flexWrap: 'wrap', marginBottom: 12 }}>
+                              {req.image_urls.map((url, idx) => (
+                                <button
+                                  key={`${url}-${idx}`}
+                                  type="button"
+                                  onClick={() => showSwal({ imageUrl: url, showConfirmButton: false, showCloseButton: true, width: 'auto', background: '#0f172a' })}
+                                  style={{ width: 72, height: 72, borderRadius: 8, border: '1px solid var(--bo)', padding: 0, overflow: 'hidden', cursor: 'pointer', background: 'var(--bg)' }}
+                                >
+                                  <img src={url} alt={`car-${idx}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                </button>
+                              ))}
+                            </div>
+                          )}
+
+                          {req.request_type === 'edit' && req.vehicles && (
+                            <div style={{ background: 'var(--bg)', borderRadius: 8, padding: '8px 12px', marginBottom: 12, fontSize: 12 }}>
+                              <div style={{ fontWeight: 700, color: 'var(--mu)', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '.05em', fontSize: 10.5 }}>ข้อมูลปัจจุบันของรถ</div>
+                              <span>{req.vehicles.license_plate} {req.vehicles.brand} {req.vehicles.model} · {req.vehicles.color} · {req.vehicles.parking_location}</span>
+                            </div>
+                          )}
+                        </>
                       )}
 
-                      {/* for edit — show existing vehicle data */}
-                      {req.request_type === 'edit' && req.vehicles && (
-                        <div style={{ background: 'var(--bg)', borderRadius: 8, padding: '8px 12px', marginBottom: 12, fontSize: 12 }}>
-                          <div style={{ fontWeight: 700, color: 'var(--mu)', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '.05em', fontSize: 10.5 }}>ข้อมูลปัจจุบันของรถ</div>
-                          <span>{req.vehicles.license_plate} {req.vehicles.brand} {req.vehicles.model} · {req.vehicles.color} · {req.vehicles.parking_location}</span>
-                        </div>
-                      )}
-
-                      {/* admin note (from rejection) */}
                       {req.admin_note && (
                         <div style={{ background: 'var(--prl)', borderRadius: 8, padding: '8px 12px', marginBottom: 12, fontSize: 12.5, color: 'var(--dg)' }}>
                           💬 หมายเหตุนิติ: {req.admin_note}
                         </div>
                       )}
 
-                      {/* action buttons */}
                       {!lockAfter && (
                         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 6 }}>
                           {req.status === 'pending' && (
                             <>
-                              <button
-                                className="btn btn-p btn-sm"
-                                disabled={saving}
-                                onClick={() => handleApprove(req)}
-                              >✅ อนุมัติ</button>
-                              <button
-                                className="btn btn-sm"
-                                style={{ background: '#f97316', color: '#fff', border: 'none' }}
-                                disabled={saving}
-                                onClick={() => handleReject(req)}
-                              >❌ ปฏิเสธ</button>
+                              <button className="btn btn-p btn-sm" disabled={saving} onClick={() => (isAccountRequest ? handleApproveAccount(req) : handleApproveVehicle(req))}>✅ อนุมัติ</button>
+                              <button className="btn btn-sm" style={{ background: '#f97316', color: '#fff', border: 'none' }} disabled={saving} onClick={() => handleReject(req)}>❌ ปฏิเสธ</button>
                             </>
                           )}
-                          <button
-                            className="btn btn-dg btn-sm"
-                            disabled={saving}
-                            onClick={() => handleCancel(req)}
-                          >🚫 ยกเลิก</button>
+                          <button className="btn btn-dg btn-sm" disabled={saving} onClick={() => handleCancel(req)}>🚫 ยกเลิก</button>
                         </div>
                       )}
 
@@ -409,11 +459,9 @@ const AdminRequests = () => {
             </div>
           )}
         </div>
-
       </div>
     </div>
   )
 }
 
 export default AdminRequests
-
