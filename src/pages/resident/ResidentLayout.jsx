@@ -2200,7 +2200,6 @@ export default function ResidentLayout() {
           </div>
           <div>
             <div className="sb-logo-name">{setup.villageName}</div>
-            <div className="sb-logo-sub">Village Management {setup.version || 'v12.3'}</div>
           </div>
         </div>
 
