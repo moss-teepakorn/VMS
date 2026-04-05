@@ -161,7 +161,7 @@ const AdminLayout = () => {
       { id: 'market', label: 'ตลาดชุมชน', icon: '🛒', path: '/admin/marketplace' },
     ]},
     { section: 'รายงาน', tone: 'insight', sectionIcon: '📊', items: [
-      { id: 'rpt-payments', label: 'รายงานการจ่ายค่าส่วนกลาง', icon: '📄', path: '/admin/reports/payments' },
+      { id: 'rpt-payments', label: 'รายงานจ่ายค่าส่วนกลาง', icon: '📄', path: '/admin/reports/payments' },
       { id: 'rpt-overdue', label: 'รายงานค้างชำระ', icon: '📄', path: '/admin/reports/outstanding' },
       { id: 'rpt-expense', label: 'รายงานการจ่ายเงินออก', icon: '📄', path: '/admin/reports/expense-payments' },
       { id: 'rpt-violations', label: 'รายงานการรับชำระเงิน', icon: '📄', path: '/admin/reports/violations-summary' },

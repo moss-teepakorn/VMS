@@ -26,7 +26,7 @@ const PAGE_LABEL = {
   '/admin/work-reports': 'ผลงานนิติ',
   '/admin/technicians': 'ทำเนียบช่าง',
   '/admin/marketplace': 'ตลาดชุมชน',
-  '/admin/reports/payments': 'รายงานการจ่ายค่าส่วนกลาง',
+  '/admin/reports/payments': 'รายงานจ่ายค่าส่วนกลาง',
   '/admin/reports/overdue': 'รายงานค้างชำระ',
   '/admin/reports/expense-payments': 'รายงานการจ่ายเงินออก',
   '/admin/reports/violations-summary': 'รายงานการรับชำระเงิน',

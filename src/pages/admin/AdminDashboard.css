@@ -1130,6 +1130,7 @@
 
 .report-head-actions {
   margin-left: auto;
+  flex-shrink: 0;
 }
 
 .report-filter-card {
@@ -1164,6 +1165,29 @@
 }
 
 @media (max-width: 700px) {
+  .report-head-in {
+    flex-direction: row !important;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 8px;
+  }
+
+  .report-head-main {
+    flex: 1 1 auto;
+    min-width: 0;
+    justify-content: flex-start;
+  }
+
+  .report-head-main .ph-sub {
+    margin-right: 6px;
+  }
+
+  .report-head-actions {
+    margin-left: auto;
+    align-self: flex-start;
+    justify-content: flex-end;
+  }
+
   .report-filter-grid {
     grid-template-columns: 1fr;
   }
@@ -2154,6 +2178,12 @@
 
   .ph-in {
     flex-direction: column;
+  }
+
+  .report-head .report-head-in {
+    flex-direction: row !important;
+    align-items: flex-start;
+    justify-content: space-between;
   }
 
   .ph-acts {

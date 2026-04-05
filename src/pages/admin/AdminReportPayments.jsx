@@ -119,7 +119,7 @@ export default function AdminReportPayments() {
           <div className="report-head-main">
             <div className="ph-ico">💳</div>
             <div>
-              <div className="ph-h1">รายงานการจ่ายค่าส่วนกลาง</div>
+              <div className="ph-h1">รายงานจ่ายค่าส่วนกลาง</div>
               <div className="ph-sub">สรุปรายการรับชำระค่าส่วนกลาง</div>
             </div>
           </div>
@@ -127,7 +127,7 @@ export default function AdminReportPayments() {
             <ReportExportButtons
               columns={columns}
               rows={rows}
-              reportTitle="รายงานการจ่ายค่าส่วนกลาง"
+              reportTitle="รายงานจ่ายค่าส่วนกลาง"
               filter={{
                 startMonthLabel: monthOptions.find((m) => m.value === startMonth)?.label,
                 endMonthLabel: monthOptions.find((m) => m.value === endMonth)?.label,

@@ -30,7 +30,7 @@ const AdminReports = () => {
                 <div className="ch"><div className="ct">รายงาน</div></div>
                 <div className="cb">
                   <ul style={{ display: 'flex', gap: 12, flexWrap: 'wrap', padding: 0, margin: 0, listStyle: 'none' }}>
-                    <li><Link to="/admin/reports/payments" className="btn">รายงานการชำระเงิน</Link></li>
+                    <li><Link to="/admin/reports/payments" className="btn">รายงานจ่ายค่าส่วนกลาง</Link></li>
                     <li><Link to="/admin/reports/outstanding" className="btn">รายงานค่างชำระ</Link></li>
                     <li><Link to="/admin/reports/overdue" className="btn">สรุปค้างชำระ</Link></li>
                   </ul>

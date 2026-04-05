@@ -9,6 +9,7 @@ const columns = [
   { key: 'houseNo', label: 'บ้านเลขที่' },
   { key: 'ownerName', label: 'ชื่อ สกุล' },
   { key: 'period', label: 'งวด' },
+  { key: 'itemLabels', label: 'รายการที่รับชำระ' },
   { key: 'amount', label: 'ยอดชำระ', type: 'number' },
   { key: 'method', label: 'ช่องทางชำระ' },
   { key: 'paidAt', label: 'วันที่ชำระ' },
@@ -93,6 +94,12 @@ export default function AdminReportViolationsSummary() {
           houseNo: payment.houses?.house_no || '-',
           ownerName: payment.payer_name || payment.houses?.owner_name || payment.partners?.name || '-',
           period: formatPeriod(payment.fees?.period, payment.fees?.year),
+          itemLabels: Array.isArray(payment.payment_items) && payment.payment_items.length > 0
+            ? payment.payment_items
+              .map((item) => item?.item_label)
+              .filter(Boolean)
+              .join(', ')
+            : '-',
           amount: Number(payment.amount || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
           amountRaw: Number(payment.amount || 0),
           method: payment.payment_method || '-',
