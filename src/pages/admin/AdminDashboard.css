@@ -208,13 +208,13 @@
    PAGE HEADER
 ═════════════════════════════════════════════════ */
 .ph {
-  background: linear-gradient(135deg, #1B4F72 0%, #1E40AF 100%);
+  background: var(--ds-gradient-header);
   border-radius: var(--r);
   padding: 26px;
-  color: #FFFFFF;
+  color: var(--ds-text-inverse);
   position: relative;
   overflow: hidden;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  box-shadow: var(--ds-shadow-elevated);
 }
 
 .ph::before {
@@ -404,21 +404,21 @@
    CARD
 ═════════════════════════════════════════════════ */
 .card {
-  background: var(--card);
-  border: 1.5px solid var(--bo);
+  background: var(--ds-surface-card);
+  border: 1.5px solid var(--ds-border-strong);
   border-radius: var(--r);
-  box-shadow: var(--sh);
+  box-shadow: var(--ds-shadow-card);
   transition: background var(--tr), border-color var(--tr);
   overflow: hidden;
 }
 
 .ch {
   padding: 13px 16px;
-  border-bottom: 1.5px solid var(--bo);
+  border-bottom: 1.5px solid var(--ds-border-strong);
   display: flex;
   align-items: center;
   gap: 9px;
-  background: linear-gradient(135deg, #1B4F72 0%, #1E40AF 100%);
+  background: var(--ds-gradient-header);
 }
 
 .ch-ico {
@@ -443,7 +443,7 @@
 
 .cb {
   padding: 16px;
-  background: var(--card);
+  background: var(--ds-surface-card);
 }
 
 /* ═════════════════════════════════════════════════
@@ -597,81 +597,81 @@
   font-size: 13px;
   font-weight: 700;
   cursor: pointer;
-  border: none;
-  transition: all 0.15s;
+  border: 1px solid transparent;
+  transition: transform 0.15s ease, background-color 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
   white-space: nowrap;
 }
 
 .btn:focus-visible {
-  outline: 3px solid rgba(59, 130, 246, 0.35);
+  outline: 3px solid var(--ds-focus-ring);
   outline-offset: 2px;
 }
 
 .btn-p {
-  background: #1d4ed8;
+  background: var(--ds-brand);
   color: #fff;
-  border: 1px solid #1e40af;
-  box-shadow: 0 3px 10px rgba(29, 78, 216, 0.25);
+  border-color: var(--ds-brand-strong);
+  box-shadow: 0 3px 10px color-mix(in srgb, var(--ds-brand) 52%, transparent);
 }
 
 .btn-p:hover {
   transform: translateY(-1px);
-  background: #1e40af;
+  background: var(--ds-brand-strong);
 }
 
 .btn-a {
-  background: #0f766e;
+  background: var(--ds-accent);
   color: #fff;
-  border: 1px solid #115e59;
-  box-shadow: 0 3px 10px rgba(15, 118, 110, 0.24);
+  border-color: var(--ds-accent-strong);
+  box-shadow: 0 3px 10px color-mix(in srgb, var(--ds-accent) 52%, transparent);
 }
 
 .btn-a:hover {
-  background: #115e59;
+  background: var(--ds-accent-strong);
 }
 
 .btn-o {
-  background: #b45309;
+  background: var(--ds-warning);
   color: #fff;
-  border: 1px solid #92400e;
-  box-shadow: 0 3px 10px rgba(180, 83, 9, 0.25);
+  border-color: var(--ds-warning-strong);
+  box-shadow: 0 3px 10px color-mix(in srgb, var(--ds-warning) 52%, transparent);
 }
 
 .btn-o:hover {
-  background: #92400e;
+  background: var(--ds-warning-strong);
 }
 
 .btn-g {
-  background: #334155;
+  background: var(--ds-neutral);
   color: #fff;
-  border: 1px solid #1e293b;
-  box-shadow: 0 3px 10px rgba(51, 65, 85, 0.22);
+  border-color: var(--ds-neutral-strong);
+  box-shadow: 0 3px 10px color-mix(in srgb, var(--ds-neutral) 52%, transparent);
 }
 
 .btn-g:hover {
-  background: #1e293b;
+  background: var(--ds-neutral-strong);
 }
 
 .btn-dg {
-  background: #ef4444;
+  background: var(--ds-danger);
   color: #fff;
-  border: 1px solid #b91c1c;
-  box-shadow: 0 3px 10px rgba(239, 68, 68, 0.22);
+  border-color: var(--ds-danger-strong);
+  box-shadow: 0 3px 10px color-mix(in srgb, var(--ds-danger) 52%, transparent);
 }
 
 .btn-dg:hover {
-  background: #dc2626;
+  background: var(--ds-danger-strong);
 }
 
 .btn-ok {
-  background: #16a34a;
+  background: var(--ds-success);
   color: #fff;
-  border: 1px solid #166534;
-  box-shadow: 0 3px 10px rgba(22, 163, 74, 0.24);
+  border-color: var(--ds-success-strong);
+  box-shadow: 0 3px 10px color-mix(in srgb, var(--ds-success) 52%, transparent);
 }
 
 .btn-ok:hover {
-  background: #15803d;
+  background: var(--ds-success-strong);
 }
 
 .btn-sm {
@@ -740,19 +740,19 @@
   color: var(--mu);
   text-transform: uppercase;
   letter-spacing: .05em;
-  background: var(--bg2);
-  border-bottom: 1.5px solid var(--bo);
+  background: var(--ds-surface-muted);
+  border-bottom: 1.5px solid var(--ds-border-strong);
 }
 
 .tw td {
   padding: 12px;
-  border-bottom: 1px solid var(--bo);
+  border-bottom: 1px solid var(--ds-border-strong);
   font-size: 13px;
   color: var(--tx);
 }
 
 .tw tbody tr:hover {
-  background: var(--bg2);
+  background: var(--ds-surface-muted);
 }
 
 .tw tbody tr:last-child td {
@@ -833,29 +833,29 @@
 .houses-filter-input {
   min-width: 220px;
   height: 34px;
-  border: 1px solid rgba(255,255,255,.32);
+  border: 1px solid var(--ds-border-strong);
   border-radius: 8px;
   padding: 0 11px;
   font-size: 12px;
-  color: #1f2937;
-  background: rgba(255,255,255,.97);
+  color: var(--ds-text-primary);
+  background: var(--ds-surface-card);
 }
 
 .houses-filter-input::placeholder {
-  color: #6b7280;
+  color: var(--ds-text-secondary);
 }
 
 .houses-filter-select {
   flex-shrink: 0;
   width: 152px;
   height: 34px;
-  border: 1px solid rgba(255,255,255,.32);
+  border: 1px solid var(--ds-border-strong);
   border-radius: 8px;
   padding: 0 11px;
   padding-right: 28px;
   font-size: 12px;
-  color: #1f2937;
-  background: rgba(255,255,255,.97);
+  color: var(--ds-text-primary);
+  background: var(--ds-surface-card);
 }
 
 .houses-filter-select:nth-child(3) {

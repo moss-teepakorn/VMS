@@ -241,7 +241,7 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="relative min-h-screen overflow-hidden" style={{ background: loginTheme.pageBackground }}>
+    <div className="relative min-h-screen overflow-hidden vms-login-root" style={{ background: loginTheme.pageBackground }}>
       <div className="pointer-events-none absolute inset-0">
         <div className="absolute left-1/2 top-1/3 h-80 w-80 -translate-x-1/2 rounded-full blur-3xl" style={{ background: loginTheme.blobPrimary }} />
         <div className="absolute left-1/2 bottom-12 h-64 w-64 -translate-x-1/2 rounded-full blur-3xl" style={{ background: loginTheme.blobSecondary }} />
@@ -276,7 +276,7 @@ export default function LoginPage() {
                     required
                     autoComplete="username"
                     placeholder="User ID"
-                    className="w-full rounded-[12px] border px-4 py-[11px] text-[15px] text-slate-800 placeholder:text-slate-400 outline-none transition focus:border-[#6e8fc1] focus:ring-4 focus:ring-[#a8c0e7]/25"
+                    className="vms-login-input"
                     style={{ borderColor: loginTheme.fieldBorder, background: loginTheme.fieldBackground }}
                   />
                 </div>
@@ -293,7 +293,7 @@ export default function LoginPage() {
                       required
                       autoComplete="current-password"
                       placeholder="Password"
-                      className="w-full rounded-[12px] border px-4 py-[11px] pr-12 text-[15px] text-slate-800 placeholder:text-slate-400 outline-none transition focus:border-[#6e8fc1] focus:ring-4 focus:ring-[#a8c0e7]/25"
+                      className="vms-login-input pr-12"
                       style={{ borderColor: loginTheme.fieldBorder, background: loginTheme.fieldBackground }}
                     />
                     <button
@@ -309,8 +309,8 @@ export default function LoginPage() {
                 </div>
 
                 <div className="flex items-center justify-between gap-3 text-xs font-semibold">
-                  <button type="button" className="hover:text-[#4f6ea5]" style={{ color: loginTheme.secondaryLink }} onClick={() => switchMode('register')}>ลงทะเบียนผู้ใช้งาน</button>
-                  <button type="button" className="hover:text-[#4f6ea5]" style={{ color: loginTheme.secondaryLink }} onClick={() => switchMode('forgot')}>Forgot Password?</button>
+                  <button type="button" className="vms-login-link hover:text-[#4f6ea5]" style={{ color: loginTheme.secondaryLink }} onClick={() => switchMode('register')}>ลงทะเบียนผู้ใช้งาน</button>
+                  <button type="button" className="vms-login-link hover:text-[#4f6ea5]" style={{ color: loginTheme.secondaryLink }} onClick={() => switchMode('forgot')}>Forgot Password?</button>
                 </div>
 
                 {capsLockOn && (
@@ -322,7 +322,7 @@ export default function LoginPage() {
                 <button
                   type="submit"
                   disabled={submitting || !username || !password}
-                  className="mt-1 w-full rounded-full px-4 py-2.5 text-[24px] font-semibold text-white shadow-[0_10px_24px_rgba(63,99,189,0.35)] transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-55"
+                  className="vms-login-submit mt-1 text-[24px]"
                   style={{ background: loginTheme.primaryButton }}
                 >
                   {submitting ? 'Signing in...' : 'Sign In'}
@@ -332,29 +332,29 @@ export default function LoginPage() {
 
             {mode === 'register' && (
               <form onSubmit={handleRegisterSubmit} className="space-y-3" noValidate>
-                <input value={registerUsername} onChange={(e) => setRegisterUsername(e.target.value)} required placeholder="Username" className="w-full rounded-[12px] border px-4 py-[11px] text-[15px] text-slate-800 placeholder:text-slate-400 outline-none transition focus:border-[#6e8fc1] focus:ring-4 focus:ring-[#a8c0e7]/25" style={{ borderColor: loginTheme.fieldBorder, background: loginTheme.fieldBackground }} />
-                <input value={registerHouseNo} onChange={(e) => setRegisterHouseNo(e.target.value)} required placeholder="บ้านเลขที่" className="w-full rounded-[12px] border px-4 py-[11px] text-[15px] text-slate-800 placeholder:text-slate-400 outline-none transition focus:border-[#6e8fc1] focus:ring-4 focus:ring-[#a8c0e7]/25" style={{ borderColor: loginTheme.fieldBorder, background: loginTheme.fieldBackground }} />
-                <input value={registerPhone} onChange={(e) => setRegisterPhone(e.target.value)} required placeholder="เบอร์โทรศัพท์ (ตามข้อมูลบ้าน)" className="w-full rounded-[12px] border px-4 py-[11px] text-[15px] text-slate-800 placeholder:text-slate-400 outline-none transition focus:border-[#6e8fc1] focus:ring-4 focus:ring-[#a8c0e7]/25" style={{ borderColor: loginTheme.fieldBorder, background: loginTheme.fieldBackground }} />
-                <input type="password" value={registerPassword} onChange={(e) => setRegisterPassword(e.target.value)} required placeholder="กำหนดรหัสผ่าน" className="w-full rounded-[12px] border px-4 py-[11px] text-[15px] text-slate-800 placeholder:text-slate-400 outline-none transition focus:border-[#6e8fc1] focus:ring-4 focus:ring-[#a8c0e7]/25" style={{ borderColor: loginTheme.fieldBorder, background: loginTheme.fieldBackground }} />
-                <input type="password" value={registerConfirmPassword} onChange={(e) => setRegisterConfirmPassword(e.target.value)} required placeholder="ยืนยันรหัสผ่าน" className="w-full rounded-[12px] border px-4 py-[11px] text-[15px] text-slate-800 placeholder:text-slate-400 outline-none transition focus:border-[#6e8fc1] focus:ring-4 focus:ring-[#a8c0e7]/25" style={{ borderColor: loginTheme.fieldBorder, background: loginTheme.fieldBackground }} />
+                <input value={registerUsername} onChange={(e) => setRegisterUsername(e.target.value)} required placeholder="Username" className="vms-login-input" style={{ borderColor: loginTheme.fieldBorder, background: loginTheme.fieldBackground }} />
+                <input value={registerHouseNo} onChange={(e) => setRegisterHouseNo(e.target.value)} required placeholder="บ้านเลขที่" className="vms-login-input" style={{ borderColor: loginTheme.fieldBorder, background: loginTheme.fieldBackground }} />
+                <input value={registerPhone} onChange={(e) => setRegisterPhone(e.target.value)} required placeholder="เบอร์โทรศัพท์ (ตามข้อมูลบ้าน)" className="vms-login-input" style={{ borderColor: loginTheme.fieldBorder, background: loginTheme.fieldBackground }} />
+                <input type="password" value={registerPassword} onChange={(e) => setRegisterPassword(e.target.value)} required placeholder="กำหนดรหัสผ่าน" className="vms-login-input" style={{ borderColor: loginTheme.fieldBorder, background: loginTheme.fieldBackground }} />
+                <input type="password" value={registerConfirmPassword} onChange={(e) => setRegisterConfirmPassword(e.target.value)} required placeholder="ยืนยันรหัสผ่าน" className="vms-login-input" style={{ borderColor: loginTheme.fieldBorder, background: loginTheme.fieldBackground }} />
                 <div className="flex items-center justify-between text-xs font-semibold">
-                  <button type="button" className="hover:text-[#4f6ea5]" style={{ color: loginTheme.secondaryLink }} onClick={() => switchMode('login')}>กลับหน้า Sign In</button>
+                  <button type="button" className="vms-login-link hover:text-[#4f6ea5]" style={{ color: loginTheme.secondaryLink }} onClick={() => switchMode('login')}>กลับหน้า Sign In</button>
                 </div>
-                <button type="submit" disabled={submitting} className="mt-1 w-full rounded-full px-4 py-2.5 text-[18px] font-semibold text-white shadow-[0_10px_24px_rgba(63,99,189,0.35)] transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-55" style={{ background: loginTheme.primaryButton }}>{submitting ? 'กำลังส่งคำขอ...' : 'ส่งคำขอลงทะเบียน'}</button>
+                <button type="submit" disabled={submitting} className="vms-login-submit mt-1 text-[18px]" style={{ background: loginTheme.primaryButton }}>{submitting ? 'กำลังส่งคำขอ...' : 'ส่งคำขอลงทะเบียน'}</button>
               </form>
             )}
 
             {mode === 'forgot' && (
               <form onSubmit={handleResetPasswordSubmit} className="space-y-3" noValidate>
-                <input value={resetUsername} onChange={(e) => setResetUsername(e.target.value)} required placeholder="Username" className="w-full rounded-[12px] border px-4 py-[11px] text-[15px] text-slate-800 placeholder:text-slate-400 outline-none transition focus:border-[#6e8fc1] focus:ring-4 focus:ring-[#a8c0e7]/25" style={{ borderColor: loginTheme.fieldBorder, background: loginTheme.fieldBackground }} />
-                <input value={resetHouseNo} onChange={(e) => setResetHouseNo(e.target.value)} required placeholder="บ้านเลขที่" className="w-full rounded-[12px] border px-4 py-[11px] text-[15px] text-slate-800 placeholder:text-slate-400 outline-none transition focus:border-[#6e8fc1] focus:ring-4 focus:ring-[#a8c0e7]/25" style={{ borderColor: loginTheme.fieldBorder, background: loginTheme.fieldBackground }} />
-                <input value={resetPhone} onChange={(e) => setResetPhone(e.target.value)} required placeholder="เบอร์โทรศัพท์ที่ลงทะเบียนไว้" className="w-full rounded-[12px] border px-4 py-[11px] text-[15px] text-slate-800 placeholder:text-slate-400 outline-none transition focus:border-[#6e8fc1] focus:ring-4 focus:ring-[#a8c0e7]/25" style={{ borderColor: loginTheme.fieldBorder, background: loginTheme.fieldBackground }} />
-                <input type="password" value={resetPassword} onChange={(e) => setResetPassword(e.target.value)} required placeholder="รหัสผ่านใหม่" className="w-full rounded-[12px] border px-4 py-[11px] text-[15px] text-slate-800 placeholder:text-slate-400 outline-none transition focus:border-[#6e8fc1] focus:ring-4 focus:ring-[#a8c0e7]/25" style={{ borderColor: loginTheme.fieldBorder, background: loginTheme.fieldBackground }} />
-                <input type="password" value={resetConfirmPassword} onChange={(e) => setResetConfirmPassword(e.target.value)} required placeholder="ยืนยันรหัสผ่านใหม่" className="w-full rounded-[12px] border px-4 py-[11px] text-[15px] text-slate-800 placeholder:text-slate-400 outline-none transition focus:border-[#6e8fc1] focus:ring-4 focus:ring-[#a8c0e7]/25" style={{ borderColor: loginTheme.fieldBorder, background: loginTheme.fieldBackground }} />
+                <input value={resetUsername} onChange={(e) => setResetUsername(e.target.value)} required placeholder="Username" className="vms-login-input" style={{ borderColor: loginTheme.fieldBorder, background: loginTheme.fieldBackground }} />
+                <input value={resetHouseNo} onChange={(e) => setResetHouseNo(e.target.value)} required placeholder="บ้านเลขที่" className="vms-login-input" style={{ borderColor: loginTheme.fieldBorder, background: loginTheme.fieldBackground }} />
+                <input value={resetPhone} onChange={(e) => setResetPhone(e.target.value)} required placeholder="เบอร์โทรศัพท์ที่ลงทะเบียนไว้" className="vms-login-input" style={{ borderColor: loginTheme.fieldBorder, background: loginTheme.fieldBackground }} />
+                <input type="password" value={resetPassword} onChange={(e) => setResetPassword(e.target.value)} required placeholder="รหัสผ่านใหม่" className="vms-login-input" style={{ borderColor: loginTheme.fieldBorder, background: loginTheme.fieldBackground }} />
+                <input type="password" value={resetConfirmPassword} onChange={(e) => setResetConfirmPassword(e.target.value)} required placeholder="ยืนยันรหัสผ่านใหม่" className="vms-login-input" style={{ borderColor: loginTheme.fieldBorder, background: loginTheme.fieldBackground }} />
                 <div className="flex items-center justify-between text-xs font-semibold">
-                  <button type="button" className="hover:text-[#4f6ea5]" style={{ color: loginTheme.secondaryLink }} onClick={() => switchMode('login')}>กลับหน้า Sign In</button>
+                  <button type="button" className="vms-login-link hover:text-[#4f6ea5]" style={{ color: loginTheme.secondaryLink }} onClick={() => switchMode('login')}>กลับหน้า Sign In</button>
                 </div>
-                <button type="submit" disabled={submitting} className="mt-1 w-full rounded-full px-4 py-2.5 text-[18px] font-semibold text-white shadow-[0_10px_24px_rgba(63,99,189,0.35)] transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-55" style={{ background: loginTheme.primaryButton }}>{submitting ? 'กำลังเปลี่ยนรหัสผ่าน...' : 'เปลี่ยนรหัสผ่าน'}</button>
+                <button type="submit" disabled={submitting} className="vms-login-submit mt-1 text-[18px]" style={{ background: loginTheme.primaryButton }}>{submitting ? 'กำลังเปลี่ยนรหัสผ่าน...' : 'เปลี่ยนรหัสผ่าน'}</button>
               </form>
             )}
 

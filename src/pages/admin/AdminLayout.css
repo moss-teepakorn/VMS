@@ -235,9 +235,9 @@
 }
 
 :root {
-  --r: 10px;
+  --r: var(--ds-radius-md, 10px);
   --tr: .15s;
-  --sh: 0 1px 6px rgba(0,0,0,.09);
+  --sh: var(--ds-shadow-card, 0 1px 6px rgba(0,0,0,.09));
 }
 
 /* ══════════════════════════════════════
