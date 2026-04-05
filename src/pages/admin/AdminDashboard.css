@@ -959,14 +959,15 @@
 }
 
 .payments-compact .houses-table th {
-  padding: 6px 8px;
-  font-size: 10px;
+  padding: 9px 10px;
+  font-size: 11px;
+  line-height: 3;
 }
 
 .payments-compact .houses-table td {
-  padding: 5px 7px;
-  font-size: 11px;
-  line-height: 1.15;
+  padding: 8px 10px;
+  font-size: 12px;
+  line-height: 3;
 }
 
 .payments-compact .td-acts {
@@ -975,9 +976,16 @@
 }
 
 .payments-compact .payments-row-acts .btn-xs {
-  padding: 1px 6px;
-  font-size: 9.5px;
-  min-height: 21px;
+  padding: 6px 11px;
+  font-size: 11px;
+  min-height: 32px;
+  border-radius: 8px;
+}
+
+.payments-compact .mcard-actions .btn {
+  padding: 6px 11px;
+  font-size: 11px;
+  min-height: 32px;
 }
 
 .payments-compact .receive-items-table th {
@@ -1334,6 +1342,27 @@
   gap: 4px;
 }
 
+.request-search-row {
+  display: grid !important;
+  grid-template-columns: minmax(220px, 1fr) auto;
+  gap: 10px !important;
+  align-items: center;
+  width: min(520px, 100%);
+}
+
+.request-search-status {
+  width: 100%;
+  min-width: 0;
+  height: 36px;
+}
+
+.request-search-refresh {
+  min-width: 114px;
+  min-height: 36px;
+  padding-left: 14px;
+  padding-right: 14px;
+}
+
 @media (max-width: 900px) {
   .pane.on.requests-compact .request-layout {
     grid-template-columns: 1fr !important;
@@ -1358,6 +1387,20 @@
     background: var(--card);
     min-height: 48px;
     font-size: 12px;
+  }
+
+  .request-search-row {
+    width: 100%;
+  }
+}
+
+@media (max-width: 520px) {
+  .request-search-row {
+    grid-template-columns: 1fr;
+  }
+
+  .request-search-refresh {
+    width: 100%;
   }
 }
 

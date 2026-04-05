@@ -252,15 +252,15 @@ const AdminRequests = () => {
 
       <div className="card report-filter-card admin-search-filter-card">
         <div className="cb">
-          <div className="houses-filter-row" style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
-            <select className="fs" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} style={{ minWidth: 160 }}>
+          <div className="houses-filter-row request-search-row">
+            <select className="fs request-search-status" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
               <option value="pending">รอดำเนินการ</option>
               <option value="approved">อนุมัติแล้ว</option>
               <option value="rejected">ปฏิเสธ</option>
               <option value="cancelled">ยกเลิก</option>
               <option value="all">ทั้งหมด</option>
             </select>
-            <button className="btn btn-a btn-sm" onClick={() => loadRequests({ status: statusFilter })}>🔄 รีเฟรช</button>
+            <button className="btn btn-a btn-sm request-search-refresh" onClick={() => loadRequests({ status: statusFilter })}>🔄 รีเฟรช</button>
           </div>
         </div>
       </div>
