@@ -724,6 +724,10 @@ export default function AdminFeatureReceivePayment() {
     return { className: 'bd b-ok', label: 'ออกใบเสร็จแล้ว' }
   }
 
+  const handleSearch = async () => {
+    await loadPageData()
+  }
+
   return (
     <div className="pane on houses-compact payments-compact">
       <div className="ph houses-ph">
@@ -747,6 +751,7 @@ export default function AdminFeatureReceivePayment() {
             onChange={(event) => setSearch(event.target.value)}
             style={{ flex: '1 1 240px', minWidth: 0 }}
           />
+          <button className="btn btn-p btn-sm" onClick={handleSearch} disabled={loading} style={{ height: '34px' }}>ค้นหา</button>
           <select className="houses-filter-input" value={yearFilter} onChange={(event) => setYearFilter(event.target.value)} style={{ width: 120 }}>
             <option value="all">ทุกปี</option>
             {yearOptions.map((year) => (

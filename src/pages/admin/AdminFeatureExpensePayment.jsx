@@ -51,6 +51,8 @@ function StatusBadge({ status }) {
 const todayStr = () => new Date().toISOString().slice(0, 10)
 const nowStr = () => new Date().toISOString().slice(0, 16)
 const toDatetimeInput = (value) => (value ? String(value).slice(0, 16) : '')
+const currentMonth = () => new Date().getMonth() + 1
+const currentYear = () => new Date().getFullYear()
 
 const EMPTY_FORM = () => ({
   recipient_type: 'partner',
@@ -86,6 +88,8 @@ export default function AdminFeatureExpensePayment() {
   const [setup, setSetup] = useState({})
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState('all')
+  const [monthFilter, setMonthFilter] = useState(String(currentMonth()))
+  const [yearFilter, setYearFilter] = useState(String(currentYear()))
 
   const [showModal, setShowModal] = useState(false)
   const [modalMode, setModalMode] = useState('create')
@@ -130,6 +134,15 @@ export default function AdminFeatureExpensePayment() {
   const filtered = useMemo(() => {
     let rows = disbursements
     if (statusFilter !== 'all') rows = rows.filter((d) => d.status === statusFilter)
+    rows = rows.filter((d) => {
+      const baseDate = d.disbursement_date || d.created_at
+      if (!baseDate) return false
+      const parsed = new Date(baseDate.includes('T') ? baseDate : `${baseDate}T00:00:00`)
+      if (Number.isNaN(parsed.getTime())) return false
+      const monthMatch = parsed.getMonth() + 1 === Number(monthFilter)
+      const yearMatch = parsed.getFullYear() === Number(yearFilter)
+      return monthMatch && yearMatch
+    })
     const kw = search.trim().toLowerCase()
     if (!kw) return rows
     return rows.filter((d) => {
@@ -138,7 +151,14 @@ export default function AdminFeatureExpensePayment() {
       const items = (d.disbursement_items || []).map((i) => i.item_label).join(' ')
       return no.toLowerCase().includes(kw) || recipient.toLowerCase().includes(kw) || items.toLowerCase().includes(kw) || (STATUS_MAP[d.status]?.label || '').includes(kw)
     })
-  }, [disbursements, statusFilter, search, disburseNoById])
+  }, [disbursements, statusFilter, monthFilter, yearFilter, search, disburseNoById])
+
+  const yearOptions = useMemo(() => {
+    const thisYear = currentYear()
+    const options = []
+    for (let y = thisYear + 2; y >= thisYear - 5; y -= 1) options.push(y)
+    return options
+  }, [])
 
   const load = async () => {
     setLoading(true)
@@ -399,6 +419,18 @@ export default function AdminFeatureExpensePayment() {
         <div className="ch houses-list-head houses-main-head">
           <div className="ct">รายการจ่ายเงิน{statusFilter !== 'all' ? ` — ${STATUS_MAP[statusFilter]?.label || ''}` : ''}</div>
           <div className="houses-list-actions" style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+            <select value={monthFilter} onChange={(e) => setMonthFilter(e.target.value)} style={{ width: 130, padding: '4px 8px', borderRadius: 6, border: '1.5px solid rgba(255,255,255,0.35)', background: 'rgba(255,255,255,0.15)', color: '#fff', fontSize: 12, outline: 'none' }}>
+              {Array.from({ length: 12 }, (_, index) => index + 1).map((month) => (
+                <option key={month} value={String(month)} style={{ color: '#111827' }}>
+                  {new Date(2000, month - 1, 1).toLocaleString('th-TH', { month: 'long' })}
+                </option>
+              ))}
+            </select>
+            <select value={yearFilter} onChange={(e) => setYearFilter(e.target.value)} style={{ width: 100, padding: '4px 8px', borderRadius: 6, border: '1.5px solid rgba(255,255,255,0.35)', background: 'rgba(255,255,255,0.15)', color: '#fff', fontSize: 12, outline: 'none' }}>
+              {yearOptions.map((year) => (
+                <option key={year} value={String(year)} style={{ color: '#111827' }}>{year + 543}</option>
+              ))}
+            </select>
             <input
               placeholder="ค้นหา..."
               value={search}
