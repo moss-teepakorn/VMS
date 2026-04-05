@@ -2288,7 +2288,7 @@ export default function ResidentLayout() {
             {titleData.main} — <span className="hl">{titleData.sub}</span>
           </div>
           <div className="tb-right">
-            <span style={{ fontSize: '13px', fontWeight: 500, color: 'var(--tx)', whiteSpace: 'nowrap', marginRight: '4px' }}>
+            <span className="tb-user-name" style={{ fontSize: '13px', fontWeight: 500, color: 'var(--tx)', whiteSpace: 'nowrap', marginRight: '4px' }}>
               {profile?.full_name || profile?.username || ''}
             </span>
 
@@ -3099,6 +3099,38 @@ export default function ResidentLayout() {
                       </tbody>
                     </table>
                   </div>
+                </div>
+
+                <div className="notif-mobile-list">
+                  {loading ? (
+                    Array.from({ length: 4 }).map((_, index) => (
+                      <div key={`m-sk-${index}`} className="notif-mobile-card notif-mobile-card--skeleton">
+                        <div className="notif-skeleton-line" />
+                      </div>
+                    ))
+                  ) : filteredNotifViolations.length === 0 ? (
+                    <div className="mcard-empty">ไม่พบข้อมูล</div>
+                  ) : filteredNotifViolations.map((item) => {
+                    const statusBadge = getViolationStatusBadge(item.status)
+                    const convo = getViolationConversation(item)
+                    const latestRound = convo[convo.length - 1]
+                    return (
+                      <div key={`m-${item.id}`} className="notif-mobile-card" onClick={() => openViolationModal(item)}>
+                        <div className="notif-mobile-top">
+                          <span className={getViolationTypeBadgeClass(item.type)}>{item.type || '-'}</span>
+                          <span className={statusBadge.className}>{statusBadge.label}</span>
+                        </div>
+                        <div className="notif-mobile-detail">{item.detail || '-'}</div>
+                        <div className="notif-mobile-latest">{latestRound?.text || '-'}</div>
+                        <div className="notif-mobile-meta">{latestRound?.actor || '-'} • {latestRound?.at ? formatDate(latestRound.at) : '-'}</div>
+                        <div className="notif-mobile-due">กำหนด: {formatDate(item.due_date)}</div>
+                        <div className="notif-mobile-actions">
+                          <button className="btn btn-xs btn-a" onClick={(e) => { e.stopPropagation(); openViolationModal(item) }}>✏️ อัปเดต</button>
+                          <button className="btn btn-xs btn-g" onClick={(e) => { e.stopPropagation(); openViolationModal(item) }}>👁 ดู</button>
+                        </div>
+                      </div>
+                    )
+                  })}
                 </div>
               </div>
 

@@ -164,6 +164,57 @@
   box-shadow: 0 8px 18px rgba(15, 23, 42, 0.08);
 }
 
+.notif-mobile-list {
+  display: none;
+  padding: 10px;
+  gap: 10px;
+}
+
+.notif-mobile-card {
+  border: 1px solid var(--bo);
+  border-radius: 12px;
+  background: var(--card);
+  padding: 10px;
+  display: grid;
+  gap: 7px;
+  cursor: pointer;
+}
+
+.notif-mobile-card--skeleton {
+  cursor: default;
+}
+
+.notif-mobile-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+
+.notif-mobile-detail {
+  font-size: 12.5px;
+  color: var(--tx);
+  font-weight: 700;
+}
+
+.notif-mobile-latest {
+  font-size: 12px;
+  color: var(--tx);
+  line-height: 1.45;
+}
+
+.notif-mobile-meta,
+.notif-mobile-due {
+  font-size: 11px;
+  color: var(--mu);
+}
+
+.notif-mobile-actions {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
 .notif-card-title {
   font-weight: 800;
   font-size: 14px;
@@ -644,6 +695,10 @@
 @media (max-width: 768px) {
   .vc-line { padding-left: 0; }
 
+  .tb-user-name {
+    display: none;
+  }
+
   .notif-search-row {
     grid-template-columns: 1fr;
   }
@@ -654,6 +709,14 @@
 
   .notif-table-scroll {
     max-height: 360px;
+  }
+
+  .notif-table-wrap {
+    display: none;
+  }
+
+  .notif-mobile-list {
+    display: grid;
   }
 
   .fee-summary-bar {

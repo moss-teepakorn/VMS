@@ -15,6 +15,18 @@
         const villageName = localStorage.getItem('vms-setup-village-name') || 'The Greenfield'
         document.title = villageName + ' — Village Management System'
       } catch (_) {}
+
+      // Ignore known runtime noise from browser extensions injected as webextension.js.
+      window.addEventListener('error', (event) => {
+        const source = String(event?.filename || '')
+        const message = String(event?.message || '')
+        const isWebExtensionNoise = source.includes('webextension.js')
+          || (message.includes("Cannot read properties of null (reading '1')") && source.includes('extension'))
+
+        if (!isWebExtensionNoise) return
+        if (typeof event.preventDefault === 'function') event.preventDefault()
+        if (typeof event.stopImmediatePropagation === 'function') event.stopImmediatePropagation()
+      }, true)
     </script>
     <script type="module" src="/src/main.jsx"></script>
   </body>
