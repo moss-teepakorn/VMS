@@ -247,8 +247,13 @@ const AdminRequests = () => {
               <div className="ph-sub">รายการรอการอนุมัติ ({pendingAllCount} รายการ)</div>
             </div>
           </div>
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
-            <select className="fs" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} style={{ minWidth: 140 }}>
+        </div>
+      </div>
+
+      <div className="card report-filter-card admin-search-filter-card">
+        <div className="cb">
+          <div className="houses-filter-row" style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+            <select className="fs" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} style={{ minWidth: 160 }}>
               <option value="pending">รอดำเนินการ</option>
               <option value="approved">อนุมัติแล้ว</option>
               <option value="rejected">ปฏิเสธ</option>

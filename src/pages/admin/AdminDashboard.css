@@ -1137,6 +1137,33 @@
   border: 1px solid var(--bo);
 }
 
+.admin-search-filter-card {
+  border: 1px solid var(--bo);
+}
+
+.admin-search-filter-card .cb {
+  padding: 12px;
+}
+
+.admin-search-filter-card .houses-filter-row {
+  margin-top: 0;
+}
+
+.pane.on .admin-search-filter-card + .card {
+  margin-top: 12px;
+}
+
+.admin-search-filter-card .houses-filter-input,
+.admin-search-filter-card .houses-filter-select,
+.admin-search-filter-card .fs,
+.admin-search-filter-card input[type="text"],
+.admin-search-filter-card input[type="search"],
+.admin-search-filter-card select {
+  border: 1.5px solid var(--bo) !important;
+  background: var(--card) !important;
+  color: var(--tx) !important;
+}
+
 .report-filter-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));

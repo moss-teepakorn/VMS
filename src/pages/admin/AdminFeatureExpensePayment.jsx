@@ -415,30 +415,36 @@ export default function AdminFeatureExpensePayment() {
         ))}
       </div>
 
-      <div className="card houses-main-card">
-        <div className="ch houses-list-head houses-main-head">
-          <div className="ct">รายการจ่ายเงิน{statusFilter !== 'all' ? ` — ${STATUS_MAP[statusFilter]?.label || ''}` : ''}</div>
-          <div className="houses-list-actions" style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-            <select value={monthFilter} onChange={(e) => setMonthFilter(e.target.value)} style={{ width: 130, padding: '4px 8px', borderRadius: 6, border: '1.5px solid rgba(255,255,255,0.35)', background: 'rgba(255,255,255,0.15)', color: '#fff', fontSize: 12, outline: 'none' }}>
+      <div className="card report-filter-card admin-search-filter-card">
+        <div className="cb">
+          <div className="houses-filter-row" style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center' }}>
+            <select className="houses-filter-select" value={monthFilter} onChange={(e) => setMonthFilter(e.target.value)} style={{ width: 150 }}>
               {Array.from({ length: 12 }, (_, index) => index + 1).map((month) => (
-                <option key={month} value={String(month)} style={{ color: '#111827' }}>
+                <option key={month} value={String(month)}>
                   {new Date(2000, month - 1, 1).toLocaleString('th-TH', { month: 'long' })}
                 </option>
               ))}
             </select>
-            <select value={yearFilter} onChange={(e) => setYearFilter(e.target.value)} style={{ width: 100, padding: '4px 8px', borderRadius: 6, border: '1.5px solid rgba(255,255,255,0.35)', background: 'rgba(255,255,255,0.15)', color: '#fff', fontSize: 12, outline: 'none' }}>
+            <select className="houses-filter-select" value={yearFilter} onChange={(e) => setYearFilter(e.target.value)} style={{ width: 110 }}>
               {yearOptions.map((year) => (
-                <option key={year} value={String(year)} style={{ color: '#111827' }}>{year + 543}</option>
+                <option key={year} value={String(year)}>{year + 543}</option>
               ))}
             </select>
             <input
+              className="houses-filter-input"
               placeholder="ค้นหา..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              style={{ width: 170, padding: '4px 8px', borderRadius: 6, border: '1.5px solid rgba(255,255,255,0.35)', background: 'rgba(255,255,255,0.15)', color: '#fff', fontSize: 12, outline: 'none' }}
+              style={{ flex: '1 1 220px', minWidth: 0 }}
             />
             <button className="btn btn-p btn-sm" onClick={openCreate}>+ สร้างรายการ</button>
           </div>
+        </div>
+      </div>
+
+      <div className="card houses-main-card">
+        <div className="ch houses-list-head houses-main-head">
+          <div className="ct">รายการจ่ายเงิน{statusFilter !== 'all' ? ` — ${STATUS_MAP[statusFilter]?.label || ''}` : ''}</div>
         </div>
 
         <div className="cb houses-table-card-body houses-main-body">

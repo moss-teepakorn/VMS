@@ -742,7 +742,12 @@ export default function AdminFeatureReceivePayment() {
             </div>
           </div>
         </div>
-        <div style={{ marginTop: '10px', display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+
+      </div>
+
+      <div className="card report-filter-card admin-search-filter-card">
+        <div className="cb">
+        <div className="houses-filter-row" style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center' }}>
           <input
             type="text"
             className="houses-filter-input"
@@ -752,13 +757,13 @@ export default function AdminFeatureReceivePayment() {
             style={{ flex: '1 1 240px', minWidth: 0 }}
           />
           <button className="btn btn-p btn-sm" onClick={handleSearch} disabled={loading} style={{ height: '34px' }}>ค้นหา</button>
-          <select className="houses-filter-input" value={yearFilter} onChange={(event) => setYearFilter(event.target.value)} style={{ width: 120 }}>
+          <select className="houses-filter-select" value={yearFilter} onChange={(event) => setYearFilter(event.target.value)} style={{ width: 120 }}>
             <option value="all">ทุกปี</option>
             {yearOptions.map((year) => (
               <option key={year} value={String(year)}>{year + 543}</option>
             ))}
           </select>
-          <select className="houses-filter-input" value={monthFilter} onChange={(event) => setMonthFilter(event.target.value)} style={{ width: 140 }}>
+          <select className="houses-filter-select" value={monthFilter} onChange={(event) => setMonthFilter(event.target.value)} style={{ width: 140 }}>
             <option value="all">ทุกเดือน</option>
             {Array.from({ length: 12 }, (_, index) => index + 1).map((month) => (
               <option key={month} value={String(month)}>
@@ -767,6 +772,7 @@ export default function AdminFeatureReceivePayment() {
             ))}
           </select>
           <button className="btn btn-g btn-sm" onClick={loadPageData} disabled={loading} style={{ height: '34px' }}>รีเฟรช</button>
+        </div>
         </div>
       </div>
 

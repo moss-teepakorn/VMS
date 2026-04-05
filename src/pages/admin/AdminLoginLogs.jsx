@@ -173,7 +173,12 @@ export default function AdminLoginLogs() {
             </div>
           </div>
         </div>
-        <div style={{ marginTop: '10px', display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+
+      </div>
+
+      <div className="card report-filter-card admin-search-filter-card">
+        <div className="cb">
+        <div className="houses-filter-row" style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
           <input
             type="text"
             value={searchTerm}
@@ -200,6 +205,7 @@ export default function AdminLoginLogs() {
           >
             ค้นหา
           </button>
+        </div>
         </div>
       </div>
 

@@ -234,7 +234,11 @@ const AdminWorkReportsList = () => {
           </div>
         </div>
 
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px 10px', alignItems: 'center', marginTop: '10px', position: 'relative', zIndex: 1 }}>
+      </div>
+
+      <div className="card report-filter-card admin-search-filter-card">
+        <div className="cb">
+        <div className="houses-filter-row" style={{ display: 'flex', flexWrap: 'wrap', gap: '8px 10px', alignItems: 'center' }}>
           <input
             type="text"
             value={searchTerm}
@@ -257,6 +261,7 @@ const AdminWorkReportsList = () => {
             {CATEGORIES.map((cat) => <option key={cat.value} value={cat.value}>{cat.label}</option>)}
           </select>
           <button className="btn btn-a btn-sm houses-filter-btn" style={{ flexShrink: 0 }} onClick={() => loadReports()}>ค้นหา</button>
+        </div>
         </div>
       </div>
 
