@@ -1,6 +1,8 @@
 import { useEffect, useState, useRef, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Chart from 'chart.js/auto'
+import html2canvas from 'html2canvas'
+import { jsPDF } from 'jspdf'
 import Swal from 'sweetalert2'
 import { useAuth } from '../../contexts/AuthContext'
 import {
@@ -356,6 +358,11 @@ export default function ResidentLayout() {
   const [showPdfViewerModal, setShowPdfViewerModal] = useState(false)
   const [pdfViewerUrl, setPdfViewerUrl] = useState('')
   const [pdfViewerTitle, setPdfViewerTitle] = useState('เอกสาร PDF')
+  const [showPrintPreviewModal, setShowPrintPreviewModal] = useState(false)
+  const [printPreviewHtml, setPrintPreviewHtml] = useState('')
+  const [printPreviewTitle, setPrintPreviewTitle] = useState('เอกสารสำหรับพิมพ์')
+  const [printPreviewFileBase, setPrintPreviewFileBase] = useState('document')
+  const [printPreviewExporting, setPrintPreviewExporting] = useState(false)
 
   // Vehicle request states
   const [vehicleRequests, setVehicleRequests] = useState([])
@@ -370,6 +377,7 @@ export default function ResidentLayout() {
 
   const chartCanvasRef = useRef(null)
   const chartInstanceRef = useRef(null)
+  const printPreviewIframeRef = useRef(null)
 
   useEffect(() => {
     document.body.setAttribute('data-theme', theme)
@@ -753,24 +761,6 @@ export default function ResidentLayout() {
     return { label: 'ยังไม่มีข้อมูล', tone: 'primary' }
   }
 
-  function isJsonLikeText(value) {
-    const raw = String(value || '').trim()
-    if (!raw) return false
-    if (!((raw.startsWith('{') && raw.endsWith('}')) || (raw.startsWith('[') && raw.endsWith(']')))) return false
-    try {
-      JSON.parse(raw)
-      return true
-    } catch {
-      return false
-    }
-  }
-
-  function getCleanPaymentNote(note) {
-    const display = getDisplayNote(note)
-    if (!display || isJsonLikeText(display)) return ''
-    return display
-  }
-
   function getPaymentBreakdown(row) {
     return (Array.isArray(row?.payment_items) ? row.payment_items : [])
       .filter((item) => Number(item?.paid_amount || 0) > 0)
@@ -999,7 +989,6 @@ export default function ResidentLayout() {
         <body>
           ${renderSheet('ต้นฉบับ')}
           ${renderSheet('สำเนา')}
-          <script>window.onload = () => window.print();</script>
         </body>
       </html>
     `
@@ -1105,22 +1094,160 @@ export default function ResidentLayout() {
         <body>
           ${renderSheet('ต้นฉบับ')}
           ${renderSheet('สำเนา')}
-          <script>window.onload = () => window.print();</script>
         </body>
       </html>
     `
   }
 
+  function sanitizeFileBaseName(input, fallback = 'document') {
+    const safe = String(input || '')
+      .trim()
+      .replace(/[^\w\-.]+/g, '-')
+      .replace(/-{2,}/g, '-')
+      .replace(/^-+|-+$/g, '')
+    return safe || fallback
+  }
+
+  function openPrintPreviewModal({ html, title, fileBase }) {
+    setPrintPreviewHtml(html)
+    setPrintPreviewTitle(title || 'เอกสารสำหรับพิมพ์')
+    setPrintPreviewFileBase(sanitizeFileBaseName(fileBase, 'document'))
+    setShowPrintPreviewModal(true)
+  }
+
+  function closePrintPreviewModal() {
+    if (printPreviewExporting) return
+    setShowPrintPreviewModal(false)
+    setPrintPreviewHtml('')
+    setPrintPreviewTitle('เอกสารสำหรับพิมพ์')
+    setPrintPreviewFileBase('document')
+  }
+
+  function handlePrintFromPreview() {
+    const frameWindow = printPreviewIframeRef.current?.contentWindow
+    if (!frameWindow) {
+      showSwal({ icon: 'warning', title: 'ยังไม่พร้อมพิมพ์', text: 'กรุณารอสักครู่แล้วลองอีกครั้ง' })
+      return
+    }
+    frameWindow.focus()
+    frameWindow.print()
+  }
+
+  async function capturePrintPreviewSheets() {
+    const html = String(printPreviewHtml || '').trim()
+    if (!html) throw new Error('ไม่พบเอกสารสำหรับดาวน์โหลด')
+
+    const host = document.createElement('iframe')
+    host.setAttribute('aria-hidden', 'true')
+    host.style.position = 'fixed'
+    host.style.left = '-99999px'
+    host.style.top = '-99999px'
+    host.style.width = '820px'
+    host.style.height = '1200px'
+    host.style.visibility = 'hidden'
+    host.style.pointerEvents = 'none'
+
+    document.body.appendChild(host)
+
+    try {
+      await new Promise((resolve, reject) => {
+        host.onload = () => resolve()
+        host.onerror = () => reject(new Error('โหลดเอกสารไม่สำเร็จ'))
+        host.srcdoc = html
+      })
+
+      const doc = host.contentDocument
+      if (!doc) throw new Error('ไม่สามารถเข้าถึงเอกสารสำหรับดาวน์โหลด')
+      if (doc.fonts?.ready) {
+        await doc.fonts.ready.catch(() => {})
+      }
+
+      const sheets = Array.from(doc.querySelectorAll('.sheet'))
+      if (sheets.length === 0) throw new Error('ไม่พบหน้าสำหรับดาวน์โหลด')
+
+      const canvases = []
+      for (const sheet of sheets) {
+        const rect = sheet.getBoundingClientRect()
+        const width = Math.max(794, Math.ceil(rect.width || 794))
+        const height = Math.max(1123, Math.ceil(rect.height || 1123))
+        const canvas = await html2canvas(sheet, {
+          scale: 2,
+          useCORS: true,
+          backgroundColor: '#ffffff',
+          width,
+          height,
+          windowWidth: width,
+          windowHeight: height,
+          scrollX: 0,
+          scrollY: 0,
+        })
+        canvases.push(canvas)
+      }
+
+      return canvases
+    } finally {
+      host.remove()
+    }
+  }
+
+  async function downloadPreviewAsPdf() {
+    if (printPreviewExporting) return
+    try {
+      setPrintPreviewExporting(true)
+      const canvases = await capturePrintPreviewSheets()
+      const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' })
+      canvases.forEach((canvas, index) => {
+        if (index > 0) pdf.addPage()
+        const imgData = canvas.toDataURL('image/jpeg', 0.95)
+        pdf.addImage(imgData, 'JPEG', 0, 0, 210, 297)
+      })
+      pdf.save(`${printPreviewFileBase}.pdf`)
+    } catch (error) {
+      showSwal({ icon: 'error', title: 'ดาวน์โหลด PDF ไม่สำเร็จ', text: error.message || 'โปรดลองอีกครั้ง' })
+    } finally {
+      setPrintPreviewExporting(false)
+    }
+  }
+
+  async function downloadPreviewAsImage() {
+    if (printPreviewExporting) return
+    try {
+      setPrintPreviewExporting(true)
+      const canvases = await capturePrintPreviewSheets()
+      canvases.forEach((canvas, index) => {
+        const anchor = document.createElement('a')
+        const suffix = canvases.length > 1 ? `-${index + 1}` : ''
+        anchor.href = canvas.toDataURL('image/png')
+        anchor.download = `${printPreviewFileBase}${suffix}.png`
+        document.body.appendChild(anchor)
+        anchor.click()
+        anchor.remove()
+      })
+    } catch (error) {
+      showSwal({ icon: 'error', title: 'ดาวน์โหลดรูปภาพไม่สำเร็จ', text: error.message || 'โปรดลองอีกครั้ง' })
+    } finally {
+      setPrintPreviewExporting(false)
+    }
+  }
+
   function handlePrintInvoice(fee) {
+    const invoiceNo = `INV-${String(fee?.year || '').slice(-2)}-${String(fee?.id || '').slice(0, 8).toUpperCase()}`
     const html = buildResidentInvoiceHtml(fee)
-    const w = openHtmlInWindow(html)
-    if (!w) showSwal({ icon: 'warning', title: 'ไม่สามารถเปิดหน้าต่างพิมพ์ได้', text: 'กรุณาอนุญาต popup ของเบราว์เซอร์' })
+    openPrintPreviewModal({
+      html,
+      title: `ใบแจ้งหนี้ ${invoiceNo}`,
+      fileBase: invoiceNo,
+    })
   }
 
   function handlePrintReceipt(payment) {
+    const receiptNo = payment?.receipt_no || `REC-${String(payment?.id || '').slice(0, 8).toUpperCase()}`
     const html = buildResidentReceiptHtml(payment)
-    const w = openHtmlInWindow(html)
-    if (!w) showSwal({ icon: 'warning', title: 'ไม่สามารถเปิดหน้าต่างพิมพ์ได้', text: 'กรุณาอนุญาต popup ของเบราว์เซอร์' })
+    openPrintPreviewModal({
+      html,
+      title: `ใบเสร็จ ${receiptNo}`,
+      fileBase: receiptNo,
+    })
   }
 
   const unresolvedFees = fees.filter((f) => f.status === 'unpaid' || f.status === 'overdue')
@@ -2605,18 +2732,23 @@ export default function ResidentLayout() {
                   return (
                     <div key={fee.id} className={`fee-invoice-row tone-${tone}`}>
                       <div className="fee-invoice-cell">
+                        <div className="fee-cell-kicker">งวด</div>
                         <div className="fee-cell-main">{formatFeePeriodLabel(fee)}</div>
                       </div>
                       <div className="fee-invoice-cell">
+                        <div className="fee-cell-kicker">ประเภท</div>
                         <div className="fee-cell-main">ค่าส่วนกลาง</div>
                       </div>
                       <div className="fee-invoice-cell">
+                        <div className="fee-cell-kicker">ครบกำหนด</div>
                         <div className="fee-cell-main">{formatDate(fee.due_date)}</div>
                       </div>
                       <div className="fee-invoice-cell">
+                        <div className="fee-cell-kicker">ยอดรวม</div>
                         <div className="fee-cell-main fee-amount-strong">฿{formatMoney(fee.total_amount)}</div>
                       </div>
                       <div className="fee-invoice-cell">
+                        <div className="fee-cell-kicker">สถานะและการจัดการ</div>
                         <div className="fee-invoice-actions">
                           <span className={badge.className}>{badge.label}</span>
                           <div className="fee-inline-btns">
@@ -2652,26 +2784,30 @@ export default function ResidentLayout() {
                   const amount = getPaymentAmount(row)
                   const paymentType = getPaymentTypeLabel(row)
                   const rejectedReason = getRejectedReason(row.note)
-                  const cleanNote = getCleanPaymentNote(row.note)
-                  const hasDetails = breakdown.length > 0 || row.slip_url || rejectedReason || cleanNote
+                  const hasDetails = breakdown.length > 0 || row.slip_url || rejectedReason
                   const canPrintReceipt = !!row.verified_at
                   return (
                     <details key={row.id} className="fee-payment-item" open={false}>
                       <summary className="fee-payment-summary">
                         <div className="fee-payment-col">
+                          <div className="fee-cell-kicker">วันที่ / งวด</div>
                           <div className="fee-cell-main">{formatDate(row.paid_at)}</div>
                           <div className="fee-cell-sub">{row.fees ? `งวด ${formatFeePeriodLabel(row.fees)}` : 'ไม่ระบุงวด'}</div>
                         </div>
                         <div className="fee-payment-col fee-payment-col--amount">
+                          <div className="fee-cell-kicker">จำนวนเงิน</div>
                           <div className="fee-cell-main fee-amount-strong">฿{formatMoney(amount)}</div>
                         </div>
                         <div className="fee-payment-col">
+                          <div className="fee-cell-kicker">ประเภท</div>
                           <div className="fee-cell-main">{paymentType}</div>
                         </div>
                         <div className="fee-payment-col">
+                          <div className="fee-cell-kicker">วิธีชำระ</div>
                           <div className="fee-cell-main">{formatMethod(row.payment_method)}</div>
                         </div>
                         <div className="fee-payment-col fee-payment-col--status">
+                          <div className="fee-cell-kicker">สถานะและการจัดการ</div>
                           <span className={badge.className}>{badge.label}</span>
                           {canPrintReceipt && (
                             <button className="btn btn-xs btn-g" onClick={(e) => { e.preventDefault(); handlePrintReceipt(row) }}>🖨 ใบเสร็จ</button>
@@ -2700,10 +2836,9 @@ export default function ResidentLayout() {
                             </div>
                           )}
 
-                          {(rejectedReason || cleanNote) && (
+                          {rejectedReason && (
                             <div className="fee-payment-note">
                               {rejectedReason && <div className="fee-payment-note-row fee-payment-note-row--error">เหตุผลตีกลับ: {rejectedReason}</div>}
-                              {cleanNote && <div className="fee-payment-note-row">หมายเหตุ: {cleanNote}</div>}
                             </div>
                           )}
                         </div>
@@ -3748,6 +3883,35 @@ export default function ResidentLayout() {
               <div className="house-md-foot">
                 <a href={pdfViewerUrl} target="_blank" rel="noreferrer" className="btn btn-o" style={{ textDecoration: 'none' }}>↗ เปิดแท็บใหม่</a>
                 <button className="btn btn-g" type="button" onClick={closePdfViewer}>ปิด</button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {showPrintPreviewModal && (
+          <div className="house-mo">
+            <div className="house-md house-md--xl" style={{ '--house-md-max-w': '1120px', '--house-md-max-h': 'calc(100dvh - 36px)' }}>
+              <div className="house-md-head">
+                <div>
+                  <div className="house-md-title">🖨 {printPreviewTitle}</div>
+                  <div className="house-md-sub">แสดงตัวอย่างก่อนพิมพ์และดาวน์โหลดเอกสาร</div>
+                </div>
+              </div>
+              <div className="house-md-body" style={{ padding: 10, background: '#eef2f7' }}>
+                <div style={{ border: '1px solid var(--bo)', borderRadius: 10, overflow: 'hidden', background: '#fff', height: 'calc(100dvh - 220px)', minHeight: 420 }}>
+                  <iframe
+                    ref={printPreviewIframeRef}
+                    title={printPreviewTitle}
+                    srcDoc={printPreviewHtml}
+                    style={{ width: '100%', height: '100%', border: 'none' }}
+                  />
+                </div>
+              </div>
+              <div className="house-md-foot">
+                <button className="btn btn-o" type="button" onClick={downloadPreviewAsPdf} disabled={printPreviewExporting}>{printPreviewExporting ? 'กำลังสร้างไฟล์...' : '⬇ PDF'}</button>
+                <button className="btn btn-o" type="button" onClick={downloadPreviewAsImage} disabled={printPreviewExporting}>{printPreviewExporting ? 'กำลังสร้างไฟล์...' : '⬇ Image'}</button>
+                <button className="btn btn-a" type="button" onClick={handlePrintFromPreview} disabled={printPreviewExporting}>🖨 พิมพ์</button>
+                <button className="btn btn-g" type="button" onClick={closePrintPreviewModal} disabled={printPreviewExporting}>ปิด</button>
               </div>
             </div>
           </div>

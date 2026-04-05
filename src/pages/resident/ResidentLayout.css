@@ -690,10 +690,56 @@
     display: none;
   }
 
+  .fee-cell-kicker {
+    display: block;
+    margin-bottom: 2px;
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: .05em;
+    text-transform: uppercase;
+    color: var(--mu);
+  }
+
   .fee-invoice-row,
   .fee-payment-summary {
     grid-template-columns: 1fr 1fr;
-    gap: 12px;
+    gap: 10px;
+  }
+
+  .fee-invoice-row {
+    border: 1px solid var(--bo);
+    border-radius: 12px;
+    background: var(--card);
+    margin-bottom: 10px;
+    padding: 10px;
+  }
+
+  .fee-invoice-row.tone-success,
+  .fee-invoice-row.tone-warning,
+  .fee-invoice-row.tone-error,
+  .fee-invoice-row.tone-primary {
+    padding-left: 10px;
+  }
+
+  .fee-payment-item {
+    border: 1px solid var(--bo);
+    border-radius: 12px;
+    background: var(--card);
+    margin-bottom: 10px;
+    overflow: hidden;
+  }
+
+  .fee-payment-summary {
+    padding: 10px;
+  }
+
+  .fee-payment-item[open] .fee-payment-summary {
+    border-bottom: 1px solid var(--bo);
+  }
+
+  .fee-payment-detail {
+    padding: 10px;
+    margin-top: 0;
   }
 
   .fee-invoice-status,

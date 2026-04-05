@@ -270,7 +270,9 @@ button, input, select, textarea {
   display: flex;
   flex-direction: row;
   width: 100vw;
+  height: 100vh;
   min-height: 100vh;
+  overflow: hidden;
   background: var(--sb);
 }
 
@@ -1306,6 +1308,9 @@ button, input, select, textarea {
   padding: 0 20px;
   flex-shrink: 0;
   box-shadow: var(--sh);
+  position: sticky;
+  top: 0;
+  z-index: 200;
 }
 
 .tb-ham {
