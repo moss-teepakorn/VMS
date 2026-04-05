@@ -1474,7 +1474,18 @@ export default function ResidentLayout() {
   }
 
   function toggleSection(sectionName) {
-    setSectionOpen((prev) => ({ ...prev, [sectionName]: !prev[sectionName] }))
+    setSectionOpen((prev) => {
+      const next = NAV_GROUPS.reduce((acc, group) => {
+        acc[group.section] = false
+        return acc
+      }, {})
+
+      if (!prev[sectionName]) {
+        next[sectionName] = true
+      }
+
+      return next
+    })
   }
 
   const searchKeyword = menuSearch.trim().toLowerCase()
