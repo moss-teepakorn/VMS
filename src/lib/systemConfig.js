@@ -137,7 +137,8 @@ export async function updateSystemConfig(configId, updates) {
 
     let removedAny = false
     for (const match of matches) {
-      const missingColumn = match[1]
+      const missingColumn = String(match?.[1] || '').trim()
+      if (!missingColumn) continue
       if (Object.prototype.hasOwnProperty.call(payload, missingColumn)) {
         delete payload[missingColumn]
         removedAny = true
@@ -342,7 +343,8 @@ export async function syncPublicSetupConfig(updates) {
 
       let removedAny = false
       for (const match of matches) {
-        const missingColumn = match[1]
+        const missingColumn = String(match?.[1] || '').trim()
+        if (!missingColumn) continue
         if (Object.prototype.hasOwnProperty.call(payload, missingColumn)) {
           delete payload[missingColumn]
           removedAny = true
