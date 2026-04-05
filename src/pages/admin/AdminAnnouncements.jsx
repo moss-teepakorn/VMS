@@ -333,6 +333,10 @@ const AdminAnnouncements = () => {
             </div>
           </div>
         </div>
+      </div>
+
+      <div className="card report-filter-card admin-search-filter-card">
+        <div className="cb" style={{ padding: 12 }}>
         <div className="houses-filter-row">
           <input
             className="houses-filter-input"
@@ -346,6 +350,7 @@ const AdminAnnouncements = () => {
             {TYPE_OPTIONS.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
           </select>
           <button className="btn btn-a btn-sm houses-filter-btn" onClick={() => loadData({ type: typeFilter, search: searchTerm })}>ค้นหา</button>
+        </div>
         </div>
       </div>
 

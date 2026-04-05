@@ -928,6 +928,10 @@ const AdminViolations = () => {
             </div>
           </div>
         </div>
+      </div>
+
+      <div className="card report-filter-card admin-search-filter-card">
+        <div className="cb" style={{ padding: 12 }}>
         <div className="houses-filter-row">
           <input
             className="houses-filter-input"
@@ -946,6 +950,7 @@ const AdminViolations = () => {
             <option value="cancelled">ยกเลิก</option>
           </select>
           <button className="btn btn-a btn-sm houses-filter-btn" onClick={() => loadData({ status: statusFilter, search: searchTerm })}>ค้นหา</button>
+        </div>
         </div>
       </div>
 

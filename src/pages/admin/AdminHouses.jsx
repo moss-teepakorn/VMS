@@ -273,7 +273,10 @@ const AdminHouses = () => {
             </div>
           </div>
         </div>
+      </div>
 
+      <div className="card report-filter-card admin-search-filter-card">
+        <div className="cb" style={{ padding: 12 }}>
         <div className="houses-filter-row">
           <input
             type="text"
@@ -302,6 +305,7 @@ const AdminHouses = () => {
             {soiOptions.map((soi) => <option key={soi} value={soi}>{`ซอย ${soi}`}</option>)}
           </select>
           <button className="btn btn-a btn-sm houses-filter-btn" onClick={() => loadHouses({ status: filterType, soi: soiFilter, search: searchTerm })}>ค้นหา</button>
+        </div>
         </div>
       </div>
 

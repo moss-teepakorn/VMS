@@ -435,6 +435,7 @@ const AdminLayout = () => {
       <div className="main">
         {/* Topbar */}
         <div className="topbar">
+          <div className="tb-ham" onClick={() => setSidebarOpen(!sidebarOpen)}>☰</div>
           <div className="tb-title tb-title-desktop">
             {topbarTitle.main} — <span className="hl">{topbarTitle.sub}</span>
           </div>

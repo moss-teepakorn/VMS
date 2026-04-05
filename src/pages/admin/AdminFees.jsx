@@ -1463,6 +1463,11 @@ const AdminFees = () => {
             </div>
           </div>
         </div>
+
+      </div>
+
+      <div className="card report-filter-card admin-search-filter-card">
+        <div className="cb" style={{ padding: 12 }}>
         <div className="houses-filter-row" style={{ justifyContent: 'space-between', alignItems: 'center' }}>
           <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
             {yearCards.map((card) => {
@@ -1512,6 +1517,7 @@ const AdminFees = () => {
               ค้นหา
             </button>
           </div>
+        </div>
         </div>
       </div>
 

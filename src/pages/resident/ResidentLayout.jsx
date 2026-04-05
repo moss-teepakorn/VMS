@@ -2271,6 +2271,7 @@ export default function ResidentLayout() {
 
       <div className="main">
         <div className="topbar">
+          <div className="tb-ham" onClick={() => setSidebarOpen(!sidebarOpen)}>☰</div>
           <div className="tb-title tb-title-desktop">
             {titleData.main} — <span className="hl">{titleData.sub}</span>
           </div>

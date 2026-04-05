@@ -291,6 +291,10 @@ const AdminIssues = () => {
             </div>
           </div>
         </div>
+      </div>
+
+      <div className="card report-filter-card admin-search-filter-card">
+        <div className="cb" style={{ padding: 12 }}>
         <div className="houses-filter-row">
           <input
             className="houses-filter-input"
@@ -308,6 +312,7 @@ const AdminIssues = () => {
             {ISSUE_STATUSES.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
           </select>
           <button className="btn btn-a btn-sm houses-filter-btn" onClick={() => loadData({ status: statusFilter, category: categoryFilter, search: searchTerm })}>ค้นหา</button>
+        </div>
         </div>
       </div>
 

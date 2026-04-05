@@ -468,6 +468,10 @@ const AdminMarketplace = () => {
             </div>
           </div>
         </div>
+      </div>
+
+      <div className="card report-filter-card admin-search-filter-card">
+        <div className="cb" style={{ padding: 12 }}>
         <div className="houses-filter-row">
           <input
             className="houses-filter-input"
@@ -485,6 +489,7 @@ const AdminMarketplace = () => {
             {STATUS_OPTIONS.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
           </select>
           <button className="btn btn-a btn-sm houses-filter-btn" onClick={() => loadData({ status: statusFilter, listing_type: typeFilter, search: searchTerm })}>ค้นหา</button>
+        </div>
         </div>
       </div>
 

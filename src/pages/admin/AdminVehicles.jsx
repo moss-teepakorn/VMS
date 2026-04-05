@@ -507,6 +507,10 @@ const AdminVehicles = () => {
             </div>
           </div>
         </div>
+      </div>
+
+      <div className="card report-filter-card admin-search-filter-card">
+        <div className="cb" style={{ padding: 12 }}>
         <div className="houses-filter-row">
           <input
             className="houses-filter-input"
@@ -530,6 +534,7 @@ const AdminVehicles = () => {
             <option value="removed">ยกเลิก</option>
           </select>
           <button className="btn btn-a btn-sm houses-filter-btn" onClick={() => loadVehicles({ status: statusFilter, search: searchTerm, soi: soiFilter, vehicleType: vehicleTypeFilter })}>ค้นหา</button>
+        </div>
         </div>
       </div>
 
