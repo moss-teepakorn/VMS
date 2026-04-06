@@ -33,6 +33,7 @@ import AdminReportOverdue from './pages/admin/AdminReportOverdue'
 import AdminReportViolationsSummary from './pages/admin/AdminReportViolationsSummary'
 import AdminReportExpensePayments from './pages/admin/AdminReportExpensePayments'
 import AdminFinanceV2 from './pages/admin/finance-v2/AdminFinanceV2'
+import AdminFinanceV2Reports from './pages/admin/finance-v2/AdminFinanceV2Reports'
 import ResidentLayout from './pages/resident/ResidentLayout'
 
 const AdminWorkReports = lazy(() => import('./pages/admin/AdminWorkReportsList'))
@@ -131,6 +132,7 @@ function AppRoutes() {
         <Route path="finance-v2/receive" element={<AdminFinanceV2 />} />
         <Route path="finance-v2/print-center" element={<AdminFinanceV2 />} />
         <Route path="finance-v2/archive" element={<AdminFinanceV2 />} />
+        <Route path="finance-v2/reports" element={<AdminFinanceV2Reports />} />
         <Route path="finance-v2/reports/payments" element={<AdminReportPayments />} />
         <Route path="finance-v2/reports/outstanding" element={<AdminReportOutstanding />} />
         <Route path="finance-v2/reports/overdue" element={<AdminReportOverdue />} />
