@@ -265,41 +265,6 @@ const AdminHouses = () => {
           <button id="download-house-template" type="button" class="swal2-confirm swal2-styled" style="margin:0;display:inline-flex;width:auto;background:#0f766e">ดาวน์โหลด Template</button>
           <div style="font-size:13px;color:#334155">2) เลือกไฟล์ Excel ที่เตรียมไว้</div>
           <input id="house-import-file" type="file" accept=".xlsx,.xls" style="padding:6px 0" />
-          <div style="border:1px solid #e2e8f0;border-radius:8px;padding:10px;background:#f8fafc">
-            <div style="font-size:12px;font-weight:700;margin-bottom:6px">ตัวอย่างข้อมูลใน Template (2 รายการ)</div>
-            <div style="overflow:auto">
-              <table style="width:100%;border-collapse:collapse;font-size:12px">
-                <thead>
-                  <tr>
-                    <th style="border:1px solid #cbd5e1;padding:4px">บ้านเลขที่</th>
-                    <th style="border:1px solid #cbd5e1;padding:4px">ซอย</th>
-                    <th style="border:1px solid #cbd5e1;padding:4px">เจ้าของ</th>
-                    <th style="border:1px solid #cbd5e1;padding:4px">พื้นที่</th>
-                    <th style="border:1px solid #cbd5e1;padding:4px">สิทธิ์จอดรถ</th>
-                    <th style="border:1px solid #cbd5e1;padding:4px">สถานะ</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr>
-                    <td style="border:1px solid #cbd5e1;padding:4px">10/1</td>
-                    <td style="border:1px solid #cbd5e1;padding:4px">1</td>
-                    <td style="border:1px solid #cbd5e1;padding:4px">สมชาย ใจดี</td>
-                    <td style="border:1px solid #cbd5e1;padding:4px">52</td>
-                    <td style="border:1px solid #cbd5e1;padding:4px">1</td>
-                    <td style="border:1px solid #cbd5e1;padding:4px">ปกติ</td>
-                  </tr>
-                  <tr>
-                    <td style="border:1px solid #cbd5e1;padding:4px">12/8</td>
-                    <td style="border:1px solid #cbd5e1;padding:4px">2</td>
-                    <td style="border:1px solid #cbd5e1;padding:4px">สุดา งามดี</td>
-                    <td style="border:1px solid #cbd5e1;padding:4px">60</td>
-                    <td style="border:1px solid #cbd5e1;padding:4px">2</td>
-                    <td style="border:1px solid #cbd5e1;padding:4px">ค้างชำระ</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
           <div style="font-size:12px;color:#64748b">ระบบจะใช้ "บ้านเลขที่" เป็นคีย์ตรวจสอบ: ไม่มีข้อมูลจะเพิ่มใหม่, มีอยู่แล้วจะอัปเดต</div>
         </div>
       `,
