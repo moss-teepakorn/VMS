@@ -143,6 +143,7 @@ const AdminLayout = () => {
     { section: 'การเงิน', tone: 'operation', sectionIcon: '💰', items: [
       { id: 'fees', label: 'ค่าส่วนกลาง', icon: '💵', path: '/admin/fees' },
       { id: 'finance-v2', label: 'การเงิน V2 (ใหม่)', icon: '🧭', path: '/admin/finance-v2' },
+      { id: 'finance-v2-reports', label: 'ศูนย์รายงาน V2 (ใหม่)', icon: '📚', path: '/admin/finance-v2/reports' },
       { id: 'payments', label: 'ชำระค่าส่วนกลาง', icon: '💳', path: '/admin/payments' },
       { id: 'receive-payments', label: 'รับชำระเงิน', icon: '💳', path: '/admin/receive-payments' },
       { id: 'disbursements', label: 'การจ่ายเงิน', icon: '📤', path: '/admin/disbursements' },
