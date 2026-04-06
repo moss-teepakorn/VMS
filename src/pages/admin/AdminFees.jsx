@@ -163,6 +163,19 @@ const AdminFees = () => {
     { key: 'fee_other', label: 'ค่าอื่นๆ' },
   ]
 
+  const feeItemInputBaseStyle = {
+    width: 132,
+    height: 28,
+    padding: '0 8px',
+    textAlign: 'right',
+    border: '1px solid var(--bo)',
+    borderRadius: 6,
+    background: '#fff',
+    fontSize: 12,
+    lineHeight: '28px',
+    boxSizing: 'border-box',
+  }
+
   const yearOptions = useMemo(() => (feeYears.length > 0 ? feeYears : [currentFeeYear]), [feeYears, currentFeeYear])
 
   const yearCards = useMemo(() => {
@@ -1923,7 +1936,7 @@ const AdminFees = () => {
                             {' '}| คงค้าง {getEditItemOutstandingAmount(item.key).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                           </div>
                         </div>
-                        <input type="number" step="0.01" value={editForm[item.key]} onChange={(e) => setEditForm((prev) => ({ ...prev, [item.key]: e.target.value }))} style={{ width: 132, textAlign: 'right' }} />
+                        <input type="number" step="0.01" value={editForm[item.key]} onChange={(e) => setEditForm((prev) => ({ ...prev, [item.key]: e.target.value }))} style={feeItemInputBaseStyle} />
                       </div>
                     ))}
 
@@ -1950,7 +1963,7 @@ const AdminFees = () => {
                               {' '}| คงค้าง {getEditItemOutstandingAmount(item.key).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                             </div>
                           </div>
-                          <input type="number" step="0.01" value={editForm[item.key]} onChange={(e) => setEditForm((prev) => ({ ...prev, [item.key]: e.target.value }))} style={{ width: 132, textAlign: 'right', borderColor: hasValue ? '#f59e0b' : undefined }} />
+                          <input type="number" step="0.01" value={editForm[item.key]} onChange={(e) => setEditForm((prev) => ({ ...prev, [item.key]: e.target.value }))} style={{ ...feeItemInputBaseStyle, borderColor: hasValue ? '#f59e0b' : undefined }} />
                         </div>
                       )
                     })}
@@ -1968,11 +1981,11 @@ const AdminFees = () => {
                           {' '}| คงค้าง {getEditItemOutstandingAmount('fee_other').toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                         </div>
                       </div>
-                      <input type="number" step="0.01" value={editForm.fee_other} onChange={(e) => setEditForm((prev) => ({ ...prev, fee_other: e.target.value }))} style={{ width: 132, textAlign: 'right' }} />
+                      <input type="number" step="0.01" value={editForm.fee_other} onChange={(e) => setEditForm((prev) => ({ ...prev, fee_other: e.target.value }))} style={feeItemInputBaseStyle} />
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', padding: '7px 12px', gap: 8, background: Number(editForm.fee_discount || 0) > 0 ? '#fef2f2' : '#fff' }}>
                       <span style={{ flex: 1, fontSize: 13, fontWeight: 600, color: '#dc2626' }}>ส่วนลด (−)</span>
-                      <input type="number" step="0.01" min="0" value={editForm.fee_discount} onChange={(e) => setEditForm((prev) => ({ ...prev, fee_discount: e.target.value }))} style={{ width: 132, textAlign: 'right', color: '#dc2626', borderColor: Number(editForm.fee_discount || 0) > 0 ? '#dc2626' : undefined }} />
+                      <input type="number" step="0.01" min="0" value={editForm.fee_discount} onChange={(e) => setEditForm((prev) => ({ ...prev, fee_discount: e.target.value }))} style={{ ...feeItemInputBaseStyle, color: '#dc2626', borderColor: Number(editForm.fee_discount || 0) > 0 ? '#dc2626' : undefined }} />
                     </div>
                   </div>
                 </section>
