@@ -171,6 +171,7 @@ const AdminLayout = () => {
     ]},
     { section: 'Prototype', tone: 'system', sectionIcon: '🧪', items: [
       { id: 'fees-proto', label: 'ต้นแบบแยกหน้าการเงิน', icon: '🧪', path: '/admin/fees-prototype' },
+      { id: 'finance-v2', label: 'การเงิน V2 (ทดสอบ)', icon: '🧭', path: '/admin/finance-v2' },
     ]},
   ]
 
