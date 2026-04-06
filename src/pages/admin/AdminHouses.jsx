@@ -504,7 +504,7 @@ const AdminHouses = () => {
             <div className="ph-ico">🏠</div>
             <div>
               <div className="ph-h1">ข้อมูลบ้าน</div>
-              <div className="ph-sub">จัดการข้อมูลหลัง 128 หลัง</div>
+              <div className="ph-sub">จัดการข้อมูลบ้านทั้งหมด {houses.length} หลัง</div>
             </div>
           </div>
         </div>

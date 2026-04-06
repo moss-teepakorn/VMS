@@ -1,5 +1,6 @@
 import { supabase } from './supabase'
 import bcrypt from 'bcryptjs'
+import { isReservedAdminUsername } from './reservedUsernames'
 
 function toLowerOrNull(value) {
   const trimmed = (value || '').trim().toLowerCase()
@@ -36,6 +37,11 @@ export async function getUsers() {
 
 export async function createUser(userData) {
   try {
+    const nextRole = userData.role || 'resident'
+    if (nextRole === 'resident' && isReservedAdminUsername(userData.username)) {
+      throw new Error('ชื่อผู้ใช้นี้สงวนไว้สำหรับผู้ดูแลระบบ')
+    }
+
     const passwordHash = await bcrypt.hash(userData.password || '', 10)
 
     const payload = {
@@ -68,6 +74,11 @@ export async function createUser(userData) {
 
 export async function updateUser(userId, updates) {
   try {
+    const nextRole = typeof updates.role !== 'undefined' ? updates.role : null
+    if (nextRole === 'resident' && typeof updates.username !== 'undefined' && isReservedAdminUsername(updates.username)) {
+      throw new Error('ชื่อผู้ใช้นี้สงวนไว้สำหรับผู้ดูแลระบบ')
+    }
+
     const payload = {}
     if (typeof updates.username !== 'undefined') payload.username = toLowerOrNull(updates.username)
     if (typeof updates.full_name !== 'undefined') payload.full_name = updates.full_name

@@ -4,6 +4,7 @@ import { useAuth } from '../contexts/AuthContext'
 import { clearClientStorage } from '../contexts/AuthContext'
 import { applyDocumentTitle, getSetupConfig } from '../lib/setup'
 import { createAccountRegistrationRequest, resetPasswordByIdentity } from '../lib/accountRequests'
+import { isReservedAdminUsername } from '../lib/reservedUsernames'
 import villageLogo from '../assets/village-logo.svg'
 
 const BUILD_SHA = typeof __BUILD_SHA__ !== 'undefined' ? __BUILD_SHA__ : 'local'
@@ -167,6 +168,10 @@ export default function LoginPage() {
 
     if (!registerUsername.trim() || !registerHouseNo.trim() || !registerPhone.trim() || !registerPassword) {
       setError('กรุณากรอกข้อมูลลงทะเบียนให้ครบถ้วน')
+      return
+    }
+    if (isReservedAdminUsername(registerUsername)) {
+      setError('ชื่อผู้ใช้นี้สงวนไว้สำหรับผู้ดูแลระบบ ไม่สามารถใช้งานได้')
       return
     }
     if (registerPassword.length < 6) {

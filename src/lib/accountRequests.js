@@ -1,5 +1,6 @@
 import bcrypt from 'bcryptjs'
 import { supabase } from './supabase'
+import { isReservedAdminUsername } from './reservedUsernames'
 
 function normalizeText(value) {
   return String(value || '').trim()
@@ -45,6 +46,9 @@ async function findHouseByHouseNoAndPhone({ houseNo, phone }) {
 async function ensureUsernameAvailable(username) {
   const normalizedUsername = normalizeLower(username)
   if (!normalizedUsername) throw new Error('กรุณาระบุชื่อผู้ใช้')
+  if (isReservedAdminUsername(normalizedUsername)) {
+    throw new Error('ชื่อผู้ใช้นี้สงวนไว้สำหรับผู้ดูแลระบบ')
+  }
 
   const { data, error } = await supabase
     .from('profiles')

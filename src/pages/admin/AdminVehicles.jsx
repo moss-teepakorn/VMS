@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import Swal from 'sweetalert2'
+import * as XLSX from 'xlsx'
 import { listHouses } from '../../lib/houses'
 import {
   assertUniqueVehiclePlateProvince,
@@ -79,6 +80,57 @@ const EMPTY_FORM = {
 const MAX_ATTACHMENTS = 5
 const MAX_IMAGE_SIZE_BYTES = 100 * 1024
 const MAX_IMAGE_TARGET_BYTES = 95 * 1024
+
+const VEHICLE_EXCEL_COLUMN_ALIASES = {
+  house_no: ['house_no', 'house no', 'บ้านเลขที่', 'เลขที่บ้าน'],
+  soi: ['soi', 'ซอย'],
+  license_plate: ['license_plate', 'ทะเบียนรถ', 'ทะเบียน'],
+  license_plate_prefix: ['license_plate_prefix', 'ทะเบียนอักษร', 'ทะเบียนหน้า', 'prefix'],
+  license_plate_number: ['license_plate_number', 'ทะเบียนตัวเลข', 'ทะเบียนหลัง', 'number'],
+  province: ['province', 'จังหวัด'],
+  vehicle_type: ['vehicle_type', 'ประเภทรถ', 'ประเภท'],
+  brand: ['brand', 'ยี่ห้อ'],
+  model: ['model', 'รุ่น'],
+  color: ['color', 'สี'],
+  parking_location: ['parking_location', 'ที่จอด'],
+  parking_lock_no: ['parking_lock_no', 'ล็อกที่จอด', 'หมายเลขล็อก'],
+  parking_fee: ['parking_fee', 'ค่าจอด'],
+  status: ['status', 'สถานะ'],
+  note: ['note', 'หมายเหตุ'],
+}
+
+const VEHICLE_IMPORT_TEMPLATE_ROWS = [
+  {
+    บ้านเลขที่: '10/1',
+    ซอย: '1',
+    ทะเบียนรถ: 'กข-1234',
+    จังหวัด: 'กรุงเทพมหานคร',
+    ประเภทรถ: 'รถยนต์',
+    ยี่ห้อ: 'Toyota',
+    รุ่น: 'Yaris',
+    สี: 'ขาว',
+    ที่จอด: 'ในบ้าน',
+    ล็อกที่จอด: '',
+    ค่าจอด: 0,
+    สถานะ: 'active',
+    หมายเหตุ: '',
+  },
+  {
+    บ้านเลขที่: '12/8',
+    ซอย: '2',
+    ทะเบียนรถ: '1กฮ-9999',
+    จังหวัด: 'กรุงเทพมหานคร',
+    ประเภทรถ: 'รถจักรยานยนต์',
+    ยี่ห้อ: 'Honda Motorcycle',
+    รุ่น: 'Wave',
+    สี: 'แดง',
+    ที่จอด: 'ส่วนกลาง',
+    ล็อกที่จอด: 'B-12',
+    ค่าจอด: 300,
+    สถานะ: 'pending',
+    หมายเหตุ: 'ตัวอย่างนำเข้า',
+  },
+]
 
 function formatDecimal(value) {
   return Number(value || 0).toLocaleString('en-US', {
@@ -495,6 +547,221 @@ const AdminVehicles = () => {
     }
   }
 
+  const normalizeImportKey = (value) => String(value || '').trim().toLowerCase().replace(/[_\-]/g, ' ').replace(/\s+/g, ' ')
+
+  const pickCellValue = (row, aliases) => {
+    const targets = new Set(aliases.map((item) => normalizeImportKey(item)))
+    for (const key of Object.keys(row || {})) {
+      if (targets.has(normalizeImportKey(key))) return row[key]
+    }
+    return ''
+  }
+
+  const toNumber = (value, fallback = 0) => {
+    const parsed = Number(String(value ?? '').replace(/,/g, '').trim())
+    return Number.isFinite(parsed) ? parsed : fallback
+  }
+
+  const splitPlate = (plateValue, prefixValue, numberValue) => {
+    if (prefixValue || numberValue) {
+      return {
+        prefix: String(prefixValue || '').trim(),
+        number: String(numberValue || '').trim(),
+      }
+    }
+    const raw = String(plateValue || '').trim()
+    const [prefix = '', number = ''] = raw.split('-')
+    return { prefix: prefix.trim(), number: number.trim() }
+  }
+
+  const normalizeVehicleStatus = (statusValue) => {
+    const normalized = String(statusValue || '').trim().toLowerCase()
+    if (normalized === 'active' || normalized === 'pending' || normalized === 'removed') return normalized
+    if (normalized === 'ใช้งาน') return 'active'
+    if (normalized === 'รออนุมัติ') return 'pending'
+    if (normalized === 'ยกเลิก') return 'removed'
+    return 'pending'
+  }
+
+  const normalizeVehicleType = (typeValue) => {
+    const value = String(typeValue || '').trim()
+    return VEHICLE_TYPES.some((item) => item.value === value) ? value : 'รถยนต์'
+  }
+
+  const parseVehicleExcelFile = async (file) => {
+    const buffer = await file.arrayBuffer()
+    const workbook = XLSX.read(buffer, { type: 'array' })
+    const firstSheetName = workbook.SheetNames[0]
+    if (!firstSheetName) return []
+    const sheet = workbook.Sheets[firstSheetName]
+    return XLSX.utils.sheet_to_json(sheet, { defval: '' })
+  }
+
+  const downloadVehicleTemplate = () => {
+    const ws = XLSX.utils.json_to_sheet(VEHICLE_IMPORT_TEMPLATE_ROWS)
+    const wb = XLSX.utils.book_new()
+    XLSX.utils.book_append_sheet(wb, ws, 'vehicles-template')
+    XLSX.writeFile(wb, 'vehicle-import-template.xlsx')
+  }
+
+  const importVehiclesFromFile = async (file) => {
+    try {
+      Swal.fire({
+        title: 'กำลังอ่านไฟล์...',
+        text: 'กรุณารอสักครู่',
+        allowOutsideClick: false,
+        allowEscapeKey: false,
+        didOpen: () => Swal.showLoading(),
+      })
+
+      const [rows, houseData, existingVehicles] = await Promise.all([
+        parseVehicleExcelFile(file),
+        listHouses({ status: 'all', soi: 'all', search: '' }),
+        listVehicles({ status: 'all', search: '', soi: 'all', vehicleType: 'all' }),
+      ])
+
+      if (!rows.length) {
+        await showSwal({ icon: 'warning', title: 'ไม่พบข้อมูลในไฟล์', text: 'กรุณาตรวจสอบไฟล์ที่นำเข้า' })
+        return
+      }
+
+      const houseByKey = new Map()
+      for (const house of houseData) {
+        const houseNo = String(house.house_no || '').trim().toLowerCase()
+        const soi = String(house.soi || '').trim()
+        houseByKey.set(`${houseNo}|${soi}`, house)
+        if (!houseByKey.has(`${houseNo}|`)) houseByKey.set(`${houseNo}|`, house)
+      }
+
+      const vehicleByKey = new Map(
+        existingVehicles.map((vehicle) => {
+          const key = `${String(vehicle.license_plate || '').trim().toLowerCase()}|${String(vehicle.province || '').trim().toLowerCase()}|${String(vehicle.vehicle_type || '').trim().toLowerCase()}`
+          return [key, vehicle]
+        }),
+      )
+
+      let createdCount = 0
+      let updatedCount = 0
+      let failedCount = 0
+      const failedItems = []
+
+      for (const row of rows) {
+        const houseNo = String(pickCellValue(row, VEHICLE_EXCEL_COLUMN_ALIASES.house_no) || '').trim()
+        if (!houseNo) continue
+
+        const soi = String(pickCellValue(row, VEHICLE_EXCEL_COLUMN_ALIASES.soi) || '').trim()
+        const house = houseByKey.get(`${houseNo.toLowerCase()}|${soi}`) || houseByKey.get(`${houseNo.toLowerCase()}|`)
+        if (!house?.id) {
+          failedCount += 1
+          failedItems.push(`${houseNo}: ไม่พบบ้านเลขที่ในระบบ`)
+          continue
+        }
+
+        const plate = splitPlate(
+          pickCellValue(row, VEHICLE_EXCEL_COLUMN_ALIASES.license_plate),
+          pickCellValue(row, VEHICLE_EXCEL_COLUMN_ALIASES.license_plate_prefix),
+          pickCellValue(row, VEHICLE_EXCEL_COLUMN_ALIASES.license_plate_number),
+        )
+
+        if (!plate.prefix || !plate.number) {
+          failedCount += 1
+          failedItems.push(`${houseNo}: กรุณาระบุทะเบียนรถให้ครบ`)
+          continue
+        }
+
+        const licensePlate = `${plate.prefix}-${plate.number}`
+        const province = String(pickCellValue(row, VEHICLE_EXCEL_COLUMN_ALIASES.province) || 'กรุงเทพมหานคร').trim() || 'กรุงเทพมหานคร'
+        const vehicleType = normalizeVehicleType(pickCellValue(row, VEHICLE_EXCEL_COLUMN_ALIASES.vehicle_type))
+        const vehicleKey = `${licensePlate.toLowerCase()}|${province.toLowerCase()}|${vehicleType.toLowerCase()}`
+
+        const payload = {
+          house_id: house.id,
+          license_plate: licensePlate,
+          province,
+          vehicle_type: vehicleType,
+          brand: String(pickCellValue(row, VEHICLE_EXCEL_COLUMN_ALIASES.brand) || '').trim() || 'อื่นๆ',
+          model: String(pickCellValue(row, VEHICLE_EXCEL_COLUMN_ALIASES.model) || '').trim(),
+          color: String(pickCellValue(row, VEHICLE_EXCEL_COLUMN_ALIASES.color) || '').trim() || 'อื่นๆ',
+          parking_location: String(pickCellValue(row, VEHICLE_EXCEL_COLUMN_ALIASES.parking_location) || '').trim() || 'ในบ้าน',
+          parking_lock_no: String(pickCellValue(row, VEHICLE_EXCEL_COLUMN_ALIASES.parking_lock_no) || '').trim() || null,
+          parking_fee: Math.max(0, toNumber(pickCellValue(row, VEHICLE_EXCEL_COLUMN_ALIASES.parking_fee), 0)),
+          status: normalizeVehicleStatus(pickCellValue(row, VEHICLE_EXCEL_COLUMN_ALIASES.status)),
+          note: String(pickCellValue(row, VEHICLE_EXCEL_COLUMN_ALIASES.note) || '').trim(),
+        }
+
+        try {
+          const existed = vehicleByKey.get(vehicleKey)
+          if (existed?.id) {
+            await updateVehicle(existed.id, payload)
+            updatedCount += 1
+          } else {
+            await assertUniqueVehiclePlateProvince({
+              licensePlate: payload.license_plate,
+              province: payload.province,
+              vehicleType: payload.vehicle_type,
+              excludeId: null,
+            })
+            const created = await createVehicle(payload)
+            vehicleByKey.set(vehicleKey, created)
+            createdCount += 1
+          }
+        } catch (error) {
+          failedCount += 1
+          failedItems.push(`${houseNo}/${licensePlate}: ${error?.message || 'เกิดข้อผิดพลาด'}`)
+        }
+      }
+
+      await loadVehicles({ status: statusFilter, search: searchTerm, soi: soiFilter, vehicleType: vehicleTypeFilter })
+
+      await showSwal({
+        icon: failedCount > 0 ? 'warning' : 'success',
+        title: 'นำเข้าเสร็จสิ้น',
+        html: `เพิ่มใหม่ ${createdCount} รายการ<br/>อัปเดต ${updatedCount} รายการ<br/>ไม่สำเร็จ ${failedCount} รายการ${failedItems.length ? `<br/><br/><small style="text-align:left;display:block;max-height:160px;overflow:auto">${failedItems.map((line) => `• ${line}`).join('<br/>')}</small>` : ''}`,
+      })
+    } catch (error) {
+      await showSwal({ icon: 'error', title: 'นำเข้าไม่สำเร็จ', text: error?.message || 'เกิดข้อผิดพลาด' })
+    }
+  }
+
+  const handleOpenImportVehicleExcel = async () => {
+    const result = await showSwal({
+      title: 'นำเข้าข้อมูลรถจาก Excel',
+      width: 760,
+      showCancelButton: true,
+      confirmButtonText: 'นำเข้าข้อมูล',
+      cancelButtonText: 'ยกเลิก',
+      html: `
+        <div style="text-align:left;display:grid;gap:12px">
+          <div style="font-size:13px;color:#334155">1) ดาวน์โหลดไฟล์ template แล้วกรอกข้อมูลตัวอย่าง</div>
+          <button id="download-vehicle-template" type="button" class="swal2-confirm swal2-styled" style="margin:0;display:inline-flex;width:auto;background:#0f766e">ดาวน์โหลด Template</button>
+          <div style="font-size:13px;color:#334155">2) เลือกไฟล์ Excel ที่ต้องการนำเข้า</div>
+          <input id="vehicle-import-file" type="file" accept=".xlsx,.xls" style="padding:6px 0" />
+          <div style="font-size:12px;color:#64748b">ระบบจะใช้คีย์ ทะเบียนรถ + จังหวัด + ประเภทรถ: ไม่มีข้อมูลจะเพิ่มใหม่, มีอยู่แล้วจะอัปเดต</div>
+        </div>
+      `,
+      didOpen: () => {
+        const html = Swal.getHtmlContainer()
+        const downloadBtn = html?.querySelector('#download-vehicle-template')
+        downloadBtn?.addEventListener('click', downloadVehicleTemplate)
+      },
+      preConfirm: () => {
+        const html = Swal.getHtmlContainer()
+        const input = html?.querySelector('#vehicle-import-file')
+        const file = input?.files?.[0]
+        if (!file) {
+          Swal.showValidationMessage('กรุณาเลือกไฟล์ Excel ก่อนนำเข้า')
+          return null
+        }
+        return file
+      },
+      allowOutsideClick: () => !Swal.isLoading(),
+    })
+
+    if (result.isConfirmed && result.value) {
+      await importVehiclesFromFile(result.value)
+    }
+  }
+
   return (
     <div className="pane on houses-compact vehicles-page">
       <div className="ph">
@@ -543,6 +810,7 @@ const AdminVehicles = () => {
           <div className="ct">ยานพาหนะทั้งหมด ({vehicles.length} รายการ)</div>
           <div className="houses-list-actions">
             <button className="btn btn-p btn-sm" onClick={openAddModal}>+ ลงทะเบียนรถใหม่</button>
+            <button className="btn btn-o btn-sm" onClick={handleOpenImportVehicleExcel}>📥 นำเข้า Excel</button>
             <button className="btn btn-g btn-sm" onClick={() => loadVehicles({ status: statusFilter, search: searchTerm, soi: soiFilter, vehicleType: vehicleTypeFilter })}>🔄 รีเฟรช</button>
           </div>
         </div>
