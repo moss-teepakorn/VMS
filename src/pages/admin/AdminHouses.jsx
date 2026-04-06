@@ -3,9 +3,9 @@ import Swal from 'sweetalert2'
 import * as XLSX from 'xlsx'
 import { createHouse, deleteHouse, getHouseSetup, listHouses, updateAllHousesFeeRate, updateHouse } from '../../lib/houses'
 
-const SOI_OPTIONS = Array.from({ length: 25 }, (_, index) => ({
-  value: String(index + 1),
-  label: `ซอย ${index + 1}`,
+const SOI_OPTIONS = Array.from({ length: 26 }, (_, index) => ({
+  value: String(index),
+  label: `ซอย ${index}`,
 }))
 
 const HOUSE_TYPE_OPTIONS = [
