@@ -16,12 +16,12 @@ import { getSystemConfig } from '../../../lib/systemConfig'
 import './AdminFinanceV2.css'
 
 const V2_ROUTES = [
-  { key: 'hub', label: 'Finance Hub', path: '/admin/finance-v2' },
+  { key: 'hub', label: 'ศูนย์การเงิน', path: '/admin/finance-v2' },
   { key: 'billing', label: 'ออกใบแจ้งหนี้ V2', path: '/admin/finance-v2/billing' },
   { key: 'collections', label: 'ติดตามหนี้ V2', path: '/admin/finance-v2/collections' },
   { key: 'receive', label: 'รับชำระ V2', path: '/admin/finance-v2/receive' },
-  { key: 'print', label: 'Print Center V2', path: '/admin/finance-v2/print-center' },
-  { key: 'archive', label: 'Archive V2', path: '/admin/finance-v2/archive' },
+  { key: 'print', label: 'ศูนย์งานพิมพ์ V2', path: '/admin/finance-v2/print-center' },
+  { key: 'archive', label: 'ข้อมูลย้อนหลัง V2', path: '/admin/finance-v2/archive' },
 ]
 
 function toBE(yearValue) {
@@ -74,7 +74,7 @@ function HubPage({ navigate, summary, pendingPayments, recentOutstanding }) {
   return (
     <div className="finance-v2-grid one-col">
       <section className="finance-v2-card">
-        <div className="finance-v2-head">Finance Hub (หน้าหลักใหม่สำหรับงานประจำวัน)</div>
+        <div className="finance-v2-head">ศูนย์การเงิน (หน้าหลักใหม่สำหรับงานประจำวัน)</div>
         <div className="finance-v2-body">
           <div className="finance-v2-kpi">
             <div className="finance-v2-kpi-item"><label>ยอดออกใบแจ้งหนี้</label><strong>{formatMoney(summary.totalInvoiced)}</strong></div>
@@ -82,13 +82,13 @@ function HubPage({ navigate, summary, pendingPayments, recentOutstanding }) {
             <div className="finance-v2-kpi-item"><label>ยอดค้างชำระ</label><strong>{formatMoney(summary.totalOutstanding)}</strong></div>
             <div className="finance-v2-kpi-item"><label>รอตรวจสอบชำระ</label><strong>{pendingPayments} รายการ</strong></div>
           </div>
-          <div className="finance-v2-note">หน้าจอชุดนี้ผูกฐานข้อมูลจริงแล้ว แต่ยังแยกจากหน้าเดิมเพื่อ UAT ก่อน migrate</div>
+          <div className="finance-v2-note">หน้าจอชุดนี้ผูกฐานข้อมูลจริงแล้ว แต่ยังแยกจากหน้าเดิมเพื่อทดสอบก่อนย้ายระบบ</div>
           <div className="finance-v2-actions">
             <button className="btn btn-p btn-sm" onClick={() => navigate('/admin/finance-v2/billing')}>ไปหน้าออกใบแจ้งหนี้</button>
             <button className="btn btn-o btn-sm" onClick={() => navigate('/admin/finance-v2/collections')}>ไปหน้าติดตามหนี้</button>
             <button className="btn btn-a btn-sm" onClick={() => navigate('/admin/finance-v2/receive')}>ไปหน้ารับชำระ</button>
-            <button className="btn btn-g btn-sm" onClick={() => navigate('/admin/finance-v2/print-center')}>ไป Print Center</button>
-            <button className="btn btn-g btn-sm" onClick={() => navigate('/admin/finance-v2/archive')}>ไป Archive</button>
+            <button className="btn btn-g btn-sm" onClick={() => navigate('/admin/finance-v2/print-center')}>ไปหน้าศูนย์งานพิมพ์</button>
+            <button className="btn btn-g btn-sm" onClick={() => navigate('/admin/finance-v2/archive')}>ไปหน้าข้อมูลย้อนหลัง</button>
           </div>
 
           <div className="finance-v2-list">
@@ -114,7 +114,7 @@ function BillingPage({ billingYearBE, billingPeriod, setBillingYearBE, setBillin
   return (
     <div className="finance-v2-grid">
       <section className="finance-v2-card">
-        <div className="finance-v2-head">ออกใบแจ้งหนี้ V2 (Wizard)</div>
+        <div className="finance-v2-head">ออกใบแจ้งหนี้ V2 (แบบขั้นตอน)</div>
         <div className="finance-v2-body">
           <div className="finance-v2-actions">
             <label className="finance-v2-inline-field">
@@ -133,10 +133,10 @@ function BillingPage({ billingYearBE, billingPeriod, setBillingYearBE, setBillin
               ทับรายการ pending
             </label>
           </div>
-          <div className="finance-v2-step"><h4>Step 1</h4><p>เลือกปีและงวดที่ต้องการออกบิล</p></div>
-          <div className="finance-v2-step"><h4>Step 2</h4><p>เลือกกลุ่มบ้านและเงื่อนไขการข้าม</p></div>
-          <div className="finance-v2-step"><h4>Step 3</h4><p>Preview ยอดรวมและจำนวนบิล</p></div>
-          <div className="finance-v2-step"><h4>Step 4</h4><p>ยืนยันสร้างและบันทึก log batch</p></div>
+          <div className="finance-v2-step"><h4>ขั้นตอน 1</h4><p>เลือกปีและงวดที่ต้องการออกบิล</p></div>
+          <div className="finance-v2-step"><h4>ขั้นตอน 2</h4><p>เลือกกลุ่มบ้านและเงื่อนไขการข้าม</p></div>
+          <div className="finance-v2-step"><h4>ขั้นตอน 3</h4><p>ตรวจสอบยอดรวมและจำนวนบิล</p></div>
+          <div className="finance-v2-step"><h4>ขั้นตอน 4</h4><p>ยืนยันสร้างและบันทึกประวัติรอบงาน</p></div>
           <div className="finance-v2-actions">
             <button className="btn btn-a btn-sm" onClick={onRunBilling} disabled={billingBusy}>{billingBusy ? 'กำลังสร้าง...' : 'สร้างใบแจ้งหนี้จริง'}</button>
           </div>
@@ -168,7 +168,7 @@ function CollectionsPage({ collectionRows, selectedCollectionIds, onToggleCollec
   return (
     <div className="finance-v2-grid">
       <section className="finance-v2-card">
-        <div className="finance-v2-head">Debt Queue V2</div>
+        <div className="finance-v2-head">คิวลูกหนี้ V2</div>
         <div className="finance-v2-body finance-v2-list">
           {collectionRows.length === 0 ? (
             <div className="finance-v2-row"><div className="finance-v2-row-main"><strong>ไม่พบลูกหนี้ค้างชำระ</strong><span>ข้อมูลล่าสุดจากฐานข้อมูล</span></div></div>
@@ -194,7 +194,7 @@ function CollectionsPage({ collectionRows, selectedCollectionIds, onToggleCollec
         </div>
       </section>
       <section className="finance-v2-card">
-        <div className="finance-v2-head">Bulk Actions V2</div>
+        <div className="finance-v2-head">งานชุด V2</div>
         <div className="finance-v2-body">
           <div className="finance-v2-actions">
             <button className="btn btn-g btn-sm" onClick={onToggleAllCollections}>เลือกทั้งหมด/ล้างเลือก</button>
@@ -211,7 +211,7 @@ function ReceivePage({ receiveRows, receiveFilter, setReceiveFilter, onApprove, 
   return (
     <div className="finance-v2-grid">
       <section className="finance-v2-card">
-        <div className="finance-v2-head">Payment Intake Queue V2</div>
+        <div className="finance-v2-head">คิวรับชำระ V2</div>
         <div className="finance-v2-body">
           <div className="finance-v2-actions">
             <button className={`finance-v2-nav-btn ${receiveFilter === 'pending' ? 'on' : ''}`} onClick={() => setReceiveFilter('pending')}>รอตรวจสอบ</button>
@@ -232,7 +232,7 @@ function ReceivePage({ receiveRows, receiveFilter, setReceiveFilter, onApprove, 
                   <strong>{row.receipt_no || row.id.slice(0, 8).toUpperCase()} · บ้าน {row.houses?.house_no || '-'}</strong>
                   <span>{periodLabel(row.fees?.period)} ปี {toBE(row.fees?.year)} · {formatMoney(row.amount)} · {row.payment_method || '-'}</span>
                 </div>
-                <div className="finance-v2-actions">
+                <div className="finance-v2-actions finance-v2-row-actions">
                   <span className={`finance-v2-chip ${status === 'approved' ? 'green' : status === 'rejected' ? 'orange' : 'blue'}`}>
                     {status === 'approved' ? 'อนุมัติแล้ว' : status === 'rejected' ? 'ตีกลับ' : 'รอตรวจสอบ'}
                   </span>
@@ -249,9 +249,9 @@ function ReceivePage({ receiveRows, receiveFilter, setReceiveFilter, onApprove, 
         </div>
       </section>
       <section className="finance-v2-card">
-        <div className="finance-v2-head">Action Panel V2</div>
+        <div className="finance-v2-head">แผงปฏิบัติการ V2</div>
         <div className="finance-v2-body">
-          <div className="finance-v2-note">หน้ารับชำระแยกเดี่ยวสำหรับงานรายวัน ลดความเสี่ยงกดผิดจากปุ่ม batch ขนาดใหญ่</div>
+          <div className="finance-v2-note">หน้ารับชำระแยกเดี่ยวสำหรับงานรายวัน ลดความเสี่ยงกดผิดจากปุ่มงานชุดขนาดใหญ่</div>
         </div>
       </section>
     </div>
@@ -262,15 +262,15 @@ function PrintCenterPage({ printFees, printPayments, onPrintInvoices, onPrintNot
   return (
     <div className="finance-v2-grid">
       <section className="finance-v2-card">
-        <div className="finance-v2-head">Print Jobs V2</div>
+        <div className="finance-v2-head">งานพิมพ์ V2</div>
         <div className="finance-v2-body finance-v2-list">
-          <div className="finance-v2-row"><div className="finance-v2-row-main"><strong>Invoice Batch</strong><span>ใบแจ้งหนี้ทั้งหมดในปีที่เลือก</span></div><span className="finance-v2-chip blue">{printFees.length} ฉบับ</span></div>
-          <div className="finance-v2-row"><div className="finance-v2-row-main"><strong>Notice Batch</strong><span>ใบเตือนค้างชำระ</span></div><span className="finance-v2-chip orange">{printFees.filter((r) => r.status !== 'paid' && r.status !== 'cancelled').length} ฉบับ</span></div>
-          <div className="finance-v2-row"><div className="finance-v2-row-main"><strong>Receipt Batch</strong><span>ใบเสร็จที่อนุมัติแล้ว</span></div><span className="finance-v2-chip green">{printPayments.filter((r) => r.verified_at).length} ฉบับ</span></div>
+          <div className="finance-v2-row"><div className="finance-v2-row-main"><strong>ชุดใบแจ้งหนี้</strong><span>ใบแจ้งหนี้ทั้งหมดในปีที่เลือก</span></div><span className="finance-v2-chip blue">{printFees.length} ฉบับ</span></div>
+          <div className="finance-v2-row"><div className="finance-v2-row-main"><strong>ชุดใบเตือน</strong><span>ใบเตือนค้างชำระ</span></div><span className="finance-v2-chip orange">{printFees.filter((r) => r.status !== 'paid' && r.status !== 'cancelled').length} ฉบับ</span></div>
+          <div className="finance-v2-row"><div className="finance-v2-row-main"><strong>ชุดใบเสร็จ</strong><span>ใบเสร็จที่อนุมัติแล้ว</span></div><span className="finance-v2-chip green">{printPayments.filter((r) => r.verified_at).length} ฉบับ</span></div>
         </div>
       </section>
       <section className="finance-v2-card">
-        <div className="finance-v2-head">Output Controls</div>
+        <div className="finance-v2-head">ตัวควบคุมงานพิมพ์</div>
         <div className="finance-v2-body">
           <div className="finance-v2-actions">
             <button className="btn btn-p btn-sm" onClick={onPrintInvoices}>พิมพ์ใบแจ้งหนี้</button>
@@ -288,7 +288,7 @@ function ArchivePage({ archiveRows, archiveKeyword, setArchiveKeyword }) {
   return (
     <div className="finance-v2-grid">
       <section className="finance-v2-card">
-        <div className="finance-v2-head">Archive Search V2</div>
+        <div className="finance-v2-head">ค้นข้อมูลย้อนหลัง V2</div>
         <div className="finance-v2-body">
           <div className="finance-v2-actions">
             <label className="finance-v2-inline-field" style={{ minWidth: 260 }}>
@@ -312,7 +312,7 @@ function ArchivePage({ archiveRows, archiveKeyword, setArchiveKeyword }) {
         </div>
       </section>
       <section className="finance-v2-card">
-        <div className="finance-v2-head">Audit Trail V2</div>
+        <div className="finance-v2-head">บันทึกการตรวจสอบ V2</div>
         <div className="finance-v2-body finance-v2-list">
           {archiveRows.slice(0, 10).map((row) => (
             <div className="finance-v2-row" key={`audit-${row.id}`}>
@@ -320,7 +320,7 @@ function ArchivePage({ archiveRows, archiveKeyword, setArchiveKeyword }) {
                 <strong>INV-{String(row.year || '').slice(-2)}-{String(row.id || '').slice(0, 6).toUpperCase()}</strong>
                 <span>สถานะ {row.status} · สร้างเมื่อ {row.created_at ? new Date(row.created_at).toLocaleString('th-TH') : '-'}</span>
               </div>
-              <span className="finance-v2-chip blue">record</span>
+              <span className="finance-v2-chip blue">บันทึก</span>
             </div>
           ))}
         </div>
@@ -607,25 +607,25 @@ export default function AdminFinanceV2() {
 
   const handlePrintInvoices = () => {
     const rows = printFees.map((row) => [row.houses?.house_no || '-', row.houses?.soi || '-', periodLabel(row.period), toBE(row.year), formatMoney(row.total_amount), row.status])
-    openPrintHtml('ใบแจ้งหนี้ทั้งหมด (Finance V2)', ['บ้าน', 'ซอย', 'งวด', 'ปี', 'ยอดรวม', 'สถานะ'], rows)
+    openPrintHtml('ใบแจ้งหนี้ทั้งหมด (การเงิน V2)', ['บ้าน', 'ซอย', 'งวด', 'ปี', 'ยอดรวม', 'สถานะ'], rows)
   }
 
   const handlePrintNotices = () => {
     const rows = printFees
       .filter((row) => row.status !== 'paid' && row.status !== 'cancelled')
       .map((row) => [row.houses?.house_no || '-', row.houses?.soi || '-', periodLabel(row.period), toBE(row.year), formatMoney(row.total_amount), row.due_date || '-'])
-    openPrintHtml('ใบแจ้งเตือนค้างชำระ (Finance V2)', ['บ้าน', 'ซอย', 'งวด', 'ปี', 'ยอดค้าง', 'ครบกำหนด'], rows)
+    openPrintHtml('ใบแจ้งเตือนค้างชำระ (การเงิน V2)', ['บ้าน', 'ซอย', 'งวด', 'ปี', 'ยอดค้าง', 'ครบกำหนด'], rows)
   }
 
   const handlePrintReceipts = () => {
     const rows = printPayments
       .filter((row) => row.verified_at)
       .map((row) => [row.receipt_no || row.id.slice(0, 8), row.houses?.house_no || '-', periodLabel(row.fees?.period), toBE(row.fees?.year), formatMoney(row.amount), row.payment_method || '-'])
-    openPrintHtml('ใบเสร็จที่อนุมัติแล้ว (Finance V2)', ['เลขที่', 'บ้าน', 'งวด', 'ปี', 'ยอดชำระ', 'วิธี'], rows)
+    openPrintHtml('ใบเสร็จที่อนุมัติแล้ว (การเงิน V2)', ['เลขที่', 'บ้าน', 'งวด', 'ปี', 'ยอดชำระ', 'วิธี'], rows)
   }
 
-  let title = 'การเงิน V2 (Pilot)'
-  let subtitle = 'หน้าจอใหม่แยกจากของเดิม เพื่อทดสอบก่อน migrate'
+  let title = 'การเงิน V2 (ทดสอบใช้งาน)'
+  let subtitle = 'หน้าจอใหม่แยกจากของเดิม เพื่อทดสอบก่อนย้ายระบบ'
   let content = (
     <HubPage
       navigate={navigate}
@@ -678,7 +678,7 @@ export default function AdminFinanceV2() {
       />
     )
   } else if (activeKey === 'print') {
-    title = 'Print Center V2'
+    title = 'ศูนย์งานพิมพ์ V2'
     subtitle = 'จัดการงานพิมพ์เอกสารทั้งหมดในหน้าเดียว'
     content = (
       <PrintCenterPage
@@ -690,8 +690,8 @@ export default function AdminFinanceV2() {
       />
     )
   } else if (activeKey === 'archive') {
-    title = 'Archive V2'
-    subtitle = 'ค้นประวัติย้อนหลัง + audit trail'
+    title = 'ข้อมูลย้อนหลัง V2'
+    subtitle = 'ค้นประวัติย้อนหลัง พร้อมบันทึกการตรวจสอบ'
     content = (
       <ArchivePage
         archiveRows={archiveRows}
