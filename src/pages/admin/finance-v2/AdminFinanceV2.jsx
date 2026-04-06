@@ -97,6 +97,7 @@ function HubPage({ navigate, summary, pendingPayments, recentOutstanding }) {
             <button className="btn btn-a btn-sm" onClick={() => navigate('/admin/finance-v2/receive')}>ไปหน้ารับชำระ</button>
             <button className="btn btn-g btn-sm" onClick={() => navigate('/admin/finance-v2/print-center')}>ไปหน้าศูนย์งานพิมพ์</button>
             <button className="btn btn-g btn-sm" onClick={() => navigate('/admin/finance-v2/archive')}>ไปหน้าข้อมูลย้อนหลัง</button>
+            <button className="btn btn-o btn-sm" onClick={() => navigate('/admin/reports/payments')}>ไปรายงานเดิม</button>
           </div>
 
           <div className="finance-v2-list">
@@ -266,7 +267,7 @@ function ReceivePage({ receiveRows, receiveFilter, setReceiveFilter, onApprove, 
   )
 }
 
-function PrintCenterPage({ printFees, printPayments, onPrintInvoices, onPrintNotices, onPrintReceipts }) {
+function PrintCenterPage({ printFees, printPayments, onPrintInvoices, onPrintNotices, onPrintReceipts, navigate }) {
   return (
     <div className="finance-v2-grid">
       <section className="finance-v2-card">
@@ -286,6 +287,18 @@ function PrintCenterPage({ printFees, printPayments, onPrintInvoices, onPrintNot
             <button className="btn btn-a btn-sm" onClick={onPrintReceipts}>พิมพ์ใบเสร็จ</button>
           </div>
           <div className="finance-v2-note">รวมงานพิมพ์ไว้จุดเดียว ไม่กระจายปุ่มพิมพ์ไปหลายตาราง</div>
+        </div>
+      </section>
+      <section className="finance-v2-card">
+        <div className="finance-v2-head">รายงานมาตรฐาน (รูปแบบเดิม)</div>
+        <div className="finance-v2-body">
+          <div className="finance-v2-note">หากต้องการรายงานรูปแบบเดิมพร้อมปุ่มส่งออก PDF/Excel ให้ใช้งานจากปุ่มด้านล่างได้ทันที</div>
+          <div className="finance-v2-actions">
+            <button className="btn btn-p btn-sm" onClick={() => navigate('/admin/reports/payments')}>รายงานจ่ายค่าส่วนกลาง</button>
+            <button className="btn btn-o btn-sm" onClick={() => navigate('/admin/reports/outstanding')}>รายงานค้างชำระ</button>
+            <button className="btn btn-g btn-sm" onClick={() => navigate('/admin/reports/expense-payments')}>รายงานรายจ่าย</button>
+            <button className="btn btn-a btn-sm" onClick={() => navigate('/admin/reports/violations-summary')}>รายงานค่าปรับ</button>
+          </div>
         </div>
       </section>
     </div>
@@ -706,6 +719,7 @@ export default function AdminFinanceV2() {
         onPrintInvoices={handlePrintInvoices}
         onPrintNotices={handlePrintNotices}
         onPrintReceipts={handlePrintReceipts}
+        navigate={navigate}
       />
     )
   } else if (activeKey === 'archive') {
