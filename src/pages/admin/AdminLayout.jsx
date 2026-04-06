@@ -142,6 +142,7 @@ const AdminLayout = () => {
     ]},
     { section: 'การเงิน', tone: 'operation', sectionIcon: '💰', items: [
       { id: 'fees', label: 'ค่าส่วนกลาง', icon: '💵', path: '/admin/fees' },
+      { id: 'finance-v2', label: 'การเงิน V2 (ใหม่)', icon: '🧭', path: '/admin/finance-v2' },
       { id: 'payments', label: 'ชำระค่าส่วนกลาง', icon: '💳', path: '/admin/payments' },
       { id: 'receive-payments', label: 'รับชำระเงิน', icon: '💳', path: '/admin/receive-payments' },
       { id: 'disbursements', label: 'การจ่ายเงิน', icon: '📤', path: '/admin/disbursements' },
@@ -168,10 +169,6 @@ const AdminLayout = () => {
       { id: 'board-sets', label: 'ทะเบียนกรรมการ', icon: '👥', path: '/admin/board-sets' },
       { id: 'usr', label: 'ผู้ใช้งาน', icon: '👥', path: '/admin/users' },
       { id: 'login-logs', label: 'ประวัติการใช้ระบบ', icon: '🔐', path: '/admin/login-logs' },
-    ]},
-    { section: 'Prototype', tone: 'system', sectionIcon: '🧪', items: [
-      { id: 'fees-proto', label: 'ต้นแบบแยกหน้าการเงิน', icon: '🧪', path: '/admin/fees-prototype' },
-      { id: 'finance-v2', label: 'การเงิน V2 (ทดสอบ)', icon: '🧭', path: '/admin/finance-v2' },
     ]},
   ]
 
