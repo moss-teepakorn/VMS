@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import Swal from 'sweetalert2'
 import * as XLSX from 'xlsx'
 import { createHouse, deleteHouse, getHouseSetup, listHouses, updateAllHousesFeeRate, updateHouse } from '../../lib/houses'
@@ -52,6 +52,41 @@ const EXCEL_COLUMN_ALIASES = {
   note: ['note', 'หมายเหตุ'],
 }
 
+const HOUSE_IMPORT_TEMPLATE_ROWS = [
+  {
+    บ้านเลขที่: '10/1',
+    ซอย: '1',
+    ที่อยู่: 'ถนนเมนโครงการ',
+    เจ้าของ: 'สมชาย ใจดี',
+    ผู้อยู่อาศัย: 'สมชาย ใจดี',
+    ผู้ติดต่อ: 'สมชาย ใจดี',
+    เบอร์โทร: '0812345678',
+    'ไลน์ไอดี': 'somchai.id',
+    อีเมล: 'somchai@example.com',
+    พื้นที่: 52,
+    สิทธิ์จอดรถ: 1,
+    ประเภท: 'อยู่เอง',
+    สถานะ: 'ปกติ',
+    หมายเหตุ: '',
+  },
+  {
+    บ้านเลขที่: '12/8',
+    ซอย: '2',
+    ที่อยู่: 'ถนนสวนกลาง',
+    เจ้าของ: 'สุดา งามดี',
+    ผู้อยู่อาศัย: 'สุดา งามดี',
+    ผู้ติดต่อ: 'สุดา งามดี',
+    เบอร์โทร: '0891112233',
+    'ไลน์ไอดี': 'suda.ngamdee',
+    อีเมล: 'suda@example.com',
+    พื้นที่: 60,
+    สิทธิ์จอดรถ: 2,
+    ประเภท: 'ให้เช่า',
+    สถานะ: 'ค้างชำระ',
+    หมายเหตุ: 'ตัวอย่างข้อมูล',
+  },
+]
+
 const EMPTY_FORM = {
   house_no: '',
   soi: '1',
@@ -87,7 +122,6 @@ const AdminHouses = () => {
   const [editingHouse, setEditingHouse] = useState(null)
   const [form, setForm] = useState(EMPTY_FORM)
   const [setup, setSetup] = useState({ feeRatePerSqw: 85, villageName: 'The Greenfield' })
-  const excelInputRef = useRef(null)
 
   const normalizeKey = (value) => String(value || '').trim().toLowerCase().replace(/[_\-]/g, ' ').replace(/\s+/g, ' ')
 
@@ -149,21 +183,14 @@ const AdminHouses = () => {
     return XLSX.utils.sheet_to_json(sheet, { defval: '' })
   }
 
-  const handleOpenImportExcel = async () => {
-    await Swal.fire({
-      icon: 'info',
-      title: 'นำเข้าข้อมูลบ้านจาก Excel',
-      html: 'คอลัมน์ที่รองรับ เช่น บ้านเลขที่, ซอย, เจ้าของ, ผู้อยู่อาศัย, เบอร์โทร, พื้นที่, สิทธิ์จอดรถ, ประเภท, สถานะ, หมายเหตุ',
-      confirmButtonText: 'เลือกไฟล์',
-    })
-    excelInputRef.current?.click()
+  const handleDownloadHouseTemplate = () => {
+    const ws = XLSX.utils.json_to_sheet(HOUSE_IMPORT_TEMPLATE_ROWS)
+    const wb = XLSX.utils.book_new()
+    XLSX.utils.book_append_sheet(wb, ws, 'houses-template')
+    XLSX.writeFile(wb, 'house-import-template.xlsx')
   }
 
-  const handleImportExcelChange = async (event) => {
-    const file = event.target.files?.[0]
-    event.target.value = ''
-    if (!file) return
-
+  const importHousesFromFile = async (file) => {
     try {
       Swal.fire({
         title: 'กำลังอ่านไฟล์...',
@@ -222,6 +249,80 @@ const AdminHouses = () => {
       })
     } catch (error) {
       await Swal.fire({ icon: 'error', title: 'นำเข้าไม่สำเร็จ', text: error?.message || 'เกิดข้อผิดพลาด' })
+    }
+  }
+
+  const handleOpenImportExcel = async () => {
+    const result = await Swal.fire({
+      title: 'นำเข้าข้อมูลบ้านจาก Excel',
+      width: 760,
+      showCancelButton: true,
+      confirmButtonText: 'นำเข้าข้อมูล',
+      cancelButtonText: 'ยกเลิก',
+      html: `
+        <div style="text-align:left;display:grid;gap:12px">
+          <div style="font-size:13px;color:#334155">1) ดาวน์โหลดไฟล์ template และกรอกข้อมูลตามตัวอย่าง (มีตัวอย่างให้ 2 รายการ)</div>
+          <button id="download-house-template" type="button" class="swal2-confirm swal2-styled" style="margin:0;display:inline-flex;width:auto;background:#0f766e">ดาวน์โหลด Template</button>
+          <div style="font-size:13px;color:#334155">2) เลือกไฟล์ Excel ที่เตรียมไว้</div>
+          <input id="house-import-file" type="file" accept=".xlsx,.xls" style="padding:6px 0" />
+          <div style="border:1px solid #e2e8f0;border-radius:8px;padding:10px;background:#f8fafc">
+            <div style="font-size:12px;font-weight:700;margin-bottom:6px">ตัวอย่างข้อมูลใน Template (2 รายการ)</div>
+            <div style="overflow:auto">
+              <table style="width:100%;border-collapse:collapse;font-size:12px">
+                <thead>
+                  <tr>
+                    <th style="border:1px solid #cbd5e1;padding:4px">บ้านเลขที่</th>
+                    <th style="border:1px solid #cbd5e1;padding:4px">ซอย</th>
+                    <th style="border:1px solid #cbd5e1;padding:4px">เจ้าของ</th>
+                    <th style="border:1px solid #cbd5e1;padding:4px">พื้นที่</th>
+                    <th style="border:1px solid #cbd5e1;padding:4px">สิทธิ์จอดรถ</th>
+                    <th style="border:1px solid #cbd5e1;padding:4px">สถานะ</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td style="border:1px solid #cbd5e1;padding:4px">10/1</td>
+                    <td style="border:1px solid #cbd5e1;padding:4px">1</td>
+                    <td style="border:1px solid #cbd5e1;padding:4px">สมชาย ใจดี</td>
+                    <td style="border:1px solid #cbd5e1;padding:4px">52</td>
+                    <td style="border:1px solid #cbd5e1;padding:4px">1</td>
+                    <td style="border:1px solid #cbd5e1;padding:4px">ปกติ</td>
+                  </tr>
+                  <tr>
+                    <td style="border:1px solid #cbd5e1;padding:4px">12/8</td>
+                    <td style="border:1px solid #cbd5e1;padding:4px">2</td>
+                    <td style="border:1px solid #cbd5e1;padding:4px">สุดา งามดี</td>
+                    <td style="border:1px solid #cbd5e1;padding:4px">60</td>
+                    <td style="border:1px solid #cbd5e1;padding:4px">2</td>
+                    <td style="border:1px solid #cbd5e1;padding:4px">ค้างชำระ</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+          <div style="font-size:12px;color:#64748b">ระบบจะใช้ "บ้านเลขที่" เป็นคีย์ตรวจสอบ: ไม่มีข้อมูลจะเพิ่มใหม่, มีอยู่แล้วจะอัปเดต</div>
+        </div>
+      `,
+      didOpen: () => {
+        const html = Swal.getHtmlContainer()
+        const downloadBtn = html?.querySelector('#download-house-template')
+        downloadBtn?.addEventListener('click', handleDownloadHouseTemplate)
+      },
+      preConfirm: () => {
+        const html = Swal.getHtmlContainer()
+        const input = html?.querySelector('#house-import-file')
+        const file = input?.files?.[0]
+        if (!file) {
+          Swal.showValidationMessage('กรุณาเลือกไฟล์ Excel ก่อนนำเข้า')
+          return null
+        }
+        return file
+      },
+      allowOutsideClick: () => !Swal.isLoading(),
+    })
+
+    if (result.isConfirmed && result.value) {
+      await importHousesFromFile(result.value)
     }
   }
 
@@ -487,13 +588,6 @@ const AdminHouses = () => {
             <button className="btn btn-o btn-sm" onClick={handleOpenImportExcel}>📥 นำเข้า Excel</button>
             <button className="btn btn-a btn-sm" onClick={handleBulkUpdateAnnualFee}>⏳ อัปเดตค่าส่วนกลาง</button>
             <button className="btn btn-g btn-sm" onClick={() => loadHouses()}>🔄 รีเฟรช</button>
-            <input
-              ref={excelInputRef}
-              type="file"
-              accept=".xlsx,.xls"
-              onChange={handleImportExcelChange}
-              style={{ display: 'none' }}
-            />
           </div>
         </div>
         <div className="cb houses-table-card-body houses-main-body">
