@@ -32,6 +32,7 @@ import AdminBoardSets from './pages/admin/AdminBoardSets'
 import AdminReportOverdue from './pages/admin/AdminReportOverdue'
 import AdminReportViolationsSummary from './pages/admin/AdminReportViolationsSummary'
 import AdminReportExpensePayments from './pages/admin/AdminReportExpensePayments'
+import AdminFeesPrototype from './pages/admin/prototype/AdminFeesPrototype'
 import ResidentLayout from './pages/resident/ResidentLayout'
 
 const AdminWorkReports = lazy(() => import('./pages/admin/AdminWorkReportsList'))
@@ -124,6 +125,12 @@ function AppRoutes() {
         <Route path="payments" element={<AdminPayments />} />
         <Route path="maintenance" element={<AdminMaintenance />} />
         <Route path="board-sets" element={<AdminBoardSets />} />
+        <Route path="fees-prototype" element={<AdminFeesPrototype />} />
+        <Route path="fees-prototype/billing" element={<AdminFeesPrototype />} />
+        <Route path="fees-prototype/collections" element={<AdminFeesPrototype />} />
+        <Route path="fees-prototype/receive" element={<AdminFeesPrototype />} />
+        <Route path="fees-prototype/print-center" element={<AdminFeesPrototype />} />
+        <Route path="fees-prototype/archive" element={<AdminFeesPrototype />} />
       </Route>
 
       {/* Resident routes */}

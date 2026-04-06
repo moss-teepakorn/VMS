@@ -169,6 +169,9 @@ const AdminLayout = () => {
       { id: 'usr', label: 'ผู้ใช้งาน', icon: '👥', path: '/admin/users' },
       { id: 'login-logs', label: 'ประวัติการใช้ระบบ', icon: '🔐', path: '/admin/login-logs' },
     ]},
+    { section: 'Prototype', tone: 'system', sectionIcon: '🧪', items: [
+      { id: 'fees-proto', label: 'ต้นแบบแยกหน้าการเงิน', icon: '🧪', path: '/admin/fees-prototype' },
+    ]},
   ]
 
   const getActiveSectionName = (pathname) => {
