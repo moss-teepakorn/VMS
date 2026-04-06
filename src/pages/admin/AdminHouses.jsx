@@ -1,5 +1,6 @@
-import React, { useEffect, useMemo, useState } from 'react'
+import React, { useEffect, useMemo, useRef, useState } from 'react'
 import Swal from 'sweetalert2'
+import * as XLSX from 'xlsx'
 import { createHouse, deleteHouse, getHouseSetup, listHouses, updateAllHousesFeeRate, updateHouse } from '../../lib/houses'
 
 const SOI_OPTIONS = Array.from({ length: 25 }, (_, index) => ({
@@ -19,6 +20,37 @@ const HOUSE_STATUS_OPTIONS = [
   { value: 'suspended', label: 'ระงับกรมที่ดิน' },
   { value: 'lawsuit', label: 'ฟ้องร้อง' },
 ]
+
+const HOUSE_TYPE_VALUES = new Set(HOUSE_TYPE_OPTIONS.map((item) => item.value))
+const HOUSE_STATUS_VALUES = new Set(HOUSE_STATUS_OPTIONS.map((item) => item.value))
+
+const STATUS_LABEL_TO_VALUE = {
+  ปกติ: 'normal',
+  ค้างชำระ: 'overdue',
+  ระงับกรมที่ดิน: 'suspended',
+  ฟ้องร้อง: 'lawsuit',
+  normal: 'normal',
+  overdue: 'overdue',
+  suspended: 'suspended',
+  lawsuit: 'lawsuit',
+}
+
+const EXCEL_COLUMN_ALIASES = {
+  house_no: ['house_no', 'house no', 'เลขที่บ้าน', 'บ้านเลขที่', 'เลขที่'],
+  soi: ['soi', 'ซอย'],
+  address: ['address', 'ที่อยู่', 'ถนน'],
+  owner_name: ['owner_name', 'owner', 'เจ้าของ', 'ชื่อเจ้าของ', 'เจ้าของกรรมสิทธิ์'],
+  resident_name: ['resident_name', 'resident', 'ผู้อยู่อาศัย', 'ผู้เช่า'],
+  contact_name: ['contact_name', 'contact', 'ผู้ติดต่อ'],
+  phone: ['phone', 'เบอร์', 'เบอร์โทร', 'โทรศัพท์'],
+  line_id: ['line_id', 'line', 'line id', 'ไลน์', 'ไลน์ไอดี'],
+  email: ['email', 'อีเมล'],
+  area_sqw: ['area_sqw', 'area', 'พื้นที่', 'ตรว', 'ตร.ว.'],
+  parking_rights: ['parking_rights', 'parking', 'สิทธิ์จอดรถ', 'สิทธิจอดรถ', 'ที่จอดรถ'],
+  house_type: ['house_type', 'type', 'ประเภท'],
+  status: ['status', 'สถานะ'],
+  note: ['note', 'หมายเหตุ'],
+}
 
 const EMPTY_FORM = {
   house_no: '',
@@ -55,6 +87,143 @@ const AdminHouses = () => {
   const [editingHouse, setEditingHouse] = useState(null)
   const [form, setForm] = useState(EMPTY_FORM)
   const [setup, setSetup] = useState({ feeRatePerSqw: 85, villageName: 'The Greenfield' })
+  const excelInputRef = useRef(null)
+
+  const normalizeKey = (value) => String(value || '').trim().toLowerCase().replace(/[_\-]/g, ' ').replace(/\s+/g, ' ')
+
+  const pickCellValue = (row, aliases) => {
+    const targetKeys = new Set(aliases.map((key) => normalizeKey(key)))
+    for (const key of Object.keys(row || {})) {
+      if (targetKeys.has(normalizeKey(key))) return row[key]
+    }
+    return ''
+  }
+
+  const toNumber = (value, fallback = 0) => {
+    const parsed = Number(String(value ?? '').toString().replace(/,/g, '').trim())
+    return Number.isFinite(parsed) ? parsed : fallback
+  }
+
+  const normalizeStatus = (value) => {
+    const trimmed = String(value || '').trim()
+    const mapped = STATUS_LABEL_TO_VALUE[trimmed]
+    return HOUSE_STATUS_VALUES.has(mapped) ? mapped : 'normal'
+  }
+
+  const normalizeHouseType = (value) => {
+    const trimmed = String(value || '').trim()
+    return HOUSE_TYPE_VALUES.has(trimmed) ? trimmed : 'อยู่เอง'
+  }
+
+  const buildHousePayloadFromRow = (row) => {
+    const houseNo = String(pickCellValue(row, EXCEL_COLUMN_ALIASES.house_no) || '').trim()
+    if (!houseNo) return null
+
+    const payload = {
+      house_no: houseNo,
+      soi: String(pickCellValue(row, EXCEL_COLUMN_ALIASES.soi) || '').trim() || '1',
+      address: String(pickCellValue(row, EXCEL_COLUMN_ALIASES.address) || '').trim(),
+      owner_name: String(pickCellValue(row, EXCEL_COLUMN_ALIASES.owner_name) || '').trim(),
+      resident_name: String(pickCellValue(row, EXCEL_COLUMN_ALIASES.resident_name) || '').trim(),
+      contact_name: String(pickCellValue(row, EXCEL_COLUMN_ALIASES.contact_name) || '').trim(),
+      phone: String(pickCellValue(row, EXCEL_COLUMN_ALIASES.phone) || '').trim(),
+      line_id: String(pickCellValue(row, EXCEL_COLUMN_ALIASES.line_id) || '').trim(),
+      email: String(pickCellValue(row, EXCEL_COLUMN_ALIASES.email) || '').trim(),
+      area_sqw: Math.max(0, toNumber(pickCellValue(row, EXCEL_COLUMN_ALIASES.area_sqw), 0)),
+      parking_rights: Math.max(0, Math.trunc(toNumber(pickCellValue(row, EXCEL_COLUMN_ALIASES.parking_rights), 1))),
+      fee_rate: Number(setup.feeRatePerSqw || 0),
+      house_type: normalizeHouseType(pickCellValue(row, EXCEL_COLUMN_ALIASES.house_type)),
+      status: normalizeStatus(pickCellValue(row, EXCEL_COLUMN_ALIASES.status)),
+      note: String(pickCellValue(row, EXCEL_COLUMN_ALIASES.note) || '').trim(),
+    }
+
+    return payload
+  }
+
+  const parseExcelFile = async (file) => {
+    const buffer = await file.arrayBuffer()
+    const workbook = XLSX.read(buffer, { type: 'array' })
+    const firstSheetName = workbook.SheetNames[0]
+    if (!firstSheetName) return []
+    const sheet = workbook.Sheets[firstSheetName]
+    return XLSX.utils.sheet_to_json(sheet, { defval: '' })
+  }
+
+  const handleOpenImportExcel = async () => {
+    await Swal.fire({
+      icon: 'info',
+      title: 'นำเข้าข้อมูลบ้านจาก Excel',
+      html: 'คอลัมน์ที่รองรับ เช่น บ้านเลขที่, ซอย, เจ้าของ, ผู้อยู่อาศัย, เบอร์โทร, พื้นที่, สิทธิ์จอดรถ, ประเภท, สถานะ, หมายเหตุ',
+      confirmButtonText: 'เลือกไฟล์',
+    })
+    excelInputRef.current?.click()
+  }
+
+  const handleImportExcelChange = async (event) => {
+    const file = event.target.files?.[0]
+    event.target.value = ''
+    if (!file) return
+
+    try {
+      Swal.fire({
+        title: 'กำลังอ่านไฟล์...',
+        text: 'กรุณารอสักครู่',
+        allowOutsideClick: false,
+        allowEscapeKey: false,
+        didOpen: () => Swal.showLoading(),
+      })
+
+      const rows = await parseExcelFile(file)
+      const parsedPayloads = rows
+        .map((row) => buildHousePayloadFromRow(row))
+        .filter(Boolean)
+
+      if (parsedPayloads.length === 0) {
+        await Swal.fire({ icon: 'warning', title: 'ไม่พบข้อมูลที่นำเข้าได้', text: 'ตรวจสอบว่าไฟล์มีคอลัมน์บ้านเลขที่' })
+        return
+      }
+
+      const uniquePayloadMap = new Map()
+      for (const payload of parsedPayloads) {
+        uniquePayloadMap.set(payload.house_no, payload)
+      }
+      const uniquePayloads = Array.from(uniquePayloadMap.values())
+
+      const existing = await listHouses({ status: 'all', soi: 'all', search: '' })
+      const existingByHouseNo = new Map(existing.map((house) => [String(house.house_no || '').trim(), house]))
+
+      let createdCount = 0
+      let updatedCount = 0
+      let failedCount = 0
+      const failedItems = []
+
+      for (const payload of uniquePayloads) {
+        try {
+          const existed = existingByHouseNo.get(payload.house_no)
+          if (existed?.id) {
+            await updateHouse(existed.id, payload)
+            updatedCount += 1
+          } else {
+            await createHouse(payload)
+            createdCount += 1
+          }
+        } catch (error) {
+          failedCount += 1
+          failedItems.push(`${payload.house_no}: ${error?.message || 'เกิดข้อผิดพลาด'}`)
+        }
+      }
+
+      await loadHouses({ status: filterType, soi: soiFilter, search: searchTerm })
+
+      await Swal.fire({
+        icon: failedCount > 0 ? 'warning' : 'success',
+        title: 'นำเข้าเสร็จสิ้น',
+        html: `เพิ่มใหม่ ${createdCount} หลัง<br/>อัปเดต ${updatedCount} หลัง<br/>ไม่สำเร็จ ${failedCount} หลัง${failedItems.length ? `<br/><br/><small style="text-align:left;display:block;max-height:160px;overflow:auto">${failedItems.map((line) => `• ${line}`).join('<br/>')}</small>` : ''}`,
+      })
+    } catch (error) {
+      await Swal.fire({ icon: 'error', title: 'นำเข้าไม่สำเร็จ', text: error?.message || 'เกิดข้อผิดพลาด' })
+    }
+  }
 
   const loadHouses = async (override = {}) => {
     try {
@@ -315,8 +484,16 @@ const AdminHouses = () => {
           <div className="ct">รายการบ้านทั้งหมด ({houses.length} หลัง)</div>
           <div className="houses-list-actions">
             <button className="btn btn-p btn-sm" onClick={openAddModal}>+ เพิ่มบ้าน</button>
+            <button className="btn btn-o btn-sm" onClick={handleOpenImportExcel}>📥 นำเข้า Excel</button>
             <button className="btn btn-a btn-sm" onClick={handleBulkUpdateAnnualFee}>⏳ อัปเดตค่าส่วนกลาง</button>
             <button className="btn btn-g btn-sm" onClick={() => loadHouses()}>🔄 รีเฟรช</button>
+            <input
+              ref={excelInputRef}
+              type="file"
+              accept=".xlsx,.xls"
+              onChange={handleImportExcelChange}
+              style={{ display: 'none' }}
+            />
           </div>
         </div>
         <div className="cb houses-table-card-body houses-main-body">
