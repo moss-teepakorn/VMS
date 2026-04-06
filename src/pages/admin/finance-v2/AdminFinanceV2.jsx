@@ -37,6 +37,14 @@ function periodLabel(period) {
   return period || '-'
 }
 
+function feeStatusLabel(status) {
+  if (status === 'paid') return 'ชำระแล้ว'
+  if (status === 'cancelled') return 'ยกเลิก'
+  if (status === 'pending') return 'รอชำระ'
+  if (status === 'overdue') return 'เกินกำหนด'
+  return status || '-'
+}
+
 function formatMoney(value) {
   return Number(value || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 }
@@ -130,7 +138,7 @@ function BillingPage({ billingYearBE, billingPeriod, setBillingYearBE, setBillin
             </label>
             <label className="finance-v2-inline-check">
               <input type="checkbox" checked={billingOverwrite} onChange={(e) => setBillingOverwrite(e.target.checked)} />
-              ทับรายการ pending
+              ทับรายการที่รอชำระ
             </label>
           </div>
           <div className="finance-v2-step"><h4>ขั้นตอน 1</h4><p>เลือกปีและงวดที่ต้องการออกบิล</p></div>
@@ -306,7 +314,7 @@ function ArchivePage({ archiveRows, archiveKeyword, setArchiveKeyword }) {
                 <strong>บ้าน {row.houses?.house_no || '-'} · ซอย {row.houses?.soi || '-'}</strong>
                 <span>{periodLabel(row.period)} ปี {toBE(row.year)} · {formatMoney(row.total_amount)}</span>
               </div>
-              <span className={`finance-v2-chip ${row.status === 'paid' ? 'green' : 'gray'}`}>{row.status === 'paid' ? 'ชำระแล้ว' : 'ยกเลิก'}</span>
+              <span className={`finance-v2-chip ${row.status === 'paid' ? 'green' : 'gray'}`}>{feeStatusLabel(row.status)}</span>
             </div>
           ))}
         </div>
@@ -318,7 +326,7 @@ function ArchivePage({ archiveRows, archiveKeyword, setArchiveKeyword }) {
             <div className="finance-v2-row" key={`audit-${row.id}`}>
               <div className="finance-v2-row-main">
                 <strong>INV-{String(row.year || '').slice(-2)}-{String(row.id || '').slice(0, 6).toUpperCase()}</strong>
-                <span>สถานะ {row.status} · สร้างเมื่อ {row.created_at ? new Date(row.created_at).toLocaleString('th-TH') : '-'}</span>
+                <span>สถานะ {feeStatusLabel(row.status)} · สร้างเมื่อ {row.created_at ? new Date(row.created_at).toLocaleString('th-TH') : '-'}</span>
               </div>
               <span className="finance-v2-chip blue">บันทึก</span>
             </div>
@@ -479,13 +487,24 @@ export default function AdminFinanceV2() {
 
   const openPrintHtml = (title, headers, rows) => {
     const headerHtml = headers.map((h) => `<th>${escapeHtml(h)}</th>`).join('')
-    const rowHtml = rows.map((r) => `<tr>${r.map((cell) => `<td>${escapeHtml(cell)}</td>`).join('')}</tr>`).join('')
+    const rowHtml = rows
+      .map((r) => `<tr>${r.map((cell, idx) => `<td data-label="${escapeHtml(headers[idx] || '')}">${escapeHtml(cell)}</td>`).join('')}</tr>`)
+      .join('')
     const html = `<!doctype html><html><head><meta charset="utf-8" /><title>${escapeHtml(title)}</title><style>
       body{font-family:Sarabun,Arial,sans-serif;padding:18px;color:#0f172a}
       h1{font-size:20px;margin:0 0 10px}
       table{width:100%;border-collapse:collapse}
       th,td{border:1px solid #cbd5e1;padding:6px 8px;font-size:12px;text-align:left}
       th{background:#e2e8f0}
+      @media (max-width: 720px){
+        body{padding:10px}
+        h1{font-size:16px;margin-bottom:8px}
+        table,thead,tbody,tr,th,td{display:block}
+        thead{display:none}
+        tr{border:1px solid #cbd5e1;border-radius:10px;padding:8px;margin-bottom:8px;background:#fff}
+        td{border:none;padding:2px 0;display:grid;grid-template-columns:100px 1fr;gap:8px;line-height:1.4}
+        td::before{content:attr(data-label);font-weight:700;color:#334155}
+      }
     </style></head><body><h1>${escapeHtml(title)}</h1><table><thead><tr>${headerHtml}</tr></thead><tbody>${rowHtml}</tbody></table><script>window.onload=()=>window.print()</script></body></html>`
     const popup = window.open('', '_blank', 'width=1100,height=860')
     if (!popup) return
@@ -606,7 +625,7 @@ export default function AdminFinanceV2() {
   }
 
   const handlePrintInvoices = () => {
-    const rows = printFees.map((row) => [row.houses?.house_no || '-', row.houses?.soi || '-', periodLabel(row.period), toBE(row.year), formatMoney(row.total_amount), row.status])
+    const rows = printFees.map((row) => [row.houses?.house_no || '-', row.houses?.soi || '-', periodLabel(row.period), toBE(row.year), formatMoney(row.total_amount), feeStatusLabel(row.status)])
     openPrintHtml('ใบแจ้งหนี้ทั้งหมด (การเงิน V2)', ['บ้าน', 'ซอย', 'งวด', 'ปี', 'ยอดรวม', 'สถานะ'], rows)
   }
 
@@ -637,7 +656,7 @@ export default function AdminFinanceV2() {
 
   if (activeKey === 'billing') {
     title = 'ออกใบแจ้งหนี้ V2'
-    subtitle = 'ย้าย flow สร้างใบแจ้งหนี้ไปหน้าจอเฉพาะทาง'
+    subtitle = 'ย้ายขั้นตอนสร้างใบแจ้งหนี้ไปหน้าจอเฉพาะทาง'
     content = (
       <BillingPage
         billingYearBE={billingYearBE}
