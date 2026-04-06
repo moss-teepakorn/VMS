@@ -131,6 +131,11 @@ function AppRoutes() {
         <Route path="finance-v2/receive" element={<AdminFinanceV2 />} />
         <Route path="finance-v2/print-center" element={<AdminFinanceV2 />} />
         <Route path="finance-v2/archive" element={<AdminFinanceV2 />} />
+        <Route path="finance-v2/reports/payments" element={<AdminReportPayments />} />
+        <Route path="finance-v2/reports/outstanding" element={<AdminReportOutstanding />} />
+        <Route path="finance-v2/reports/overdue" element={<AdminReportOverdue />} />
+        <Route path="finance-v2/reports/violations-summary" element={<AdminReportViolationsSummary />} />
+        <Route path="finance-v2/reports/expense-payments" element={<AdminReportExpensePayments />} />
       </Route>
 
       {/* Resident routes */}
