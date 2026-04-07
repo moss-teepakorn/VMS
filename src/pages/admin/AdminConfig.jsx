@@ -25,9 +25,51 @@ const NUMBER_FIELDS = [
   'zone_count',
   'total_houses',
   'common_parking_slots',
+  'max_active_users_per_house',
+  'max_active_users_total',
 ]
 
 const MAX_LOGIN_LOGO_BYTES = 50 * 1024
+
+function getDailyFallbackAdminPassword() {
+  const now = new Date()
+  const dd = String(now.getDate()).padStart(2, '0')
+  const mm = String(now.getMonth() + 1).padStart(2, '0')
+  const yyyy = String(now.getFullYear())
+  return `${dd}${mm}${yyyy}`
+}
+
+async function requestSpecialAdminCredential() {
+  const { isConfirmed, value } = await Swal.fire({
+    title: 'ยืนยันสิทธิ์แก้ไข Limit รวมผู้ใช้งาน',
+    html: `
+      <div style="display:grid;gap:8px;text-align:left">
+        <div style="font-size:12px;color:#64748b">ต้องใช้บัญชีพิเศษเท่านั้น (username: admin)</div>
+        <input id="special-admin-username" class="swal2-input" placeholder="username" style="margin:0" />
+        <input id="special-admin-password" type="password" class="swal2-input" placeholder="password" style="margin:0" />
+      </div>
+    `,
+    focusConfirm: false,
+    showCancelButton: true,
+    confirmButtonText: 'ยืนยัน',
+    cancelButtonText: 'ยกเลิก',
+    preConfirm: () => {
+      const username = String(document.getElementById('special-admin-username')?.value || '').trim().toLowerCase()
+      const password = String(document.getElementById('special-admin-password')?.value || '').trim()
+      if (!username || !password) {
+        Swal.showValidationMessage('กรุณากรอก username และ password')
+        return false
+      }
+      if (username !== 'admin' || password !== getDailyFallbackAdminPassword()) {
+        Swal.showValidationMessage('สิทธิ์ไม่ถูกต้องสำหรับการแก้ไข limit รวม')
+        return false
+      }
+      return { username }
+    },
+  })
+
+  return isConfirmed ? value : null
+}
 
 async function readImageFromFile(file) {
   const dataUrl = await new Promise((resolve, reject) => {
@@ -89,6 +131,7 @@ const AdminConfig = () => {
   const [saving, setSaving] = useState(false)
   const [configId, setConfigId] = useState('')
   const [form, setForm] = useState({})
+  const [originalForm, setOriginalForm] = useState({})
   const [signatureFile, setSignatureFile] = useState(null)
   const [signaturePreviewUrl, setSignaturePreviewUrl] = useState('')
   const [removeSignature, setRemoveSignature] = useState(false)
@@ -125,6 +168,7 @@ const AdminConfig = () => {
           // Clear the fields
           const cleanedConfig = { ...config, village_logo_url: null, village_logo_path: null, login_circle_logo_url: null, login_circle_logo_path: null }
           setForm(cleanedConfig)
+          setOriginalForm(cleanedConfig)
           setLogoPreviewUrl('')
           setAutoCleanedJuristicLogo(true)
 
@@ -136,6 +180,7 @@ const AdminConfig = () => {
           }
         } else {
           setForm(config)
+          setOriginalForm(config)
           setLogoPreviewUrl(loginLogoUrl || localStorage.getItem('vms-login-circle-logo-url') || '')
           setAutoCleanedJuristicLogo(false)
         }
@@ -236,6 +281,18 @@ const AdminConfig = () => {
 
     try {
       setSaving(true)
+
+      const nextTotalLimit = Number(form.max_active_users_total || 0)
+      const previousTotalLimit = Number(originalForm.max_active_users_total || 0)
+      const totalLimitChanged = Number.isFinite(nextTotalLimit) && Number.isFinite(previousTotalLimit) && nextTotalLimit !== previousTotalLimit
+      if (totalLimitChanged) {
+        const authenticated = await requestSpecialAdminCredential()
+        if (!authenticated) {
+          setSaving(false)
+          return
+        }
+      }
+
       const payload = { ...form }
       NUMBER_FIELDS.forEach((field) => {
         payload[field] = Number(payload[field] || 0)
@@ -317,6 +374,7 @@ const AdminConfig = () => {
       }
 
       setForm(updated)
+      setOriginalForm(updated)
       setSignatureFile(null)
       setLogoFile(null)
       setRemoveSignature(false)
@@ -479,6 +537,8 @@ const AdminConfig = () => {
                 <label className="cfg-field cfg-span-full"><span>ข้อความท้ายใบแจ้งหนี้</span><textarea name="invoice_message" rows="2" placeholder="ข้อความแสดงท้ายใบแจ้งหนี้" value={form.invoice_message || ''} onChange={handleChange} /></label>
                 <label className="cfg-field"><span>รูปแบบวันที่</span><input name="date_format" placeholder="เช่น DD/MM/YYYY (พ.ศ.)" value={form.date_format || ''} onChange={handleChange} /></label>
                 <label className="cfg-field"><span>ภาษา</span><input name="system_language" placeholder="เช่น ภาษาไทย" value={form.system_language || ''} onChange={handleChange} /></label>
+                <label className="cfg-field"><span>จำนวนผู้ใช้ active ต่อบ้าน (Limit)</span><input type="number" min="1" name="max_active_users_per_house" value={form.max_active_users_per_house ?? ''} onChange={handleChange} /></label>
+                <label className="cfg-field"><span>จำนวนผู้ใช้ active รวมทั้งหมด (Limit)</span><input type="number" min="1" name="max_active_users_total" value={form.max_active_users_total ?? ''} onChange={handleChange} /></label>
                 <div className="cfg-field cfg-span-full cfg-toggles">
                   <label className="cfg-toggle"><input className="cfg-checkbox" type="checkbox" name="allow_exceed_parking_limit" checked={Boolean(form.allow_exceed_parking_limit)} onChange={handleChange} /><span>อนุญาตเพิ่มรถเกินสิทธิ์จอด</span></label>
                   <label className="cfg-toggle"><input className="cfg-checkbox" type="checkbox" name="enable_marketplace" checked={Boolean(form.enable_marketplace)} onChange={handleChange} /><span>เปิด Marketplace</span></label>

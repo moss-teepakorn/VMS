@@ -5,6 +5,7 @@ import {
   createUser,
   updateUser,
   deleteUser,
+  deleteUsersBulk,
   listHouseOptions,
   getHouseDetail,
   formatDateTime,
@@ -30,6 +31,8 @@ const AdminUsers = () => {
   const [editingUser, setEditingUser] = useState(null)
   const [saving, setSaving] = useState(false)
   const [form, setForm] = useState(EMPTY_FORM)
+  const [statusFilter, setStatusFilter] = useState('all')
+  const [selectedUserIds, setSelectedUserIds] = useState([])
 
   useEffect(() => {
     loadUsers()
@@ -41,6 +44,10 @@ const AdminUsers = () => {
     try {
       const data = await getUsers()
       setUsers(data)
+      setSelectedUserIds((prev) => {
+        const available = new Set((data || []).map((user) => String(user.id)))
+        return prev.filter((id) => available.has(id))
+      })
     } catch (error) {
       console.error('Error loading users:', error)
       await Swal.fire({ icon: 'error', title: 'โหลดข้อมูลไม่สำเร็จ', text: error.message })
@@ -72,6 +79,55 @@ const AdminUsers = () => {
   }
 
   const getRoleText = (role) => (role === 'admin' ? 'ผู้ดูแลระบบ' : 'ลูกบ้าน')
+
+  const filteredUsers = users.filter((user) => {
+    if (statusFilter === 'active') return Boolean(user.is_active)
+    if (statusFilter === 'inactive') return !user.is_active
+    return true
+  })
+
+  const selectedIdSet = new Set(selectedUserIds)
+  const allFilteredSelected = filteredUsers.length > 0 && filteredUsers.every((user) => selectedIdSet.has(String(user.id)))
+
+  const toggleUserSelection = (userId) => {
+    const key = String(userId)
+    setSelectedUserIds((prev) => (
+      prev.includes(key) ? prev.filter((id) => id !== key) : [...prev, key]
+    ))
+  }
+
+  const toggleSelectAllFiltered = () => {
+    setSelectedUserIds((prev) => {
+      const prevSet = new Set(prev)
+      if (allFilteredSelected) {
+        return prev.filter((id) => !filteredUsers.some((user) => String(user.id) === id))
+      }
+      filteredUsers.forEach((user) => prevSet.add(String(user.id)))
+      return Array.from(prevSet)
+    })
+  }
+
+  const handleDeleteSelectedUsers = async () => {
+    if (selectedUserIds.length === 0) return
+    const result = await Swal.fire({
+      icon: 'warning',
+      title: 'ยืนยันการลบผู้ใช้งานที่เลือก',
+      text: `ต้องการลบ ${selectedUserIds.length} รายการหรือไม่`,
+      showCancelButton: true,
+      confirmButtonText: 'ลบทั้งหมด',
+      cancelButtonText: 'ยกเลิก',
+    })
+    if (!result.isConfirmed) return
+
+    try {
+      const deletedCount = await deleteUsersBulk(selectedUserIds)
+      await loadUsers()
+      setSelectedUserIds([])
+      await Swal.fire({ icon: 'success', title: 'ลบสำเร็จ', text: `ลบผู้ใช้งานแล้ว ${deletedCount} รายการ` })
+    } catch (error) {
+      await Swal.fire({ icon: 'error', title: 'ลบไม่สำเร็จ', text: error.message })
+    }
+  }
 
   const openAddModal = () => {
     setEditingUser(null)
@@ -185,6 +241,7 @@ const AdminUsers = () => {
       }
       closeModal()
       await loadUsers()
+      setSelectedUserIds([])
       await Swal.fire({ icon: 'success', title: 'สำเร็จ', text: 'บันทึกข้อมูลผู้ใช้เรียบร้อย' })
     } catch (error) {
       console.error('Save user failed:', error)
@@ -208,6 +265,7 @@ const AdminUsers = () => {
     try {
       await deleteUser(user.id)
       await loadUsers()
+      setSelectedUserIds((prev) => prev.filter((id) => id !== String(user.id)))
       await Swal.fire({ icon: 'success', title: 'ลบสำเร็จ', text: 'ลบผู้ใช้งานเรียบร้อย' })
     } catch (error) {
       await Swal.fire({ icon: 'error', title: 'ลบไม่สำเร็จ', text: error.message })
@@ -254,8 +312,19 @@ const AdminUsers = () => {
 
       <div className="card">
         <div className="ch houses-list-head houses-main-head">
-          <div className="ct">รายชื่อผู้ใช้งาน ({users.length})</div>
+          <div className="ct">รายชื่อผู้ใช้งาน ({filteredUsers.length}/{users.length})</div>
           <div className="houses-list-actions">
+            <select className="fs" value={statusFilter} onChange={(e) => { setStatusFilter(e.target.value); setSelectedUserIds([]) }} style={{ minWidth: 150, height: 34 }}>
+              <option value="all">ทุกสถานะ</option>
+              <option value="active">เฉพาะ Active</option>
+              <option value="inactive">เฉพาะ Inactive</option>
+            </select>
+            <button className="btn btn-sm" style={{ background: allFilteredSelected ? '#0f766e' : '#334155', color: '#fff', border: 'none' }} onClick={toggleSelectAllFiltered}>
+              {allFilteredSelected ? 'ยกเลิกเลือกทั้งหมด' : 'เลือกทั้งหมด'}
+            </button>
+            <button className="btn btn-dg btn-sm" disabled={selectedUserIds.length === 0} onClick={handleDeleteSelectedUsers}>
+              ลบที่เลือก ({selectedUserIds.length})
+            </button>
             <button className="btn btn-p btn-sm" onClick={openAddModal}>+ เพิ่มผู้ใช้ใหม่</button>
           </div>
         </div>
@@ -264,6 +333,9 @@ const AdminUsers = () => {
             <div style={{ overflowX: 'auto' }}>
               <table className="tw houses-table houses-main-table" style={{ width: '100%', minWidth: '1080px' }}>
                 <thead><tr>
+                  <th style={{ width: 44 }}>
+                    <input type="checkbox" checked={allFilteredSelected} onChange={toggleSelectAllFiltered} />
+                  </th>
                   <th>บ้านเลขที่</th>
                   <th>username</th>
                   <th>ชื่อ-นามสกุล</th>
@@ -277,11 +349,14 @@ const AdminUsers = () => {
                 </tr></thead>
                 <tbody>
                   {loading ? (
-                    <tr><td colSpan="10" style={{ textAlign: 'center', color: 'var(--mu)', padding: '20px' }}>กำลังโหลด...</td></tr>
-                  ) : users.length === 0 ? (
-                    <tr><td colSpan="10" style={{ textAlign: 'center', color: 'var(--mu)', padding: '20px' }}>ไม่มีข้อมูลผู้ใช้</td></tr>
-                  ) : users.map((user) => (
+                    <tr><td colSpan="11" style={{ textAlign: 'center', color: 'var(--mu)', padding: '20px' }}>กำลังโหลด...</td></tr>
+                  ) : filteredUsers.length === 0 ? (
+                    <tr><td colSpan="11" style={{ textAlign: 'center', color: 'var(--mu)', padding: '20px' }}>ไม่มีข้อมูลผู้ใช้</td></tr>
+                  ) : filteredUsers.map((user) => (
                     <tr key={user.id}>
+                      <td>
+                        <input type="checkbox" checked={selectedIdSet.has(String(user.id))} onChange={() => toggleUserSelection(user.id)} />
+                      </td>
                       <td>{getHouseNo(user.house_id)}</td>
                       <td>{user.username || '-'}</td>
                       <td>{getHouseOwnerName(user.house_id, user.full_name || '-')}</td>
@@ -305,11 +380,12 @@ const AdminUsers = () => {
           <div className="mobile-only">
             {loading ? (
               <div className="mcard-empty">กำลังโหลด...</div>
-            ) : users.length === 0 ? (
+            ) : filteredUsers.length === 0 ? (
               <div className="mcard-empty">ไม่มีข้อมูลผู้ใช้</div>
-            ) : users.map((user) => (
+            ) : filteredUsers.map((user) => (
               <div key={user.id} className="mcard">
                 <div className="mcard-top">
+                  <input type="checkbox" checked={selectedIdSet.has(String(user.id))} onChange={() => toggleUserSelection(user.id)} style={{ marginRight: 8 }} />
                   <div>
                     <div className="mcard-title">{getHouseOwnerName(user.house_id, user.full_name || '-')}</div>
                     <div className="mcard-sub">{user.username || '-'} · บ้าน {getHouseNo(user.house_id)}</div>

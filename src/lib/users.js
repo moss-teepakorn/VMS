@@ -1,6 +1,7 @@
 import { supabase } from './supabase'
 import bcrypt from 'bcryptjs'
 import { isReservedAdminUsername } from './reservedUsernames'
+import { assertCanActivateResident } from './userLimits'
 
 function toLowerOrNull(value) {
   const trimmed = (value || '').trim().toLowerCase()
@@ -42,6 +43,10 @@ export async function createUser(userData) {
       throw new Error('ชื่อผู้ใช้นี้สงวนไว้สำหรับผู้ดูแลระบบ')
     }
 
+    if (nextRole === 'resident' && (userData.is_active ?? true)) {
+      await assertCanActivateResident({ houseId: userData.house_id })
+    }
+
     const passwordHash = await bcrypt.hash(userData.password || '', 10)
 
     const payload = {
@@ -77,6 +82,23 @@ export async function updateUser(userId, updates) {
     const nextRole = typeof updates.role !== 'undefined' ? updates.role : null
     if (nextRole === 'resident' && typeof updates.username !== 'undefined' && isReservedAdminUsername(updates.username)) {
       throw new Error('ชื่อผู้ใช้นี้สงวนไว้สำหรับผู้ดูแลระบบ')
+    }
+
+    const { data: currentUser, error: currentUserError } = await supabase
+      .from('profiles')
+      .select('id, role, house_id, is_active')
+      .eq('id', userId)
+      .maybeSingle()
+
+    if (currentUserError) throw new Error(currentUserError.message)
+    if (!currentUser) throw new Error('ไม่พบผู้ใช้งาน')
+
+    const effectiveRole = typeof updates.role !== 'undefined' ? updates.role : currentUser.role
+    const effectiveHouseId = typeof updates.house_id !== 'undefined' ? (updates.house_id || null) : currentUser.house_id
+    const effectiveActive = typeof updates.is_active !== 'undefined' ? updates.is_active : currentUser.is_active
+
+    if (effectiveRole === 'resident' && effectiveActive) {
+      await assertCanActivateResident({ houseId: effectiveHouseId, excludeProfileId: userId })
     }
 
     const payload = {}
@@ -122,6 +144,27 @@ export async function deleteUser(userId) {
     return true
   } catch (error) {
     console.error('Error deleting user:', error)
+    throw error
+  }
+}
+
+export async function deleteUsersBulk(userIds) {
+  const ids = Array.isArray(userIds) ? userIds.map((id) => String(id || '')).filter(Boolean) : []
+  if (ids.length === 0) return 0
+
+  try {
+    const { error } = await supabase
+      .from('profiles')
+      .delete()
+      .in('id', ids)
+
+    if (error) {
+      throw new Error(error.message)
+    }
+
+    return ids.length
+  } catch (error) {
+    console.error('Error deleting users bulk:', error)
     throw error
   }
 }

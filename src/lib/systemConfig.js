@@ -45,6 +45,8 @@ const DEFAULT_SYSTEM_CONFIG = {
   zone_count: 2,
   total_houses: 128,
   common_parking_slots: 30,
+  max_active_users_per_house: 5,
+  max_active_users_total: 1000,
   enable_marketplace: true,
   enable_technicians: true,
   date_format: 'DD/MM/YYYY (พ.ศ.)',

@@ -1,6 +1,7 @@
 import bcrypt from 'bcryptjs'
 import { supabase } from './supabase'
 import { isReservedAdminUsername } from './reservedUsernames'
+import { assertCanActivateResident } from './userLimits'
 
 const FALLBACK_ACCOUNT_REQUEST_PREFIX = 'fallback-profile-'
 
@@ -93,9 +94,29 @@ async function ensureUsernameAvailable(username) {
   return normalizedUsername
 }
 
+async function ensureNoPendingInactiveResidentByHouse(houseId) {
+  if (!houseId) return
+
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('id, username, is_active, house_id, role, last_login_at')
+    .eq('role', 'resident')
+    .eq('house_id', houseId)
+    .eq('is_active', false)
+    .limit(1)
+
+  if (error) throw error
+  const pendingProfile = (data || []).find((row) => !row.last_login_at)
+  if (pendingProfile) {
+    throw new Error('บ้านนี้มีบัญชีที่ยังไม่ได้อนุมัติอยู่แล้ว กรุณารอผู้ดูแลระบบดำเนินการ')
+  }
+}
+
 export async function createAccountRegistrationRequest({ username, houseNo, phone, password }) {
   const normalizedUsername = await ensureUsernameAvailable(username)
   const house = await findHouseByHouseNoAndPhone({ houseNo, phone })
+  await ensureNoPendingInactiveResidentByHouse(house.id)
+  await assertCanActivateResident({ houseId: house.id })
 
   const passwordText = String(password || '')
   if (passwordText.length < 6) {
@@ -298,6 +319,19 @@ export async function updateAccountRequestStatus(requestId, { status, adminNote 
     const shouldActivate = status === 'approved'
     const reviewedAt = new Date().toISOString()
 
+    const { data: currentProfile, error: currentProfileError } = await supabase
+      .from('profiles')
+      .select('id, house_id')
+      .eq('id', profileId)
+      .maybeSingle()
+
+    if (currentProfileError) throw currentProfileError
+    if (!currentProfile) throw new Error('ไม่พบผู้ใช้งาน')
+
+    if (shouldActivate) {
+      await assertCanActivateResident({ houseId: currentProfile.house_id, excludeProfileId: currentProfile.id })
+    }
+
     const { data: profileRow, error: profileError } = await supabase
       .from('profiles')
       .update({ is_active: shouldActivate, updated_at: reviewedAt })
@@ -380,6 +414,17 @@ export async function approveAccountRequest(requestId, { reviewedById = null } =
   if (requestError) throw requestError
   if (!request) throw new Error('ไม่พบคำขอ')
   if (!request.profile_id) throw new Error('คำขอไม่มีผู้ใช้งานที่เชื่อมโยง')
+
+  const { data: profileBeforeUpdate, error: profileBeforeUpdateError } = await supabase
+    .from('profiles')
+    .select('id, house_id')
+    .eq('id', request.profile_id)
+    .maybeSingle()
+
+  if (profileBeforeUpdateError) throw profileBeforeUpdateError
+  if (!profileBeforeUpdate) throw new Error('ไม่พบผู้ใช้งานที่เชื่อมโยง')
+
+  await assertCanActivateResident({ houseId: profileBeforeUpdate.house_id, excludeProfileId: profileBeforeUpdate.id })
 
   const { error: profileError } = await supabase
     .from('profiles')
