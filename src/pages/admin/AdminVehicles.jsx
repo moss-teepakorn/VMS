@@ -169,10 +169,8 @@ function SearchableSelect({
   )
 
   useEffect(() => {
-    if (!open) {
-      setKeyword(selected?.label || '')
-    }
-  }, [open, selected])
+    if (!open) setKeyword('')
+  }, [open])
 
   useEffect(() => {
     if (!open) return undefined
@@ -202,7 +200,10 @@ function SearchableSelect({
           setKeyword(event.target.value)
           setOpen(true)
         }}
-        onFocus={() => setOpen(true)}
+        onFocus={() => {
+          setKeyword('')
+          setOpen(true)
+        }}
         placeholder={placeholder}
       />
       {open && (
