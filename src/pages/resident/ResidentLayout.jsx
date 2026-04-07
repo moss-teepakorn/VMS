@@ -286,7 +286,7 @@ export default function ResidentLayout() {
   const [sidebarCollapsed] = useState(false)
   const [menuSearch, setMenuSearch] = useState('')
   const [sectionOpen, setSectionOpen] = useState({
-    กฎระเบียบ: true,
+    กฎระเบียบ: false,
     หน้าหลัก: true,
     ข้อมูล: false,
     บัญชี: false,
@@ -387,7 +387,13 @@ export default function ResidentLayout() {
   useEffect(() => {
     const activeGroup = NAV_GROUPS.find((group) => group.items.some((item) => item.key === activeSection))
     if (!activeGroup) return
-    setSectionOpen((prev) => ({ ...prev, [activeGroup.section]: true }))
+    setSectionOpen(() => {
+      const next = NAV_GROUPS.reduce((acc, group) => {
+        acc[group.section] = group.section === activeGroup.section
+        return acc
+      }, {})
+      return next
+    })
   }, [activeSection])
 
   useEffect(() => {
@@ -2515,6 +2521,8 @@ export default function ResidentLayout() {
                         <div className="ig">
                           <div className="ii"><div className="ik">บ้านเลขที่</div><div className="iv">{houseDetail.house_no || '-'}</div></div>
                           <div className="ii"><div className="ik">ซอย</div><div className="iv">{houseDetail.soi || '-'}</div></div>
+                          <div className="ii"><div className="ik">ชั้นที่</div><div className="iv">{Number.isFinite(Number(houseDetail.floor_no)) ? Number(houseDetail.floor_no) : '-'}</div></div>
+                          <div className="ii"><div className="ik">หมายเลขห้อง</div><div className="iv">{houseDetail.room_no || '-'}</div></div>
                           <div className="ii"><div className="ik">ที่อยู่</div><div className="iv">{houseAddressText || '-'}</div></div>
                           <div className="ii"><div className="ik">พื้นที่</div><div className="iv">{houseAreaSqw > 0 ? `${formatMoney(houseAreaSqw)} ตร.ว.` : '-'}</div></div>
                           <div className="ii"><div className="ik">อัตราค่าส่วนกลาง</div><div className="iv">{houseDetail.fee_rate ? `฿${formatMoney(houseDetail.fee_rate)} / ตร.ว. / เดือน` : '-'}</div></div>

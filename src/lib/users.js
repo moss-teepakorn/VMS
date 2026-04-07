@@ -153,6 +153,8 @@ export async function getHouseDetail(houseId) {
 
   return {
     ...data,
+    floor_no: data.floor_no ?? data.FLOOR_NO ?? null,
+    room_no: data.room_no ?? data.ROOM_NO ?? null,
     owner_name: data.owner_name || data.OWNER_NAME || '',
     resident_name: data.resident_name || data.RESIDENT_NAME || '',
     contact_name: data.contact_name || data.CONTACT_NAME || '',

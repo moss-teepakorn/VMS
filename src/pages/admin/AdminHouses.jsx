@@ -38,6 +38,8 @@ const STATUS_LABEL_TO_VALUE = {
 const EXCEL_COLUMN_ALIASES = {
   house_no: ['house_no', 'house no', 'เลขที่บ้าน', 'บ้านเลขที่', 'เลขที่'],
   soi: ['soi', 'ซอย'],
+  floor_no: ['floor_no', 'floor', 'ชั้น', 'ชั้นที่'],
+  room_no: ['room_no', 'room', 'ห้อง', 'หมายเลขห้อง'],
   address: ['address', 'ที่อยู่', 'ถนน'],
   owner_name: ['owner_name', 'owner', 'เจ้าของ', 'ชื่อเจ้าของ', 'เจ้าของกรรมสิทธิ์'],
   resident_name: ['resident_name', 'resident', 'ผู้อยู่อาศัย', 'ผู้เช่า'],
@@ -56,6 +58,8 @@ const HOUSE_IMPORT_TEMPLATE_ROWS = [
   {
     บ้านเลขที่: '10/1',
     ซอย: '1',
+    ชั้นที่: 2,
+    หมายเลขห้อง: '201',
     ที่อยู่: 'ถนนเมนโครงการ',
     เจ้าของ: 'สมชาย ใจดี',
     ผู้อยู่อาศัย: 'สมชาย ใจดี',
@@ -72,6 +76,8 @@ const HOUSE_IMPORT_TEMPLATE_ROWS = [
   {
     บ้านเลขที่: '12/8',
     ซอย: '2',
+    ชั้นที่: 5,
+    หมายเลขห้อง: 'A-502',
     ที่อยู่: 'ถนนสวนกลาง',
     เจ้าของ: 'สุดา งามดี',
     ผู้อยู่อาศัย: 'สุดา งามดี',
@@ -90,6 +96,8 @@ const HOUSE_IMPORT_TEMPLATE_ROWS = [
 const EMPTY_FORM = {
   house_no: '',
   soi: '1',
+  floor_no: '0',
+  room_no: '',
   address: '',
   owner_name: '',
   resident_name: '',
@@ -156,6 +164,8 @@ const AdminHouses = () => {
     const payload = {
       house_no: houseNo,
       soi: String(pickCellValue(row, EXCEL_COLUMN_ALIASES.soi) || '').trim() || '1',
+      floor_no: Math.min(99, Math.max(0, Math.trunc(toNumber(pickCellValue(row, EXCEL_COLUMN_ALIASES.floor_no), 0)))),
+      room_no: String(pickCellValue(row, EXCEL_COLUMN_ALIASES.room_no) || '').trim(),
       address: String(pickCellValue(row, EXCEL_COLUMN_ALIASES.address) || '').trim(),
       owner_name: String(pickCellValue(row, EXCEL_COLUMN_ALIASES.owner_name) || '').trim(),
       resident_name: String(pickCellValue(row, EXCEL_COLUMN_ALIASES.resident_name) || '').trim(),
@@ -265,7 +275,7 @@ const AdminHouses = () => {
           <button id="download-house-template" type="button" class="swal2-confirm swal2-styled" style="margin:0;display:inline-flex;width:auto;background:#0f766e">ดาวน์โหลด Template</button>
           <div style="font-size:13px;color:#334155">2) เลือกไฟล์ Excel ที่เตรียมไว้</div>
           <input id="house-import-file" type="file" accept=".xlsx,.xls" style="padding:6px 0" />
-          <div style="font-size:12px;color:#64748b">ระบบจะใช้ "บ้านเลขที่" เป็นคีย์ตรวจสอบ: ไม่มีข้อมูลจะเพิ่มใหม่, มีอยู่แล้วจะอัปเดต</div>
+          <div style="font-size:12px;color:#64748b">ระบบจะใช้ "บ้านเลขที่" เป็นคีย์ตรวจสอบ: ไม่มีข้อมูลจะเพิ่มใหม่, มีอยู่แล้วจะอัปเดต และรองรับฟิลด์ ชั้นที่/หมายเลขห้อง</div>
         </div>
       `,
       didOpen: () => {
@@ -359,6 +369,8 @@ const AdminHouses = () => {
     setForm({
       house_no: house.house_no || '',
       soi: house.soi || '1',
+      floor_no: String(house.floor_no ?? 0),
+      room_no: house.room_no || '',
       address: house.address || '',
       owner_name: house.owner_name || '',
       resident_name: house.resident_name || '',
@@ -401,6 +413,8 @@ const AdminHouses = () => {
       const payload = {
         house_no: form.house_no,
         soi: form.soi,
+        floor_no: Math.min(99, Math.max(0, Math.trunc(Number(form.floor_no || 0)))),
+        room_no: form.room_no,
         address: form.address,
         owner_name: form.owner_name,
         resident_name: form.resident_name,
@@ -517,7 +531,7 @@ const AdminHouses = () => {
             type="text"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            placeholder="ค้นหาเลขที่บ้าน / เจ้าของ / ผู้ติดต่อ..."
+            placeholder="ค้นหาเลขที่บ้าน / เจ้าของ / หมายเลขห้อง..."
             className="houses-filter-input"
           />
           <select
@@ -563,7 +577,9 @@ const AdminHouses = () => {
                 <tr>
                   <th>เลขที่</th>
                   <th>ซอย</th>
-                  <th>เจ้าของ / ผู้อยู่อาศัย</th>
+                  <th>ชั้น</th>
+                  <th>ห้อง</th>
+                  <th>เจ้าของกรรมสิทธิ์</th>
                   <th>ประเภท</th>
                   <th>พื้นที่ (ตร.ว.)</th>
                   <th>สิทธิ์จอดรถ</th>
@@ -574,9 +590,9 @@ const AdminHouses = () => {
               </thead>
               <tbody>
                 {loading ? (
-                  <tr><td colSpan="9" style={{ textAlign: 'center', color: 'var(--mu)', padding: '20px' }}>กำลังโหลดข้อมูล...</td></tr>
+                  <tr><td colSpan="11" style={{ textAlign: 'center', color: 'var(--mu)', padding: '20px' }}>กำลังโหลดข้อมูล...</td></tr>
                 ) : houses.length === 0 ? (
-                  <tr><td colSpan="9" style={{ textAlign: 'center', color: 'var(--mu)', padding: '20px' }}>ไม่พบข้อมูลบ้าน</td></tr>
+                  <tr><td colSpan="11" style={{ textAlign: 'center', color: 'var(--mu)', padding: '20px' }}>ไม่พบข้อมูลบ้าน</td></tr>
                 ) : (
                   houses.map((house) => {
                     const badge = getStatusBadge(house.status)
@@ -585,12 +601,9 @@ const AdminHouses = () => {
                       <tr key={house.id}>
                         <td><strong>{house.house_no}</strong></td>
                         <td>{house.soi ? `ซอย ${house.soi}` : '-'}</td>
-                        <td>
-                          <div className="houses-owner-main">{house.owner_name || '-'}</div>
-                          {(house.resident_name || house.contact_name) && (
-                            <div className="houses-owner-sub">{[house.resident_name, house.contact_name].filter(Boolean).join(' · ')}</div>
-                          )}
-                        </td>
+                        <td>{Number.isFinite(Number(house.floor_no)) ? Number(house.floor_no) : '-'}</td>
+                        <td>{house.room_no || '-'}</td>
+                        <td><div className="houses-owner-main">{house.owner_name || '-'}</div></td>
                         <td>{house.house_type || '-'}</td>
                         <td>{house.area_sqw ? formatDecimal(house.area_sqw) : '-'}</td>
                         <td>{Number(house.parking_rights ?? 1)}</td>
@@ -628,10 +641,9 @@ const AdminHouses = () => {
                       <span className={`${badge.className} houses-status houses-status-${house.status} houses-mcard-badge`}>{badge.label}</span>
                     </div>
                     <div className="houses-mcard-owner">{house.owner_name || '-'}</div>
-                    {(house.resident_name || house.contact_name) && (
-                      <div className="houses-owner-sub">{[house.resident_name, house.contact_name].filter(Boolean).join(' · ')}</div>
-                    )}
                     <div className="houses-mcard-meta">
+                      <span><span className="houses-mcard-label">ชั้น</span> {Number.isFinite(Number(house.floor_no)) ? Number(house.floor_no) : '-'}</span>
+                      <span><span className="houses-mcard-label">ห้อง</span> {house.room_no || '-'}</span>
                       <span><span className="houses-mcard-label">ประเภท</span> {house.house_type || '-'}</span>
                       <span><span className="houses-mcard-label">พื้นที่</span> {house.area_sqw ? formatDecimal(house.area_sqw) : '-'} ตร.ว.</span>
                       <span><span className="houses-mcard-label">สิทธิ์จอดรถ</span> {Number(house.parking_rights ?? 1)} คัน</span>
@@ -673,6 +685,14 @@ const AdminHouses = () => {
                       <select name="soi" value={form.soi} onChange={handleChange}>
                         {SOI_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
                       </select>
+                    </label>
+                    <label className="house-field">
+                      <span>ชั้นที่</span>
+                      <input name="floor_no" type="number" min="0" max="99" step="1" value={form.floor_no} onChange={handleChange} placeholder="0" />
+                    </label>
+                    <label className="house-field">
+                      <span>หมายเลขห้อง</span>
+                      <input name="room_no" value={form.room_no} onChange={handleChange} placeholder="เช่น A-502" />
                     </label>
                     <label className="house-field house-field-span-1">
                       <span>ถนน / ที่อยู่</span>

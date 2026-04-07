@@ -104,6 +104,22 @@ export async function createAccountRegistrationRequest({ username, houseNo, phon
     .single()
 
   if (requestError) {
+    const message = String(requestError.message || '').toLowerCase()
+    const code = String(requestError.code || '')
+    const status = Number(requestError.status || 0)
+    const isRlsDenied = code === '42501'
+      || status === 401
+      || message.includes('row-level security')
+      || message.includes('policy')
+
+    if (isRlsDenied) {
+      return {
+        id: null,
+        status: 'pending',
+        created_at: new Date().toISOString(),
+      }
+    }
+
     await supabase.from('profiles').delete().eq('id', createdProfile.id)
     throw requestError
   }

@@ -71,6 +71,8 @@ export async function createHouse(payload) {
   const house = {
     house_no:       payload.house_no?.trim() || null,
     soi:            payload.soi?.trim() || null,
+    floor_no:       Number.isFinite(Number(payload.floor_no)) ? Math.min(99, Math.max(0, Math.trunc(Number(payload.floor_no)))) : 0,
+    room_no:        payload.room_no?.trim() || null,
     address:        payload.address?.trim() || null,
     owner_name:     payload.owner_name?.trim() || null,
     resident_name:  payload.resident_name?.trim() || null,
@@ -99,6 +101,8 @@ export async function createHouse(payload) {
 export async function updateHouse(id, updates) {
   const payload = {
     ...updates,
+    floor_no: Number.isFinite(Number(updates.floor_no)) ? Math.min(99, Math.max(0, Math.trunc(Number(updates.floor_no)))) : 0,
+    room_no: updates.room_no?.trim() || null,
     address: updates.address?.trim() || null,
     contact_name: updates.contact_name?.trim() || null,
     line_id: updates.line_id?.trim() || null,
