@@ -192,7 +192,7 @@ function SearchableSelect({
   }, [options, keyword])
 
   return (
-    <div ref={rootRef} className={`cars-ss ${compact ? 'cars-ss--compact' : ''} ${className}`.trim()}>
+    <div ref={rootRef} className={`cars-ss ${compact ? 'cars-ss--compact' : ''} ${open ? 'is-open' : ''} ${className}`.trim()}>
       <input
         className="cars-ss-input"
         value={open ? keyword : (selected?.label || '')}
@@ -893,7 +893,7 @@ const AdminVehicles = () => {
           />
           <SearchableSelect
             compact
-            className="houses-filter-select"
+            className="cars-filter-select"
             value={soiFilter}
             options={soiFilterOptions}
             onChange={setSoiFilter}
@@ -901,7 +901,7 @@ const AdminVehicles = () => {
           />
           <SearchableSelect
             compact
-            className="houses-filter-select"
+            className="cars-filter-select"
             value={vehicleTypeFilter}
             options={vehicleTypeFilterOptions}
             onChange={setVehicleTypeFilter}
@@ -909,7 +909,7 @@ const AdminVehicles = () => {
           />
           <SearchableSelect
             compact
-            className="houses-filter-select"
+            className="cars-filter-select"
             value={statusFilter}
             options={statusFilterOptions}
             onChange={setStatusFilter}

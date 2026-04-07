@@ -2187,6 +2187,11 @@
   width: 100%;
 }
 
+.vehicles-page .cars-filter-select {
+  width: 100%;
+  min-width: 0;
+}
+
 .vehicles-page .houses-filter-select,
 .vehicles-page .house-field select {
   -webkit-appearance: menulist;
@@ -2195,15 +2200,41 @@
   padding-right: 10px;
 }
 
+.vehicles-page .report-filter-card,
+.vehicles-page .admin-search-filter-card,
+.vehicles-page .admin-search-filter-card .cb {
+  overflow: visible !important;
+}
+
+.vehicles-page .admin-search-filter-card {
+  position: relative;
+  z-index: 110;
+}
+
 .vehicles-page .cars-ss {
   position: relative;
   width: 100%;
 }
 
+.vehicles-page .cars-ss::after {
+  content: '▾';
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #6a7a8c;
+  font-size: 14px;
+  pointer-events: none;
+}
+
+.vehicles-page .cars-ss.is-open::after {
+  transform: translateY(-50%) rotate(180deg);
+}
+
 .vehicles-page .cars-ss-input {
   width: 100%;
   min-height: 36px;
-  padding: 8px 10px;
+  padding: 8px 30px 8px 10px;
   border: 1px solid #d5deea;
   border-radius: 10px;
   background: #fff;
@@ -2221,12 +2252,12 @@
 .vehicles-page .cars-ss--compact .cars-ss-input {
   min-height: 34px;
   font-size: 12px;
-  padding: 6px 10px;
+  padding: 6px 30px 6px 10px;
 }
 
 .vehicles-page .cars-ss-menu {
   position: absolute;
-  z-index: 30;
+  z-index: 1200;
   top: calc(100% + 4px);
   left: 0;
   right: 0;
