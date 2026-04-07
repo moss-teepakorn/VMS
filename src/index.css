@@ -97,6 +97,7 @@
   box-shadow: 0 8px 20px rgba(2, 6, 23, .12);
   padding: 4px;
   background: #fff;
+  z-index: 4000;
 }
 
 .ts-dropdown .option {

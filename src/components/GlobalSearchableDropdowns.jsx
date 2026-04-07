@@ -1,75 +1,71 @@
 import { useEffect } from 'react'
 import TomSelect from 'tom-select'
 
-const SELECTOR = 'select[data-search-filter="true"]'
+const SELECTOR = 'select:not([multiple]):not([data-native-select="true"])'
 
 export default function GlobalSearchableDropdowns() {
   useEffect(() => {
     const instances = new Map()
-    const markFailed = (select) => {
+
+    const shouldEnhance = (node) => {
+      if (!(node instanceof HTMLSelectElement)) return false
+      if (node.multiple) return false
+      if (node.disabled) return false
+      if (node.closest('.ts-wrapper')) return false
+      if (node.getAttribute('data-native-select') === 'true') return false
+      return true
+    }
+
+    const initSelect = (select) => {
+      if (!shouldEnhance(select)) return
+      if (instances.has(select)) return
+      if (select.tomselect) return
+
       try {
-        select.setAttribute('data-search-filter-failed', 'true')
-      } catch {
-        // no-op
+        const instance = new TomSelect(select, {
+          create: false,
+          maxOptions: 1000,
+          hideSelected: false,
+          allowEmptyOption: true,
+          closeAfterSelect: true,
+          searchField: ['text'],
+          sortField: [{ field: '$order' }],
+          dropdownParent: 'body',
+          placeholder: select.getAttribute('placeholder') || 'ค้นหา',
+          render: {
+            no_results(data, escape) {
+              return `<div class="no-results">ไม่พบข้อมูล: ${escape(data.input)}</div>`
+            },
+            no_more_results() {
+              return '<div class="no-more-results"></div>'
+            },
+          },
+        })
+        instances.set(select, instance)
+      } catch (error) {
+        console.warn('Searchable dropdown init failed:', error)
       }
     }
 
-    const enhanceSelects = () => {
-      const selects = Array.from(document.querySelectorAll(SELECTOR))
-
-      for (const select of selects) {
-        if (!(select instanceof HTMLSelectElement)) continue
-        if (select.multiple) continue
-        if (select.getAttribute('data-search-filter-failed') === 'true') continue
-
-        const existing = instances.get(select)
-        if (!existing) {
-          try {
-            const instance = new TomSelect(select, {
-              create: false,
-              maxOptions: 1000,
-              hideSelected: false,
-              allowEmptyOption: true,
-              closeAfterSelect: true,
-              searchField: ['text'],
-              sortField: [{ field: '$order' }],
-              placeholder: select.getAttribute('placeholder') || 'ค้นหา',
-              render: {
-                no_results(data, escape) {
-                  return `<div class="no-results">ไม่พบข้อมูล: ${escape(data.input)}</div>`
-                },
-                no_more_results() {
-                  return '<div class="no-more-results"></div>'
-                },
-              },
-            })
-            instances.set(select, instance)
-          } catch (error) {
-            console.warn('Searchable dropdown init failed:', error)
-            markFailed(select)
-          }
-          continue
-        }
-
-        try {
-          existing.sync()
-          const targetValue = String(select.value ?? '')
-          const currentValue = String(existing.getValue() ?? '')
-          if (targetValue !== currentValue) {
-            existing.setValue(targetValue, true)
-          }
-        } catch (error) {
-          console.warn('Searchable dropdown sync failed:', error)
-          try {
-            existing.destroy()
-          } catch {
-            // no-op
-          }
-          instances.delete(select)
-          markFailed(select)
-        }
+    const destroySelect = (select) => {
+      const instance = instances.get(select)
+      if (!instance) return
+      try {
+        instance.destroy()
+      } catch {
+        // no-op
       }
+      instances.delete(select)
+    }
 
+    const enhanceAll = () => {
+      const selects = Array.from(document.querySelectorAll(SELECTOR))
+      for (const select of selects) {
+        initSelect(select)
+      }
+    }
+
+    const cleanDetached = () => {
       for (const [select, instance] of Array.from(instances.entries())) {
         if (!document.contains(select)) {
           try {
@@ -82,24 +78,42 @@ export default function GlobalSearchableDropdowns() {
       }
     }
 
-    const observer = new MutationObserver(() => {
-      try {
-        queueMicrotask(enhanceSelects)
-      } catch {
-        enhanceSelects()
+    const observer = new MutationObserver((mutations) => {
+      for (const mutation of mutations) {
+        for (const node of mutation.addedNodes) {
+          if (node instanceof HTMLSelectElement) {
+            initSelect(node)
+          } else if (node instanceof HTMLElement) {
+            const nested = node.querySelectorAll?.(SELECTOR) || []
+            for (const select of nested) {
+              initSelect(select)
+            }
+          }
+        }
+
+        for (const node of mutation.removedNodes) {
+          if (node instanceof HTMLSelectElement) {
+            destroySelect(node)
+          } else if (node instanceof HTMLElement) {
+            const nested = node.querySelectorAll?.('select') || []
+            for (const select of nested) {
+              destroySelect(select)
+            }
+          }
+        }
       }
+
+      cleanDetached()
     })
 
     try {
-      enhanceSelects()
+      enhanceAll()
     } catch (error) {
       console.warn('Searchable dropdown bootstrap failed:', error)
     }
     observer.observe(document.body, {
       childList: true,
       subtree: true,
-      attributes: true,
-      attributeFilter: ['value', 'disabled'],
     })
 
     return () => {

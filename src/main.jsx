@@ -1,6 +1,7 @@
 import React from 'react'
 import ReactDOM from 'react-dom/client'
 import App from './App'
+import GlobalSearchableDropdowns from './components/GlobalSearchableDropdowns'
 import './index.css'
 import './styles/design-system.css'
 import 'tom-select/dist/css/tom-select.css'
@@ -23,6 +24,7 @@ window.addEventListener('unhandledrejection', (event) => {
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
+    <GlobalSearchableDropdowns />
     <App />
   </React.StrictMode>
 )
