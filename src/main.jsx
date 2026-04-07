@@ -4,7 +4,7 @@ import App from './App'
 import GlobalSearchableDropdowns from './components/GlobalSearchableDropdowns'
 import './index.css'
 import './styles/design-system.css'
-import 'choices.js/public/assets/styles/choices.min.css'
+import 'tom-select/dist/css/tom-select.css'
 
 const EXTENSION_CONNECTION_ERROR = 'Could not establish connection. Receiving end does not exist.'
 

@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import Choices from 'choices.js'
+import TomSelect from 'tom-select'
 
 const SELECTOR = 'select[data-search-filter="true"]'
 
@@ -16,26 +16,33 @@ export default function GlobalSearchableDropdowns() {
 
         const existing = instances.get(select)
         if (!existing) {
-          const instance = new Choices(select, {
-            searchEnabled: true,
-            searchFloor: 0,
-            shouldSort: false,
-            itemSelectText: '',
-            searchResultLimit: 100,
-            renderChoiceLimit: -1,
-            allowHTML: false,
-            searchPlaceholderValue: 'ค้นหา',
-            noResultsText: 'ไม่พบข้อมูล',
-            noChoicesText: 'ไม่มีตัวเลือก',
+          const instance = new TomSelect(select, {
+            create: false,
+            maxOptions: 1000,
+            hideSelected: false,
+            allowEmptyOption: true,
+            closeAfterSelect: true,
+            searchField: ['text'],
+            sortField: [{ field: '$order' }],
+            placeholder: select.getAttribute('placeholder') || 'ค้นหา',
+            render: {
+              no_results(data, escape) {
+                return `<div class="no-results">ไม่พบข้อมูล: ${escape(data.input)}</div>`
+              },
+              no_more_results() {
+                return '<div class="no-more-results"></div>'
+              },
+            },
           })
           instances.set(select, instance)
           continue
         }
 
+        existing.sync()
         const targetValue = String(select.value ?? '')
-        const currentValue = String(existing.getValue(true) ?? '')
+        const currentValue = String(existing.getValue() ?? '')
         if (targetValue !== currentValue) {
-          existing.setChoiceByValue(targetValue)
+          existing.setValue(targetValue, true)
         }
       }
 
