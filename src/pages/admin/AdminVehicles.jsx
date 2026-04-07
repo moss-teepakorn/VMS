@@ -1,6 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
 import Swal from 'sweetalert2'
-import TomSelect from 'tom-select'
 import * as XLSX from 'xlsx'
 import { listHouses } from '../../lib/houses'
 import {
@@ -152,6 +151,87 @@ function showSwal(options) {
   return Swal.fire({ returnFocus: false, ...options })
 }
 
+function SearchableSelect({
+  value,
+  options,
+  onChange,
+  placeholder,
+  compact = false,
+  className = '',
+}) {
+  const rootRef = useRef(null)
+  const [open, setOpen] = useState(false)
+  const [keyword, setKeyword] = useState('')
+
+  const selected = useMemo(
+    () => options.find((option) => String(option.value) === String(value)) || null,
+    [options, value]
+  )
+
+  useEffect(() => {
+    if (!open) {
+      setKeyword(selected?.label || '')
+    }
+  }, [open, selected])
+
+  useEffect(() => {
+    if (!open) return undefined
+
+    const handleOutsideClick = (event) => {
+      if (!rootRef.current?.contains(event.target)) {
+        setOpen(false)
+      }
+    }
+
+    document.addEventListener('mousedown', handleOutsideClick)
+    return () => document.removeEventListener('mousedown', handleOutsideClick)
+  }, [open])
+
+  const filtered = useMemo(() => {
+    const needle = keyword.trim().toLowerCase()
+    if (!needle) return options
+    return options.filter((option) => option.label.toLowerCase().includes(needle))
+  }, [options, keyword])
+
+  return (
+    <div ref={rootRef} className={`cars-ss ${compact ? 'cars-ss--compact' : ''} ${className}`.trim()}>
+      <input
+        className="cars-ss-input"
+        value={open ? keyword : (selected?.label || '')}
+        onChange={(event) => {
+          setKeyword(event.target.value)
+          setOpen(true)
+        }}
+        onFocus={() => setOpen(true)}
+        placeholder={placeholder}
+      />
+      {open && (
+        <div className="cars-ss-menu">
+          {filtered.length === 0 ? (
+            <div className="cars-ss-empty">ไม่พบข้อมูล</div>
+          ) : filtered.map((option) => {
+            const isSelected = String(value) === String(option.value)
+            return (
+              <button
+                key={`${option.value}`}
+                type="button"
+                className={`cars-ss-item ${isSelected ? 'is-selected' : ''}`}
+                onClick={() => {
+                  onChange(option.value)
+                  setKeyword(option.label)
+                  setOpen(false)
+                }}
+              >
+                {option.label}
+              </button>
+            )
+          })}
+        </div>
+      )}
+    </div>
+  )
+}
+
 const AdminVehicles = () => {
   const [vehicles, setVehicles] = useState([])
   const [houses, setHouses] = useState([])
@@ -166,7 +246,6 @@ const AdminVehicles = () => {
   const [form, setForm] = useState(EMPTY_FORM)
   const [attachments, setAttachments] = useState([])
   const [removedImagePaths, setRemovedImagePaths] = useState([])
-  const pageRef = useRef(null)
 
   const parsePlate = (plate) => {
     const [prefix = '', number = ''] = String(plate || '').split('-')
@@ -184,47 +263,30 @@ const AdminVehicles = () => {
     return soies
   }, [houses])
 
-  useEffect(() => {
-    const container = pageRef.current
-    if (!container) return undefined
+  const houseOptions = useMemo(
+    () => houses.map((house) => ({ value: String(house.id), label: buildHouseLabel(house) })),
+    [houses]
+  )
 
-    const selects = Array.from(container.querySelectorAll('select[data-search-filter="true"]'))
-      .filter((node) => node instanceof HTMLSelectElement && !node.multiple)
+  const soiFilterOptions = useMemo(
+    () => [{ value: 'all', label: 'ทุกซอย' }, ...soiOptions.map((soi) => ({ value: soi, label: `ซอย ${soi}` }))],
+    [soiOptions]
+  )
 
-    const instances = []
+  const vehicleTypeFilterOptions = useMemo(
+    () => [{ value: 'all', label: 'ทุกประเภท' }, ...VEHICLE_TYPES],
+    []
+  )
 
-    for (const select of selects) {
-      try {
-        if (select.tomselect) {
-          select.tomselect.destroy()
-        }
-
-        const instance = new TomSelect(select, {
-          create: false,
-          maxOptions: 1000,
-          hideSelected: false,
-          allowEmptyOption: true,
-          closeAfterSelect: true,
-          searchField: ['text'],
-          sortField: [{ field: '$order' }],
-          placeholder: select.getAttribute('placeholder') || 'ค้นหา',
-        })
-        instances.push(instance)
-      } catch (error) {
-        console.warn('Cars select enhancer failed:', error)
-      }
-    }
-
-    return () => {
-      for (const instance of instances) {
-        try {
-          instance.destroy()
-        } catch {
-          // no-op
-        }
-      }
-    }
-  }, [showModal, houses.length])
+  const statusFilterOptions = useMemo(
+    () => [
+      { value: 'all', label: 'ทั้งหมด' },
+      { value: 'active', label: 'ใช้งาน' },
+      { value: 'pending', label: 'รออนุมัติ' },
+      { value: 'removed', label: 'ยกเลิก' },
+    ],
+    []
+  )
 
   const loadVehicles = async (override = {}) => {
     try {
@@ -274,7 +336,7 @@ const AdminVehicles = () => {
     setEditingVehicle(vehicle)
     const parsedPlate = parsePlate(vehicle.license_plate)
     setForm({
-      house_id: vehicle.house_id || '',
+      house_id: vehicle.house_id ? String(vehicle.house_id) : '',
       license_plate_prefix: parsedPlate.prefix,
       license_plate_number: parsedPlate.number,
       province: vehicle.province || 'กรุงเทพมหานคร',
@@ -449,7 +511,10 @@ const AdminVehicles = () => {
 
   const handleChange = (event) => {
     const { name, value } = event.target
+    applyFormValue(name, value)
+  }
 
+  const applyFormValue = (name, value) => {
     setForm((current) => {
       const next = { ...current, [name]: value }
 
@@ -802,7 +867,7 @@ const AdminVehicles = () => {
   }
 
   return (
-    <div className="pane on houses-compact vehicles-page" ref={pageRef}>
+    <div className="pane on houses-compact vehicles-page">
       <div className="ph">
         <div className="ph-in">
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -825,20 +890,30 @@ const AdminVehicles = () => {
             onChange={(e) => setSearchTerm(e.target.value)}
             placeholder="ค้นหา ทะเบียน / บ้าน / เจ้าของ / ยี่ห้อ / สี"
           />
-          <select data-search-filter="true" className="houses-filter-select" value={soiFilter} onChange={(e) => setSoiFilter(e.target.value)}>
-            <option value="all">ทุกซอย</option>
-            {soiOptions.map((soi) => <option key={soi} value={soi}>{`ซอย ${soi}`}</option>)}
-          </select>
-          <select data-search-filter="true" className="houses-filter-select" value={vehicleTypeFilter} onChange={(e) => setVehicleTypeFilter(e.target.value)}>
-            <option value="all">ทุกประเภท</option>
-            {VEHICLE_TYPES.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}
-          </select>
-          <select data-search-filter="true" className="houses-filter-select" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
-            <option value="all">ทั้งหมด</option>
-            <option value="active">ใช้งาน</option>
-            <option value="pending">รออนุมัติ</option>
-            <option value="removed">ยกเลิก</option>
-          </select>
+          <SearchableSelect
+            compact
+            className="houses-filter-select"
+            value={soiFilter}
+            options={soiFilterOptions}
+            onChange={setSoiFilter}
+            placeholder="เลือกซอย"
+          />
+          <SearchableSelect
+            compact
+            className="houses-filter-select"
+            value={vehicleTypeFilter}
+            options={vehicleTypeFilterOptions}
+            onChange={setVehicleTypeFilter}
+            placeholder="เลือกประเภทรถ"
+          />
+          <SearchableSelect
+            compact
+            className="houses-filter-select"
+            value={statusFilter}
+            options={statusFilterOptions}
+            onChange={setStatusFilter}
+            placeholder="เลือกสถานะ"
+          />
           <button className="btn btn-a btn-sm houses-filter-btn" onClick={() => loadVehicles({ status: statusFilter, search: searchTerm, soi: soiFilter, vehicleType: vehicleTypeFilter })}>ค้นหา</button>
         </div>
         </div>
@@ -954,12 +1029,12 @@ const AdminVehicles = () => {
                   <div className="house-grid house-grid-4">
                     <label className="house-field">
                       <span>บ้าน *</span>
-                      <select name="house_id" value={form.house_id} onChange={handleChange}>
-                        <option value="">เลือกบ้าน</option>
-                        {houses.map((house) => (
-                          <option key={house.id} value={house.id}>{buildHouseLabel(house)}</option>
-                        ))}
-                      </select>
+                      <SearchableSelect
+                        value={form.house_id}
+                        options={[{ value: '', label: 'เลือกบ้าน' }, ...houseOptions]}
+                        onChange={(nextValue) => applyFormValue('house_id', nextValue)}
+                        placeholder="พิมพ์ค้นหา บ้านเลขที่ / เจ้าของ / ซอย"
+                      />
                     </label>
                     <label className="house-field">
                       <span>ทะเบียนรถ *</span>
@@ -983,15 +1058,21 @@ const AdminVehicles = () => {
                     </label>
                     <label className="house-field house-field-province">
                       <span>จังหวัด</span>
-                      <select data-search-filter="true" name="province" value={form.province} onChange={handleChange}>
-                        {PROVINCE_OPTIONS.map((province) => <option key={province} value={province}>{province}</option>)}
-                      </select>
+                      <SearchableSelect
+                        value={form.province}
+                        options={PROVINCE_OPTIONS.map((province) => ({ value: province, label: province }))}
+                        onChange={(nextValue) => applyFormValue('province', nextValue)}
+                        placeholder="เลือกจังหวัด"
+                      />
                     </label>
                     <label className="house-field">
                       <span>ประเภทรถ</span>
-                      <select data-search-filter="true" name="vehicle_type" value={form.vehicle_type} onChange={handleChange}>
-                        {VEHICLE_TYPES.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
-                      </select>
+                      <SearchableSelect
+                        value={form.vehicle_type}
+                        options={VEHICLE_TYPES}
+                        onChange={(nextValue) => applyFormValue('vehicle_type', nextValue)}
+                        placeholder="เลือกประเภทรถ"
+                      />
                     </label>
                   </div>
                 </section>
@@ -1001,9 +1082,12 @@ const AdminVehicles = () => {
                   <div className="house-grid house-grid-3">
                     <label className="house-field">
                       <span>ยี่ห้อ</span>
-                      <select data-search-filter="true" name="brand" value={form.brand} onChange={handleChange}>
-                        {BRAND_OPTIONS.map((brand) => <option key={brand} value={brand}>{brand}</option>)}
-                      </select>
+                      <SearchableSelect
+                        value={form.brand}
+                        options={BRAND_OPTIONS.map((brand) => ({ value: brand, label: brand }))}
+                        onChange={(nextValue) => applyFormValue('brand', nextValue)}
+                        placeholder="เลือกยี่ห้อ"
+                      />
                     </label>
                     {form.brand === 'อื่นๆ' ? (
                       <label className="house-field">
@@ -1021,9 +1105,12 @@ const AdminVehicles = () => {
                     </label>
                     <label className="house-field">
                       <span>สี</span>
-                      <select data-search-filter="true" name="color" value={form.color} onChange={handleChange}>
-                        {COLOR_OPTIONS.map((color) => <option key={color} value={color}>{color}</option>)}
-                      </select>
+                      <SearchableSelect
+                        value={form.color}
+                        options={COLOR_OPTIONS.map((color) => ({ value: color, label: color }))}
+                        onChange={(nextValue) => applyFormValue('color', nextValue)}
+                        placeholder="เลือกสี"
+                      />
                     </label>
                     {form.color === 'อื่นๆ' ? (
                       <label className="house-field">
@@ -1041,9 +1128,12 @@ const AdminVehicles = () => {
                   <div className="house-grid house-grid-3">
                     <label className="house-field">
                       <span>ตำแหน่งจอด</span>
-                      <select data-search-filter="true" name="parking_location" value={form.parking_location} onChange={handleChange}>
-                        {PARKING_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
-                      </select>
+                      <SearchableSelect
+                        value={form.parking_location}
+                        options={PARKING_OPTIONS}
+                        onChange={(nextValue) => applyFormValue('parking_location', nextValue)}
+                        placeholder="เลือกตำแหน่งจอด"
+                      />
                     </label>
                     <label className="house-field">
                       <span>Lock no (ส่วนกลางเท่านั้น)</span>
@@ -1061,9 +1151,12 @@ const AdminVehicles = () => {
                     </label>
                     <label className="house-field">
                       <span>สถานะ</span>
-                      <select data-search-filter="true" name="status" value={form.status} onChange={handleChange}>
-                        {STATUS_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
-                      </select>
+                      <SearchableSelect
+                        value={form.status}
+                        options={STATUS_OPTIONS}
+                        onChange={(nextValue) => applyFormValue('status', nextValue)}
+                        placeholder="เลือกสถานะ"
+                      />
                     </label>
                     <label className="house-field house-field-span-2">
                       <span>หมายเหตุ</span>
