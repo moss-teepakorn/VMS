@@ -56,11 +56,22 @@
   color: var(--tx, #0f172a);
 }
 
+.house-field .choices__inner {
+  min-height: 39px;
+  padding: 4px 11px;
+}
+
+.houses-filter-row .choices__inner {
+  min-height: 34px;
+  padding: 2px 11px;
+}
+
 .choices[data-type*='select-one'] .choices__input {
   background-color: #fff;
   margin-bottom: 0;
   font-size: 13px;
   color: var(--tx, #0f172a);
+  padding: 0;
 }
 
 .choices__list--dropdown,
@@ -92,19 +103,26 @@
 }
 
 .choices__list--single {
-  padding: 4px 16px 4px 0;
+  padding: 3px 18px 3px 0;
 }
 
 .choices__item--selectable {
   border-radius: 8px;
 }
 
+.choices.is-focused .choices__inner,
+.choices.is-open .choices__inner {
+  border-color: color-mix(in srgb, var(--pr, #0c4a6e) 72%, #ffffff 28%);
+  box-shadow: 0 0 0 3px rgba(12, 74, 110, 0.16);
+}
+
 .choices__list--dropdown .choices__item,
 .choices__list[aria-expanded] .choices__item {
-  padding: 7px 12px;
+  padding: 8px 12px;
   border-radius: 8px;
   font-size: 13px;
   color: #0f172a;
+  margin: 1px 0;
 }
 
 .choices__list--dropdown .choices__item--selectable.is-highlighted,

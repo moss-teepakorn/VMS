@@ -16,9 +16,9 @@ export default function GlobalSearchableDropdowns() {
 
         const existing = instances.get(select)
         if (!existing) {
-          const hasManyOptions = (select.options?.length || 0) > 8
           const instance = new Choices(select, {
-            searchEnabled: hasManyOptions || select.hasAttribute('data-force-search'),
+            searchEnabled: true,
+            searchFloor: 0,
             shouldSort: false,
             itemSelectText: '',
             searchResultLimit: 100,
