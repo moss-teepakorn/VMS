@@ -2187,6 +2187,14 @@
   width: 100%;
 }
 
+.vehicles-page .houses-filter-select,
+.vehicles-page .house-field select {
+  -webkit-appearance: menulist;
+  -moz-appearance: menulist;
+  appearance: auto;
+  padding-right: 10px;
+}
+
 .vehicles-page .houses-filter-btn {
   width: auto;
   white-space: nowrap;

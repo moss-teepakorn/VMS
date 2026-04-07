@@ -822,15 +822,15 @@ const AdminVehicles = () => {
             onChange={(e) => setSearchTerm(e.target.value)}
             placeholder="ค้นหา ทะเบียน / บ้าน / เจ้าของ / ยี่ห้อ / สี"
           />
-          <select data-search-filter="true" className="houses-filter-select" value={soiFilter} onChange={(e) => setSoiFilter(e.target.value)}>
+          <select className="houses-filter-select" value={soiFilter} onChange={(e) => setSoiFilter(e.target.value)}>
             <option value="all">ทุกซอย</option>
             {soiOptions.map((soi) => <option key={soi} value={soi}>{`ซอย ${soi}`}</option>)}
           </select>
-          <select data-search-filter="true" className="houses-filter-select" value={vehicleTypeFilter} onChange={(e) => setVehicleTypeFilter(e.target.value)}>
+          <select className="houses-filter-select" value={vehicleTypeFilter} onChange={(e) => setVehicleTypeFilter(e.target.value)}>
             <option value="all">ทุกประเภท</option>
             {VEHICLE_TYPES.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}
           </select>
-          <select data-search-filter="true" className="houses-filter-select" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
+          <select className="houses-filter-select" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
             <option value="all">ทั้งหมด</option>
             <option value="active">ใช้งาน</option>
             <option value="pending">รออนุมัติ</option>
@@ -1027,13 +1027,13 @@ const AdminVehicles = () => {
                     </label>
                     <label className="house-field house-field-province">
                       <span>จังหวัด</span>
-                      <select data-search-filter="true" name="province" value={form.province} onChange={handleChange}>
+                      <select name="province" value={form.province} onChange={handleChange}>
                         {PROVINCE_OPTIONS.map((province) => <option key={province} value={province}>{province}</option>)}
                       </select>
                     </label>
                     <label className="house-field">
                       <span>ประเภทรถ</span>
-                      <select data-search-filter="true" name="vehicle_type" value={form.vehicle_type} onChange={handleChange}>
+                      <select name="vehicle_type" value={form.vehicle_type} onChange={handleChange}>
                         {VEHICLE_TYPES.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
                       </select>
                     </label>
@@ -1045,7 +1045,7 @@ const AdminVehicles = () => {
                   <div className="house-grid house-grid-3">
                     <label className="house-field">
                       <span>ยี่ห้อ</span>
-                      <select data-search-filter="true" name="brand" value={form.brand} onChange={handleChange}>
+                      <select name="brand" value={form.brand} onChange={handleChange}>
                         {BRAND_OPTIONS.map((brand) => <option key={brand} value={brand}>{brand}</option>)}
                       </select>
                     </label>
@@ -1065,7 +1065,7 @@ const AdminVehicles = () => {
                     </label>
                     <label className="house-field">
                       <span>สี</span>
-                      <select data-search-filter="true" name="color" value={form.color} onChange={handleChange}>
+                      <select name="color" value={form.color} onChange={handleChange}>
                         {COLOR_OPTIONS.map((color) => <option key={color} value={color}>{color}</option>)}
                       </select>
                     </label>
@@ -1085,7 +1085,7 @@ const AdminVehicles = () => {
                   <div className="house-grid house-grid-3">
                     <label className="house-field">
                       <span>ตำแหน่งจอด</span>
-                      <select data-search-filter="true" name="parking_location" value={form.parking_location} onChange={handleChange}>
+                      <select name="parking_location" value={form.parking_location} onChange={handleChange}>
                         {PARKING_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
                       </select>
                     </label>
@@ -1105,7 +1105,7 @@ const AdminVehicles = () => {
                     </label>
                     <label className="house-field">
                       <span>สถานะ</span>
-                      <select data-search-filter="true" name="status" value={form.status} onChange={handleChange}>
+                      <select name="status" value={form.status} onChange={handleChange}>
                         {STATUS_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
                       </select>
                     </label>
