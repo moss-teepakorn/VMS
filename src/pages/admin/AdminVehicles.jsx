@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react'
+import React, { useEffect, useMemo, useRef, useState } from 'react'
 import Swal from 'sweetalert2'
 import * as XLSX from 'xlsx'
 import { listHouses } from '../../lib/houses'
@@ -164,8 +164,10 @@ const AdminVehicles = () => {
   const [editingVehicle, setEditingVehicle] = useState(null)
   const [form, setForm] = useState(EMPTY_FORM)
   const [houseSearchKeyword, setHouseSearchKeyword] = useState('')
+  const [houseDropdownOpen, setHouseDropdownOpen] = useState(false)
   const [attachments, setAttachments] = useState([])
   const [removedImagePaths, setRemovedImagePaths] = useState([])
+  const houseDropdownRef = useRef(null)
 
   const parsePlate = (plate) => {
     const [prefix = '', number = ''] = String(plate || '').split('-')
@@ -175,13 +177,7 @@ const AdminVehicles = () => {
     }
   }
 
-  const houseOptions = useMemo(() => ([
-    { value: '', label: 'เลือกบ้าน' },
-    ...houses.map((house) => ({
-      value: house.id,
-      label: `ซอย ${house.soi || '-'} • ${house.house_no}${house.owner_name ? ` - ${house.owner_name}` : ''}`,
-    })),
-  ]), [houses])
+  const buildHouseLabel = (house) => `ซอย ${house.soi || '-'} • ${house.house_no}${house.owner_name ? ` - ${house.owner_name}` : ''}`
 
   const soiOptions = useMemo(() => {
     const soies = [...new Set(houses.map((house) => house.soi).filter(Boolean))]
@@ -189,20 +185,29 @@ const AdminVehicles = () => {
     return soies
   }, [houses])
 
-  const filteredHouseOptions = useMemo(() => {
+  const filteredHouses = useMemo(() => {
     const keyword = houseSearchKeyword.trim().toLowerCase()
-    if (!keyword) return houseOptions
+    const source = houses || []
+    if (!keyword) return source
 
-    const baseOptions = houseOptions.filter((option) => option.value)
-    const selectedOption = baseOptions.find((option) => String(option.value) === String(form.house_id))
-    const matchedOptions = baseOptions.filter((option) => option.label.toLowerCase().includes(keyword))
+    return source.filter((house) => {
+      const searchable = `${house.soi || ''} ${house.house_no || ''} ${house.owner_name || ''}`.toLowerCase()
+      return searchable.includes(keyword)
+    })
+  }, [houses, houseSearchKeyword])
 
-    const uniqueOptions = new Map()
-    if (selectedOption) uniqueOptions.set(String(selectedOption.value), selectedOption)
-    matchedOptions.forEach((option) => uniqueOptions.set(String(option.value), option))
+  useEffect(() => {
+    if (!houseDropdownOpen) return undefined
 
-    return [houseOptions[0], ...Array.from(uniqueOptions.values())]
-  }, [houseOptions, houseSearchKeyword, form.house_id])
+    const handleOutsideClick = (event) => {
+      if (!houseDropdownRef.current?.contains(event.target)) {
+        setHouseDropdownOpen(false)
+      }
+    }
+
+    document.addEventListener('mousedown', handleOutsideClick)
+    return () => document.removeEventListener('mousedown', handleOutsideClick)
+  }, [houseDropdownOpen])
 
   const loadVehicles = async (override = {}) => {
     try {
@@ -241,6 +246,7 @@ const AdminVehicles = () => {
     setEditingVehicle(null)
     setForm(EMPTY_FORM)
     setHouseSearchKeyword('')
+    setHouseDropdownOpen(false)
     setAttachments([])
     setRemovedImagePaths([])
     setShowModal(true)
@@ -271,7 +277,8 @@ const AdminVehicles = () => {
     })
 
     const selectedHouse = houses.find((house) => String(house.id) === String(vehicle.house_id))
-    setHouseSearchKeyword(selectedHouse ? `ซอย ${selectedHouse.soi || '-'} • ${selectedHouse.house_no}${selectedHouse.owner_name ? ` - ${selectedHouse.owner_name}` : ''}` : '')
+    setHouseSearchKeyword(selectedHouse ? buildHouseLabel(selectedHouse) : '')
+    setHouseDropdownOpen(false)
 
     try {
       const currentImages = await listVehicleImages(vehicle.id)
@@ -292,6 +299,7 @@ const AdminVehicles = () => {
     setEditingVehicle(null)
     setForm(EMPTY_FORM)
     setHouseSearchKeyword('')
+    setHouseDropdownOpen(false)
     setAttachments([])
     setRemovedImagePaths([])
   }
@@ -433,11 +441,6 @@ const AdminVehicles = () => {
   const handleChange = (event) => {
     const { name, value } = event.target
 
-    if (name === 'house_id') {
-      const selectedOption = houseOptions.find((option) => String(option.value) === String(value))
-      setHouseSearchKeyword(selectedOption?.label || '')
-    }
-
     setForm((current) => {
       const next = { ...current, [name]: value }
 
@@ -455,6 +458,12 @@ const AdminVehicles = () => {
 
       return next
     })
+  }
+
+  const handleSelectHouse = (house) => {
+    setForm((current) => ({ ...current, house_id: house.id }))
+    setHouseSearchKeyword(buildHouseLabel(house))
+    setHouseDropdownOpen(false)
   }
 
   const handleSubmit = async (event) => {
@@ -942,15 +951,59 @@ const AdminVehicles = () => {
                   <div className="house-grid house-grid-4">
                     <label className="house-field">
                       <span>บ้าน *</span>
-                      <input
-                        value={houseSearchKeyword}
-                        onChange={(event) => setHouseSearchKeyword(event.target.value)}
-                        placeholder="พิมพ์ค้นหา บ้านเลขที่ / เจ้าของ / ซอย"
-                        style={{ marginBottom: 6 }}
-                      />
-                      <select name="house_id" value={form.house_id} onChange={handleChange}>
-                        {filteredHouseOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
-                      </select>
+                      <div ref={houseDropdownRef} style={{ position: 'relative' }}>
+                        <input
+                          value={houseSearchKeyword}
+                          onChange={(event) => {
+                            setHouseSearchKeyword(event.target.value)
+                            setForm((current) => ({ ...current, house_id: '' }))
+                            setHouseDropdownOpen(true)
+                          }}
+                          onFocus={() => setHouseDropdownOpen(true)}
+                          placeholder="พิมพ์ค้นหา บ้านเลขที่ / เจ้าของ / ซอย"
+                        />
+                        {houseDropdownOpen && (
+                          <div style={{
+                            position: 'absolute',
+                            zIndex: 20,
+                            top: 'calc(100% + 4px)',
+                            left: 0,
+                            right: 0,
+                            maxHeight: 260,
+                            overflowY: 'auto',
+                            background: '#fff',
+                            border: '1px solid var(--bo)',
+                            borderRadius: 8,
+                            boxShadow: '0 8px 20px rgba(2, 6, 23, .12)',
+                          }}>
+                            {filteredHouses.length === 0 ? (
+                              <div style={{ padding: '10px 12px', color: 'var(--mu)', fontSize: 13 }}>ไม่พบข้อมูลบ้าน</div>
+                            ) : filteredHouses.map((house) => {
+                              const selected = String(form.house_id) === String(house.id)
+                              return (
+                                <button
+                                  key={house.id}
+                                  type="button"
+                                  onClick={() => handleSelectHouse(house)}
+                                  style={{
+                                    width: '100%',
+                                    border: 'none',
+                                    textAlign: 'left',
+                                    padding: '9px 12px',
+                                    background: selected ? '#eff6ff' : '#fff',
+                                    color: selected ? '#0c4a6e' : '#0f172a',
+                                    cursor: 'pointer',
+                                    borderBottom: '1px solid #f1f5f9',
+                                    fontSize: 13,
+                                  }}
+                                >
+                                  {buildHouseLabel(house)}
+                                </button>
+                              )
+                            })}
+                          </div>
+                        )}
+                      </div>
                     </label>
                     <label className="house-field">
                       <span>ทะเบียนรถ *</span>

@@ -144,7 +144,7 @@ const AdminLayout = () => {
     ]},
     { section: 'การเงิน', tone: 'operation', sectionIcon: '💰', items: [
       { id: 'fees-billing-penalty', label: 'สร้างใบแจ้งหนี้/ค่าปรับ', icon: '🧾', path: '/admin/fees/billing-penalty' },
-      { id: 'fees-print', label: 'พิมพ์ใบแจ้งหนี้ค่าส่วนกลาง', icon: '🖨️', path: '/admin/fees/print' },
+      { id: 'fees-print', label: 'พิมพ์ใบแจ้งหนี้', icon: '🖨️', path: '/admin/fees/print' },
       { id: 'fees', label: 'ค่าส่วนกลาง', icon: '💵', path: '/admin/fees' },
       { id: 'payments', label: 'ชำระค่าส่วนกลาง', icon: '💳', path: '/admin/payments' },
       { id: 'receive-payments', label: 'รับชำระเงิน', icon: '💳', path: '/admin/receive-payments' },
