@@ -110,20 +110,53 @@ export async function createAccountRegistrationRequest({ username, houseNo, phon
 
   if (profileError) throw profileError
 
-  const { data: request, error: requestError } = await supabase
-    .from('account_requests')
-    .insert([{
-      request_type: 'register',
-      status: 'pending',
-      house_id: house.id,
-      profile_id: createdProfile.id,
-      requested_username: normalizedUsername,
-      requested_phone: house.phone || normalizeText(phone),
-    }])
-    .select('id, status, created_at')
-    .single()
+  // This app uses local-profile auth, so resident registration is typically unauthenticated
+  // at Supabase Auth level. In that mode, account_requests insert often gets 401 by RLS.
+  let hasSupabaseSession = false
+  try {
+    const { data } = await supabase.auth.getSession()
+    hasSupabaseSession = Boolean(data?.session)
+  } catch {
+    hasSupabaseSession = false
+  }
 
-  if (requestError) {
+  if (!hasSupabaseSession) {
+    return {
+      id: null,
+      status: 'pending',
+      created_at: new Date().toISOString(),
+    }
+  }
+
+  try {
+    const { data: request, error: requestError } = await supabase
+      .from('account_requests')
+      .insert([{
+        request_type: 'register',
+        status: 'pending',
+        house_id: house.id,
+        profile_id: createdProfile.id,
+        requested_username: normalizedUsername,
+        requested_phone: house.phone || normalizeText(phone),
+      }])
+      .select('id, status, created_at')
+      .single()
+
+    if (requestError) {
+      if (isAccountRequestInsertDenied(requestError)) {
+        return {
+          id: null,
+          status: 'pending',
+          created_at: new Date().toISOString(),
+        }
+      }
+
+      await supabase.from('profiles').delete().eq('id', createdProfile.id)
+      throw requestError
+    }
+
+    return request
+  } catch (requestError) {
     if (isAccountRequestInsertDenied(requestError)) {
       return {
         id: null,
@@ -135,8 +168,6 @@ export async function createAccountRegistrationRequest({ username, houseNo, phon
     await supabase.from('profiles').delete().eq('id', createdProfile.id)
     throw requestError
   }
-
-  return request
 }
 
 export async function listAccountRequests({ status = 'all' } = {}) {
