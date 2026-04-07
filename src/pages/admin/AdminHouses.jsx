@@ -534,7 +534,7 @@ const AdminHouses = () => {
             placeholder="ค้นหาเลขที่บ้าน / เจ้าของ / หมายเลขห้อง..."
             className="houses-filter-input"
           />
-          <select data-search-filter="true"
+          <select
             value={filterType}
             onChange={(e) => setFilterType(e.target.value)}
             className="houses-filter-select"
@@ -545,7 +545,7 @@ const AdminHouses = () => {
             <option value="suspended">ระงับกรมที่ดิน</option>
             <option value="lawsuit">ฟ้องร้อง</option>
           </select>
-          <select data-search-filter="true"
+          <select
             value={soiFilter}
             onChange={(e) => setSoiFilter(e.target.value)}
             className="houses-filter-select"
@@ -682,7 +682,7 @@ const AdminHouses = () => {
                     </label>
                     <label className="house-field">
                       <span>ซอย</span>
-                      <select data-search-filter="true" name="soi" value={form.soi} onChange={handleChange}>
+                      <select name="soi" value={form.soi} onChange={handleChange}>
                         {SOI_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
                       </select>
                     </label>
@@ -752,13 +752,13 @@ const AdminHouses = () => {
                     </label>
                     <label className="house-field">
                       <span>ประเภท</span>
-                      <select data-search-filter="true" name="house_type" value={form.house_type} onChange={handleChange}>
+                      <select name="house_type" value={form.house_type} onChange={handleChange}>
                         {HOUSE_TYPE_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
                       </select>
                     </label>
                     <label className="house-field house-field-span-2">
                       <span>สถานะบ้าน</span>
-                      <select data-search-filter="true" name="status" value={form.status} onChange={handleChange}>
+                      <select name="status" value={form.status} onChange={handleChange}>
                         {HOUSE_STATUS_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
                       </select>
                     </label>

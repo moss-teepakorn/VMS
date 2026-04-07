@@ -418,14 +418,14 @@ export default function AdminFeatureExpensePayment() {
       <div className="card report-filter-card admin-search-filter-card">
         <div className="cb">
           <div className="houses-filter-row" style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center' }}>
-            <select data-search-filter="true" className="houses-filter-select" value={monthFilter} onChange={(e) => setMonthFilter(e.target.value)} style={{ width: 150 }}>
+            <select className="houses-filter-select" value={monthFilter} onChange={(e) => setMonthFilter(e.target.value)} style={{ width: 150 }}>
               {Array.from({ length: 12 }, (_, index) => index + 1).map((month) => (
                 <option key={month} value={String(month)}>
                   {new Date(2000, month - 1, 1).toLocaleString('th-TH', { month: 'long' })}
                 </option>
               ))}
             </select>
-            <select data-search-filter="true" className="houses-filter-select" value={yearFilter} onChange={(e) => setYearFilter(e.target.value)} style={{ width: 110 }}>
+            <select className="houses-filter-select" value={yearFilter} onChange={(e) => setYearFilter(e.target.value)} style={{ width: 110 }}>
               {yearOptions.map((year) => (
                 <option key={year} value={String(year)}>{year + 543}</option>
               ))}
@@ -538,7 +538,7 @@ export default function AdminFeatureExpensePayment() {
                 <div className="house-grid" style={{ gridTemplateColumns: '1fr 1.6fr 1.4fr 1fr', gap: 10, marginBottom: 12 }}>
                   <label className="house-field">
                     <span>ประเภท</span>
-                    <select data-search-filter="true" value={form.recipient_type} onChange={(e) => setForm((p) => ({ ...p, recipient_type: e.target.value, recipient_name: '', partner_id: '', house_id: '' }))}>
+                    <select value={form.recipient_type} onChange={(e) => setForm((p) => ({ ...p, recipient_type: e.target.value, recipient_name: '', partner_id: '', house_id: '' }))}>
                       <option value="partner">คู่ค้า / บุคคลภายนอก</option>
                       <option value="house">ลูกบ้าน</option>
                     </select>
@@ -547,7 +547,7 @@ export default function AdminFeatureExpensePayment() {
                   {form.recipient_type === 'partner' ? (
                     <label className="house-field">
                       <span>คู่ค้า *</span>
-                      <select data-search-filter="true" value={form.partner_id} onChange={(e) => handlePartnerChange(e.target.value)}>
+                      <select value={form.partner_id} onChange={(e) => handlePartnerChange(e.target.value)}>
                         <option value="">— เลือกคู่ค้า —</option>
                         {partners.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
                       </select>
@@ -555,7 +555,7 @@ export default function AdminFeatureExpensePayment() {
                   ) : (
                     <label className="house-field">
                       <span>บ้านเลขที่ *</span>
-                      <select data-search-filter="true" value={form.house_id} onChange={(e) => handleHouseChange(e.target.value)}>
+                      <select value={form.house_id} onChange={(e) => handleHouseChange(e.target.value)}>
                         <option value="">— เลือกบ้าน —</option>
                         {houses.map((h) => <option key={h.id} value={h.id}>{h.house_no}{h.owner_name ? ` — ${h.owner_name}` : ''}</option>)}
                       </select>
@@ -564,7 +564,7 @@ export default function AdminFeatureExpensePayment() {
 
                   <label className="house-field">
                     <span>วิธีชำระ</span>
-                    <select data-search-filter="true" value={form.payment_method} onChange={(e) => setForm((p) => ({ ...p, payment_method: e.target.value }))}>
+                    <select value={form.payment_method} onChange={(e) => setForm((p) => ({ ...p, payment_method: e.target.value }))}>
                       <option value="transfer">โอนเงิน</option>
                       <option value="cash">เงินสด</option>
                       <option value="cheque">เช็ค</option>
@@ -587,7 +587,7 @@ export default function AdminFeatureExpensePayment() {
                 <div className="house-grid" style={{ gridTemplateColumns: '1.2fr 1fr 1fr', gap: 10, marginBottom: 12 }}>
                   <label className="house-field">
                     <span>ธนาคาร</span>
-                    <select data-search-filter="true" value={form.bank_name} onChange={(e) => setForm((p) => ({ ...p, bank_name: e.target.value }))}>
+                    <select value={form.bank_name} onChange={(e) => setForm((p) => ({ ...p, bank_name: e.target.value }))}>
                       <option value="">— เลือกธนาคาร —</option>
                       {THAI_BANKS.map((bank) => <option key={bank} value={bank}>{bank}</option>)}
                     </select>
@@ -605,14 +605,14 @@ export default function AdminFeatureExpensePayment() {
                 <div className="house-grid" style={{ gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 12 }}>
                   <label className="house-field">
                     <span>ผู้อนุมัติ (กรรมการ) *</span>
-                    <select data-search-filter="true" value={form.approver_id} onChange={(e) => setForm((p) => ({ ...p, approver_id: e.target.value }))}>
+                    <select value={form.approver_id} onChange={(e) => setForm((p) => ({ ...p, approver_id: e.target.value }))}>
                       <option value="">— เลือกผู้อนุมัติ —</option>
                       {boardMembers.map((m) => <option key={m.id} value={m.id}>{m.full_name} ({m.position})</option>)}
                     </select>
                   </label>
                   <label className="house-field">
                     <span>ผู้จ่ายเงิน (กรรมการ) *</span>
-                    <select data-search-filter="true" value={form.payer_id} onChange={(e) => setForm((p) => ({ ...p, payer_id: e.target.value }))}>
+                    <select value={form.payer_id} onChange={(e) => setForm((p) => ({ ...p, payer_id: e.target.value }))}>
                       <option value="">— เลือกผู้จ่ายเงิน —</option>
                       {boardMembers.map((m) => <option key={m.id} value={m.id}>{m.full_name} ({m.position})</option>)}
                     </select>
@@ -648,7 +648,7 @@ export default function AdminFeatureExpensePayment() {
                         <tr key={idx}>
                           <td style={{ textAlign: 'center', padding: '4px', border: '1px solid var(--bo)', fontSize: 11, color: 'var(--mu)' }}>{idx + 1}</td>
                           <td style={{ padding: '3px', border: '1px solid var(--bo)' }}>
-                            <select data-search-filter="true" style={{ width: '100%', border: 'none', outline: 'none', background: 'transparent', fontSize: 11, padding: '2px' }} value={item.item_type_id} onChange={(e) => updateItem(idx, 'item_type_id', e.target.value)}>
+                            <select style={{ width: '100%', border: 'none', outline: 'none', background: 'transparent', fontSize: 11, padding: '2px' }} value={item.item_type_id} onChange={(e) => updateItem(idx, 'item_type_id', e.target.value)}>
                               <option value="">— ประเภท —</option>
                               {itemTypes.map((t) => <option key={t.id} value={t.id}>{t.code} — {t.label}</option>)}
                             </select>

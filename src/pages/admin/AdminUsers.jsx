@@ -314,7 +314,7 @@ const AdminUsers = () => {
         <div className="ch houses-list-head houses-main-head">
           <div className="ct">รายชื่อผู้ใช้งาน ({filteredUsers.length}/{users.length})</div>
           <div className="houses-list-actions">
-            <select data-search-filter="true" className="fs" value={statusFilter} onChange={(e) => { setStatusFilter(e.target.value); setSelectedUserIds([]) }} style={{ minWidth: 150, height: 34 }}>
+            <select className="fs" value={statusFilter} onChange={(e) => { setStatusFilter(e.target.value); setSelectedUserIds([]) }} style={{ minWidth: 150, height: 34 }}>
               <option value="all">ทุกสถานะ</option>
               <option value="active">เฉพาะ Active</option>
               <option value="inactive">เฉพาะ Inactive</option>
@@ -425,7 +425,7 @@ const AdminUsers = () => {
                   <div className="house-grid house-grid-2">
                     <label className="house-field">
                       <span>บ้านเลขที่ <strong style={{ color: '#dc2626' }}>*</strong></span>
-                      <select data-search-filter="true" name="house_id" value={form.house_id} onChange={handleSelectHouse}>
+                      <select name="house_id" value={form.house_id} onChange={handleSelectHouse}>
                         <option value="">-- เลือกบ้านเลขที่ --</option>
                         {houses.map((house) => (
                           <option key={house.id} value={house.id}>{house.house_no}{house.soi ? ` (ซอย ${house.soi})` : ''}</option>
@@ -468,14 +468,14 @@ const AdminUsers = () => {
                     </label>
                     <label className="house-field">
                       <span>บทบาท</span>
-                      <select data-search-filter="true" name="role" value={form.role} onChange={handleChange}>
+                      <select name="role" value={form.role} onChange={handleChange}>
                         <option value="admin">ผู้ดูแลระบบ</option>
                         <option value="resident">ลูกบ้าน</option>
                       </select>
                     </label>
                     <label className="house-field house-field-span-2">
                       <span>สถานะ</span>
-                      <select data-search-filter="true" name="is_active" value={String(form.is_active)} onChange={handleChange}>
+                      <select name="is_active" value={String(form.is_active)} onChange={handleChange}>
                         <option value="true">active</option>
                         <option value="false">inactive</option>
                       </select>

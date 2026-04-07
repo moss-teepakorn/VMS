@@ -132,7 +132,7 @@ function BillingPage({ billingYearBE, billingPeriod, setBillingYearBE, setBillin
             </label>
             <label className="finance-v2-inline-field">
               งวด
-              <select data-search-filter="true" value={billingPeriod} onChange={(e) => setBillingPeriod(e.target.value)}>
+              <select value={billingPeriod} onChange={(e) => setBillingPeriod(e.target.value)}>
                 <option value="first_half">ครึ่งปีแรก</option>
                 <option value="second_half">ครึ่งปีหลัง</option>
               </select>

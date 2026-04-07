@@ -190,7 +190,7 @@ export default function AdminLoginLogs() {
             className="houses-filter-input"
             style={{ flex: '1 1 180px', minWidth: 0 }}
           />
-          <select data-search-filter="true"
+          <select
             value={roleFilter}
             onChange={(e) => setRoleFilter(e.target.value)}
             className="houses-filter-select"

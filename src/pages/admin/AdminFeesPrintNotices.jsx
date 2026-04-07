@@ -771,7 +771,7 @@ export default function AdminFeesPrintNotices() {
           <div className="house-grid" style={{ gridTemplateColumns: 'repeat(5, minmax(150px, 1fr))', gap: 10 }}>
             <label className="house-field">
               <span>ปี (พ.ศ.)</span>
-              <select data-search-filter="true" value={filters.yearBE} onChange={(e) => setFilters((prev) => ({ ...prev, yearBE: e.target.value }))}>
+              <select value={filters.yearBE} onChange={(e) => setFilters((prev) => ({ ...prev, yearBE: e.target.value }))}>
                 {processYearOptions.map((yearBE) => (
                   <option key={yearBE} value={String(yearBE)}>{yearBE}</option>
                 ))}
@@ -779,7 +779,7 @@ export default function AdminFeesPrintNotices() {
             </label>
             <label className="house-field">
               <span>ครั้งที่/งวด</span>
-              <select data-search-filter="true" value={filters.period} onChange={(e) => setFilters((prev) => ({ ...prev, period: e.target.value }))}>
+              <select value={filters.period} onChange={(e) => setFilters((prev) => ({ ...prev, period: e.target.value }))}>
                 <option value="first_half">ครึ่งปีแรก</option>
                 <option value="second_half">ครึ่งปีหลัง</option>
                 <option value="full_year">เต็มปี</option>
@@ -787,7 +787,7 @@ export default function AdminFeesPrintNotices() {
             </label>
             <label className="house-field">
               <span>สถานะการจ่าย</span>
-              <select data-search-filter="true" value={filters.paymentStatus} onChange={(e) => setFilters((prev) => ({ ...prev, paymentStatus: e.target.value }))}>
+              <select value={filters.paymentStatus} onChange={(e) => setFilters((prev) => ({ ...prev, paymentStatus: e.target.value }))}>
                 <option value="unpaid_only">เฉพาะที่ยังไม่จ่าย</option>
                 <option value="all">ทั้งหมด</option>
               </select>

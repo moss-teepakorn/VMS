@@ -940,7 +940,7 @@ const AdminViolations = () => {
             onChange={(e) => setSearchTerm(e.target.value)}
             placeholder="ค้นหา ประเภท / บ้าน / เจ้าของ"
           />
-          <select data-search-filter="true" className="houses-filter-select" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
+          <select className="houses-filter-select" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
             <option value="all">ทุกสถานะ</option>
             <option value="new">ใหม่ (รอดำเนินการ)</option>
             <option value="in_progress">ลูกบ้านกำลังดำเนินการ</option>
@@ -1065,13 +1065,13 @@ const AdminViolations = () => {
                   <div className="house-grid house-grid-3">
                     <label className="house-field">
                       <span>บ้าน *</span>
-                      <select data-search-filter="true" name="house_id" value={form.house_id} onChange={handleChange}>
+                      <select name="house_id" value={form.house_id} onChange={handleChange}>
                         {houseOptions.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
                       </select>
                     </label>
                     <label className="house-field">
                       <span>ประเภทการกระทำผิด *</span>
-                      <select data-search-filter="true" name="type" value={form.type} onChange={handleChange}>
+                      <select name="type" value={form.type} onChange={handleChange}>
                         {VIOLATION_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
                       </select>
                     </label>
@@ -1093,7 +1093,7 @@ const AdminViolations = () => {
                   <div className="house-grid house-grid-3">
                     <label className="house-field">
                       <span>สถานะ</span>
-                      <select data-search-filter="true" name="status" value={form.status} onChange={handleChange}>
+                      <select name="status" value={form.status} onChange={handleChange}>
                         <option value="new">ใหม่ (รอดำเนินการ)</option>
                         {(form.status === 'in_progress' || form.status === 'resolved') && (
                           <option value={form.status}>{form.status === 'in_progress' ? 'ลูกบ้านกำลังดำเนินการ' : 'ลูกบ้านแจ้งว่าแก้ไขแล้ว'}</option>

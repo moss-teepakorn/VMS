@@ -345,7 +345,7 @@ const AdminAnnouncements = () => {
             onChange={(e) => setSearchTerm(e.target.value)}
             placeholder="ค้นหา หัวข้อ / เนื้อหา"
           />
-          <select data-search-filter="true" className="houses-filter-select" value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)}>
+          <select className="houses-filter-select" value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)}>
             <option value="all">ทุกประเภท</option>
             {TYPE_OPTIONS.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
           </select>
@@ -461,7 +461,7 @@ const AdminAnnouncements = () => {
                     </label>
                     <label className="house-field">
                       <span>ประเภท</span>
-                      <select data-search-filter="true" name="type" value={form.type} onChange={handleChange}>
+                      <select name="type" value={form.type} onChange={handleChange}>
                         {TYPE_OPTIONS.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
                       </select>
                     </label>

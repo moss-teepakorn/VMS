@@ -271,7 +271,7 @@ export default function AdminBoardSets() {
                   </label>
                   <label className="house-field">
                     <span>สถานะ</span>
-                    <select data-search-filter="true"
+                    <select
                       value={form.is_active ? '1' : '0'}
                       onChange={(e) => setForm((p) => ({ ...p, is_active: e.target.value === '1' }))}
                     >
@@ -313,7 +313,7 @@ export default function AdminBoardSets() {
                             />
                           </td>
                           <td style={{ padding: '4px 6px', border: '1px solid var(--bo)' }}>
-                            <select data-search-filter="true"
+                            <select
                               style={{ width: '100%', border: 'none', outline: 'none', background: 'transparent', fontSize: 12, padding: '2px 4px' }}
                               value={m.position}
                               onChange={(e) => updateMember(i, 'position', e.target.value)}

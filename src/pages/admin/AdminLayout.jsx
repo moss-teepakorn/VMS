@@ -574,7 +574,7 @@ const AdminLayout = () => {
                     <div key={key} style={{ marginBottom: '12px' }}>
                       <label className="fl">{value.label}</label>
                       {value.type === 'select' ? (
-                        <select data-search-filter="true"
+                        <select
                           value={value.value ?? ''}
                           onChange={(e) => setModalFields({ ...modalFields, [key]: { ...value, value: e.target.value } })}
                           style={{ width: '100%', padding: '8px 12px', border: '1px solid var(--bo)', borderRadius: '6px' }}

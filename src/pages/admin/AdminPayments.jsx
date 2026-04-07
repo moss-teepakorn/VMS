@@ -1296,7 +1296,7 @@ export default function AdminPayments() {
                   <div className="house-grid" style={{ gridTemplateColumns: '1fr 1fr', gap: 10 }}>
                     <label className="house-field">
                       <span>ใบแจ้งหนี้ *</span>
-                      <select data-search-filter="true" value={receiveForm.fee_id} onChange={(e) => handleChangeReceiveFee(e.target.value)}>
+                      <select value={receiveForm.fee_id} onChange={(e) => handleChangeReceiveFee(e.target.value)}>
                         {feeOptions.map((fee) => (
                           <option key={fee.id} value={fee.id}>
                             {fee.houses?.house_no || '-'} · {formatPeriod(fee.period)} {fee.year} · ยอดรวม ฿{Number(fee.total_amount || 0).toLocaleString('th-TH')}
@@ -1361,7 +1361,7 @@ export default function AdminPayments() {
                     </div>
                     <label className="house-field">
                       <span>วิธีชำระ *</span>
-                      <select data-search-filter="true"
+                      <select
                         value={receiveForm.payment_method}
                         onChange={(e) => setReceiveForm((prev) => ({ ...prev, payment_method: e.target.value }))}
                       >

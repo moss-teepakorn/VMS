@@ -189,7 +189,7 @@ export default function AdminFeesBillingPenalty() {
           <div className="house-grid" style={{ gridTemplateColumns: 'repeat(3, minmax(160px, 1fr))', gap: 10 }}>
             <label className="house-field">
               <span>ปี (พ.ศ.)</span>
-              <select data-search-filter="true" value={processForm.yearBE} onChange={(e) => setProcessForm((prev) => ({ ...prev, yearBE: e.target.value }))}>
+              <select value={processForm.yearBE} onChange={(e) => setProcessForm((prev) => ({ ...prev, yearBE: e.target.value }))}>
                 {processYearOptions.map((yearBE) => (
                   <option key={yearBE} value={String(yearBE)}>{yearBE}</option>
                 ))}
@@ -197,7 +197,7 @@ export default function AdminFeesBillingPenalty() {
             </label>
             <label className="house-field">
               <span>รอบ</span>
-              <select data-search-filter="true" value={processForm.period} onChange={(e) => setProcessForm((prev) => ({ ...prev, period: e.target.value }))}>
+              <select value={processForm.period} onChange={(e) => setProcessForm((prev) => ({ ...prev, period: e.target.value }))}>
                 <option value="first_half">ครึ่งปีแรก (1/1 - 30/6)</option>
                 <option value="second_half">ครึ่งปีหลัง (1/7 - 31/12)</option>
               </select>
