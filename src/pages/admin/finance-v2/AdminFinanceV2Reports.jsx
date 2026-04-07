@@ -17,7 +17,7 @@ const reportCards = [
   },
   {
     title: 'รายงานค้างชำระเชิงสรุป',
-    subtitle: 'ชุดรายงานค้างชำระรูปแบบเดิม',
+    subtitle: 'ชุดรายงานค้างชำระแบบ Hybrid',
     path: '/admin/finance-v2/reports/overdue',
     buttonClass: 'btn btn-g btn-sm',
   },
@@ -46,7 +46,7 @@ export default function AdminFinanceV2Reports() {
             <div className="ph-ico">📚</div>
             <div>
               <div className="ph-h1">ศูนย์รายงาน V2</div>
-              <div className="ph-sub">ทางเข้าใหม่สำหรับรายงานรูปแบบเดิม</div>
+              <div className="ph-sub">ทางเข้าแบบ Hybrid สำหรับรายงานมาตรฐาน</div>
             </div>
           </div>
         </div>

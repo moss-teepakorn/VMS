@@ -90,7 +90,7 @@ function HubPage({ navigate, summary, pendingPayments, recentOutstanding }) {
             <div className="finance-v2-kpi-item"><label>ยอดค้างชำระ</label><strong>{formatMoney(summary.totalOutstanding)}</strong></div>
             <div className="finance-v2-kpi-item"><label>รอตรวจสอบชำระ</label><strong>{pendingPayments} รายการ</strong></div>
           </div>
-          <div className="finance-v2-note">หน้าจอชุดนี้ผูกฐานข้อมูลจริงแล้ว แต่ยังแยกจากหน้าเดิมเพื่อทดสอบก่อนย้ายระบบ</div>
+          <div className="finance-v2-note">หน้าจอชุดนี้ผูกฐานข้อมูลจริงแล้ว และใช้รูปแบบ Hybrid สำหรับงานประจำวัน</div>
           <div className="finance-v2-actions">
             <button className="btn btn-p btn-sm" onClick={() => navigate('/admin/finance-v2/billing')}>ไปหน้าออกใบแจ้งหนี้</button>
             <button className="btn btn-o btn-sm" onClick={() => navigate('/admin/finance-v2/collections')}>ไปหน้าติดตามหนี้</button>
@@ -290,9 +290,9 @@ function PrintCenterPage({ printFees, printPayments, onPrintInvoices, onPrintNot
         </div>
       </section>
       <section className="finance-v2-card">
-        <div className="finance-v2-head">รายงานมาตรฐาน (รูปแบบเดิม)</div>
+        <div className="finance-v2-head">รายงานมาตรฐาน (Hybrid)</div>
         <div className="finance-v2-body">
-          <div className="finance-v2-note">หากต้องการรายงานรูปแบบเดิมพร้อมปุ่มส่งออก PDF/Excel ให้ใช้งานจากปุ่มด้านล่างได้ทันที</div>
+          <div className="finance-v2-note">หากต้องการรายงานมาตรฐานพร้อมปุ่มส่งออก PDF/Excel ให้ใช้งานจากปุ่มด้านล่างได้ทันที</div>
           <div className="finance-v2-actions">
             <button className="btn btn-p btn-sm" onClick={() => navigate('/admin/finance-v2/reports')}>หน้ารวมรายงาน</button>
             <button className="btn btn-p btn-sm" onClick={() => navigate('/admin/finance-v2/reports/payments')}>รายงานจ่ายค่าส่วนกลาง</button>
@@ -657,8 +657,8 @@ export default function AdminFinanceV2() {
     openPrintHtml('ใบเสร็จที่อนุมัติแล้ว (การเงิน V2)', ['เลขที่', 'บ้าน', 'งวด', 'ปี', 'ยอดชำระ', 'วิธี'], rows)
   }
 
-  let title = 'การเงิน V2 (ทดสอบใช้งาน)'
-  let subtitle = 'หน้าจอใหม่แยกจากของเดิม เพื่อทดสอบก่อนย้ายระบบ'
+  let title = 'การเงิน V2 (Hybrid)'
+  let subtitle = 'หน้าจอ Hybrid สำหรับงานการเงินแบบรวมศูนย์'
   let content = (
     <HubPage
       navigate={navigate}

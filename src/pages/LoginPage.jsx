@@ -67,7 +67,7 @@ const LOGIN_THEME_PRESETS = {
 }
 
 function resolveLoginTheme() {
-  const fallback = 'legacy'
+  const fallback = 'hybrid'
   if (typeof window === 'undefined') return fallback
   const query = new URLSearchParams(window.location.search)
   const queryTheme = String(query.get('theme') || '').toLowerCase()
@@ -135,7 +135,7 @@ export default function LoginPage() {
     setLoginThemeId(resolveLoginTheme())
   }, [])
 
-  const loginTheme = LOGIN_THEME_PRESETS[loginThemeId] || LOGIN_THEME_PRESETS.legacy
+  const loginTheme = LOGIN_THEME_PRESETS[loginThemeId] || LOGIN_THEME_PRESETS.hybrid
 
   async function handleSubmit(e) {
     e.preventDefault()
@@ -263,10 +263,10 @@ export default function LoginPage() {
             }}
           >
             <div className="mb-6 text-center">
-              <div className="mx-auto flex h-14 w-14 items-center justify-center overflow-hidden rounded-2xl bg-white ring-1" style={{ '--tw-ring-color': loginTheme.logoRing }}>
-                <img src={setup.loginCircleLogoUrl || villageLogo} alt="Village Logo" className="h-10 w-10 rounded-xl object-cover" />
+              <div className="mx-auto flex h-[70px] w-[70px] items-center justify-center overflow-hidden rounded-2xl bg-white ring-1" style={{ '--tw-ring-color': loginTheme.logoRing }}>
+                <img src={setup.loginCircleLogoUrl || villageLogo} alt="Village Logo" className="h-[56px] w-[56px] rounded-xl object-cover" />
               </div>
-              <div className="mt-3 text-[16px] font-bold tracking-tight" style={{ color: loginTheme.subtitleColor }}>{setup.villageName}</div>
+              <div className="mt-3 text-[24px] font-bold tracking-tight" style={{ color: loginTheme.subtitleColor }}>{setup.villageName}</div>
               <div className="mt-3 text-[22px] font-extrabold tracking-tight" style={{ color: loginTheme.titleColor }}>{mode === 'login' ? 'Sign In' : mode === 'register' ? 'ลงทะเบียนผู้ใช้งาน' : 'Forgot Password'}</div>
             </div>
 
@@ -376,7 +376,7 @@ export default function LoginPage() {
             )}
 
             <div className="mt-5 border-t border-slate-200/80 pt-3 text-center text-[10px] text-slate-400">
-              build {BUILD_SHA} · {BUILD_DATE} · v{APP_VERSION} · theme: {loginTheme.id}
+              build {BUILD_SHA} · {BUILD_DATE} · v{APP_VERSION}
             </div>
           </div>
         </div>
