@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react'
+import React, { useEffect, useMemo, useRef, useState } from 'react'
 import Swal from 'sweetalert2'
 import * as XLSX from 'xlsx'
 import { createHouse, deleteHouse, getHouseSetup, listHouses, updateAllHousesFeeRate, updateHouse } from '../../lib/houses'
@@ -7,7 +7,13 @@ const SOI_OPTIONS = Array.from({ length: 26 }, (_, index) => ({
   value: String(index),
   label: `ซอย ${index}`,
 }))
-
+const filterTypeOptions = [
+  { value: 'all', label: 'ทั้งหมด' },
+  { value: 'normal', label: 'ปกติ' },
+  { value: 'overdue', label: 'ค้างชำระ' },
+  { value: 'suspended', label: 'ระงับกรมที่ดิน' },
+  { value: 'lawsuit', label: 'ฟ้องร้อง' },
+]
 const HOUSE_TYPE_OPTIONS = [
   { value: 'อยู่เอง', label: 'อยู่เอง' },
   { value: 'ให้เช่า', label: 'ให้เช่า' },
@@ -534,25 +540,22 @@ const AdminHouses = () => {
             placeholder="ค้นหาเลขที่บ้าน / เจ้าของ / หมายเลขห้อง..."
             className="houses-filter-input"
           />
-          <select
+          <SearchableSelect
+            compact
+            className="houses-filter-select"
             value={filterType}
-            onChange={(e) => setFilterType(e.target.value)}
+            options={filterTypeOptions}
+            onChange={setFilterType}
+            placeholder="เลือกสถานะ"
+          />
+          <SearchableSelect
+            compact
             className="houses-filter-select"
-          >
-            <option value="all">ทั้งหมด</option>
-            <option value="normal">ปกติ</option>
-            <option value="overdue">ค้างชำระ</option>
-            <option value="suspended">ระงับกรมที่ดิน</option>
-            <option value="lawsuit">ฟ้องร้อง</option>
-          </select>
-          <select
             value={soiFilter}
-            onChange={(e) => setSoiFilter(e.target.value)}
-            className="houses-filter-select"
-          >
-            <option value="all">ทุกซอย</option>
-            {soiOptions.map((soi) => <option key={soi} value={soi}>{`ซอย ${soi}`}</option>)}
-          </select>
+            options={[{ value: 'all', label: 'ทุกซอย' }, ...soiOptions]}
+            onChange={setSoiFilter}
+            placeholder="เลือกซอย"
+          />
           <button className="btn btn-a btn-sm houses-filter-btn" onClick={() => loadHouses({ status: filterType, soi: soiFilter, search: searchTerm })}>ค้นหา</button>
         </div>
         </div>
@@ -682,9 +685,12 @@ const AdminHouses = () => {
                     </label>
                     <label className="house-field">
                       <span>ซอย</span>
-                      <select name="soi" value={form.soi} onChange={handleChange}>
-                        {SOI_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
-                      </select>
+                      <SearchableSelect
+                        value={form.soi}
+                        options={SOI_OPTIONS}
+                        onChange={(nextValue) => setForm((current) => ({ ...current, soi: nextValue }))}
+                        placeholder="เลือกซอย"
+                      />
                     </label>
                     <label className="house-field">
                       <span>ชั้นที่</span>
@@ -752,15 +758,21 @@ const AdminHouses = () => {
                     </label>
                     <label className="house-field">
                       <span>ประเภท</span>
-                      <select name="house_type" value={form.house_type} onChange={handleChange}>
-                        {HOUSE_TYPE_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
-                      </select>
+                      <SearchableSelect
+                        value={form.house_type}
+                        options={HOUSE_TYPE_OPTIONS}
+                        onChange={(nextValue) => setForm((current) => ({ ...current, house_type: nextValue }))}
+                        placeholder="เลือกประเภท"
+                      />
                     </label>
                     <label className="house-field house-field-span-2">
                       <span>สถานะบ้าน</span>
-                      <select name="status" value={form.status} onChange={handleChange}>
-                        {HOUSE_STATUS_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
-                      </select>
+                      <SearchableSelect
+                        value={form.status}
+                        options={HOUSE_STATUS_OPTIONS}
+                        onChange={(nextValue) => setForm((current) => ({ ...current, status: nextValue }))}
+                        placeholder="เลือกสถานะ"
+                      />
                     </label>
                     <label className="house-field house-field-span-3">
                       <span>หมายเหตุ</span>

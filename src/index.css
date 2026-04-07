@@ -118,6 +118,79 @@
     box-shadow: 0 0 0 3px rgba(43, 182, 115, .14);
   }
 
+  .cars-ss {
+    position: relative;
+    width: 100%;
+  }
+
+  .cars-ss-input {
+    width: 100%;
+    min-height: 36px;
+    padding: 8px 10px;
+    border: 1px solid #d5deea;
+    border-radius: 10px;
+    background: #fff;
+    color: #213142;
+    font-size: 14px;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, .65);
+  }
+
+  .cars-ss-input:focus {
+    outline: none;
+    border-color: #2bb673;
+    box-shadow: 0 0 0 3px rgba(43, 182, 115, .14);
+  }
+
+  .cars-ss--compact .cars-ss-input {
+    min-height: 34px;
+    font-size: 12px;
+    padding: 6px 10px;
+  }
+
+  .cars-ss-menu {
+    position: absolute;
+    z-index: 1200;
+    top: calc(100% + 4px);
+    left: 0;
+    right: 0;
+    max-height: 260px;
+    overflow-y: auto;
+    background: #fff;
+    border: 1px solid #d1d5db;
+    border-radius: 10px;
+    box-shadow: 0 10px 22px rgba(2, 6, 23, .12);
+    padding: 4px;
+  }
+
+  .cars-ss-item {
+    width: 100%;
+    border: none;
+    text-align: left;
+    padding: 10px 12px;
+    border-radius: 8px;
+    background: #fff;
+    color: #0f172a;
+    cursor: pointer;
+    font-size: 13px;
+    line-height: 1.35;
+  }
+
+  .cars-ss-item:hover {
+    background: #f8fafc;
+  }
+
+  .cars-ss-item.is-selected {
+    background: #eff6ff;
+    color: #0c4a6e;
+    font-weight: 700;
+  }
+
+  .cars-ss-empty {
+    padding: 10px 12px;
+    color: #64748b;
+    font-size: 12px;
+  }
+
   select::-ms-expand {
     display: none;
   }
