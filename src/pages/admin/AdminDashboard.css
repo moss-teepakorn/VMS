@@ -1151,10 +1151,16 @@
 
 .admin-search-filter-card .cb {
   padding: 12px;
+  overflow: visible;
+}
+
+.admin-search-filter-card {
+  overflow: visible;
 }
 
 .admin-search-filter-card .houses-filter-row {
   margin-top: 0;
+  overflow: visible;
 }
 
 .pane.on .ph + .admin-search-filter-card {
@@ -1170,7 +1176,8 @@
 .admin-search-filter-card .fs,
 .admin-search-filter-card input[type="text"],
 .admin-search-filter-card input[type="search"],
-.admin-search-filter-card select {
+.admin-search-filter-card select,
+.admin-search-filter-card .cars-ss {
   border: 1.5px solid var(--bo) !important;
   background: var(--card) !important;
   color: var(--tx) !important;

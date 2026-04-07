@@ -121,12 +121,30 @@
   .cars-ss {
     position: relative;
     width: 100%;
+    display: inline-flex;
+    flex-direction: column;
+    overflow: visible;
+  }
+
+  .cars-ss::after {
+    content: '▾';
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #6a7a8c;
+    font-size: 14px;
+    pointer-events: none;
+  }
+
+  .cars-ss.is-open::after {
+    transform: translateY(-50%) rotate(180deg);
   }
 
   .cars-ss-input {
     width: 100%;
     min-height: 36px;
-    padding: 8px 10px;
+    padding: 8px 10px 8px 10px;
     border: 1px solid #d5deea;
     border-radius: 10px;
     background: #fff;
@@ -144,7 +162,7 @@
   .cars-ss--compact .cars-ss-input {
     min-height: 34px;
     font-size: 12px;
-    padding: 6px 10px;
+    padding: 6px 10px 6px 10px;
   }
 
   .cars-ss-menu {
