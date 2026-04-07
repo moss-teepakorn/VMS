@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
 import Swal from 'sweetalert2'
+import TomSelect from 'tom-select'
 import * as XLSX from 'xlsx'
 import { listHouses } from '../../lib/houses'
 import {
@@ -163,11 +164,9 @@ const AdminVehicles = () => {
   const [saving, setSaving] = useState(false)
   const [editingVehicle, setEditingVehicle] = useState(null)
   const [form, setForm] = useState(EMPTY_FORM)
-  const [houseSearchKeyword, setHouseSearchKeyword] = useState('')
-  const [houseDropdownOpen, setHouseDropdownOpen] = useState(false)
   const [attachments, setAttachments] = useState([])
   const [removedImagePaths, setRemovedImagePaths] = useState([])
-  const houseDropdownRef = useRef(null)
+  const pageRef = useRef(null)
 
   const parsePlate = (plate) => {
     const [prefix = '', number = ''] = String(plate || '').split('-')
@@ -185,29 +184,47 @@ const AdminVehicles = () => {
     return soies
   }, [houses])
 
-  const filteredHouses = useMemo(() => {
-    const keyword = houseSearchKeyword.trim().toLowerCase()
-    const source = houses || []
-    if (!keyword) return source
-
-    return source.filter((house) => {
-      const searchable = `${house.soi || ''} ${house.house_no || ''} ${house.owner_name || ''}`.toLowerCase()
-      return searchable.includes(keyword)
-    })
-  }, [houses, houseSearchKeyword])
-
   useEffect(() => {
-    if (!houseDropdownOpen) return undefined
+    const container = pageRef.current
+    if (!container) return undefined
 
-    const handleOutsideClick = (event) => {
-      if (!houseDropdownRef.current?.contains(event.target)) {
-        setHouseDropdownOpen(false)
+    const selects = Array.from(container.querySelectorAll('select[data-search-filter="true"]'))
+      .filter((node) => node instanceof HTMLSelectElement && !node.multiple)
+
+    const instances = []
+
+    for (const select of selects) {
+      try {
+        if (select.tomselect) {
+          select.tomselect.destroy()
+        }
+
+        const instance = new TomSelect(select, {
+          create: false,
+          maxOptions: 1000,
+          hideSelected: false,
+          allowEmptyOption: true,
+          closeAfterSelect: true,
+          searchField: ['text'],
+          sortField: [{ field: '$order' }],
+          placeholder: select.getAttribute('placeholder') || 'ค้นหา',
+        })
+        instances.push(instance)
+      } catch (error) {
+        console.warn('Cars select enhancer failed:', error)
       }
     }
 
-    document.addEventListener('mousedown', handleOutsideClick)
-    return () => document.removeEventListener('mousedown', handleOutsideClick)
-  }, [houseDropdownOpen])
+    return () => {
+      for (const instance of instances) {
+        try {
+          instance.destroy()
+        } catch {
+          // no-op
+        }
+      }
+    }
+  }, [showModal, houses.length])
 
   const loadVehicles = async (override = {}) => {
     try {
@@ -245,8 +262,6 @@ const AdminVehicles = () => {
   const openAddModal = () => {
     setEditingVehicle(null)
     setForm(EMPTY_FORM)
-    setHouseSearchKeyword('')
-    setHouseDropdownOpen(false)
     setAttachments([])
     setRemovedImagePaths([])
     setShowModal(true)
@@ -276,10 +291,6 @@ const AdminVehicles = () => {
       note: vehicle.note || '',
     })
 
-    const selectedHouse = houses.find((house) => String(house.id) === String(vehicle.house_id))
-    setHouseSearchKeyword(selectedHouse ? buildHouseLabel(selectedHouse) : '')
-    setHouseDropdownOpen(false)
-
     try {
       const currentImages = await listVehicleImages(vehicle.id)
       setAttachments(currentImages.map((image) => ({ ...image, source: 'existing' })))
@@ -298,8 +309,6 @@ const AdminVehicles = () => {
     setShowModal(false)
     setEditingVehicle(null)
     setForm(EMPTY_FORM)
-    setHouseSearchKeyword('')
-    setHouseDropdownOpen(false)
     setAttachments([])
     setRemovedImagePaths([])
   }
@@ -458,12 +467,6 @@ const AdminVehicles = () => {
 
       return next
     })
-  }
-
-  const handleSelectHouse = (house) => {
-    setForm((current) => ({ ...current, house_id: house.id }))
-    setHouseSearchKeyword(buildHouseLabel(house))
-    setHouseDropdownOpen(false)
   }
 
   const handleSubmit = async (event) => {
@@ -799,7 +802,7 @@ const AdminVehicles = () => {
   }
 
   return (
-    <div className="pane on houses-compact vehicles-page">
+    <div className="pane on houses-compact vehicles-page" ref={pageRef}>
       <div className="ph">
         <div className="ph-in">
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -822,15 +825,15 @@ const AdminVehicles = () => {
             onChange={(e) => setSearchTerm(e.target.value)}
             placeholder="ค้นหา ทะเบียน / บ้าน / เจ้าของ / ยี่ห้อ / สี"
           />
-          <select className="houses-filter-select" value={soiFilter} onChange={(e) => setSoiFilter(e.target.value)}>
+          <select data-search-filter="true" className="houses-filter-select" value={soiFilter} onChange={(e) => setSoiFilter(e.target.value)}>
             <option value="all">ทุกซอย</option>
             {soiOptions.map((soi) => <option key={soi} value={soi}>{`ซอย ${soi}`}</option>)}
           </select>
-          <select className="houses-filter-select" value={vehicleTypeFilter} onChange={(e) => setVehicleTypeFilter(e.target.value)}>
+          <select data-search-filter="true" className="houses-filter-select" value={vehicleTypeFilter} onChange={(e) => setVehicleTypeFilter(e.target.value)}>
             <option value="all">ทุกประเภท</option>
             {VEHICLE_TYPES.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}
           </select>
-          <select className="houses-filter-select" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
+          <select data-search-filter="true" className="houses-filter-select" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
             <option value="all">ทั้งหมด</option>
             <option value="active">ใช้งาน</option>
             <option value="pending">รออนุมัติ</option>
@@ -951,59 +954,12 @@ const AdminVehicles = () => {
                   <div className="house-grid house-grid-4">
                     <label className="house-field">
                       <span>บ้าน *</span>
-                      <div ref={houseDropdownRef} style={{ position: 'relative' }}>
-                        <input
-                          value={houseSearchKeyword}
-                          onChange={(event) => {
-                            setHouseSearchKeyword(event.target.value)
-                            setForm((current) => ({ ...current, house_id: '' }))
-                            setHouseDropdownOpen(true)
-                          }}
-                          onFocus={() => setHouseDropdownOpen(true)}
-                          placeholder="พิมพ์ค้นหา บ้านเลขที่ / เจ้าของ / ซอย"
-                        />
-                        {houseDropdownOpen && (
-                          <div style={{
-                            position: 'absolute',
-                            zIndex: 20,
-                            top: 'calc(100% + 4px)',
-                            left: 0,
-                            right: 0,
-                            maxHeight: 260,
-                            overflowY: 'auto',
-                            background: '#fff',
-                            border: '1px solid var(--bo)',
-                            borderRadius: 8,
-                            boxShadow: '0 8px 20px rgba(2, 6, 23, .12)',
-                          }}>
-                            {filteredHouses.length === 0 ? (
-                              <div style={{ padding: '10px 12px', color: 'var(--mu)', fontSize: 13 }}>ไม่พบข้อมูลบ้าน</div>
-                            ) : filteredHouses.map((house) => {
-                              const selected = String(form.house_id) === String(house.id)
-                              return (
-                                <button
-                                  key={house.id}
-                                  type="button"
-                                  onClick={() => handleSelectHouse(house)}
-                                  style={{
-                                    width: '100%',
-                                    border: 'none',
-                                    textAlign: 'left',
-                                    padding: '9px 12px',
-                                    background: selected ? '#eff6ff' : '#fff',
-                                    color: selected ? '#0c4a6e' : '#0f172a',
-                                    cursor: 'pointer',
-                                    borderBottom: '1px solid #f1f5f9',
-                                    fontSize: 13,
-                                  }}
-                                >
-                                  {buildHouseLabel(house)}
-                                </button>
-                              )
-                            })}
-                          </div>
-                        )}
-                      </div>
+                      <select name="house_id" value={form.house_id} onChange={handleChange}>
+                        <option value="">เลือกบ้าน</option>
+                        {houses.map((house) => (
+                          <option key={house.id} value={house.id}>{buildHouseLabel(house)}</option>
+                        ))}
+                      </select>
                     </label>
                     <label className="house-field">
                       <span>ทะเบียนรถ *</span>
@@ -1027,13 +983,13 @@ const AdminVehicles = () => {
                     </label>
                     <label className="house-field house-field-province">
                       <span>จังหวัด</span>
-                      <select name="province" value={form.province} onChange={handleChange}>
+                      <select data-search-filter="true" name="province" value={form.province} onChange={handleChange}>
                         {PROVINCE_OPTIONS.map((province) => <option key={province} value={province}>{province}</option>)}
                       </select>
                     </label>
                     <label className="house-field">
                       <span>ประเภทรถ</span>
-                      <select name="vehicle_type" value={form.vehicle_type} onChange={handleChange}>
+                      <select data-search-filter="true" name="vehicle_type" value={form.vehicle_type} onChange={handleChange}>
                         {VEHICLE_TYPES.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
                       </select>
                     </label>
@@ -1045,7 +1001,7 @@ const AdminVehicles = () => {
                   <div className="house-grid house-grid-3">
                     <label className="house-field">
                       <span>ยี่ห้อ</span>
-                      <select name="brand" value={form.brand} onChange={handleChange}>
+                      <select data-search-filter="true" name="brand" value={form.brand} onChange={handleChange}>
                         {BRAND_OPTIONS.map((brand) => <option key={brand} value={brand}>{brand}</option>)}
                       </select>
                     </label>
@@ -1065,7 +1021,7 @@ const AdminVehicles = () => {
                     </label>
                     <label className="house-field">
                       <span>สี</span>
-                      <select name="color" value={form.color} onChange={handleChange}>
+                      <select data-search-filter="true" name="color" value={form.color} onChange={handleChange}>
                         {COLOR_OPTIONS.map((color) => <option key={color} value={color}>{color}</option>)}
                       </select>
                     </label>
@@ -1085,7 +1041,7 @@ const AdminVehicles = () => {
                   <div className="house-grid house-grid-3">
                     <label className="house-field">
                       <span>ตำแหน่งจอด</span>
-                      <select name="parking_location" value={form.parking_location} onChange={handleChange}>
+                      <select data-search-filter="true" name="parking_location" value={form.parking_location} onChange={handleChange}>
                         {PARKING_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
                       </select>
                     </label>
@@ -1105,7 +1061,7 @@ const AdminVehicles = () => {
                     </label>
                     <label className="house-field">
                       <span>สถานะ</span>
-                      <select name="status" value={form.status} onChange={handleChange}>
+                      <select data-search-filter="true" name="status" value={form.status} onChange={handleChange}>
                         {STATUS_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
                       </select>
                     </label>
