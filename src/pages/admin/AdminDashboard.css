@@ -1176,39 +1176,32 @@
 .admin-search-filter-card .fs,
 .admin-search-filter-card input[type="text"],
 .admin-search-filter-card input[type="search"],
-.admin-search-filter-card select,
-.admin-search-filter-card .cars-ss {
+.admin-search-filter-card select {
   border: 1.5px solid var(--bo) !important;
   background: var(--card) !important;
   color: var(--tx) !important;
 }
 
-.report-filter-grid {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 10px;
-  align-items: end;
+.admin-search-filter-card .cars-ss {
+  border: none !important;
+  background: transparent !important;
 }
 
-.report-filter-action {
-  display: flex;
-  align-items: end;
+.admin-search-filter-card .cars-ss-input {
+  border: 1.5px solid var(--bo) !important;
+  background: var(--card) !important;
+  color: var(--tx) !important;
+  box-shadow: none !important;
 }
 
-@media (max-width: 980px) {
-  .report-filter-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .report-head-in {
-    gap: 8px;
-  }
+.report-head-in {
+  gap: 8px;
+}
 
   .report-head-main .ph-h1 {
     font-size: 16px;
     line-height: 1.2;
   }
-}
 
 @media (max-width: 700px) {
   .report-head-in {
@@ -1497,6 +1490,31 @@
   .houses-filter-btn {
     width: auto;
     padding: 0 14px;
+  }
+
+  .admin-search-filter-card {
+    width: 100%;
+  }
+
+  .admin-search-filter-card .cb {
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  .admin-search-filter-card .houses-filter-row {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto;
+    gap: 8px;
+  }
+
+  .admin-search-filter-card .houses-filter-row .cars-ss {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .admin-search-filter-card .houses-filter-row .houses-filter-btn,
+  .admin-search-filter-card .houses-filter-row .cars-ss {
+    grid-column: 1 / -1;
   }
 
   .houses-list-head {
@@ -2192,11 +2210,6 @@
 
 .vehicles-page .houses-filter-select {
   width: 100%;
-}
-
-.vehicles-page .cars-filter-select {
-  width: 100%;
-  min-width: 0;
 }
 
 .vehicles-page .houses-filter-select,

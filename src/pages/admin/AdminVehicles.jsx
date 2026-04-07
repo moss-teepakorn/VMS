@@ -812,7 +812,6 @@ const AdminVehicles = () => {
           />
           <SearchableSelect
             compact
-            className="cars-filter-select"
             value={soiFilter}
             options={soiFilterOptions}
             onChange={setSoiFilter}
@@ -820,7 +819,6 @@ const AdminVehicles = () => {
           />
           <SearchableSelect
             compact
-            className="cars-filter-select"
             value={vehicleTypeFilter}
             options={vehicleTypeFilterOptions}
             onChange={setVehicleTypeFilter}
@@ -828,7 +826,6 @@ const AdminVehicles = () => {
           />
           <SearchableSelect
             compact
-            className="cars-filter-select"
             value={statusFilter}
             options={statusFilterOptions}
             onChange={setStatusFilter}

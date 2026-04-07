@@ -27,6 +27,17 @@ npm install
 npm run dev
 ```
 
+### 4. รันโปรเจกต์บนเครื่อง
+```bash
+npm start
+```
+
+หรือถ้าอยากดูแบบพรีวิวบน production build
+```bash
+npm run build
+npm run preview
+```
+
 ## Vercel Environment Variables
 ใน Vercel Dashboard → Settings → Environment Variables ใส่:
 - `VITE_SUPABASE_URL`
