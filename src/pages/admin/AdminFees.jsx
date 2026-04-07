@@ -1867,7 +1867,7 @@ const AdminFees = () => {
                   <div className="house-grid" style={{ gridTemplateColumns: '1fr', gap: 10 }}>
                     <label className="house-field">
                       <span>สถานะ</span>
-                      <select value={editForm.status} onChange={(e) => setEditForm((prev) => ({ ...prev, status: e.target.value }))}>
+                      <select data-search-filter="true" value={editForm.status} onChange={(e) => setEditForm((prev) => ({ ...prev, status: e.target.value }))}>
                         <option value="unpaid">ยังไม่ชำระ</option>
                         <option value="pending">รอตรวจสอบ</option>
                         <option value="paid" disabled={editApprovedAmount < Number(editTotal || 0)}>ชำระแล้ว</option>
@@ -2138,7 +2138,7 @@ const AdminFees = () => {
                     <div className="house-grid" style={{ gridTemplateColumns: '1fr', gap: 10 }}>
                       <label className="house-field">
                         <span>วิธีชำระ</span>
-                        <select value={paymentForm.payment_method} onChange={(e) => setPaymentForm((prev) => ({ ...prev, payment_method: e.target.value }))}>
+                        <select data-search-filter="true" value={paymentForm.payment_method} onChange={(e) => setPaymentForm((prev) => ({ ...prev, payment_method: e.target.value }))}>
                           <option value="transfer">โอนเงิน</option>
                           <option value="cash">เงินสด</option>
                           <option value="qr">QR</option>
@@ -2185,7 +2185,7 @@ const AdminFees = () => {
                   <div className="house-grid" style={{ gridTemplateColumns: '1fr' }}>
                     <label className="house-field">
                       <span>ปี (พ.ศ.) *</span>
-                      <select
+                      <select data-search-filter="true"
                         value={processForm.yearBE}
                         onChange={(e) => setProcessForm((prev) => ({ ...prev, yearBE: e.target.value }))}
                       >
@@ -2196,7 +2196,7 @@ const AdminFees = () => {
                     </label>
                     <label className="house-field">
                       <span>รอบ *</span>
-                      <select
+                      <select data-search-filter="true"
                         value={processForm.period}
                         onChange={(e) => setProcessForm((prev) => ({ ...prev, period: e.target.value }))}
                       >

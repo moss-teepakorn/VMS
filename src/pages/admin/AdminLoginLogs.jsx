@@ -17,7 +17,8 @@ const PAGE_LABEL = {
   '/admin/houses': 'ข้อมูลบ้าน',
   '/admin/vehicles': 'ข้อมูลรถ',
   '/admin/fees/billing-penalty': 'สร้างใบแจ้งหนี้/ค่าปรับ',
-  '/admin/fees/print': 'พิมพ์ใบแจ้งหนี้ค่าส่วนกลาง',
+  '/admin/fees/print': 'พิมพ์ใบแจ้งหนี้',
+  '/admin/fees/print-notice': 'พิมพ์ใบแจ้งเตือน',
   '/admin/fees': 'ค่าส่วนกลาง',
   '/admin/payments': 'ชำระค่าส่วนกลาง',
   '/admin/requests': 'คำขอแก้ไข',
@@ -189,7 +190,7 @@ export default function AdminLoginLogs() {
             className="houses-filter-input"
             style={{ flex: '1 1 180px', minWidth: 0 }}
           />
-          <select
+          <select data-search-filter="true"
             value={roleFilter}
             onChange={(e) => setRoleFilter(e.target.value)}
             className="houses-filter-select"

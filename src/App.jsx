@@ -9,6 +9,7 @@ import AdminVehicles from './pages/admin/AdminVehicles'
 import AdminFees from './pages/admin/AdminFees'
 import AdminFeesBillingPenalty from './pages/admin/AdminFeesBillingPenalty'
 import AdminFeesPrintInvoices from './pages/admin/AdminFeesPrintInvoices'
+import AdminFeesPrintNotices from './pages/admin/AdminFeesPrintNotices'
 import AdminRequests from './pages/admin/AdminRequests'
 import AdminIssues from './pages/admin/AdminIssues'
 import AdminViolations from './pages/admin/AdminViolations'
@@ -101,6 +102,7 @@ function AppRoutes() {
         <Route path="vehicles" element={<AdminVehicles />} />
         <Route path="fees/billing-penalty" element={<AdminFeesBillingPenalty />} />
         <Route path="fees/print" element={<AdminFeesPrintInvoices />} />
+        <Route path="fees/print-notice" element={<AdminFeesPrintNotices />} />
         <Route path="fees" element={<AdminFees />} />
         <Route path="requests" element={<AdminRequests />} />
         <Route path="issues" element={<AdminIssues />} />

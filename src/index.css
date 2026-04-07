@@ -40,3 +40,26 @@
   .btn-ghost   { @apply btn bg-gray-100 text-gray-700 hover:bg-gray-200; }
   .btn-outline { @apply btn border border-gray-200 bg-white text-gray-700 hover:bg-gray-50; }
 }
+
+.choices {
+  width: 100%;
+  margin-bottom: 0;
+}
+
+.choices__inner {
+  min-height: 36px;
+  border-radius: 8px;
+  border: 1px solid #d1d5db;
+  background: #fff;
+  padding: 4px 10px;
+}
+
+.choices[data-type*='select-one'] .choices__input {
+  background-color: #fff;
+}
+
+.choices__list--dropdown,
+.choices__list[aria-expanded] {
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+}

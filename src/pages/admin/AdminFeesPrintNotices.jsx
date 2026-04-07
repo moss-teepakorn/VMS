@@ -3,7 +3,13 @@ import html2canvas from 'html2canvas'
 import { jsPDF } from 'jspdf'
 import Swal from 'sweetalert2'
 import { getSystemConfig } from '../../lib/systemConfig'
-import { listApprovedPaymentItemTotalsByFeeIds, listPaymentTotalsByFeeIds, listFees } from '../../lib/fees'
+import {
+  createNoticePrintLogs,
+  listApprovedPaymentItemTotalsByFeeIds,
+  listNoticePrintCountsByFeeIds,
+  listPaymentTotalsByFeeIds,
+  listFees,
+} from '../../lib/fees'
 import { resolveImageToDataUrl, DEFAULT_LOGO_DATAURL } from '../../lib/logoUtils'
 
 function periodLabel(period) {
@@ -39,6 +45,12 @@ function formatDateDMY(value) {
   return `${d}/${m}/${y}`
 }
 
+function extractNoticePrintCount(note) {
+  const raw = String(note || '')
+  const match = raw.match(/^\[NOTICE_PRINT:([0-9]+)\]\s*/)
+  return match ? Number(match[1]) : 0
+}
+
 const houseSorter = new Intl.Collator('th-TH', { numeric: true, sensitivity: 'base' })
 
 function normalizeSoiValue(soi) {
@@ -59,7 +71,7 @@ const feeItemDefs = [
   { key: 'fee_other', label: 'ค่าอื่นๆ' },
 ]
 
-export default function AdminFeesPrintInvoices() {
+export default function AdminFeesPrintNotices() {
   const [setup, setSetup] = useState({
     village_name: 'The Greenfield',
     village_logo_url: '',
@@ -79,9 +91,11 @@ export default function AdminFeesPrintInvoices() {
   const [feeSubmittedTotals, setFeeSubmittedTotals] = useState({})
   const [feeApprovedTotals, setFeeApprovedTotals] = useState({})
   const [feeApprovedItemTotals, setFeeApprovedItemTotals] = useState({})
+  const [noticePrintCounts, setNoticePrintCounts] = useState({})
   const [showPrintPreviewModal, setShowPrintPreviewModal] = useState(false)
   const [printPreviewHtml, setPrintPreviewHtml] = useState('')
   const [printPreviewTitle, setPrintPreviewTitle] = useState('เอกสารสำหรับพิมพ์')
+  const [printPreviewNoticeNoMap, setPrintPreviewNoticeNoMap] = useState({})
   const [filters, setFilters] = useState({
     yearBE: String(new Date().getFullYear() + 543),
     period: 'first_half',
@@ -131,6 +145,31 @@ export default function AdminFeesPrintInvoices() {
     return { className: 'bd b-wn', label: 'ยังไม่ชำระ' }
   }
 
+  const isFeeFullyPaid = (fee) => {
+    const approvedAmount = getApprovedAmountForFee(fee)
+    return approvedAmount >= Number(fee?.total_amount || 0)
+  }
+
+  const isNoticePrintable = (fee) => {
+    const penaltyTotal = Number(fee?.fee_fine || 0) + Number(fee?.fee_overdue_fine || 0)
+    return penaltyTotal > 0 && fee?.status !== 'cancelled' && !isFeeFullyPaid(fee) && getOutstandingAmountForFee(fee) > 0
+  }
+
+  const getNoticeCountForFee = (fee) => {
+    const dbCount = Number(noticePrintCounts[fee?.id] || 0)
+    const legacyCount = extractNoticePrintCount(fee?.note)
+    return Math.max(dbCount, legacyCount)
+  }
+
+  const persistNoticePrintCounts = async (mode, noticeNoMap) => {
+    const rows = (selectedFees || []).map((fee) => ({
+      fee_id: fee.id,
+      notice_no: Number(noticeNoMap?.[fee.id] || 0),
+      print_mode: mode,
+    }))
+    await createNoticePrintLogs(rows)
+  }
+
   const selectedFees = useMemo(() => {
     const selectedSet = new Set(selectedIds)
     return fees.filter((fee) => selectedSet.has(fee.id))
@@ -160,14 +199,16 @@ export default function AdminFeesPrintInvoices() {
       if (config) setSetup(config)
 
       const ids = (feeRows || []).map((row) => row.id)
-      const [paymentTotals, paymentItemTotals] = await Promise.all([
+      const [paymentTotals, paymentItemTotals, noticeCounts] = await Promise.all([
         listPaymentTotalsByFeeIds(ids),
         listApprovedPaymentItemTotalsByFeeIds(ids),
+        listNoticePrintCountsByFeeIds(ids),
       ])
 
       setFeeSubmittedTotals(paymentTotals.submitted || {})
       setFeeApprovedTotals(paymentTotals.approved || {})
       setFeeApprovedItemTotals(paymentItemTotals || {})
+      setNoticePrintCounts(noticeCounts || {})
 
       const houseKeyword = filters.houseNo.trim().toLowerCase()
 
@@ -182,7 +223,7 @@ export default function AdminFeesPrintInvoices() {
             if (fee.status === 'cancelled') return false
             return approvedAmount < totalAmount
           }
-          return true
+          return isNoticePrintable(fee)
         })
         .sort((left, right) => {
           const soiCompare = normalizeSoiValue(left?.houses?.soi) - normalizeSoiValue(right?.houses?.soi)
@@ -219,6 +260,8 @@ export default function AdminFeesPrintInvoices() {
   const buildInvoiceHtml = async (targetFees, title, {
     autoPrint = false,
     forCapture = false,
+    docType = 'notice',
+    noticeNoMap = {},
   } = {}) => {
     const freshConfig = await getSystemConfig().catch(() => null)
     const rawLogoUrl = freshConfig?.village_logo_url || setup.village_logo_url || localStorage.getItem('vms-login-circle-logo-url') || ''
@@ -319,8 +362,15 @@ export default function AdminFeesPrintInvoices() {
       const invoiceNo = buildInvoiceDocumentNo(fee)
       const periodText = `${periodLabel(fee.period)} ปี ${toBE(fee.year)}`
       const isLastFee = feeIndex === targetFees.length - 1
-      const documentTitle = 'ใบแจ้งหนี้ค่าส่วนกลาง'
-      const documentNote = 'หมายเหตุ: กรุณาชำระภายในวันที่ครบกำหนด เพื่อหลีกเลี่ยงค่าปรับ/ค่าทวงถามเพิ่มเติม'
+      const isNotice = docType === 'notice'
+      const noticeNo = Number(noticeNoMap?.[fee.id] || 0)
+      const documentTitle = isNotice ? `ใบแจ้งเตือนค้างชำระ ครั้งที่ ${noticeNo || 1}` : 'ใบแจ้งหนี้ค่าส่วนกลาง'
+      const documentNote = isNotice
+        ? 'หมายเหตุ: เอกสารฉบับนี้เป็นหนังสือแจ้งเตือนเพื่อให้ดำเนินการชำระยอดค้างโดยเร็ว'
+        : 'หมายเหตุ: กรุณาชำระภายในวันที่ครบกำหนด เพื่อหลีกเลี่ยงค่าปรับ/ค่าทวงถามเพิ่มเติม'
+      const reminderRow = isNotice
+        ? `<div><span>อ้างอิงเอกสาร:</span> <strong>${invoiceNo}</strong></div><div><span>แจ้งเตือนครั้งที่:</span> <strong>${noticeNo || 1}</strong></div>`
+        : ''
 
       return [
         `
@@ -340,11 +390,14 @@ export default function AdminFeesPrintInvoices() {
                 <div><span>เลขที่เอกสาร:</span> <strong>${invoiceNo}</strong></div>
                 <div><span>วันที่ออกเอกสาร:</span> <strong>${fmtDate(fee.invoice_date)}</strong></div>
                 <div><span>ครบกำหนดชำระ:</span> <strong>${fmtDate(fee.due_date)}</strong></div>
+                ${reminderRow}
                 <div class="copy-mark-row">
                   <div class="copy-mark copy-mark--active">ต้นฉบับ</div>
                 </div>
               </div>
             </header>
+
+            ${isNotice ? `<section class="notice-alert">เอกสารแจ้งเตือนค้างชำระ: กรุณาดำเนินการชำระยอดคงค้างภายในกำหนดเพื่อหลีกเลี่ยงค่าใช้จ่ายเพิ่มเติม</section>` : ''}
 
             <section class="box">
               <div class="grid">
@@ -419,11 +472,14 @@ export default function AdminFeesPrintInvoices() {
                 <div><span>เลขที่เอกสาร:</span> <strong>${invoiceNo}</strong></div>
                 <div><span>วันที่ออกเอกสาร:</span> <strong>${fmtDate(fee.invoice_date)}</strong></div>
                 <div><span>ครบกำหนดชำระ:</span> <strong>${fmtDate(fee.due_date)}</strong></div>
+                ${reminderRow}
                 <div class="copy-mark-row">
                   <div class="copy-mark copy-mark--active">สำเนา</div>
                 </div>
               </div>
             </header>
+
+            ${isNotice ? `<section class="notice-alert">เอกสารแจ้งเตือนค้างชำระ: กรุณาดำเนินการชำระยอดคงค้างภายในกำหนดเพื่อหลีกเลี่ยงค่าใช้จ่ายเพิ่มเติม</section>` : ''}
 
             <section class="box">
               <div class="grid">
@@ -517,6 +573,7 @@ export default function AdminFeesPrintInvoices() {
             .copy-mark-row { display: flex; gap: 6px; justify-content: flex-end; margin-top: 10px; margin-right: -4px; }
             .copy-mark { border: none; border-radius: 4px; padding: 3px 10px; text-align: center; font-size: 14px; font-weight: 700; line-height: 1.3; color: #94a3b8; background: transparent; }
             .copy-mark--active { color: #0c4a6e; background: transparent; }
+            .notice-alert { border: 1px dashed #fb923c; background: #fff7ed; color: #9a3412; border-radius: 4px; padding: 7px 10px; font-size: 10px; font-weight: 600; line-height: 1.45; }
             .box { border: 1px solid #cbd5e1; border-radius: 4px; padding: 10px 12px; }
             .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 10px; word-break: break-word; }
             .grid > div { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
@@ -591,12 +648,15 @@ export default function AdminFeesPrintInvoices() {
     try {
       setRunningPrintAction(true)
       const title = printPreviewTitle || `ใบแจ้งหนี้ค่าส่วนกลาง ${filters.yearBE} ${periodLabel(filters.period)}`
+      const noticeNoMap = printPreviewNoticeNoMap || {}
 
       if (mode === 'image' || mode === 'pdf') {
         const expectedSheets = selectedFees.length * 2
         const html = await buildInvoiceHtml(selectedFees, title, {
           autoPrint: false,
           forCapture: true,
+          docType: 'notice',
+          noticeNoMap,
         })
         const { iframe, sheets } = await renderInvoicesInIframe(html, expectedSheets)
 
@@ -634,17 +694,21 @@ export default function AdminFeesPrintInvoices() {
         }
 
         document.body.removeChild(iframe)
+        await persistNoticePrintCounts(mode, noticeNoMap)
         setShowPrintPreviewModal(false)
         return
       }
 
       const html = await buildInvoiceHtml(selectedFees, title, {
         autoPrint: true,
+        docType: 'notice',
+        noticeNoMap,
       })
       const w = openHtmlInWindow(html)
       if (!w) {
         await Swal.fire({ icon: 'warning', title: 'ไม่สามารถเปิดหน้าต่างพิมพ์ได้', text: 'กรุณาอนุญาต popup ของเบราว์เซอร์' })
       } else {
+        await persistNoticePrintCounts(mode, noticeNoMap)
         setShowPrintPreviewModal(false)
       }
     } catch (error) {
@@ -662,12 +726,19 @@ export default function AdminFeesPrintInvoices() {
 
     try {
       setRunningPrintAction(true)
-      const title = `ใบแจ้งหนี้ค่าส่วนกลาง ${filters.yearBE} ${periodLabel(filters.period)}`
+      const title = `ใบแจ้งเตือนค้างชำระ ${filters.yearBE} ${periodLabel(filters.period)}`
+      const noticeNoMap = selectedFees.reduce((acc, fee) => {
+        acc[fee.id] = getNoticeCountForFee(fee) + 1
+        return acc
+      }, {})
       const html = await buildInvoiceHtml(selectedFees, title, {
         autoPrint: false,
+        docType: 'notice',
+        noticeNoMap,
       })
       setPrintPreviewTitle(title)
       setPrintPreviewHtml(html)
+      setPrintPreviewNoticeNoMap(noticeNoMap)
       setShowPrintPreviewModal(true)
     } catch (error) {
       await Swal.fire({ icon: 'error', title: 'เตรียมเอกสารไม่สำเร็จ', text: error.message })
@@ -681,6 +752,7 @@ export default function AdminFeesPrintInvoices() {
     setShowPrintPreviewModal(false)
     setPrintPreviewHtml('')
     setPrintPreviewTitle('เอกสารสำหรับพิมพ์')
+    setPrintPreviewNoticeNoMap({})
   }
 
   return (
@@ -688,8 +760,8 @@ export default function AdminFeesPrintInvoices() {
       <div className="ph">
         <div className="ph-in">
           <div>
-            <div className="ph-h1">พิมพ์ใบแจ้งหนี้ค่าส่วนกลาง</div>
-            <div className="ph-sub">ค้นหาใบแจ้งหนี้ตามเงื่อนไข แล้วเลือกพิมพ์/ดาวน์โหลด PDF/Image</div>
+            <div className="ph-h1">พิมพ์ใบแจ้งเตือน</div>
+            <div className="ph-sub">ค้นหารายการค้างที่มีค่าปรับ แล้วเลือกพิมพ์/ดาวน์โหลด PDF/Image</div>
           </div>
         </div>
       </div>

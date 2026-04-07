@@ -230,7 +230,7 @@ export default function AdminRules() {
             onChange={(e) => setSearchTerm(e.target.value)}
             placeholder="ค้นหา หัวข้อ / รายละเอียด"
           />
-          <select className="houses-filter-select" value={categoryFilter} onChange={(e) => setCategoryFilter(e.target.value)}>
+          <select data-search-filter="true" className="houses-filter-select" value={categoryFilter} onChange={(e) => setCategoryFilter(e.target.value)}>
             <option value="all">ทุกหมวด</option>
             {CATEGORY_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
           </select>
@@ -332,7 +332,7 @@ export default function AdminRules() {
                   <div className="house-grid house-grid-2">
                     <label className="house-field">
                       <span>หมวดหมู่ *</span>
-                      <select value={form.category} onChange={(e) => setForm((cur) => ({ ...cur, category: e.target.value, topic_no: editingItem ? cur.topic_no : String(nextTopicNo(rules, e.target.value)) }))}>
+                      <select data-search-filter="true" value={form.category} onChange={(e) => setForm((cur) => ({ ...cur, category: e.target.value, topic_no: editingItem ? cur.topic_no : String(nextTopicNo(rules, e.target.value)) }))}>
                         {CATEGORY_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
                       </select>
                     </label>

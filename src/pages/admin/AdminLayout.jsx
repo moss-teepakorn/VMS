@@ -145,6 +145,7 @@ const AdminLayout = () => {
     { section: 'การเงิน', tone: 'operation', sectionIcon: '💰', items: [
       { id: 'fees-billing-penalty', label: 'สร้างใบแจ้งหนี้/ค่าปรับ', icon: '🧾', path: '/admin/fees/billing-penalty' },
       { id: 'fees-print', label: 'พิมพ์ใบแจ้งหนี้', icon: '🖨️', path: '/admin/fees/print' },
+      { id: 'fees-print-notice', label: 'พิมพ์ใบแจ้งเตือน', icon: '🔔', path: '/admin/fees/print-notice' },
       { id: 'fees', label: 'ค่าส่วนกลาง', icon: '💵', path: '/admin/fees' },
       { id: 'payments', label: 'ชำระค่าส่วนกลาง', icon: '💳', path: '/admin/payments' },
       { id: 'receive-payments', label: 'รับชำระเงิน', icon: '💳', path: '/admin/receive-payments' },
@@ -573,7 +574,7 @@ const AdminLayout = () => {
                     <div key={key} style={{ marginBottom: '12px' }}>
                       <label className="fl">{value.label}</label>
                       {value.type === 'select' ? (
-                        <select
+                        <select data-search-filter="true"
                           value={value.value ?? ''}
                           onChange={(e) => setModalFields({ ...modalFields, [key]: { ...value, value: e.target.value } })}
                           style={{ width: '100%', padding: '8px 12px', border: '1px solid var(--bo)', borderRadius: '6px' }}

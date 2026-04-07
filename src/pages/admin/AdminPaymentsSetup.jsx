@@ -403,7 +403,7 @@ export default function AdminPaymentsSetup() {
                   </label>
                   <label className="house-field">
                     <span>สถานะ</span>
-                    <select value={itemForm.is_active ? '1' : '0'} onChange={(e) => setItemForm((prev) => ({ ...prev, is_active: e.target.value === '1' }))}>
+                    <select data-search-filter="true" value={itemForm.is_active ? '1' : '0'} onChange={(e) => setItemForm((prev) => ({ ...prev, is_active: e.target.value === '1' }))}>
                       <option value="1">ใช้งาน</option>
                       <option value="0">ปิด</option>
                     </select>
@@ -449,7 +449,7 @@ export default function AdminPaymentsSetup() {
                   </label>
                   <label className="house-field">
                     <span>สถานะ</span>
-                    <select value={partnerForm.is_active ? '1' : '0'} onChange={(e) => setPartnerForm((prev) => ({ ...prev, is_active: e.target.value === '1' }))}>
+                    <select data-search-filter="true" value={partnerForm.is_active ? '1' : '0'} onChange={(e) => setPartnerForm((prev) => ({ ...prev, is_active: e.target.value === '1' }))}>
                       <option value="1">ใช้งาน</option>
                       <option value="0">ปิด</option>
                     </select>

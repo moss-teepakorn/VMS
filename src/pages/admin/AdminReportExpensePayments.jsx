@@ -158,19 +158,19 @@ export default function AdminReportExpensePayments() {
           <form className="report-filter-grid" onSubmit={(event) => { event.preventDefault(); runReport() }}>
             <label className="house-field" style={{ margin: 0 }}>
               <span>เดือนเริ่มต้น</span>
-              <select value={startMonth} onChange={(event) => setStartMonth(Number(event.target.value))}>
+              <select data-search-filter="true" value={startMonth} onChange={(event) => setStartMonth(Number(event.target.value))}>
                 {monthOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
               </select>
             </label>
             <label className="house-field" style={{ margin: 0 }}>
               <span>ถึงเดือน</span>
-              <select value={endMonth} onChange={(event) => setEndMonth(Number(event.target.value))}>
+              <select data-search-filter="true" value={endMonth} onChange={(event) => setEndMonth(Number(event.target.value))}>
                 {monthOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
               </select>
             </label>
             <label className="house-field" style={{ margin: 0 }}>
               <span>ปี</span>
-              <select value={year} onChange={(event) => setYear(Number(event.target.value))}>
+              <select data-search-filter="true" value={year} onChange={(event) => setYear(Number(event.target.value))}>
                 {yearOptions.map((value) => <option key={value} value={value}>{value + 543}</option>)}
               </select>
             </label>

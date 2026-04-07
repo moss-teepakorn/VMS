@@ -171,7 +171,7 @@ export default function AdminReportOutstanding() {
             </label>
             <label className="house-field" style={{ margin: 0 }}>
               <span>ปี</span>
-              <select value={year} onChange={(event) => setYear(Number(event.target.value))}>
+              <select data-search-filter="true" value={year} onChange={(event) => setYear(Number(event.target.value))}>
                 {yearOptions.map((value) => <option key={value} value={value}>{value + 543}</option>)}
               </select>
             </label>

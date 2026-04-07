@@ -253,7 +253,7 @@ const AdminRequests = () => {
       <div className="card report-filter-card admin-search-filter-card">
         <div className="cb">
           <div className="houses-filter-row request-search-row">
-            <select className="fs request-search-status" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
+            <select data-search-filter="true" className="fs request-search-status" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
               <option value="pending">รอดำเนินการ</option>
               <option value="approved">อนุมัติแล้ว</option>
               <option value="rejected">ปฏิเสธ</option>
