@@ -14,6 +14,26 @@ function normalizePhoneDigits(value) {
   return normalizeText(value).replace(/[^0-9]/g, '')
 }
 
+function isAccountRequestInsertDenied(error) {
+  const code = String(error?.code || '').toLowerCase()
+  const statusRaw = error?.status
+  const status = Number.isFinite(Number(statusRaw)) ? Number(statusRaw) : 0
+  const message = String(error?.message || '').toLowerCase()
+  const details = String(error?.details || '').toLowerCase()
+  const hint = String(error?.hint || '').toLowerCase()
+  const text = [message, details, hint, String(error || '').toLowerCase()].join(' | ')
+
+  return code === '42501'
+    || code === 'pgrst301'
+    || status === 401
+    || status === 403
+    || text.includes('row-level security')
+    || text.includes('policy')
+    || text.includes('unauthorized')
+    || text.includes('permission denied')
+    || text.includes('not allowed')
+}
+
 async function findHouseByHouseNoAndPhone({ houseNo, phone }) {
   const normalizedHouseNo = normalizeLower(houseNo)
   const normalizedPhone = normalizePhoneDigits(phone)
@@ -104,15 +124,7 @@ export async function createAccountRegistrationRequest({ username, houseNo, phon
     .single()
 
   if (requestError) {
-    const message = String(requestError.message || '').toLowerCase()
-    const code = String(requestError.code || '')
-    const status = Number(requestError.status || 0)
-    const isRlsDenied = code === '42501'
-      || status === 401
-      || message.includes('row-level security')
-      || message.includes('policy')
-
-    if (isRlsDenied) {
+    if (isAccountRequestInsertDenied(requestError)) {
       return {
         id: null,
         status: 'pending',
