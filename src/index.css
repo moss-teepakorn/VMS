@@ -100,14 +100,31 @@
   z-index: 4000;
 }
 
-.ts-dropdown .option {
-  padding: 8px 12px;
-  border-radius: 10px;
-  font-size: 14px;
-  color: #0f172a;
-  margin: 1px 0;
-}
+  select {
+    min-height: 36px;
+    padding: 8px 10px;
+    border: 1px solid #d5deea;
+    border-radius: 10px;
+    background: #fff;
+    color: #213142;
+    font-size: 14px;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, .65);
+    transition: border-color 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
+  }
 
+  select:focus {
+    outline: none;
+    border-color: #2bb673;
+    box-shadow: 0 0 0 3px rgba(43, 182, 115, .14);
+  }
+
+  select::-ms-expand {
+    display: none;
+  }
+
+  select option {
+    font-size: 14px;
+  }
 .ts-dropdown .option.active {
   background: #eff6ff;
   color: #0c4a6e;
