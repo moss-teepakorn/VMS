@@ -163,6 +163,7 @@ const AdminVehicles = () => {
   const [saving, setSaving] = useState(false)
   const [editingVehicle, setEditingVehicle] = useState(null)
   const [form, setForm] = useState(EMPTY_FORM)
+  const [houseSearchKeyword, setHouseSearchKeyword] = useState('')
   const [attachments, setAttachments] = useState([])
   const [removedImagePaths, setRemovedImagePaths] = useState([])
 
@@ -187,6 +188,21 @@ const AdminVehicles = () => {
       .sort((a, b) => Number(a) - Number(b))
     return soies
   }, [houses])
+
+  const filteredHouseOptions = useMemo(() => {
+    const keyword = houseSearchKeyword.trim().toLowerCase()
+    if (!keyword) return houseOptions
+
+    const baseOptions = houseOptions.filter((option) => option.value)
+    const selectedOption = baseOptions.find((option) => String(option.value) === String(form.house_id))
+    const matchedOptions = baseOptions.filter((option) => option.label.toLowerCase().includes(keyword))
+
+    const uniqueOptions = new Map()
+    if (selectedOption) uniqueOptions.set(String(selectedOption.value), selectedOption)
+    matchedOptions.forEach((option) => uniqueOptions.set(String(option.value), option))
+
+    return [houseOptions[0], ...Array.from(uniqueOptions.values())]
+  }, [houseOptions, houseSearchKeyword, form.house_id])
 
   const loadVehicles = async (override = {}) => {
     try {
@@ -224,6 +240,7 @@ const AdminVehicles = () => {
   const openAddModal = () => {
     setEditingVehicle(null)
     setForm(EMPTY_FORM)
+    setHouseSearchKeyword('')
     setAttachments([])
     setRemovedImagePaths([])
     setShowModal(true)
@@ -253,6 +270,9 @@ const AdminVehicles = () => {
       note: vehicle.note || '',
     })
 
+    const selectedHouse = houses.find((house) => String(house.id) === String(vehicle.house_id))
+    setHouseSearchKeyword(selectedHouse ? `ซอย ${selectedHouse.soi || '-'} • ${selectedHouse.house_no}${selectedHouse.owner_name ? ` - ${selectedHouse.owner_name}` : ''}` : '')
+
     try {
       const currentImages = await listVehicleImages(vehicle.id)
       setAttachments(currentImages.map((image) => ({ ...image, source: 'existing' })))
@@ -271,6 +291,7 @@ const AdminVehicles = () => {
     setShowModal(false)
     setEditingVehicle(null)
     setForm(EMPTY_FORM)
+    setHouseSearchKeyword('')
     setAttachments([])
     setRemovedImagePaths([])
   }
@@ -411,6 +432,12 @@ const AdminVehicles = () => {
 
   const handleChange = (event) => {
     const { name, value } = event.target
+
+    if (name === 'house_id') {
+      const selectedOption = houseOptions.find((option) => String(option.value) === String(value))
+      setHouseSearchKeyword(selectedOption?.label || '')
+    }
+
     setForm((current) => {
       const next = { ...current, [name]: value }
 
@@ -915,8 +942,14 @@ const AdminVehicles = () => {
                   <div className="house-grid house-grid-4">
                     <label className="house-field">
                       <span>บ้าน *</span>
+                      <input
+                        value={houseSearchKeyword}
+                        onChange={(event) => setHouseSearchKeyword(event.target.value)}
+                        placeholder="พิมพ์ค้นหา บ้านเลขที่ / เจ้าของ / ซอย"
+                        style={{ marginBottom: 6 }}
+                      />
                       <select name="house_id" value={form.house_id} onChange={handleChange}>
-                        {houseOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+                        {filteredHouseOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
                       </select>
                     </label>
                     <label className="house-field">
