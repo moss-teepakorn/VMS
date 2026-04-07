@@ -16,6 +16,8 @@ const PAGE_LABEL = {
   '/admin/dashboard': 'Dashboard',
   '/admin/houses': 'ข้อมูลบ้าน',
   '/admin/vehicles': 'ข้อมูลรถ',
+  '/admin/fees/billing-penalty': 'สร้างใบแจ้งหนี้/ค่าปรับ',
+  '/admin/fees/print': 'พิมพ์ใบแจ้งหนี้ค่าส่วนกลาง',
   '/admin/fees': 'ค่าส่วนกลาง',
   '/admin/payments': 'ชำระค่าส่วนกลาง',
   '/admin/requests': 'คำขอแก้ไข',

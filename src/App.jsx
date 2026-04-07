@@ -7,6 +7,8 @@ import AdminDashboard from './pages/admin/AdminDashboard'
 import AdminHouses from './pages/admin/AdminHouses'
 import AdminVehicles from './pages/admin/AdminVehicles'
 import AdminFees from './pages/admin/AdminFees'
+import AdminFeesBillingPenalty from './pages/admin/AdminFeesBillingPenalty'
+import AdminFeesPrintInvoices from './pages/admin/AdminFeesPrintInvoices'
 import AdminRequests from './pages/admin/AdminRequests'
 import AdminIssues from './pages/admin/AdminIssues'
 import AdminViolations from './pages/admin/AdminViolations'
@@ -97,6 +99,8 @@ function AppRoutes() {
         <Route path="dashboard" element={<AdminDashboard />} />
         <Route path="houses" element={<AdminHouses />} />
         <Route path="vehicles" element={<AdminVehicles />} />
+        <Route path="fees/billing-penalty" element={<AdminFeesBillingPenalty />} />
+        <Route path="fees/print" element={<AdminFeesPrintInvoices />} />
         <Route path="fees" element={<AdminFees />} />
         <Route path="requests" element={<AdminRequests />} />
         <Route path="issues" element={<AdminIssues />} />
