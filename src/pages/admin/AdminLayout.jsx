@@ -5,6 +5,7 @@ import { insertPageViewLog } from '../../lib/loginLogs'
 import { applyDocumentTitle, getSetupConfig } from '../../lib/setup'
 import { updateUser, getHouseDetail } from '../../lib/users'
 import { listVehicleRequests } from '../../lib/vehicleRequests'
+import { listAccountRequests } from '../../lib/accountRequests'
 import { listIssues } from '../../lib/issues'
 import Swal from 'sweetalert2'
 import villageLogo from '../../assets/village-logo.svg'
@@ -86,12 +87,13 @@ const AdminLayout = () => {
   useEffect(() => {
     const loadNotifies = async () => {
       try {
-        const [reqs, issues] = await Promise.all([
+        const [vehicleReqs, accountReqs, issues] = await Promise.all([
           listVehicleRequests({ status: 'pending' }),
+          listAccountRequests({ status: 'pending' }),
           listIssues({ status: 'pending' }),
         ])
         setNotifyCounts({
-          requests: (reqs || []).length,
+          requests: (vehicleReqs || []).length + (accountReqs || []).length,
           issues: (issues || []).length,
         })
       } catch {

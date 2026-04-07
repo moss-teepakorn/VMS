@@ -235,13 +235,13 @@ export default function AdminPaymentsSetup() {
             <table className="tw houses-table houses-main-table" style={{ width: '100%', minWidth: 900 }}>
               <thead>
                 <tr>
-                  <th>Code</th>
-                  <th>Label</th>
-                  <th>Default Amount</th>
-                  <th>Category</th>
-                  <th>Description</th>
-                  <th>Active</th>
-                  <th>Actions</th>
+                  <th>รหัส</th>
+                  <th>ชื่อรายการ</th>
+                  <th>ยอดเริ่มต้น</th>
+                  <th>หมวดหมู่</th>
+                  <th>รายละเอียด</th>
+                  <th>สถานะ</th>
+                  <th style={{ minWidth: 128 }}>การจัดการ</th>
                 </tr>
               </thead>
               <tbody>
@@ -257,9 +257,11 @@ export default function AdminPaymentsSetup() {
                     <td>{row.category || '-'}</td>
                     <td>{row.description || '-'}</td>
                     <td>{row.is_active ? 'ใช้งาน' : 'ปิด'}</td>
-                    <td>
-                      <button className="btn btn-xs btn-o" onClick={() => openEditItemModal(row)}>แก้ไข</button>
-                      <button className="btn btn-xs btn-dg" style={{ marginLeft: 8 }} onClick={() => handleDeleteItem(row.id)}>ลบ</button>
+                    <td style={{ whiteSpace: 'nowrap' }}>
+                      <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                        <button className="btn btn-xs btn-o" onClick={() => openEditItemModal(row)}>แก้ไข</button>
+                        <button className="btn btn-xs btn-dg" onClick={() => handleDeleteItem(row.id)}>ลบ</button>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -279,10 +281,10 @@ export default function AdminPaymentsSetup() {
                   <span className={`bd ${row.is_active ? 'b-ok' : 'b-mu'} mcard-badge`}>{row.is_active ? 'ใช้งาน' : 'ปิด'}</span>
                 </div>
                 <div className="mcard-meta">
-                  <span><span className="mcard-label">Code</span> {row.code || '-'}</span>
-                  <span><span className="mcard-label">Category</span> {row.category || '-'}</span>
-                  <span><span className="mcard-label">Default Amount</span> {Number(row.default_amount || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-                  <span><span className="mcard-label">Description</span> {row.description || '-'}</span>
+                  <span><span className="mcard-label">รหัส</span> {row.code || '-'}</span>
+                  <span><span className="mcard-label">หมวดหมู่</span> {row.category || '-'}</span>
+                  <span><span className="mcard-label">ยอดเริ่มต้น</span> {Number(row.default_amount || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                  <span><span className="mcard-label">รายละเอียด</span> {row.description || '-'}</span>
                 </div>
                 <div className="mcard-actions">
                   <button className="btn btn-xs btn-o" onClick={() => openEditItemModal(row)}>แก้ไข</button>
@@ -296,7 +298,7 @@ export default function AdminPaymentsSetup() {
 
       <div className="card houses-main-card">
         <div className="ch houses-list-head houses-main-head">
-          <div className="ct">Setup คู่ค้านิติบุคคล (บุคคลภายนอก)</div>
+          <div className="ct">คู่ค้าของนิติ (บุคคลภายนอก)</div>
           <div className="houses-list-actions">
             <button className="btn btn-p btn-sm" onClick={openCreatePartnerModal}>+ เพิ่มคู่ค้า</button>
           </div>
@@ -311,8 +313,8 @@ export default function AdminPaymentsSetup() {
                   <th>ที่อยู่</th>
                   <th>เบอร์โทร</th>
                   <th>รายละเอียด</th>
-                  <th>Active</th>
-                  <th>Actions</th>
+                  <th>สถานะ</th>
+                  <th style={{ minWidth: 128 }}>การจัดการ</th>
                 </tr>
               </thead>
               <tbody>
@@ -328,9 +330,11 @@ export default function AdminPaymentsSetup() {
                     <td>{row.phone || '-'}</td>
                     <td>{row.note || '-'}</td>
                     <td>{row.is_active ? 'ใช้งาน' : 'ปิด'}</td>
-                    <td>
-                      <button className="btn btn-xs btn-o" onClick={() => openEditPartnerModal(row)}>แก้ไข</button>
-                      <button className="btn btn-xs btn-dg" style={{ marginLeft: 8 }} onClick={() => handleDeletePartner(row.id)}>ลบ</button>
+                    <td style={{ whiteSpace: 'nowrap' }}>
+                      <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                        <button className="btn btn-xs btn-o" onClick={() => openEditPartnerModal(row)}>แก้ไข</button>
+                        <button className="btn btn-xs btn-dg" onClick={() => handleDeletePartner(row.id)}>ลบ</button>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -378,23 +382,23 @@ export default function AdminPaymentsSetup() {
               <section className="house-sec">
                 <div className="house-grid" style={{ gridTemplateColumns: '1fr 1fr', gap: 10 }}>
                   <label className="house-field">
-                    <span>Code *</span>
+                    <span>รหัส *</span>
                     <input value={itemForm.code} onChange={(e) => setItemForm((prev) => ({ ...prev, code: e.target.value }))} />
                   </label>
                   <label className="house-field">
-                    <span>Label *</span>
+                    <span>ชื่อรายการ *</span>
                     <input value={itemForm.label} onChange={(e) => setItemForm((prev) => ({ ...prev, label: e.target.value }))} />
                   </label>
                   <label className="house-field">
-                    <span>Default Amount</span>
+                    <span>ยอดเริ่มต้น</span>
                     <input type="number" value={itemForm.default_amount} onChange={(e) => setItemForm((prev) => ({ ...prev, default_amount: e.target.value }))} />
                   </label>
                   <label className="house-field">
-                    <span>Category</span>
+                    <span>หมวดหมู่</span>
                     <input value={itemForm.category} onChange={(e) => setItemForm((prev) => ({ ...prev, category: e.target.value }))} />
                   </label>
                   <label className="house-field" style={{ gridColumn: '1 / -1' }}>
-                    <span>Description</span>
+                    <span>รายละเอียด</span>
                     <input value={itemForm.description} onChange={(e) => setItemForm((prev) => ({ ...prev, description: e.target.value }))} />
                   </label>
                   <label className="house-field">

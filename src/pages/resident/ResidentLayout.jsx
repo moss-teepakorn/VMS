@@ -3375,8 +3375,8 @@ export default function ResidentLayout() {
                   <div className="cb">
                     <form onSubmit={handleSaveProfile}>
                       <div className="fg">
-                        <label className="fl">ชื่อผู้ใช้ (แก้ไขไม่ได้)</label>
-                        <input className="fi" value={profile?.username || ''} disabled />
+                        <label className="fl">ชื่อผู้ใช้</label>
+                        <input className="fi fi-readonly" value={profile?.username || ''} disabled />
                       </div>
                       <div className="fg">
                         <label className="fl">ชื่อ-นามสกุล</label>
@@ -3391,8 +3391,8 @@ export default function ResidentLayout() {
                         <input className="fi" type="email" value={profileForm.email} onChange={(e) => setProfileForm((p) => ({ ...p, email: e.target.value }))} placeholder="email@example.com" />
                       </div>
                       <div className="fg">
-                        <label className="fl">บ้านเลขที่ (แก้ไขไม่ได้)</label>
-                        <input className="fi" value={houseNo} disabled />
+                        <label className="fl">บ้านเลขที่</label>
+                        <input className="fi fi-readonly" value={houseNo} disabled />
                       </div>
                       <button className="btn btn-p btn-sm" type="submit" disabled={profileSaving}>
                         {profileSaving ? 'กำลังบันทึก...' : '💾 บันทึกข้อมูล'}
