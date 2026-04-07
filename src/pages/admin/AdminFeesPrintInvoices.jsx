@@ -79,6 +79,9 @@ export default function AdminFeesPrintInvoices() {
   const [feeSubmittedTotals, setFeeSubmittedTotals] = useState({})
   const [feeApprovedTotals, setFeeApprovedTotals] = useState({})
   const [feeApprovedItemTotals, setFeeApprovedItemTotals] = useState({})
+  const [showPrintPreviewModal, setShowPrintPreviewModal] = useState(false)
+  const [printPreviewHtml, setPrintPreviewHtml] = useState('')
+  const [printPreviewTitle, setPrintPreviewTitle] = useState('เอกสารสำหรับพิมพ์')
   const [filters, setFilters] = useState({
     yearBE: String(new Date().getFullYear() + 543),
     period: 'first_half',
@@ -587,7 +590,7 @@ export default function AdminFeesPrintInvoices() {
 
     try {
       setRunningPrintAction(true)
-      const title = `ใบแจ้งหนี้ค่าส่วนกลาง ${filters.yearBE} ${periodLabel(filters.period)}`
+      const title = printPreviewTitle || `ใบแจ้งหนี้ค่าส่วนกลาง ${filters.yearBE} ${periodLabel(filters.period)}`
 
       if (mode === 'image' || mode === 'pdf') {
         const expectedSheets = selectedFees.length * 2
@@ -631,6 +634,7 @@ export default function AdminFeesPrintInvoices() {
         }
 
         document.body.removeChild(iframe)
+        setShowPrintPreviewModal(false)
         return
       }
 
@@ -640,12 +644,43 @@ export default function AdminFeesPrintInvoices() {
       const w = openHtmlInWindow(html)
       if (!w) {
         await Swal.fire({ icon: 'warning', title: 'ไม่สามารถเปิดหน้าต่างพิมพ์ได้', text: 'กรุณาอนุญาต popup ของเบราว์เซอร์' })
+      } else {
+        setShowPrintPreviewModal(false)
       }
     } catch (error) {
       await Swal.fire({ icon: 'error', title: 'ดำเนินการไม่สำเร็จ', text: error.message })
     } finally {
       setRunningPrintAction(false)
     }
+  }
+
+  const openPrintPreviewModal = async () => {
+    if (!selectedFees.length) {
+      await Swal.fire({ icon: 'info', title: 'กรุณาเลือกรายการก่อนพิมพ์' })
+      return
+    }
+
+    try {
+      setRunningPrintAction(true)
+      const title = `ใบแจ้งหนี้ค่าส่วนกลาง ${filters.yearBE} ${periodLabel(filters.period)}`
+      const html = await buildInvoiceHtml(selectedFees, title, {
+        autoPrint: false,
+      })
+      setPrintPreviewTitle(title)
+      setPrintPreviewHtml(html)
+      setShowPrintPreviewModal(true)
+    } catch (error) {
+      await Swal.fire({ icon: 'error', title: 'เตรียมเอกสารไม่สำเร็จ', text: error.message })
+    } finally {
+      setRunningPrintAction(false)
+    }
+  }
+
+  const closePrintPreviewModal = () => {
+    if (runningPrintAction) return
+    setShowPrintPreviewModal(false)
+    setPrintPreviewHtml('')
+    setPrintPreviewTitle('เอกสารสำหรับพิมพ์')
   }
 
   return (
@@ -700,9 +735,7 @@ export default function AdminFeesPrintInvoices() {
             <button className="btn btn-a btn-sm" type="submit" disabled={loading}>{loading ? 'กำลังค้นหา...' : 'ค้นหา'}</button>
             <button className="btn btn-g btn-sm" type="button" onClick={toggleAll}>เลือกทั้งหมด</button>
             <div style={{ marginLeft: 'auto', display: 'flex', gap: 8 }}>
-              <button className="btn btn-p btn-sm" type="button" onClick={() => runPrintAction('paper')} disabled={runningPrintAction || selectedFees.length === 0}>🖨</button>
-              <button className="btn btn-a btn-sm" type="button" onClick={() => runPrintAction('pdf')} disabled={runningPrintAction || selectedFees.length === 0}>PDF</button>
-              <button className="btn btn-g btn-sm" type="button" onClick={() => runPrintAction('image')} disabled={runningPrintAction || selectedFees.length === 0}>Image</button>
+              <button className="btn btn-p btn-sm" type="button" onClick={openPrintPreviewModal} disabled={runningPrintAction || selectedFees.length === 0}>🖨</button>
             </div>
           </div>
         </form>
@@ -721,7 +754,7 @@ export default function AdminFeesPrintInvoices() {
                     <input type="checkbox" checked={allChecked} onChange={toggleAll} />
                   </th>
                   <th>ซอย</th>
-                  <th>บ้านเลขที่ + ชื่อเจ้าของบ้าน</th>
+                  <th>บ้านเลขที่</th>
                   <th>ปี</th>
                   <th>งวด</th>
                   <th>ครบกำหนด</th>
@@ -744,7 +777,10 @@ export default function AdminFeesPrintInvoices() {
                         <input type="checkbox" checked={selected} onChange={() => toggleRow(fee.id)} />
                       </td>
                       <td>{fee.houses?.soi || '-'}</td>
-                      <td>{fee.houses?.house_no || '-'} {fee.houses?.owner_name ? `+ ${fee.houses.owner_name}` : ''}</td>
+                      <td>
+                        {fee.houses?.house_no || '-'}
+                        <div style={{ fontSize: '11px', color: 'var(--mu)' }}>{fee.houses?.owner_name || '-'}</div>
+                      </td>
                       <td>{toBE(fee.year)}</td>
                       <td>{periodLabel(fee.period)}</td>
                       <td>{formatDateDMY(fee.due_date)}</td>
@@ -759,6 +795,34 @@ export default function AdminFeesPrintInvoices() {
           </div>
         </div>
       </div>
+
+      {showPrintPreviewModal && (
+        <div className="house-mo">
+          <div className="house-md house-md--xl" style={{ '--house-md-max-w': '1120px', '--house-md-max-h': 'calc(100dvh - 36px)' }}>
+            <div className="house-md-head">
+              <div>
+                <div className="house-md-title">🖨 {printPreviewTitle}</div>
+                <div className="house-md-sub">แสดงตัวอย่างก่อนพิมพ์และดาวน์โหลดเอกสาร</div>
+              </div>
+            </div>
+            <div className="house-md-body" style={{ padding: 10, background: '#eef2f7' }}>
+              <div style={{ border: '1px solid var(--bo)', borderRadius: 10, overflow: 'hidden', background: '#fff', height: 'calc(100dvh - 220px)', minHeight: 420 }}>
+                <iframe
+                  title={printPreviewTitle}
+                  srcDoc={printPreviewHtml}
+                  style={{ width: '100%', height: '100%', border: 'none' }}
+                />
+              </div>
+            </div>
+            <div className="house-md-foot">
+              <button className="btn btn-o" type="button" onClick={() => runPrintAction('pdf')} disabled={runningPrintAction}>{runningPrintAction ? 'กำลังสร้างไฟล์...' : '⬇ PDF'}</button>
+              <button className="btn btn-o" type="button" onClick={() => runPrintAction('image')} disabled={runningPrintAction}>{runningPrintAction ? 'กำลังสร้างไฟล์...' : '⬇ Image'}</button>
+              <button className="btn btn-a" type="button" onClick={() => runPrintAction('paper')} disabled={runningPrintAction}>🖨 พิมพ์</button>
+              <button className="btn btn-g" type="button" onClick={closePrintPreviewModal} disabled={runningPrintAction}>ปิด</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

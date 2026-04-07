@@ -29,11 +29,6 @@ export default function AdminFeesBillingPenalty() {
     period: 'first_half',
     overwritePending: false,
   })
-  const [overdueForm, setOverdueForm] = useState({
-    yearBE: String(new Date().getFullYear() + 543),
-    period: 'all',
-    houseNo: '',
-  })
   const [invoiceSummary, setInvoiceSummary] = useState(null)
   const [overdueSummary, setOverdueSummary] = useState(null)
 
@@ -113,40 +108,28 @@ export default function AdminFeesBillingPenalty() {
     }
   }
 
-  const handleCalculateOverdue = async (event) => {
-    event.preventDefault()
-    const yearCE = toGregorianYear(overdueForm.yearBE)
-    if (!yearCE) {
-      await Swal.fire({ icon: 'warning', title: 'ปีไม่ถูกต้อง' })
-      return
-    }
-
+  const handleCalculateOverdue = async () => {
     try {
       setProcessingOverdue(true)
 
       Swal.fire({
         title: 'กำลังเตรียมรายการคำนวณค่าปรับ',
-        text: 'กำลังดึงข้อมูลใบแจ้งหนี้ตามเงื่อนไข',
+        text: 'กำลังดึงข้อมูลใบแจ้งหนี้ทั้งหมด',
         allowOutsideClick: false,
         allowEscapeKey: false,
         didOpen: () => Swal.showLoading(),
         showConfirmButton: false,
       })
 
-      const fees = await listFees({
-        year: yearCE,
-        period: overdueForm.period,
+      const filteredFees = await listFees({
         status: 'all',
+        year: 'all',
+        period: 'all',
       })
-
-      const keyword = overdueForm.houseNo.trim().toLowerCase()
-      const filteredFees = !keyword
-        ? fees
-        : fees.filter((fee) => String(fee?.houses?.house_no || '').toLowerCase().includes(keyword))
 
       if (filteredFees.length === 0) {
         Swal.close()
-        await Swal.fire({ icon: 'info', title: 'ไม่พบรายการสำหรับคำนวณ', text: 'กรุณาปรับเงื่อนไขค้นหาแล้วลองใหม่' })
+        await Swal.fire({ icon: 'info', title: 'ไม่พบรายการสำหรับคำนวณ', text: 'กรุณาสร้างใบแจ้งหนี้ก่อน' })
         return
       }
 
@@ -262,42 +245,13 @@ export default function AdminFeesBillingPenalty() {
         <div className="ch houses-list-head houses-main-head">
           <div className="ct">ส่วนที่ 2: คำนวณค่าปรับ</div>
         </div>
-        <form className="cb" style={{ display: 'grid', gap: 12, padding: 12 }} onSubmit={handleCalculateOverdue}>
-          <div className="house-grid" style={{ gridTemplateColumns: 'repeat(4, minmax(160px, 1fr))', gap: 10 }}>
-            <label className="house-field">
-              <span>ปี (พ.ศ.)</span>
-              <select value={overdueForm.yearBE} onChange={(e) => setOverdueForm((prev) => ({ ...prev, yearBE: e.target.value }))}>
-                {processYearOptions.map((yearBE) => (
-                  <option key={yearBE} value={String(yearBE)}>{yearBE}</option>
-                ))}
-              </select>
-            </label>
-            <label className="house-field">
-              <span>งวด</span>
-              <select value={overdueForm.period} onChange={(e) => setOverdueForm((prev) => ({ ...prev, period: e.target.value }))}>
-                <option value="all">ทั้งหมด</option>
-                <option value="first_half">ครึ่งปีแรก</option>
-                <option value="second_half">ครึ่งปีหลัง</option>
-                <option value="full_year">เต็มปี</option>
-              </select>
-            </label>
-            <label className="house-field" style={{ gridColumn: 'span 2' }}>
-              <span>บ้านเลขที่ (กรอกเอง)</span>
-              <input
-                type="text"
-                placeholder="เช่น 88/12"
-                value={overdueForm.houseNo}
-                onChange={(e) => setOverdueForm((prev) => ({ ...prev, houseNo: e.target.value }))}
-              />
-            </label>
-          </div>
-
+        <div className="cb" style={{ display: 'grid', gap: 12, padding: 12 }}>
           <div style={{ fontSize: 13, color: 'var(--mu)' }}>
-            ค่าปรับใช้สูตรเดิม: ค่าปรับ {Number(setup.overdue_fine_pct || 0)}% + ค่าทวงถาม {Number(setup.notice_fee || 0).toLocaleString('th-TH')} บาท
+            คำนวณค่าปรับทั้งระบบด้วย logic เดิม: ค่าปรับ {Number(setup.overdue_fine_pct || 0)}% + ค่าทวงถาม {Number(setup.notice_fee || 0).toLocaleString('th-TH')} บาท
           </div>
 
           <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-            <button className="btn btn-dg" type="submit" disabled={processingOverdue}>
+            <button className="btn btn-dg" type="button" onClick={handleCalculateOverdue} disabled={processingOverdue}>
               {processingOverdue ? 'กำลังคำนวณ...' : 'คำนวณค่าปรับ'}
             </button>
           </div>
@@ -315,7 +269,7 @@ export default function AdminFeesBillingPenalty() {
               </div>
             </div>
           )}
-        </form>
+        </div>
       </div>
     </div>
   )
