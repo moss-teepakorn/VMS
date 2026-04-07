@@ -1266,7 +1266,7 @@ export default function ResidentLayout() {
   const houseAreaSqw = Number(houseDetail?.area_sqw ?? houseDetail?.area ?? 0)
   const houseAnnualFee = Number(houseDetail?.annual_fee || (houseAreaSqw > 0 ? houseAreaSqw * 12 * Number(houseDetail?.fee_rate || 0) : 0))
   const houseVehicles = vehicles.filter((vehicle) => String(vehicle.house_id) === String(profile?.house_id))
-  const houseAddressText = [houseDetail?.address, houseDetail?.soi ? `ซอย ${houseDetail.soi}` : '', houseDetail?.house_no ? `บ้าน ${houseDetail.house_no}` : '']
+  const houseAddressText = [houseDetail?.address]
     .filter(Boolean)
     .join(' · ')
 

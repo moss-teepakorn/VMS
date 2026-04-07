@@ -348,7 +348,6 @@ const AdminRequests = () => {
                             { label: 'บ้านเลขที่', value: req.houses?.house_no },
                             { label: 'ชื่อเจ้าของบ้าน', value: req.houses?.owner_name },
                             { label: 'เบอร์โทรบ้าน', value: req.requested_phone || req.houses?.phone },
-                            { label: 'สถานะผู้ใช้', value: req.profiles?.is_active ? 'active' : 'inactive' },
                           ].filter((f) => f.value).map((f) => (
                             <div key={f.label} style={{ fontSize: 12.5 }}>
                               <span style={{ color: 'var(--mu)', fontSize: 11 }}>{f.label}</span>

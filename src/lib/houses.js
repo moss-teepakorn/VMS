@@ -15,6 +15,20 @@ function sortHouses(items) {
   })
 }
 
+function isMissingColumnError(error, columnName) {
+  const message = String(error?.message || '').toLowerCase()
+  return error?.code === 'PGRST204' && message.includes(`'${String(columnName || '').toLowerCase()}'`) && message.includes('column')
+}
+
+function stripUnsupportedHouseColumns(payload, error) {
+  if (!payload || typeof payload !== 'object') return payload
+
+  const next = { ...payload }
+  if (isMissingColumnError(error, 'floor_no')) delete next.floor_no
+  if (isMissingColumnError(error, 'room_no')) delete next.room_no
+  return next
+}
+
 export async function listHouses({ status = 'all', search = '', soi = 'all' } = {}) {
   let query = supabase
     .from('houses')
@@ -88,14 +102,27 @@ export async function createHouse(payload) {
     note:           payload.note?.trim() || null,
   }
 
-  const { data, error } = await supabase
-    .from('houses')
-    .insert([house])
-    .select('*')
-    .single()
+  let requestPayload = house
 
-  if (error) throw error
-  return data
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    const { data, error } = await supabase
+      .from('houses')
+      .insert([requestPayload])
+      .select('*')
+      .single()
+
+    if (!error) return data
+
+    const fallbackPayload = stripUnsupportedHouseColumns(requestPayload, error)
+    if (attempt === 0 && Object.keys(fallbackPayload).length !== Object.keys(requestPayload).length) {
+      requestPayload = fallbackPayload
+      continue
+    }
+
+    throw error
+  }
+
+  return null
 }
 
 export async function updateHouse(id, updates) {
@@ -109,15 +136,28 @@ export async function updateHouse(id, updates) {
     parking_rights: Number.isFinite(Number(updates.parking_rights)) ? Math.max(0, Number(updates.parking_rights)) : 1,
   }
 
-  const { data, error } = await supabase
-    .from('houses')
-    .update(payload)
-    .eq('id', id)
-    .select('*')
-    .single()
+  let requestPayload = payload
 
-  if (error) throw error
-  return data
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    const { data, error } = await supabase
+      .from('houses')
+      .update(requestPayload)
+      .eq('id', id)
+      .select('*')
+      .single()
+
+    if (!error) return data
+
+    const fallbackPayload = stripUnsupportedHouseColumns(requestPayload, error)
+    if (attempt === 0 && Object.keys(fallbackPayload).length !== Object.keys(requestPayload).length) {
+      requestPayload = fallbackPayload
+      continue
+    }
+
+    throw error
+  }
+
+  return null
 }
 
 export async function deleteHouse(id) {
