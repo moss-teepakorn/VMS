@@ -2,6 +2,7 @@ import { supabase } from './supabase'
 
 const VEHICLE_IMAGE_BUCKET = 'vehicle-images'
 const MAX_VEHICLE_IMAGE_BYTES = 100 * 1024
+const ALLOWED_VEHICLE_TYPES = new Set(['รถยนต์', 'รถจักรยานยนต์', 'รถกระบะ', 'รถตู้'])
 
 const houseSorter = new Intl.Collator('th-TH', { numeric: true, sensitivity: 'base' })
 
@@ -20,7 +21,20 @@ function sortVehicles(items) {
   })
 }
 
-export async function resolveHouseVehicleLimitPolicy(houseId, { includePendingAddRequests = false, projectedAdds = 1 } = {}) {
+function normalizeVehicleTypeValue(value) {
+  return String(value || '').trim().toLowerCase()
+}
+
+function isMotorcycleVehicleType(value) {
+  const type = normalizeVehicleTypeValue(value)
+  return type === 'รถจักรยานยนต์' || type.includes('motorcycle') || type.includes('motorbike')
+}
+
+function sanitizeVehicleType(value) {
+  return ALLOWED_VEHICLE_TYPES.has(value) ? value : 'รถยนต์'
+}
+
+export async function resolveHouseVehicleLimitPolicy(houseId, { includePendingAddRequests = false, projectedAdds = 1, vehicleType = null } = {}) {
   const targetHouseId = String(houseId || '').trim()
   if (!targetHouseId) {
     return {
@@ -48,13 +62,13 @@ export async function resolveHouseVehicleLimitPolicy(houseId, { includePendingAd
       .maybeSingle(),
     supabase
       .from('vehicles')
-      .select('id')
+      .select('id, vehicle_type')
       .eq('house_id', targetHouseId)
       .neq('status', 'removed'),
     includePendingAddRequests
       ? supabase
         .from('vehicle_requests')
-        .select('id')
+        .select('id, vehicle_type')
         .eq('house_id', targetHouseId)
         .eq('status', 'pending')
         .eq('request_type', 'add')
@@ -70,9 +84,16 @@ export async function resolveHouseVehicleLimitPolicy(houseId, { includePendingAd
   const parkingRights = Number.isFinite(parsedRights) ? Math.max(0, parsedRights) : 1
   const allowExceedLimit = configResult.data?.allow_exceed_parking_limit ?? true
   const parkingFeePerVehicle = Math.max(0, Number(configResult.data?.parking_fee_per_vehicle ?? 0) || 0)
-  const currentVehicleCount = Array.isArray(vehiclesResult.data) ? vehiclesResult.data.length : 0
-  const pendingAddRequestCount = Array.isArray(pendingResult?.data) ? pendingResult.data.length : 0
-  const projectedVehicleCount = currentVehicleCount + pendingAddRequestCount + Math.max(0, Number(projectedAdds || 0))
+  const currentVehicleCount = Array.isArray(vehiclesResult.data)
+    ? vehiclesResult.data.filter((item) => !isMotorcycleVehicleType(item.vehicle_type)).length
+    : 0
+  const pendingAddRequestCount = Array.isArray(pendingResult?.data)
+    ? pendingResult.data.filter((item) => !isMotorcycleVehicleType(item.vehicle_type)).length
+    : 0
+  const projectedAddCount = isMotorcycleVehicleType(vehicleType)
+    ? 0
+    : Math.max(0, Number(projectedAdds || 0))
+  const projectedVehicleCount = currentVehicleCount + pendingAddRequestCount + projectedAddCount
   const isOverLimit = projectedVehicleCount > parkingRights
 
   return {
@@ -123,10 +144,11 @@ export async function listVehicles({ status = 'all', search = '', soi = 'all', v
 
 export async function createVehicle(payload) {
   let parkingFee = payload.parking_fee ? Number(payload.parking_fee) : 0
+  const vehicleType = sanitizeVehicleType(payload.vehicle_type)
   if (payload.house_id) {
-    const policy = await resolveHouseVehicleLimitPolicy(payload.house_id, { projectedAdds: 1 })
+    const policy = await resolveHouseVehicleLimitPolicy(payload.house_id, { projectedAdds: 1, vehicleType })
     if (policy.isOverLimit && !policy.allowExceedLimit) {
-      throw new Error(`บ้านนี้มีสิทธิ์จอดรถ ${policy.parkingRights} คัน และตั้งค่าไม่อนุญาตให้เพิ่มเกินสิทธิ์`)
+      throw new Error(`บ้านนี้มีสิทธิ์จอดรถ ${policy.parkingRights} คัน (ไม่นับรวมรถจักรยานยนต์) และตั้งค่าไม่อนุญาตให้เพิ่มเกินสิทธิ์`)
     }
     if (policy.isOverLimit && policy.allowExceedLimit) {
       parkingFee = policy.parkingFeePerVehicle
@@ -140,7 +162,7 @@ export async function createVehicle(payload) {
     brand: payload.brand?.trim() || null,
     model: payload.model?.trim() || null,
     color: payload.color?.trim() || null,
-    vehicle_type: payload.vehicle_type || 'car',
+    vehicle_type: vehicleType,
     parking_location: payload.parking_location || 'ในบ้าน',
     parking_lock_no: payload.parking_lock_no?.trim() || null,
     parking_fee: parkingFee,

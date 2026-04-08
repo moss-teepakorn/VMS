@@ -10,9 +10,14 @@ import {
 
 const REQUEST_IMAGE_BUCKET = 'vehicle-images'
 const MAX_REQUEST_IMAGE_BYTES = 100 * 1024
+const ALLOWED_VEHICLE_TYPES = new Set(['รถยนต์', 'รถจักรยานยนต์', 'รถกระบะ', 'รถตู้'])
 
 function normalizeText(value) {
   return String(value || '').trim().toLowerCase()
+}
+
+function sanitizeVehicleType(value) {
+  return ALLOWED_VEHICLE_TYPES.has(value) ? value : 'รถยนต์'
 }
 
 async function assertUniqueVehicleRequestCombo({ licensePlate, province, vehicleType, excludeVehicleId = null }) {
@@ -82,10 +87,12 @@ export async function listVehicleRequests({ houseId = null, status = 'all' } = {
 }
 
 export async function createVehicleRequest(payload) {
+  const vehicleType = sanitizeVehicleType(payload.vehicle_type)
+
   await assertUniqueVehicleRequestCombo({
     licensePlate: payload.license_plate,
     province: payload.province,
-    vehicleType: payload.vehicle_type,
+    vehicleType,
     excludeVehicleId: payload.request_type === 'edit' ? (payload.vehicle_id || null) : null,
   })
 
@@ -94,10 +101,11 @@ export async function createVehicleRequest(payload) {
     const policy = await resolveHouseVehicleLimitPolicy(payload.house_id, {
       includePendingAddRequests: true,
       projectedAdds: 1,
+      vehicleType,
     })
 
     if (policy.isOverLimit && !policy.allowExceedLimit) {
-      throw new Error(`บ้านนี้มีสิทธิ์จอดรถ ${policy.parkingRights} คัน และตั้งค่าไม่อนุญาตให้เพิ่มเกินสิทธิ์`)
+      throw new Error(`บ้านนี้มีสิทธิ์จอดรถ ${policy.parkingRights} คัน (ไม่นับรวมรถจักรยานยนต์) และตั้งค่าไม่อนุญาตให้เพิ่มเกินสิทธิ์`)
     }
 
     if (policy.isOverLimit && policy.allowExceedLimit) {
@@ -115,7 +123,7 @@ export async function createVehicleRequest(payload) {
     brand: payload.brand?.trim() || null,
     model: payload.model?.trim() || null,
     color: payload.color?.trim() || null,
-    vehicle_type: payload.vehicle_type || null,
+    vehicle_type: vehicleType,
     vehicle_status: payload.vehicle_status || 'active',
     parking_location: payload.parking_location || null,
     parking_lock_no: payload.parking_lock_no?.trim() || null,
@@ -250,10 +258,12 @@ export async function approveVehicleRequest(requestId, request) {
     : null
   let approvedParkingFee = Number(request.parking_fee || 0) || 0
 
+  const vehicleType = sanitizeVehicleType(request.vehicle_type)
+
   if (request.request_type === 'add' && request.house_id) {
-    const policy = await resolveHouseVehicleLimitPolicy(request.house_id, { projectedAdds: 1 })
+    const policy = await resolveHouseVehicleLimitPolicy(request.house_id, { projectedAdds: 1, vehicleType })
     if (policy.isOverLimit && !policy.allowExceedLimit) {
-      throw new Error(`บ้านนี้มีสิทธิ์จอดรถ ${policy.parkingRights} คัน และตั้งค่าไม่อนุญาตให้เพิ่มเกินสิทธิ์`)
+      throw new Error(`บ้านนี้มีสิทธิ์จอดรถ ${policy.parkingRights} คัน (ไม่นับรวมรถจักรยานยนต์) และตั้งค่าไม่อนุญาตให้เพิ่มเกินสิทธิ์`)
     }
     if (policy.isOverLimit && policy.allowExceedLimit) {
       approvedParkingFee = policy.parkingFeePerVehicle
@@ -279,7 +289,7 @@ export async function approveVehicleRequest(requestId, request) {
       brand: request.brand,
       model: request.model,
       color: request.color,
-      vehicle_type: request.vehicle_type,
+      vehicle_type: vehicleType,
       parking_location: request.parking_location,
       parking_lock_no: approvedParkingLockNo,
       parking_fee: approvedParkingFee,

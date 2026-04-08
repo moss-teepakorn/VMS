@@ -20,7 +20,6 @@ const VEHICLE_TYPES = [
   { value: 'รถจักรยานยนต์', label: 'รถจักรยานยนต์' },
   { value: 'รถกระบะ', label: 'รถกระบะ' },
   { value: 'รถตู้', label: 'รถตู้' },
-  { value: 'รถอื่นๆ', label: 'รถอื่นๆ' },
 ]
 
 const BRAND_OPTIONS = [
@@ -81,6 +80,8 @@ const EMPTY_FORM = {
 const MAX_ATTACHMENTS = 5
 const MAX_IMAGE_SIZE_BYTES = 100 * 1024
 const MAX_IMAGE_TARGET_BYTES = 95 * 1024
+
+const ALLOWED_VEHICLE_TYPES = new Set(VEHICLE_TYPES.map((item) => item.value))
 
 const VEHICLE_EXCEL_COLUMN_ALIASES = {
   house_no: ['house_no', 'house no', 'บ้านเลขที่', 'เลขที่บ้าน'],
@@ -260,7 +261,7 @@ const AdminVehicles = () => {
       license_plate_prefix: parsedPlate.prefix,
       license_plate_number: parsedPlate.number,
       province: vehicle.province || 'กรุงเทพมหานคร',
-      vehicle_type: vehicle.vehicle_type || 'รถยนต์',
+      vehicle_type: ALLOWED_VEHICLE_TYPES.has(vehicle.vehicle_type) ? vehicle.vehicle_type : 'รถยนต์',
       brand: baseBrand,
       brand_other: baseBrand === 'อื่นๆ' ? (vehicle.brand || '') : '',
       model: vehicle.model || '',
@@ -506,9 +507,9 @@ const AdminVehicles = () => {
       }
 
       if (!editingVehicle) {
-        const policy = await resolveHouseVehicleLimitPolicy(form.house_id, { projectedAdds: 1 })
+        const policy = await resolveHouseVehicleLimitPolicy(form.house_id, { projectedAdds: 1, vehicleType: form.vehicle_type })
         if (policy.isOverLimit && !policy.allowExceedLimit) {
-          throw new Error(`บ้านนี้มีสิทธิ์จอดรถ ${policy.parkingRights} คัน และตั้งค่าไม่อนุญาตให้เพิ่มเกินสิทธิ์`)
+          throw new Error(`บ้านนี้มีสิทธิ์จอดรถ ${policy.parkingRights} คัน (ไม่นับรวมรถจักรยานยนต์) และตั้งค่าไม่อนุญาตให้เพิ่มเกินสิทธิ์`)
         }
         if (policy.isOverLimit && policy.allowExceedLimit) {
           payload.parking_fee = policy.parkingFeePerVehicle
@@ -609,7 +610,7 @@ const AdminVehicles = () => {
 
   const normalizeVehicleType = (typeValue) => {
     const value = String(typeValue || '').trim()
-    return VEHICLE_TYPES.some((item) => item.value === value) ? value : 'รถยนต์'
+    return ALLOWED_VEHICLE_TYPES.has(value) ? value : 'รถยนต์'
   }
 
   const parseVehicleExcelFile = async (file) => {

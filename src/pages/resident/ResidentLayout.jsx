@@ -97,7 +97,8 @@ function showSwal(options) {
   return Swal.fire({ returnFocus: false, ...options })
 }
 
-const VEHICLE_TYPES_OPT = ['รถยนต์', 'รถจักรยานยนต์', 'รถกระบะ', 'รถตู้', 'รถอื่นๆ']
+const VEHICLE_TYPES_OPT = ['รถยนต์', 'รถจักรยานยนต์', 'รถกระบะ', 'รถตู้']
+const ALLOWED_VEHICLE_TYPES_OPT = new Set(VEHICLE_TYPES_OPT)
 const BRAND_OPTIONS = [
   'Toyota', 'Honda', 'Isuzu', 'Mitsubishi', 'Nissan', 'Mazda', 'Ford', 'MG',
   'BYD', 'GWM', 'Suzuki', 'Subaru', 'Hyundai', 'Kia', 'Mercedes-Benz',
@@ -218,6 +219,10 @@ function vehicleTypeIcon(vt) {
   if (t.includes('truck')) return '🚛'
   if (t.includes('van')) return '🚐'
   return '🚗'
+}
+
+function normalizeVehicleTypeOption(vt) {
+  return ALLOWED_VEHICLE_TYPES_OPT.has(vt) ? vt : 'รถยนต์'
 }
 
 function marketBadgeClass(lt) {
@@ -1953,7 +1958,7 @@ export default function ResidentLayout() {
       license_plate_prefix: prefix.trim(),
       license_plate_number: number.trim(),
       province: vehicle.province || 'กรุงเทพมหานคร',
-      vehicle_type: vehicle.vehicle_type || 'รถยนต์',
+      vehicle_type: normalizeVehicleTypeOption(vehicle.vehicle_type),
       brand: vehicle.brand || 'Toyota',
       brand_other: '',
       model: vehicle.model || '',
@@ -2061,7 +2066,9 @@ export default function ResidentLayout() {
         brand: brandName,
         model: vehicleReqMode === 'add' ? vehicleReqForm.model : vehicleReqTarget?.model,
         color: colorName,
-        vehicle_type: vehicleReqMode === 'add' ? vehicleReqForm.vehicle_type : vehicleReqTarget?.vehicle_type,
+        vehicle_type: vehicleReqMode === 'add'
+          ? normalizeVehicleTypeOption(vehicleReqForm.vehicle_type)
+          : normalizeVehicleTypeOption(vehicleReqTarget?.vehicle_type),
         vehicle_status: vehicleReqForm.vehicle_status,
         parking_location: vehicleReqForm.parking_location,
         parking_lock_no: null,
@@ -2133,7 +2140,7 @@ export default function ResidentLayout() {
         license_plate_prefix: prefix.trim(),
         license_plate_number: number.trim(),
         province: req.province || 'กรุงเทพมหานคร',
-        vehicle_type: req.vehicle_type || 'รถยนต์',
+        vehicle_type: normalizeVehicleTypeOption(req.vehicle_type),
         brand: baseBrand,
         brand_other: baseBrand === 'อื่นๆ' ? (req.brand || '') : '',
         model: req.model || '',
@@ -2161,7 +2168,7 @@ export default function ResidentLayout() {
       brand: req.brand || '',
       model: req.model || '',
       color: req.color || '',
-      vehicle_type: req.vehicle_type || 'รถยนต์',
+      vehicle_type: normalizeVehicleTypeOption(req.vehicle_type),
       status: req.vehicle_status || 'active',
       parking_location: req.parking_location || 'ในบ้าน',
       parking_lock_no: req.parking_lock_no || '',
@@ -2176,7 +2183,7 @@ export default function ResidentLayout() {
       license_plate_prefix: prefix.trim(),
       license_plate_number: number.trim(),
       province: req.province || 'กรุงเทพมหานคร',
-      vehicle_type: target.vehicle_type || 'รถยนต์',
+      vehicle_type: normalizeVehicleTypeOption(target.vehicle_type),
       brand: target.brand || 'Toyota',
       brand_other: '',
       model: target.model || '',
