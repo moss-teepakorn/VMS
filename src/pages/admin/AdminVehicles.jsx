@@ -946,7 +946,7 @@ const AdminVehicles = () => {
                   <div className="house-grid house-grid-4">
                     <label className="house-field">
                       <span>บ้าน *</span>
-                      <SearchableSelect
+                      <DropdownList
                         value={form.house_id}
                         options={[{ value: '', label: 'เลือกบ้าน' }, ...houseOptions]}
                         onChange={(nextValue) => applyFormValue('house_id', nextValue)}
@@ -975,7 +975,7 @@ const AdminVehicles = () => {
                     </label>
                     <label className="house-field house-field-province">
                       <span>จังหวัด</span>
-                      <SearchableSelect
+                      <DropdownList
                         value={form.province}
                         options={PROVINCE_OPTIONS.map((province) => ({ value: province, label: province }))}
                         onChange={(nextValue) => applyFormValue('province', nextValue)}
@@ -984,7 +984,7 @@ const AdminVehicles = () => {
                     </label>
                     <label className="house-field">
                       <span>ประเภทรถ</span>
-                      <SearchableSelect
+                      <DropdownList
                         value={form.vehicle_type}
                         options={VEHICLE_TYPES}
                         onChange={(nextValue) => applyFormValue('vehicle_type', nextValue)}
@@ -999,7 +999,7 @@ const AdminVehicles = () => {
                   <div className="house-grid house-grid-3">
                     <label className="house-field">
                       <span>ยี่ห้อ</span>
-                      <SearchableSelect
+                      <DropdownList
                         value={form.brand}
                         options={BRAND_OPTIONS.map((brand) => ({ value: brand, label: brand }))}
                         onChange={(nextValue) => applyFormValue('brand', nextValue)}
@@ -1022,7 +1022,7 @@ const AdminVehicles = () => {
                     </label>
                     <label className="house-field">
                       <span>สี</span>
-                      <SearchableSelect
+                      <DropdownList
                         value={form.color}
                         options={COLOR_OPTIONS.map((color) => ({ value: color, label: color }))}
                         onChange={(nextValue) => applyFormValue('color', nextValue)}
@@ -1045,7 +1045,7 @@ const AdminVehicles = () => {
                   <div className="house-grid house-grid-3">
                     <label className="house-field">
                       <span>ตำแหน่งจอด</span>
-                      <SearchableSelect
+                      <DropdownList
                         value={form.parking_location}
                         options={PARKING_OPTIONS}
                         onChange={(nextValue) => applyFormValue('parking_location', nextValue)}
@@ -1068,7 +1068,7 @@ const AdminVehicles = () => {
                     </label>
                     <label className="house-field">
                       <span>สถานะ</span>
-                      <SearchableSelect
+                      <DropdownList
                         value={form.status}
                         options={STATUS_OPTIONS}
                         onChange={(nextValue) => applyFormValue('status', nextValue)}
