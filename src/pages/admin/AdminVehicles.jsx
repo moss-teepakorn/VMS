@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
-import SearchableSelect from '../../components/SearchableSelect'
+import DropdownList from '../../components/DropdownList'
 import Swal from 'sweetalert2'
 import * as XLSX from 'xlsx'
 import { listHouses } from '../../lib/houses'
@@ -810,21 +810,21 @@ const AdminVehicles = () => {
             onChange={(e) => setSearchTerm(e.target.value)}
             placeholder="ค้นหา ทะเบียน / บ้าน / เจ้าของ / ยี่ห้อ / สี"
           />
-          <SearchableSelect
+          <DropdownList
             compact
             value={soiFilter}
             options={soiFilterOptions}
             onChange={setSoiFilter}
             placeholder="เลือกซอย"
           />
-          <SearchableSelect
+          <DropdownList
             compact
             value={vehicleTypeFilter}
             options={vehicleTypeFilterOptions}
             onChange={setVehicleTypeFilter}
             placeholder="เลือกประเภทรถ"
           />
-          <SearchableSelect
+          <DropdownList
             compact
             value={statusFilter}
             options={statusFilterOptions}

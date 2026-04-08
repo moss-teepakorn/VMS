@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
-import SearchableSelect from '../../components/SearchableSelect'
+import DropdownList from '../../components/DropdownList'
 import Swal from 'sweetalert2'
 import * as XLSX from 'xlsx'
 import { createHouse, deleteHouse, getHouseSetup, listHouses, updateAllHousesFeeRate, updateHouse } from '../../lib/houses'
@@ -541,14 +541,14 @@ const AdminHouses = () => {
             placeholder="ค้นหาเลขที่บ้าน / เจ้าของ / หมายเลขห้อง..."
             className="houses-filter-input"
           />
-          <SearchableSelect
+          <DropdownList
             compact
             value={filterType}
             options={filterTypeOptions}
             onChange={setFilterType}
             placeholder="เลือกสถานะ"
           />
-          <SearchableSelect
+          <DropdownList
             compact
             value={soiFilter}
             options={[{ value: 'all', label: 'ทุกซอย' }, ...soiOptions]}
@@ -684,7 +684,7 @@ const AdminHouses = () => {
                     </label>
                     <label className="house-field">
                       <span>ซอย</span>
-                      <SearchableSelect
+                      <DropdownList
                         value={form.soi}
                         options={SOI_OPTIONS}
                         onChange={(nextValue) => setForm((current) => ({ ...current, soi: nextValue }))}
@@ -757,7 +757,7 @@ const AdminHouses = () => {
                     </label>
                     <label className="house-field">
                       <span>ประเภท</span>
-                      <SearchableSelect
+                      <DropdownList
                         value={form.house_type}
                         options={HOUSE_TYPE_OPTIONS}
                         onChange={(nextValue) => setForm((current) => ({ ...current, house_type: nextValue }))}
@@ -766,7 +766,7 @@ const AdminHouses = () => {
                     </label>
                     <label className="house-field house-field-span-2">
                       <span>สถานะบ้าน</span>
-                      <SearchableSelect
+                      <DropdownList
                         value={form.status}
                         options={HOUSE_STATUS_OPTIONS}
                         onChange={(nextValue) => setForm((current) => ({ ...current, status: nextValue }))}
