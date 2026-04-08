@@ -12,9 +12,11 @@ export default function SearchableSelect({
   const [open, setOpen] = useState(false)
   const [keyword, setKeyword] = useState('')
 
+  const optionsList = options || []
+
   const selected = useMemo(
-    () => options.find((option) => String(option.value) === String(value)) || null,
-    [options, value]
+    () => optionsList.find((option) => String(option.value) === String(value)) || null,
+    [optionsList, value]
   )
 
   useEffect(() => {
@@ -35,10 +37,10 @@ export default function SearchableSelect({
   }, [open])
 
   const filtered = useMemo(() => {
-    const needle = keyword.trim().toLowerCase()
-    if (!needle) return options
-    return options.filter((option) => option.label.toLowerCase().includes(needle))
-  }, [options, keyword])
+    const needle = String(keyword || '').trim().toLowerCase()
+    if (!needle) return optionsList
+    return optionsList.filter((option) => String(option.label || '').toLowerCase().includes(needle))
+  }, [optionsList, keyword])
 
   return (
     <div ref={rootRef} className={`cars-ss ${compact ? 'cars-ss--compact' : ''} ${open ? 'is-open' : ''} ${className}`.trim()}>
