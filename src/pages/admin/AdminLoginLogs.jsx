@@ -182,30 +182,27 @@ export default function AdminLoginLogs() {
 
       <div className="card report-filter-card admin-search-filter-card">
         <div className="cb">
-        <div className="houses-filter-row" style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+        <div className="houses-filter-row login-logs-search-row">
           <input
             type="text"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             placeholder="ค้นหา username / ชื่อ / หน้าจอ / browser..."
-            className="houses-filter-input"
-            style={{ flex: '1 1 180px', minWidth: 0 }}
+            className="houses-filter-input login-logs-search-input"
           />
           <StyledSelect
             value={roleFilter}
             onChange={(e) => setRoleFilter(e.target.value)}
-            className="houses-filter-select"
-            style={{ flex: '0 0 auto' }}
+            className="houses-filter-select login-logs-search-select"
           >
             <option value="all">ทุกบทบาท</option>
             <option value="admin">ผู้ดูแลระบบ</option>
             <option value="resident">ลูกบ้าน</option>
           </StyledSelect>
           <button
-            className="btn btn-a btn-sm"
+            className="btn btn-a btn-sm login-logs-search-btn"
             onClick={loadLogs}
             disabled={loading}
-            style={{ flex: '0 0 auto', height: '34px' }}
           >
             ค้นหา
           </button>

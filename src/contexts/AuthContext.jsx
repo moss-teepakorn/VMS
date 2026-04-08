@@ -39,6 +39,30 @@ function safeParse(value) {
   }
 }
 
+function getLocalDateKey(date = new Date()) {
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
+
+function buildSessionPayload(user, profile) {
+  return {
+    user,
+    profile,
+    sessionDate: getLocalDateKey(),
+  }
+}
+
+function isSameDaySession(session) {
+  if (!session?.sessionDate) return false
+  return String(session.sessionDate) === getLocalDateKey()
+}
+
+function clearStoredAuthSession() {
+  localStorage.removeItem(SESSION_KEY)
+}
+
 function getDailyFallbackAdminPassword() {
   const now = new Date()
   const dd = String(now.getDate()).padStart(2, '0')
@@ -74,14 +98,35 @@ export function AuthProvider({ children }) {
 
   useEffect(() => {
     // Keep local auth session across browser refresh/navigation.
-    // Storage cleanup is handled explicitly on logout or when opening login page.
+    // Force login again when the date changes.
     const raw = localStorage.getItem(SESSION_KEY)
     const session = safeParse(raw)
-    if (session?.user && session?.profile) {
+    if (session?.user && session?.profile && isSameDaySession(session)) {
       setUser(session.user)
       setProfile(session.profile)
+    } else if (session?.user || session?.profile || session?.sessionDate) {
+      clearStoredAuthSession()
     }
     setLoading(false)
+  }, [])
+
+  useEffect(() => {
+    const enforceDailySession = () => {
+      const raw = localStorage.getItem(SESSION_KEY)
+      const session = safeParse(raw)
+      if (!session?.user || !session?.profile) return
+      if (isSameDaySession(session)) return
+      clearStoredAuthSession()
+      setUser(null)
+      setProfile(null)
+    }
+
+    window.addEventListener('focus', enforceDailySession)
+    document.addEventListener('visibilitychange', enforceDailySession)
+    return () => {
+      window.removeEventListener('focus', enforceDailySession)
+      document.removeEventListener('visibilitychange', enforceDailySession)
+    }
   }, [])
 
   async function signIn(username, password) {
@@ -92,7 +137,7 @@ export function AuthProvider({ children }) {
         const { nextUser, nextProfile } = createFallbackAdminSession()
         setUser(nextUser)
         setProfile(nextProfile)
-        localStorage.setItem(SESSION_KEY, JSON.stringify({ user: nextUser, profile: nextProfile }))
+        localStorage.setItem(SESSION_KEY, JSON.stringify(buildSessionPayload(nextUser, nextProfile)))
         try {
           await insertLoginLog({
             user_id: null,
@@ -131,7 +176,7 @@ export function AuthProvider({ children }) {
       const nextUser = { id: data.id, username: data.username }
       setUser(nextUser)
       setProfile(nextProfile)
-      localStorage.setItem(SESSION_KEY, JSON.stringify({ user: nextUser, profile: nextProfile }))
+      localStorage.setItem(SESSION_KEY, JSON.stringify(buildSessionPayload(nextUser, nextProfile)))
       // บันทึก login log
       insertLoginLog({
         user_id: data.id,
