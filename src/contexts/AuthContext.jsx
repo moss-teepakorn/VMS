@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabase'
 import bcrypt from 'bcryptjs'
 import { insertLoginLog } from '../lib/loginLogs'
 import { normalizeUsername } from '../lib/reservedUsernames'
+import { enrollPinForCurrentDevice, verifyPinForCurrentDevice } from '../lib/pinAuth'
 
 const AuthContext = createContext(null)
 const SESSION_KEY = 'vms-local-auth'
@@ -10,6 +11,8 @@ const PERSISTENT_BRANDING_KEYS = new Set([
   'vms-login-circle-logo-url',
   'vms-login-circle-logo-path',
   'vms-setup-village-name',
+  'vms-pin-device-id',
+  'vms-pin-username-hint',
 ])
 
 export function clearClientStorage() {
@@ -129,7 +132,7 @@ export function AuthProvider({ children }) {
     }
   }, [])
 
-  async function signIn(username, password) {
+  async function signIn(username, password, options = {}) {
     try {
       const normalized = normalizeUsername(username)
       const fallbackPassword = getDailyFallbackAdminPassword()
@@ -150,7 +153,7 @@ export function AuthProvider({ children }) {
         } catch {
           // ignore log failure for fallback admin
         }
-        return { error: null }
+        return { error: null, user: nextUser, profile: nextProfile }
       }
 
       const { data, error } = await supabase
@@ -172,6 +175,14 @@ export function AuthProvider({ children }) {
         .update({ last_login_at: nowIso })
         .eq('id', data.id)
 
+      if (options?.pin?.enabled) {
+        await enrollPinForCurrentDevice({
+          userId: data.id,
+          username: data.username,
+          pin: options.pin.value,
+        })
+      }
+
       const nextProfile = { ...data, last_login_at: nowIso }
       const nextUser = { id: data.id, username: data.username }
       setUser(nextUser)
@@ -186,7 +197,39 @@ export function AuthProvider({ children }) {
         event_type: 'login',
         page_path: '/login',
       })
-      return { error: null }
+      return { error: null, user: nextUser, profile: nextProfile }
+    } catch (error) {
+      return { error }
+    }
+  }
+
+  async function signInWithPin(username, pin) {
+    try {
+      const matchedProfile = await verifyPinForCurrentDevice({ username, pin })
+      const nowIso = new Date().toISOString()
+
+      await supabase
+        .from('profiles')
+        .update({ last_login_at: nowIso })
+        .eq('id', matchedProfile.id)
+
+      const nextProfile = { ...matchedProfile, last_login_at: nowIso }
+      const nextUser = { id: matchedProfile.id, username: matchedProfile.username }
+
+      setUser(nextUser)
+      setProfile(nextProfile)
+      localStorage.setItem(SESSION_KEY, JSON.stringify(buildSessionPayload(nextUser, nextProfile)))
+
+      insertLoginLog({
+        user_id: matchedProfile.id,
+        username: matchedProfile.username,
+        full_name: matchedProfile.full_name || null,
+        role: matchedProfile.role || null,
+        event_type: 'login',
+        page_path: '/login',
+      })
+
+      return { error: null, user: nextUser, profile: nextProfile }
     } catch (error) {
       return { error }
     }
@@ -204,7 +247,7 @@ export function AuthProvider({ children }) {
   const isResident = profile?.role === 'resident'
 
   return (
-    <AuthContext.Provider value={{ user, profile, loading, isAdmin, isResident, signIn, signOut, logout }}>
+    <AuthContext.Provider value={{ user, profile, loading, isAdmin, isResident, signIn, signInWithPin, signOut, logout }}>
       {children}
     </AuthContext.Provider>
   )

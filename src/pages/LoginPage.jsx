@@ -5,6 +5,7 @@ import { clearClientStorage } from '../contexts/AuthContext'
 import { applyDocumentTitle, getSetupConfig } from '../lib/setup'
 import { createAccountRegistrationRequest, resetPasswordByIdentity } from '../lib/accountRequests'
 import { isReservedAdminUsername } from '../lib/reservedUsernames'
+import { getPinUsernameHint, hasPinEnrollmentForCurrentDevice } from '../lib/pinAuth'
 import villageLogo from '../assets/village-logo.svg'
 
 const BUILD_SHA = typeof __BUILD_SHA__ !== 'undefined' ? __BUILD_SHA__ : 'local'
@@ -81,11 +82,18 @@ function resolveLoginTheme() {
 }
 
 export default function LoginPage() {
-  const { signIn, user, profile, loading } = useAuth()
+  const { signIn, signInWithPin, user, profile, loading } = useAuth()
   const navigate = useNavigate()
   const [mode, setMode] = useState('login')
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
+  const [pin, setPin] = useState('')
+  const [enablePinOnDevice, setEnablePinOnDevice] = useState(false)
+  const [newPin, setNewPin] = useState('')
+  const [confirmNewPin, setConfirmNewPin] = useState('')
+  const [pinAvailable, setPinAvailable] = useState(false)
+  const [loginMethod, setLoginMethod] = useState('password')
+  const [isMobileLayout, setIsMobileLayout] = useState(() => (typeof window !== 'undefined' ? window.innerWidth <= 768 : false))
   const [registerUsername, setRegisterUsername] = useState('')
   const [registerHouseNo, setRegisterHouseNo] = useState('')
   const [registerPhone, setRegisterPhone] = useState('')
@@ -135,6 +143,28 @@ export default function LoginPage() {
     setLoginThemeId(resolveLoginTheme())
   }, [])
 
+  useEffect(() => {
+    const hintUsername = getPinUsernameHint()
+    if (hintUsername) setUsername(hintUsername)
+
+    let mounted = true
+    hasPinEnrollmentForCurrentDevice().then((available) => {
+      if (mounted) setPinAvailable(Boolean(available))
+    })
+
+    const onResize = () => {
+      const mobile = window.innerWidth <= 768
+      setIsMobileLayout(mobile)
+      if (!mobile) setLoginMethod('password')
+    }
+
+    window.addEventListener('resize', onResize)
+    return () => {
+      mounted = false
+      window.removeEventListener('resize', onResize)
+    }
+  }, [])
+
   const loginTheme = LOGIN_THEME_PRESETS[loginThemeId] || LOGIN_THEME_PRESETS.hybrid
 
   async function handleSubmit(e) {
@@ -142,11 +172,47 @@ export default function LoginPage() {
     setError('')
     setInfoMessage('')
     setSubmitting(true)
-    const { error: signInError } = await signIn(username, password)
+    if (loginMethod === 'pin') {
+      const { error: signInError } = await signInWithPin(username, pin)
+      if (signInError) {
+        setError(signInError.message || 'เข้าสู่ระบบด้วย PIN ไม่สำเร็จ')
+        setSubmitting(false)
+        return
+      }
+      return
+    }
+
+    if (enablePinOnDevice) {
+      if (!/^\d{6}$/.test(newPin)) {
+        setError('PIN ต้องเป็นตัวเลข 6 หลัก')
+        setSubmitting(false)
+        return
+      }
+      if (newPin !== confirmNewPin) {
+        setError('ยืนยัน PIN ไม่ตรงกัน')
+        setSubmitting(false)
+        return
+      }
+    }
+
+    const { error: signInError } = await signIn(username, password, {
+      pin: {
+        enabled: enablePinOnDevice,
+        value: newPin,
+      },
+    })
     if (signInError) {
       setError(signInError.message || 'ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง กรุณาลองใหม่อีกครั้ง')
       setSubmitting(false)
       return
+    }
+
+    if (enablePinOnDevice) {
+      setPinAvailable(true)
+      setEnablePinOnDevice(false)
+      setNewPin('')
+      setConfirmNewPin('')
+      setInfoMessage('ตั้งค่า PIN สำหรับอุปกรณ์นี้เรียบร้อยแล้ว')
     }
   }
 
@@ -272,6 +338,25 @@ export default function LoginPage() {
 
             {mode === 'login' && (
               <form onSubmit={handleSubmit} className="space-y-4" noValidate>
+                {isMobileLayout && pinAvailable && (
+                  <div className="grid grid-cols-2 gap-2 rounded-xl border border-slate-200 bg-slate-50 p-1">
+                    <button
+                      type="button"
+                      onClick={() => setLoginMethod('password')}
+                      className={`rounded-lg px-3 py-2 text-xs font-semibold transition ${loginMethod === 'password' ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                    >
+                      Password
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setLoginMethod('pin')}
+                      className={`rounded-lg px-3 py-2 text-xs font-semibold transition ${loginMethod === 'pin' ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                    >
+                      PIN
+                    </button>
+                  </div>
+                )}
+
                 <div>
                   <input
                     id="username"
@@ -286,32 +371,83 @@ export default function LoginPage() {
                   />
                 </div>
 
-                <div>
-                  <div className="relative">
+                {loginMethod === 'password' ? (
+                  <>
+                    <div>
+                      <div className="relative">
+                        <input
+                          id="password"
+                          type={showPass ? 'text' : 'password'}
+                          value={password}
+                          onChange={e => setPassword(e.target.value)}
+                          onKeyUp={handlePasswordKeyState}
+                          onKeyDown={handlePasswordKeyState}
+                          required
+                          autoComplete="current-password"
+                          placeholder="Password"
+                          className="vms-login-input pr-12"
+                          style={{ borderColor: loginTheme.fieldBorder, background: loginTheme.fieldBackground }}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowPass(v => !v)}
+                          className="absolute right-2 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-lg text-base text-slate-400 transition hover:bg-slate-100 hover:text-slate-600"
+                          title={showPass ? 'ซ่อนรหัสผ่าน' : 'แสดงรหัสผ่าน'}
+                          aria-label={showPass ? 'ซ่อนรหัสผ่าน' : 'แสดงรหัสผ่าน'}
+                        >
+                          {showPass ? '🙈' : '👁️'}
+                        </button>
+                      </div>
+                    </div>
+
+                    {isMobileLayout && (
+                      <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-3">
+                        <label className="flex items-center gap-2 text-xs font-semibold text-slate-700">
+                          <input
+                            type="checkbox"
+                            checked={enablePinOnDevice}
+                            onChange={(e) => setEnablePinOnDevice(e.target.checked)}
+                          />
+                          เปิดใช้ PIN สำหรับอุปกรณ์นี้
+                        </label>
+                        {enablePinOnDevice && (
+                          <div className="mt-2 grid gap-2">
+                            <input
+                              type="password"
+                              value={newPin}
+                              onChange={(e) => setNewPin(e.target.value.replace(/\D+/g, '').slice(0, 6))}
+                              placeholder="ตั้ง PIN 6 หลัก"
+                              className="vms-login-input"
+                              style={{ borderColor: loginTheme.fieldBorder, background: loginTheme.fieldBackground }}
+                            />
+                            <input
+                              type="password"
+                              value={confirmNewPin}
+                              onChange={(e) => setConfirmNewPin(e.target.value.replace(/\D+/g, '').slice(0, 6))}
+                              placeholder="ยืนยัน PIN 6 หลัก"
+                              className="vms-login-input"
+                              style={{ borderColor: loginTheme.fieldBorder, background: loginTheme.fieldBackground }}
+                            />
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <div>
                     <input
-                      id="password"
-                      type={showPass ? 'text' : 'password'}
-                      value={password}
-                      onChange={e => setPassword(e.target.value)}
-                      onKeyUp={handlePasswordKeyState}
-                      onKeyDown={handlePasswordKeyState}
+                      id="pin"
+                      type="password"
+                      inputMode="numeric"
+                      value={pin}
+                      onChange={e => setPin(e.target.value.replace(/\D+/g, '').slice(0, 6))}
                       required
-                      autoComplete="current-password"
-                      placeholder="Password"
-                      className="vms-login-input pr-12"
+                      placeholder="PIN 6 หลัก"
+                      className="vms-login-input"
                       style={{ borderColor: loginTheme.fieldBorder, background: loginTheme.fieldBackground }}
                     />
-                    <button
-                      type="button"
-                      onClick={() => setShowPass(v => !v)}
-                      className="absolute right-2 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-lg text-base text-slate-400 transition hover:bg-slate-100 hover:text-slate-600"
-                      title={showPass ? 'ซ่อนรหัสผ่าน' : 'แสดงรหัสผ่าน'}
-                      aria-label={showPass ? 'ซ่อนรหัสผ่าน' : 'แสดงรหัสผ่าน'}
-                    >
-                      {showPass ? '🙈' : '👁️'}
-                    </button>
                   </div>
-                </div>
+                )}
 
                 <div className="flex items-center justify-between gap-3 text-xs font-semibold">
                   <button type="button" className="vms-login-link hover:text-[#4f6ea5]" style={{ color: loginTheme.secondaryLink }} onClick={() => switchMode('register')}>ลงทะเบียนผู้ใช้งาน</button>
@@ -326,11 +462,11 @@ export default function LoginPage() {
 
                 <button
                   type="submit"
-                  disabled={submitting || !username || !password}
+                  disabled={submitting || !username || (loginMethod === 'pin' ? !pin : !password)}
                   className="vms-login-submit mt-1 text-[24px]"
                   style={{ background: loginTheme.primaryButton }}
                 >
-                  {submitting ? 'Signing in...' : 'Sign In'}
+                  {submitting ? 'Signing in...' : loginMethod === 'pin' ? 'Sign In with PIN' : 'Sign In'}
                 </button>
               </form>
             )}
