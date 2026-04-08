@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react'
+import StyledSelect from '../../components/StyledSelect'
 import ReportMockPage from './reports/ReportMockPage'
 import ReportExportButtons from './ReportExportButtons'
 import { listDisbursements } from '../../lib/disbursements'
@@ -158,21 +159,21 @@ export default function AdminReportExpensePayments() {
           <form className="report-filter-grid" onSubmit={(event) => { event.preventDefault(); runReport() }}>
             <label className="house-field" style={{ margin: 0 }}>
               <span>เดือนเริ่มต้น</span>
-              <select value={startMonth} onChange={(event) => setStartMonth(Number(event.target.value))}>
+              <StyledSelect value={startMonth} onChange={(event) => setStartMonth(Number(event.target.value))}>
                 {monthOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
-              </select>
+              </StyledSelect>
             </label>
             <label className="house-field" style={{ margin: 0 }}>
               <span>ถึงเดือน</span>
-              <select value={endMonth} onChange={(event) => setEndMonth(Number(event.target.value))}>
+              <StyledSelect value={endMonth} onChange={(event) => setEndMonth(Number(event.target.value))}>
                 {monthOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
-              </select>
+              </StyledSelect>
             </label>
             <label className="house-field" style={{ margin: 0 }}>
               <span>ปี</span>
-              <select value={year} onChange={(event) => setYear(Number(event.target.value))}>
+              <StyledSelect value={year} onChange={(event) => setYear(Number(event.target.value))}>
                 {yearOptions.map((value) => <option key={value} value={value}>{value + 543}</option>)}
-              </select>
+              </StyledSelect>
             </label>
             <div className="report-filter-action">
               <button className="btn btn-p" type="submit" style={{ minWidth: 120 }}>แสดงรายงาน</button>

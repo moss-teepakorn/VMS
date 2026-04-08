@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react'
+import StyledSelect from '../../components/StyledSelect'
 import html2canvas from 'html2canvas'
 import { jsPDF } from 'jspdf'
 import Swal from 'sweetalert2'
@@ -757,20 +758,20 @@ export default function AdminFeatureReceivePayment() {
             style={{ flex: '1 1 240px', minWidth: 0 }}
           />
           <button className="btn btn-p btn-sm" onClick={handleSearch} disabled={loading} style={{ height: '34px' }}>ค้นหา</button>
-          <select className="houses-filter-select" value={yearFilter} onChange={(event) => setYearFilter(event.target.value)} style={{ width: 120 }}>
+          <StyledSelect className="houses-filter-select" value={yearFilter} onChange={(event) => setYearFilter(event.target.value)} style={{ width: 120 }}>
             <option value="all">ทุกปี</option>
             {yearOptions.map((year) => (
               <option key={year} value={String(year)}>{year + 543}</option>
             ))}
-          </select>
-          <select className="houses-filter-select" value={monthFilter} onChange={(event) => setMonthFilter(event.target.value)} style={{ width: 140 }}>
+          </StyledSelect>
+          <StyledSelect className="houses-filter-select" value={monthFilter} onChange={(event) => setMonthFilter(event.target.value)} style={{ width: 140 }}>
             <option value="all">ทุกเดือน</option>
             {Array.from({ length: 12 }, (_, index) => index + 1).map((month) => (
               <option key={month} value={String(month)}>
                 {new Date(2000, month - 1, 1).toLocaleString('th-TH', { month: 'long' })}
               </option>
             ))}
-          </select>
+          </StyledSelect>
           <button className="btn btn-g btn-sm" onClick={loadPageData} disabled={loading} style={{ height: '34px' }}>รีเฟรช</button>
         </div>
         </div>
@@ -893,39 +894,39 @@ export default function AdminFeatureReceivePayment() {
                   <div className="house-grid" style={{ gridTemplateColumns: '1fr 1fr', gap: 10 }}>
                     <label className="house-field">
                       <span>ประเภทผู้ชำระ *</span>
-                      <select value={receiveForm.payerType} onChange={(event) => setReceiveForm((prev) => ({ ...prev, payerType: event.target.value, houseId: '', partnerId: '' }))}>
+                      <StyledSelect value={receiveForm.payerType} onChange={(event) => setReceiveForm((prev) => ({ ...prev, payerType: event.target.value, houseId: '', partnerId: '' }))}>
                         <option value="resident">ลูกบ้าน</option>
                         <option value="external">บุคคลภายนอก</option>
-                      </select>
+                      </StyledSelect>
                     </label>
                     {receiveForm.payerType === 'resident' ? (
                       <label className="house-field">
                         <span>บ้าน *</span>
-                        <select value={receiveForm.houseId} onChange={(event) => setReceiveForm((prev) => ({ ...prev, houseId: event.target.value }))}>
+                        <StyledSelect value={receiveForm.houseId} onChange={(event) => setReceiveForm((prev) => ({ ...prev, houseId: event.target.value }))}>
                           <option value="">เลือกบ้าน</option>
                           {houses.map((house) => (
                             <option key={house.id} value={house.id}>{house.soi || '-'} · {house.house_no || '-'} · {house.owner_name || '-'}</option>
                           ))}
-                        </select>
+                        </StyledSelect>
                       </label>
                     ) : (
                       <label className="house-field">
                         <span>คู่ค้า/ผู้ชำระภายนอก *</span>
-                        <select value={receiveForm.partnerId} onChange={(event) => setReceiveForm((prev) => ({ ...prev, partnerId: event.target.value }))}>
+                        <StyledSelect value={receiveForm.partnerId} onChange={(event) => setReceiveForm((prev) => ({ ...prev, partnerId: event.target.value }))}>
                           <option value="">เลือกคู่ค้า</option>
                           {partners.map((partner) => (
                             <option key={partner.id} value={partner.id}>{partner.name}</option>
                           ))}
-                        </select>
+                        </StyledSelect>
                       </label>
                     )}
                     <label className="house-field">
                       <span>วิธีชำระ *</span>
-                      <select value={receiveForm.paymentMethod} onChange={(event) => setReceiveForm((prev) => ({ ...prev, paymentMethod: event.target.value }))}>
+                      <StyledSelect value={receiveForm.paymentMethod} onChange={(event) => setReceiveForm((prev) => ({ ...prev, paymentMethod: event.target.value }))}>
                         <option value="transfer">โอนเงิน</option>
                         <option value="cash">เงินสด</option>
                         <option value="qr">QR</option>
-                      </select>
+                      </StyledSelect>
                     </label>
                     <label className="house-field">
                       <span>วันเวลา *</span>
@@ -935,12 +936,12 @@ export default function AdminFeatureReceivePayment() {
                     <div className="house-field" style={{ gap: 10, gridColumn: '1 / -1' }}>
                       <span>เลือกรายการรับชำระ</span>
                       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                        <select value={receiveForm.pendingItemId} onChange={(event) => setReceiveForm((prev) => ({ ...prev, pendingItemId: event.target.value }))} style={{ flex: '1 1 280px' }}>
+                        <StyledSelect value={receiveForm.pendingItemId} onChange={(event) => setReceiveForm((prev) => ({ ...prev, pendingItemId: event.target.value }))} style={{ flex: '1 1 280px' }}>
                           <option value="">เลือกรายการจาก setup</option>
                           {items.map((item) => (
                             <option key={item.id} value={item.id}>{item.label} · ฿{formatMoney(item.default_amount)}</option>
                           ))}
-                        </select>
+                        </StyledSelect>
                         <button type="button" className="btn btn-xs btn-a" onClick={() => addSelectedItem(setReceiveForm, receiveForm)}>เพิ่มรายการ</button>
                       </div>
                       <div className="houses-table-wrap payments-receive-wrap" style={{ maxHeight: '280px', overflow: 'auto' }}>
@@ -1004,7 +1005,7 @@ export default function AdminFeatureReceivePayment() {
               <section className="house-sec">
                 <div className="house-grid" style={{ gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                   <label className="house-field"><span>ผู้ชำระ (ชื่อ)</span><input disabled={!isDetailEditable} value={detailForm.payerType === 'external' ? (partners.find((p) => String(p.id) === String(detailForm.partnerId))?.name || '') : (houses.find((h) => String(h.id) === String(detailForm.houseId))?.owner_name || '')} readOnly /></label>
-                  <label className="house-field"><span>วิธีชำระ</span><select disabled={!isDetailEditable} value={detailForm.paymentMethod} onChange={(event) => setDetailForm((prev) => ({ ...prev, paymentMethod: event.target.value }))}><option value="transfer">โอนเงิน</option><option value="cash">เงินสด</option><option value="qr">QR</option></select></label>
+                  <label className="house-field"><span>วิธีชำระ</span><StyledSelect disabled={!isDetailEditable} value={detailForm.paymentMethod} onChange={(event) => setDetailForm((prev) => ({ ...prev, paymentMethod: event.target.value }))}><option value="transfer">โอนเงิน</option><option value="cash">เงินสด</option><option value="qr">QR</option></StyledSelect></label>
                   <label className="house-field"><span>วันที่ชำระ</span><input disabled={!isDetailEditable} type="datetime-local" value={detailForm.paidAt} onChange={(event) => setDetailForm((prev) => ({ ...prev, paidAt: event.target.value }))} /></label>
                   <label className="house-field"><span>จำนวนเงินรวม</span><input value={formatMoney(detailTotal)} readOnly /></label>
                 </div>
@@ -1015,12 +1016,12 @@ export default function AdminFeatureReceivePayment() {
                   <span>รายการชำระ</span>
                   {isDetailEditable && (
                     <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                      <select value={detailForm.pendingItemId} onChange={(event) => setDetailForm((prev) => ({ ...prev, pendingItemId: event.target.value }))} style={{ flex: '1 1 280px' }}>
+                      <StyledSelect value={detailForm.pendingItemId} onChange={(event) => setDetailForm((prev) => ({ ...prev, pendingItemId: event.target.value }))} style={{ flex: '1 1 280px' }}>
                         <option value="">เลือกรายการจาก setup</option>
                         {items.map((item) => (
                           <option key={item.id} value={item.id}>{item.label} · ฿{formatMoney(item.default_amount)}</option>
                         ))}
-                      </select>
+                      </StyledSelect>
                       <button type="button" className="btn btn-xs btn-a" onClick={() => addSelectedItem(setDetailForm, detailForm)}>เพิ่มรายการ</button>
                     </div>
                   )}

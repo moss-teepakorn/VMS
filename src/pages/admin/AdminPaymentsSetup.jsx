@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react'
+import StyledSelect from '../../components/StyledSelect'
 import Swal from 'sweetalert2'
 import { listPaymentItemTypes, createPaymentItemType, updatePaymentItemType, deletePaymentItemType } from '../../lib/paymentItemTypes'
 import { listPartners, createPartner, updatePartner, deletePartner } from '../../lib/partners'
@@ -403,10 +404,10 @@ export default function AdminPaymentsSetup() {
                   </label>
                   <label className="house-field">
                     <span>สถานะ</span>
-                    <select value={itemForm.is_active ? '1' : '0'} onChange={(e) => setItemForm((prev) => ({ ...prev, is_active: e.target.value === '1' }))}>
+                    <StyledSelect value={itemForm.is_active ? '1' : '0'} onChange={(e) => setItemForm((prev) => ({ ...prev, is_active: e.target.value === '1' }))}>
                       <option value="1">ใช้งาน</option>
                       <option value="0">ปิด</option>
-                    </select>
+                    </StyledSelect>
                   </label>
                 </div>
               </section>
@@ -449,10 +450,10 @@ export default function AdminPaymentsSetup() {
                   </label>
                   <label className="house-field">
                     <span>สถานะ</span>
-                    <select value={partnerForm.is_active ? '1' : '0'} onChange={(e) => setPartnerForm((prev) => ({ ...prev, is_active: e.target.value === '1' }))}>
+                    <StyledSelect value={partnerForm.is_active ? '1' : '0'} onChange={(e) => setPartnerForm((prev) => ({ ...prev, is_active: e.target.value === '1' }))}>
                       <option value="1">ใช้งาน</option>
                       <option value="0">ปิด</option>
-                    </select>
+                    </StyledSelect>
                   </label>
                   <label className="house-field" style={{ gridColumn: '1 / -1' }}>
                     <span>รายละเอียด</span>

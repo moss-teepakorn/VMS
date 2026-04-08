@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from 'react'
+import StyledSelect from '../../components/StyledSelect'
 import html2canvas from 'html2canvas'
 import { jsPDF } from 'jspdf'
 import Swal from 'sweetalert2'
@@ -699,26 +700,26 @@ export default function AdminFeesPrintInvoices() {
           <div className="house-grid" style={{ gridTemplateColumns: 'repeat(5, minmax(150px, 1fr))', gap: 10 }}>
             <label className="house-field">
               <span>ปี (พ.ศ.)</span>
-              <select value={filters.yearBE} onChange={(e) => setFilters((prev) => ({ ...prev, yearBE: e.target.value }))}>
+              <StyledSelect value={filters.yearBE} onChange={(e) => setFilters((prev) => ({ ...prev, yearBE: e.target.value }))}>
                 {processYearOptions.map((yearBE) => (
                   <option key={yearBE} value={String(yearBE)}>{yearBE}</option>
                 ))}
-              </select>
+              </StyledSelect>
             </label>
             <label className="house-field">
               <span>ครั้งที่/งวด</span>
-              <select value={filters.period} onChange={(e) => setFilters((prev) => ({ ...prev, period: e.target.value }))}>
+              <StyledSelect value={filters.period} onChange={(e) => setFilters((prev) => ({ ...prev, period: e.target.value }))}>
                 <option value="first_half">ครึ่งปีแรก</option>
                 <option value="second_half">ครึ่งปีหลัง</option>
                 <option value="full_year">เต็มปี</option>
-              </select>
+              </StyledSelect>
             </label>
             <label className="house-field">
               <span>สถานะการจ่าย</span>
-              <select value={filters.paymentStatus} onChange={(e) => setFilters((prev) => ({ ...prev, paymentStatus: e.target.value }))}>
+              <StyledSelect value={filters.paymentStatus} onChange={(e) => setFilters((prev) => ({ ...prev, paymentStatus: e.target.value }))}>
                 <option value="unpaid_only">เฉพาะที่ยังไม่จ่าย</option>
                 <option value="all">ทั้งหมด</option>
-              </select>
+              </StyledSelect>
             </label>
             <label className="house-field" style={{ gridColumn: 'span 2' }}>
               <span>บ้านเลขที่ (กรอกเอง)</span>

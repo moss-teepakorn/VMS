@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react'
+import StyledSelect from '../../components/StyledSelect'
 import Swal from 'sweetalert2'
 import {
   createTechnician,
@@ -202,12 +203,12 @@ const AdminTechnicians = () => {
             onChange={(e) => setSearchTerm(e.target.value)}
             placeholder="ค้นหา ชื่อ / เบอร์โทร / Line ID / ความเชี่ยวชาญ"
           />
-          <select className="houses-filter-select" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
+          <StyledSelect className="houses-filter-select" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
             <option value="all">ทุกสถานะ</option>
             <option value="pending">รออนุมัติ</option>
             <option value="approved">อนุมัติแล้ว</option>
             <option value="suspended">ระงับ</option>
-          </select>
+          </StyledSelect>
           <button className="btn btn-a btn-sm houses-filter-btn" onClick={() => loadData({ status: statusFilter, search: searchTerm })}>ค้นหา</button>
         </div>
         </div>
@@ -321,11 +322,11 @@ const AdminTechnicians = () => {
                     </label>
                     <label className="house-field">
                       <span>สถานะ</span>
-                      <select name="status" value={form.status} onChange={handleChange}>
+                      <StyledSelect name="status" value={form.status} onChange={handleChange}>
                         <option value="pending">รออนุมัติ</option>
                         <option value="approved">อนุมัติแล้ว</option>
                         <option value="suspended">ระงับ</option>
-                      </select>
+                      </StyledSelect>
                     </label>
                     <label className="house-field house-field-span-3">
                       <span>หมายเหตุ</span>
@@ -345,7 +346,7 @@ const AdminTechnicians = () => {
                       <div key={idx} style={{ display: 'flex', gap: '8px', marginTop: '8px', flexWrap: 'wrap', alignItems: 'flex-end' }}>
                         <label className="house-field" style={{ flex: '2', minWidth: '140px' }}>
                           {idx === 0 && <span>ความเชี่ยวชาญ</span>}
-                          <select value={svc.skill} onChange={(e) => handleServiceChange(idx, 'skill', e.target.value)}>
+                          <StyledSelect value={svc.skill} onChange={(e) => handleServiceChange(idx, 'skill', e.target.value)}>
                             <option value="">เลือกความเชี่ยวชาญ</option>
                             {TECHNICIAN_SKILLS.map((skill) => {
                               const isDuplicateFromOtherRow = selectedSkills.includes(skill) && svc.skill !== skill
@@ -353,7 +354,7 @@ const AdminTechnicians = () => {
                                 <option key={skill} value={skill} disabled={isDuplicateFromOtherRow}>{skill}</option>
                               )
                             })}
-                          </select>
+                          </StyledSelect>
                         </label>
                         <label className="house-field" style={{ flex: '1', minWidth: '80px' }}>
                           {idx === 0 && <span>ราคาต่ำสุด</span>}

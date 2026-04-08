@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react'
+import StyledSelect from '../../components/StyledSelect'
 import { getLoginLogs, deleteLoginLogs, deleteAllLoginLogs } from '../../lib/loginLogs'
 import { getSetupConfig } from '../../lib/setup'
 import Swal from 'sweetalert2'
@@ -190,7 +191,7 @@ export default function AdminLoginLogs() {
             className="houses-filter-input"
             style={{ flex: '1 1 180px', minWidth: 0 }}
           />
-          <select
+          <StyledSelect
             value={roleFilter}
             onChange={(e) => setRoleFilter(e.target.value)}
             className="houses-filter-select"
@@ -199,7 +200,7 @@ export default function AdminLoginLogs() {
             <option value="all">ทุกบทบาท</option>
             <option value="admin">ผู้ดูแลระบบ</option>
             <option value="resident">ลูกบ้าน</option>
-          </select>
+          </StyledSelect>
           <button
             className="btn btn-a btn-sm"
             onClick={loadLogs}

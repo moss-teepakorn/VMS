@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react'
+import StyledSelect from '../../components/StyledSelect'
 import Swal from 'sweetalert2'
 import { listHouses } from '../../lib/houses'
 import {
@@ -303,14 +304,14 @@ const AdminIssues = () => {
             onChange={(e) => setSearchTerm(e.target.value)}
             placeholder="ค้นหา หัวข้อ / รายละเอียด / บ้าน"
           />
-          <select className="houses-filter-select issue-select-wide" value={categoryFilter} onChange={(e) => setCategoryFilter(e.target.value)}>
+          <StyledSelect className="houses-filter-select issue-select-wide" value={categoryFilter} onChange={(e) => setCategoryFilter(e.target.value)}>
             <option value="all">ทุกหมวด</option>
             {ISSUE_CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
-          </select>
-          <select className="houses-filter-select issue-select-wide" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
+          </StyledSelect>
+          <StyledSelect className="houses-filter-select issue-select-wide" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
             <option value="all">ทุกสถานะ</option>
             {ISSUE_STATUSES.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
-          </select>
+          </StyledSelect>
           <button className="btn btn-a btn-sm houses-filter-btn" onClick={() => loadData({ status: statusFilter, category: categoryFilter, search: searchTerm })}>ค้นหา</button>
         </div>
         </div>
@@ -412,21 +413,21 @@ const AdminIssues = () => {
                   <div className="house-grid house-grid-2">
                     <label className="house-field house-field-span-2">
                       <span>บ้าน</span>
-                      <select className="issue-select-wide" name="house_id" value={form.house_id} onChange={handleChange} disabled={isClosedEditing}>
+                      <StyledSelect className="issue-select-wide" name="house_id" value={form.house_id} onChange={handleChange} disabled={isClosedEditing}>
                         {houseOptions.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
-                      </select>
+                      </StyledSelect>
                     </label>
                     <label className="house-field">
                       <span>หมวดปัญหา</span>
-                      <select className="issue-select-wide" name="category" value={form.category} onChange={handleChange} disabled={isClosedEditing}>
+                      <StyledSelect className="issue-select-wide" name="category" value={form.category} onChange={handleChange} disabled={isClosedEditing}>
                         {ISSUE_CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
-                      </select>
+                      </StyledSelect>
                     </label>
                     <label className="house-field">
                       <span>สถานะ</span>
-                      <select className="issue-select-wide" name="status" value={form.status} onChange={handleChange} disabled={isClosedEditing}>
+                      <StyledSelect className="issue-select-wide" name="status" value={form.status} onChange={handleChange} disabled={isClosedEditing}>
                         {ISSUE_STATUSES.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
-                      </select>
+                      </StyledSelect>
                     </label>
                     <label className="house-field house-field-span-2">
                       <span>หัวข้อปัญหา *</span>

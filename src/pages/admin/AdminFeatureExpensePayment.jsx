@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react'
+import StyledSelect from '../../components/StyledSelect'
 import Swal from 'sweetalert2'
 import { listDisbursements, createDisbursement, updateDisbursement, deleteDisbursement } from '../../lib/disbursements'
 import { listPartners } from '../../lib/partners'
@@ -418,18 +419,18 @@ export default function AdminFeatureExpensePayment() {
       <div className="card report-filter-card admin-search-filter-card">
         <div className="cb">
           <div className="houses-filter-row" style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center' }}>
-            <select className="houses-filter-select" value={monthFilter} onChange={(e) => setMonthFilter(e.target.value)} style={{ width: 150 }}>
+            <StyledSelect className="houses-filter-select" value={monthFilter} onChange={(e) => setMonthFilter(e.target.value)} style={{ width: 150 }}>
               {Array.from({ length: 12 }, (_, index) => index + 1).map((month) => (
                 <option key={month} value={String(month)}>
                   {new Date(2000, month - 1, 1).toLocaleString('th-TH', { month: 'long' })}
                 </option>
               ))}
-            </select>
-            <select className="houses-filter-select" value={yearFilter} onChange={(e) => setYearFilter(e.target.value)} style={{ width: 110 }}>
+            </StyledSelect>
+            <StyledSelect className="houses-filter-select" value={yearFilter} onChange={(e) => setYearFilter(e.target.value)} style={{ width: 110 }}>
               {yearOptions.map((year) => (
                 <option key={year} value={String(year)}>{year + 543}</option>
               ))}
-            </select>
+            </StyledSelect>
             <input
               className="houses-filter-input"
               placeholder="ค้นหา..."
@@ -538,37 +539,37 @@ export default function AdminFeatureExpensePayment() {
                 <div className="house-grid" style={{ gridTemplateColumns: '1fr 1.6fr 1.4fr 1fr', gap: 10, marginBottom: 12 }}>
                   <label className="house-field">
                     <span>ประเภท</span>
-                    <select value={form.recipient_type} onChange={(e) => setForm((p) => ({ ...p, recipient_type: e.target.value, recipient_name: '', partner_id: '', house_id: '' }))}>
+                    <StyledSelect value={form.recipient_type} onChange={(e) => setForm((p) => ({ ...p, recipient_type: e.target.value, recipient_name: '', partner_id: '', house_id: '' }))}>
                       <option value="partner">คู่ค้า / บุคคลภายนอก</option>
                       <option value="house">ลูกบ้าน</option>
-                    </select>
+                    </StyledSelect>
                   </label>
 
                   {form.recipient_type === 'partner' ? (
                     <label className="house-field">
                       <span>คู่ค้า *</span>
-                      <select value={form.partner_id} onChange={(e) => handlePartnerChange(e.target.value)}>
+                      <StyledSelect value={form.partner_id} onChange={(e) => handlePartnerChange(e.target.value)}>
                         <option value="">— เลือกคู่ค้า —</option>
                         {partners.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
-                      </select>
+                      </StyledSelect>
                     </label>
                   ) : (
                     <label className="house-field">
                       <span>บ้านเลขที่ *</span>
-                      <select value={form.house_id} onChange={(e) => handleHouseChange(e.target.value)}>
+                      <StyledSelect value={form.house_id} onChange={(e) => handleHouseChange(e.target.value)}>
                         <option value="">— เลือกบ้าน —</option>
                         {houses.map((h) => <option key={h.id} value={h.id}>{h.house_no}{h.owner_name ? ` — ${h.owner_name}` : ''}</option>)}
-                      </select>
+                      </StyledSelect>
                     </label>
                   )}
 
                   <label className="house-field">
                     <span>วิธีชำระ</span>
-                    <select value={form.payment_method} onChange={(e) => setForm((p) => ({ ...p, payment_method: e.target.value }))}>
+                    <StyledSelect value={form.payment_method} onChange={(e) => setForm((p) => ({ ...p, payment_method: e.target.value }))}>
                       <option value="transfer">โอนเงิน</option>
                       <option value="cash">เงินสด</option>
                       <option value="cheque">เช็ค</option>
-                    </select>
+                    </StyledSelect>
                   </label>
 
                   <label className="house-field">
@@ -587,10 +588,10 @@ export default function AdminFeatureExpensePayment() {
                 <div className="house-grid" style={{ gridTemplateColumns: '1.2fr 1fr 1fr', gap: 10, marginBottom: 12 }}>
                   <label className="house-field">
                     <span>ธนาคาร</span>
-                    <select value={form.bank_name} onChange={(e) => setForm((p) => ({ ...p, bank_name: e.target.value }))}>
+                    <StyledSelect value={form.bank_name} onChange={(e) => setForm((p) => ({ ...p, bank_name: e.target.value }))}>
                       <option value="">— เลือกธนาคาร —</option>
                       {THAI_BANKS.map((bank) => <option key={bank} value={bank}>{bank}</option>)}
-                    </select>
+                    </StyledSelect>
                   </label>
                   <label className="house-field">
                     <span>เลขที่บัญชี</span>
@@ -605,17 +606,17 @@ export default function AdminFeatureExpensePayment() {
                 <div className="house-grid" style={{ gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 12 }}>
                   <label className="house-field">
                     <span>ผู้อนุมัติ (กรรมการ) *</span>
-                    <select value={form.approver_id} onChange={(e) => setForm((p) => ({ ...p, approver_id: e.target.value }))}>
+                    <StyledSelect value={form.approver_id} onChange={(e) => setForm((p) => ({ ...p, approver_id: e.target.value }))}>
                       <option value="">— เลือกผู้อนุมัติ —</option>
                       {boardMembers.map((m) => <option key={m.id} value={m.id}>{m.full_name} ({m.position})</option>)}
-                    </select>
+                    </StyledSelect>
                   </label>
                   <label className="house-field">
                     <span>ผู้จ่ายเงิน (กรรมการ) *</span>
-                    <select value={form.payer_id} onChange={(e) => setForm((p) => ({ ...p, payer_id: e.target.value }))}>
+                    <StyledSelect value={form.payer_id} onChange={(e) => setForm((p) => ({ ...p, payer_id: e.target.value }))}>
                       <option value="">— เลือกผู้จ่ายเงิน —</option>
                       {boardMembers.map((m) => <option key={m.id} value={m.id}>{m.full_name} ({m.position})</option>)}
-                    </select>
+                    </StyledSelect>
                   </label>
                 </div>
 
@@ -648,10 +649,10 @@ export default function AdminFeatureExpensePayment() {
                         <tr key={idx}>
                           <td style={{ textAlign: 'center', padding: '4px', border: '1px solid var(--bo)', fontSize: 11, color: 'var(--mu)' }}>{idx + 1}</td>
                           <td style={{ padding: '3px', border: '1px solid var(--bo)' }}>
-                            <select style={{ width: '100%', border: 'none', outline: 'none', background: 'transparent', fontSize: 11, padding: '2px' }} value={item.item_type_id} onChange={(e) => updateItem(idx, 'item_type_id', e.target.value)}>
+                            <StyledSelect style={{ width: '100%', border: 'none', outline: 'none', background: 'transparent', fontSize: 11, padding: '2px' }} value={item.item_type_id} onChange={(e) => updateItem(idx, 'item_type_id', e.target.value)}>
                               <option value="">— ประเภท —</option>
                               {itemTypes.map((t) => <option key={t.id} value={t.id}>{t.code} — {t.label}</option>)}
-                            </select>
+                            </StyledSelect>
                           </td>
                           <td style={{ padding: '3px', border: '1px solid var(--bo)' }}>
                             <input style={{ width: '100%', border: 'none', outline: 'none', background: 'transparent', fontSize: 11, padding: '2px 3px' }} value={item.item_label} onChange={(e) => updateItem(idx, 'item_label', e.target.value)} placeholder="ชื่อรายการ" />

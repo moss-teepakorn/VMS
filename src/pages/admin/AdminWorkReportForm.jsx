@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react'
+import StyledSelect from '../../components/StyledSelect'
 import { useNavigate, useParams } from 'react-router-dom'
 import Swal from 'sweetalert2'
 import {
@@ -302,26 +303,26 @@ const AdminWorkReportForm = ({ modalMode = false, forceCreate = false, reportId 
         <div className="house-grid house-grid-3">
           <label className="house-field">
             <span>เดือน *</span>
-            <select name="month" value={form.month} onChange={handleFormChange}>
+            <StyledSelect name="month" value={form.month} onChange={handleFormChange}>
               <option value="">เลือกเดือน</option>
               {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((m) => (
                 <option key={m} value={m}>{new Date(2024, m - 1).toLocaleDateString('th-TH', { month: 'long' })}</option>
               ))}
-            </select>
+            </StyledSelect>
           </label>
           <label className="house-field">
             <span>ปี *</span>
-            <select name="year" value={form.year} onChange={handleFormChange}>
+            <StyledSelect name="year" value={form.year} onChange={handleFormChange}>
               {years.map((y) => <option key={y} value={y}>{y + 543}</option>)}
-            </select>
+            </StyledSelect>
           </label>
           <label className="house-field">
             <span>หมวดหมู่ *</span>
-            <select name="category" value={form.category} onChange={handleFormChange}>
+            <StyledSelect name="category" value={form.category} onChange={handleFormChange}>
               {CATEGORIES.map((cat) => (
                 <option key={cat.value} value={cat.value}>{cat.label}</option>
               ))}
-            </select>
+            </StyledSelect>
           </label>
         </div>
       </section>

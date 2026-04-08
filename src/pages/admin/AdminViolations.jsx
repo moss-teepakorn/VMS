@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
+import StyledSelect from '../../components/StyledSelect'
 import Swal from 'sweetalert2'
 import { jsPDF } from 'jspdf'
 import html2canvas from 'html2canvas'
@@ -940,7 +941,7 @@ const AdminViolations = () => {
             onChange={(e) => setSearchTerm(e.target.value)}
             placeholder="ค้นหา ประเภท / บ้าน / เจ้าของ"
           />
-          <select className="houses-filter-select" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
+          <StyledSelect className="houses-filter-select" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
             <option value="all">ทุกสถานะ</option>
             <option value="new">ใหม่ (รอดำเนินการ)</option>
             <option value="in_progress">ลูกบ้านกำลังดำเนินการ</option>
@@ -948,7 +949,7 @@ const AdminViolations = () => {
             <option value="resolved">ลูกบ้านแจ้งว่าแก้ไขแล้ว</option>
             <option value="closed">ปิดรายการ</option>
             <option value="cancelled">ยกเลิก</option>
-          </select>
+          </StyledSelect>
           <button className="btn btn-a btn-sm houses-filter-btn" onClick={() => loadData({ status: statusFilter, search: searchTerm })}>ค้นหา</button>
         </div>
         </div>
@@ -1065,15 +1066,15 @@ const AdminViolations = () => {
                   <div className="house-grid house-grid-3">
                     <label className="house-field">
                       <span>บ้าน *</span>
-                      <select name="house_id" value={form.house_id} onChange={handleChange}>
+                      <StyledSelect name="house_id" value={form.house_id} onChange={handleChange}>
                         {houseOptions.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
-                      </select>
+                      </StyledSelect>
                     </label>
                     <label className="house-field">
                       <span>ประเภทการกระทำผิด *</span>
-                      <select name="type" value={form.type} onChange={handleChange}>
+                      <StyledSelect name="type" value={form.type} onChange={handleChange}>
                         {VIOLATION_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
-                      </select>
+                      </StyledSelect>
                     </label>
                     {form.type === 'อื่นๆ' && (
                       <label className="house-field">
@@ -1093,7 +1094,7 @@ const AdminViolations = () => {
                   <div className="house-grid house-grid-3">
                     <label className="house-field">
                       <span>สถานะ</span>
-                      <select name="status" value={form.status} onChange={handleChange}>
+                      <StyledSelect name="status" value={form.status} onChange={handleChange}>
                         <option value="new">ใหม่ (รอดำเนินการ)</option>
                         {(form.status === 'in_progress' || form.status === 'resolved') && (
                           <option value={form.status}>{form.status === 'in_progress' ? 'ลูกบ้านกำลังดำเนินการ' : 'ลูกบ้านแจ้งว่าแก้ไขแล้ว'}</option>
@@ -1101,7 +1102,7 @@ const AdminViolations = () => {
                         <option value="not_fixed">ส่งกลับไปดำเนินการใหม่</option>
                         <option value="closed">ปิดรายการ</option>
                         <option value="cancelled">ยกเลิก</option>
-                      </select>
+                      </StyledSelect>
                     </label>
                     <label className="house-field">
                       <span>เลขที่รายงาน</span>

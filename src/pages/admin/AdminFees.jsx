@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react'
+import StyledSelect from '../../components/StyledSelect'
 import html2canvas from 'html2canvas'
 import { jsPDF } from 'jspdf'
 import Swal from 'sweetalert2'
@@ -1867,12 +1868,12 @@ const AdminFees = () => {
                   <div className="house-grid" style={{ gridTemplateColumns: '1fr', gap: 10 }}>
                     <label className="house-field">
                       <span>สถานะ</span>
-                      <select value={editForm.status} onChange={(e) => setEditForm((prev) => ({ ...prev, status: e.target.value }))}>
+                      <StyledSelect value={editForm.status} onChange={(e) => setEditForm((prev) => ({ ...prev, status: e.target.value }))}>
                         <option value="unpaid">ยังไม่ชำระ</option>
                         <option value="pending">รอตรวจสอบ</option>
                         <option value="paid" disabled={editApprovedAmount < Number(editTotal || 0)}>ชำระแล้ว</option>
                         <option value="overdue">ค้างชำระ</option>
-                      </select>
+                      </StyledSelect>
                       <small style={{ color: 'var(--mu)' }}>
                         อนุมัติ {editApprovedAmount.toLocaleString('th-TH')} / ยอดรวมใหม่ {Number(editTotal || 0).toLocaleString('th-TH')} บาท
                       </small>
@@ -2138,11 +2139,11 @@ const AdminFees = () => {
                     <div className="house-grid" style={{ gridTemplateColumns: '1fr', gap: 10 }}>
                       <label className="house-field">
                         <span>วิธีชำระ</span>
-                        <select value={paymentForm.payment_method} onChange={(e) => setPaymentForm((prev) => ({ ...prev, payment_method: e.target.value }))}>
+                        <StyledSelect value={paymentForm.payment_method} onChange={(e) => setPaymentForm((prev) => ({ ...prev, payment_method: e.target.value }))}>
                           <option value="transfer">โอนเงิน</option>
                           <option value="cash">เงินสด</option>
                           <option value="qr">QR</option>
-                        </select>
+                        </StyledSelect>
                       </label>
                       <label className="house-field">
                         <span>วันเวลา</span>
@@ -2185,24 +2186,24 @@ const AdminFees = () => {
                   <div className="house-grid" style={{ gridTemplateColumns: '1fr' }}>
                     <label className="house-field">
                       <span>ปี (พ.ศ.) *</span>
-                      <select
+                      <StyledSelect
                         value={processForm.yearBE}
                         onChange={(e) => setProcessForm((prev) => ({ ...prev, yearBE: e.target.value }))}
                       >
                         {processYearOptions.map((yearBE) => (
                           <option key={yearBE} value={String(yearBE)}>{yearBE}</option>
                         ))}
-                      </select>
+                      </StyledSelect>
                     </label>
                     <label className="house-field">
                       <span>รอบ *</span>
-                      <select
+                      <StyledSelect
                         value={processForm.period}
                         onChange={(e) => setProcessForm((prev) => ({ ...prev, period: e.target.value }))}
                       >
                         <option value="first_half">ครึ่งปีแรก (1/1 - 30/6)</option>
                         <option value="second_half">ครึ่งปีหลัง (1/7 - 31/12)</option>
-                      </select>
+                      </StyledSelect>
                     </label>
                     <label className="house-field" style={{ gridColumn: '1 / -1', display: 'flex', alignItems: 'center', gap: 8 }}>
                       <input

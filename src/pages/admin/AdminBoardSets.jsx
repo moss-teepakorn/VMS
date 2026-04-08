@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react'
+import StyledSelect from '../../components/StyledSelect'
 import Swal from 'sweetalert2'
 import { listBoardSets, createBoardSet, updateBoardSet, saveBoardMembers, setActiveBoardSet, deleteBoardSet } from '../../lib/boardSets'
 
@@ -271,13 +272,13 @@ export default function AdminBoardSets() {
                   </label>
                   <label className="house-field">
                     <span>สถานะ</span>
-                    <select
+                    <StyledSelect
                       value={form.is_active ? '1' : '0'}
                       onChange={(e) => setForm((p) => ({ ...p, is_active: e.target.value === '1' }))}
                     >
                       <option value="1">ชุดปัจจุบัน</option>
                       <option value="0">ไม่ใช้งาน</option>
-                    </select>
+                    </StyledSelect>
                   </label>
                   <label className="house-field">
                     <span>หมายเหตุ</span>
@@ -313,13 +314,13 @@ export default function AdminBoardSets() {
                             />
                           </td>
                           <td style={{ padding: '4px 6px', border: '1px solid var(--bo)' }}>
-                            <select
+                            <StyledSelect
                               style={{ width: '100%', border: 'none', outline: 'none', background: 'transparent', fontSize: 12, padding: '2px 4px' }}
                               value={m.position}
                               onChange={(e) => updateMember(i, 'position', e.target.value)}
                             >
                               {POSITIONS.map((p) => <option key={p} value={p}>{p}</option>)}
-                            </select>
+                            </StyledSelect>
                           </td>
                           <td style={{ padding: '4px 6px', border: '1px solid var(--bo)' }}>
                             <input

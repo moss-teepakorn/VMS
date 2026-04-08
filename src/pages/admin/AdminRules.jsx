@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react'
+import StyledSelect from '../../components/StyledSelect'
 import Swal from 'sweetalert2'
 import {
   createRuleDocument,
@@ -230,10 +231,10 @@ export default function AdminRules() {
             onChange={(e) => setSearchTerm(e.target.value)}
             placeholder="ค้นหา หัวข้อ / รายละเอียด"
           />
-          <select className="houses-filter-select" value={categoryFilter} onChange={(e) => setCategoryFilter(e.target.value)}>
+          <StyledSelect className="houses-filter-select" value={categoryFilter} onChange={(e) => setCategoryFilter(e.target.value)}>
             <option value="all">ทุกหมวด</option>
             {CATEGORY_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
-          </select>
+          </StyledSelect>
           <button className="btn btn-a btn-sm houses-filter-btn" onClick={() => loadData({ category: categoryFilter, search: searchTerm })}>ค้นหา</button>
         </div>
         </div>
@@ -332,9 +333,9 @@ export default function AdminRules() {
                   <div className="house-grid house-grid-2">
                     <label className="house-field">
                       <span>หมวดหมู่ *</span>
-                      <select value={form.category} onChange={(e) => setForm((cur) => ({ ...cur, category: e.target.value, topic_no: editingItem ? cur.topic_no : String(nextTopicNo(rules, e.target.value)) }))}>
+                      <StyledSelect value={form.category} onChange={(e) => setForm((cur) => ({ ...cur, category: e.target.value, topic_no: editingItem ? cur.topic_no : String(nextTopicNo(rules, e.target.value)) }))}>
                         {CATEGORY_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
-                      </select>
+                      </StyledSelect>
                     </label>
                     <label className="house-field">
                       <span>เรื่องที่ *</span>

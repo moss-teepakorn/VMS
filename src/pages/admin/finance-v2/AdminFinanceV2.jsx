@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react'
+import StyledSelect from '../../../components/StyledSelect'
 import { useLocation, useNavigate } from 'react-router-dom'
 import Swal from 'sweetalert2'
 import { useAuth } from '../../../contexts/AuthContext'
@@ -132,10 +133,10 @@ function BillingPage({ billingYearBE, billingPeriod, setBillingYearBE, setBillin
             </label>
             <label className="finance-v2-inline-field">
               งวด
-              <select value={billingPeriod} onChange={(e) => setBillingPeriod(e.target.value)}>
+              <StyledSelect value={billingPeriod} onChange={(e) => setBillingPeriod(e.target.value)}>
                 <option value="first_half">ครึ่งปีแรก</option>
                 <option value="second_half">ครึ่งปีหลัง</option>
-              </select>
+              </StyledSelect>
             </label>
             <label className="finance-v2-inline-check">
               <input type="checkbox" checked={billingOverwrite} onChange={(e) => setBillingOverwrite(e.target.checked)} />

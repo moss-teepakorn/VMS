@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react'
+import StyledSelect from '../../components/StyledSelect'
 import Swal from 'sweetalert2'
 import {
   createAnnouncement,
@@ -345,10 +346,10 @@ const AdminAnnouncements = () => {
             onChange={(e) => setSearchTerm(e.target.value)}
             placeholder="ค้นหา หัวข้อ / เนื้อหา"
           />
-          <select className="houses-filter-select" value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)}>
+          <StyledSelect className="houses-filter-select" value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)}>
             <option value="all">ทุกประเภท</option>
             {TYPE_OPTIONS.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
-          </select>
+          </StyledSelect>
           <button className="btn btn-a btn-sm houses-filter-btn" onClick={() => loadData({ type: typeFilter, search: searchTerm })}>ค้นหา</button>
         </div>
         </div>
@@ -461,9 +462,9 @@ const AdminAnnouncements = () => {
                     </label>
                     <label className="house-field">
                       <span>ประเภท</span>
-                      <select name="type" value={form.type} onChange={handleChange}>
+                      <StyledSelect name="type" value={form.type} onChange={handleChange}>
                         {TYPE_OPTIONS.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
-                      </select>
+                      </StyledSelect>
                     </label>
                     <label className="house-field house-field-span-3">
                       <span>เนื้อหา</span>

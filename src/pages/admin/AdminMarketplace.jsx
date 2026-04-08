@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react'
+import StyledSelect from '../../components/StyledSelect'
 import Swal from 'sweetalert2'
 import { listHouses } from '../../lib/houses'
 import {
@@ -480,14 +481,14 @@ const AdminMarketplace = () => {
             onChange={(e) => setSearchTerm(e.target.value)}
             placeholder="ค้นหา ชื่อ / หมวด / บ้าน"
           />
-          <select className="houses-filter-select" value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)}>
+          <StyledSelect className="houses-filter-select" value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)}>
             <option value="all">ทุกประเภทลิสต์</option>
             {LISTING_TYPES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
-          </select>
-          <select className="houses-filter-select" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
+          </StyledSelect>
+          <StyledSelect className="houses-filter-select" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
             <option value="all">ทุกสถานะ</option>
             {STATUS_OPTIONS.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
-          </select>
+          </StyledSelect>
           <button className="btn btn-a btn-sm houses-filter-btn" onClick={() => loadData({ status: statusFilter, listing_type: typeFilter, search: searchTerm })}>ค้นหา</button>
         </div>
         </div>
@@ -612,21 +613,21 @@ const AdminMarketplace = () => {
                   <div className="house-grid house-grid-3">
                     <label className="house-field">
                       <span>บ้าน</span>
-                      <select name="house_id" value={form.house_id} onChange={handleChange}>
+                      <StyledSelect name="house_id" value={form.house_id} onChange={handleChange}>
                         {houseOptions.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
-                      </select>
+                      </StyledSelect>
                     </label>
                     <label className="house-field">
                       <span>ประเภทลิสต์</span>
-                      <select name="listing_type" value={form.listing_type} onChange={handleChange}>
+                      <StyledSelect name="listing_type" value={form.listing_type} onChange={handleChange}>
                         {LISTING_TYPES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
-                      </select>
+                      </StyledSelect>
                     </label>
                     <label className="house-field">
                       <span>สถานะ</span>
-                      <select name="status" value={form.status} onChange={handleChange}>
+                      <StyledSelect name="status" value={form.status} onChange={handleChange}>
                         {STATUS_OPTIONS.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
-                      </select>
+                      </StyledSelect>
                     </label>
                     <label className="house-field house-field-span-2">
                       <span>ชื่อสินค้า/บริการ *</span>
@@ -634,10 +635,10 @@ const AdminMarketplace = () => {
                     </label>
                     <label className="house-field">
                       <span>หมวดหมู่</span>
-                      <select name="category" value={form.category} onChange={handleChange}>
+                      <StyledSelect name="category" value={form.category} onChange={handleChange}>
                         <option value="">เลือกหมวดหมู่</option>
                         {CATEGORY_OPTIONS.map((cat) => <option key={cat} value={cat}>{cat}</option>)}
-                      </select>
+                      </StyledSelect>
                     </label>
                   </div>
                 </section>

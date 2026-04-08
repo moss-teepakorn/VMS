@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react'
+import StyledSelect from '../../components/StyledSelect'
 import ReportMockPage from './reports/ReportMockPage'
 import ReportExportButtons from './ReportExportButtons'
 import { getSystemConfig } from '../../lib/systemConfig'
@@ -171,9 +172,9 @@ export default function AdminReportOutstanding() {
             </label>
             <label className="house-field" style={{ margin: 0 }}>
               <span>ปี</span>
-              <select value={year} onChange={(event) => setYear(Number(event.target.value))}>
+              <StyledSelect value={year} onChange={(event) => setYear(Number(event.target.value))}>
                 {yearOptions.map((value) => <option key={value} value={value}>{value + 543}</option>)}
-              </select>
+              </StyledSelect>
             </label>
             <div className="report-filter-action">
               <button className="btn btn-p" type="submit" style={{ minWidth: 120 }}>แสดงรายงาน</button>

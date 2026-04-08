@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react'
+import StyledSelect from '../../components/StyledSelect'
 import Swal from 'sweetalert2'
 import { getSystemConfig } from '../../lib/systemConfig'
 import { calculateOverdueFeesByIds, listFees, processHalfYearFeesAllHouses } from '../../lib/fees'
@@ -189,18 +190,18 @@ export default function AdminFeesBillingPenalty() {
           <div className="house-grid house-grid-3" style={{ gap: 10 }}>
             <label className="house-field">
               <span>ปี (พ.ศ.)</span>
-              <select value={processForm.yearBE} onChange={(e) => setProcessForm((prev) => ({ ...prev, yearBE: e.target.value }))}>
+              <StyledSelect value={processForm.yearBE} onChange={(e) => setProcessForm((prev) => ({ ...prev, yearBE: e.target.value }))}>
                 {processYearOptions.map((yearBE) => (
                   <option key={yearBE} value={String(yearBE)}>{yearBE}</option>
                 ))}
-              </select>
+              </StyledSelect>
             </label>
             <label className="house-field">
               <span>รอบ</span>
-              <select value={processForm.period} onChange={(e) => setProcessForm((prev) => ({ ...prev, period: e.target.value }))}>
+              <StyledSelect value={processForm.period} onChange={(e) => setProcessForm((prev) => ({ ...prev, period: e.target.value }))}>
                 <option value="first_half">ครึ่งปีแรก (1/1 - 30/6)</option>
                 <option value="second_half">ครึ่งปีหลัง (1/7 - 31/12)</option>
-              </select>
+              </StyledSelect>
             </label>
             <label className="house-field" style={{ justifyContent: 'center', display: 'flex', alignItems: 'center', gap: 8 }}>
               <input

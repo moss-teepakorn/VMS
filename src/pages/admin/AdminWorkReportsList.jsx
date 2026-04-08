@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react'
+import StyledSelect from '../../components/StyledSelect'
 import { useNavigate } from 'react-router-dom'
 import Swal from 'sweetalert2'
 import html2canvas from 'html2canvas'
@@ -247,19 +248,19 @@ const AdminWorkReportsList = () => {
             className="houses-filter-input"
             style={{ flex: '1', minWidth: '160px' }}
           />
-          <select value={filterMonth} onChange={(e) => setFilterMonth(e.target.value)} className="houses-filter-select" style={{ width: '118px' }}>
+          <StyledSelect value={filterMonth} onChange={(e) => setFilterMonth(e.target.value)} className="houses-filter-select" style={{ width: '118px' }}>
             <option value="">ทุกเดือน</option>
             {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((m) => (
               <option key={m} value={m}>{new Date(2024, m - 1).toLocaleDateString('th-TH', { month: 'long' })}</option>
             ))}
-          </select>
-          <select value={filterYear} onChange={(e) => setFilterYear(e.target.value)} className="houses-filter-select" style={{ width: '100px' }}>
+          </StyledSelect>
+          <StyledSelect value={filterYear} onChange={(e) => setFilterYear(e.target.value)} className="houses-filter-select" style={{ width: '100px' }}>
             {YEAR_OPTIONS.map((y) => <option key={y} value={y}>{y + 543}</option>)}
-          </select>
-          <select value={filterCategory} onChange={(e) => setFilterCategory(e.target.value)} className="houses-filter-select" style={{ width: '130px' }}>
+          </StyledSelect>
+          <StyledSelect value={filterCategory} onChange={(e) => setFilterCategory(e.target.value)} className="houses-filter-select" style={{ width: '130px' }}>
             <option value="all">ทุกหมวดหมู่</option>
             {CATEGORIES.map((cat) => <option key={cat.value} value={cat.value}>{cat.label}</option>)}
-          </select>
+          </StyledSelect>
           <button className="btn btn-a btn-sm houses-filter-btn" style={{ flexShrink: 0 }} onClick={() => loadReports()}>ค้นหา</button>
         </div>
         </div>
