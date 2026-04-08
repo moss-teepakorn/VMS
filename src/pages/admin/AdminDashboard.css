@@ -826,8 +826,9 @@
   margin-top: 10px;
   display: grid;
   grid-template-columns: minmax(220px, 1fr) 152px 136px 86px;
-  gap: 8px;
+  gap: 10px;
   align-items: center;
+  justify-items: stretch;
 }
 
 .houses-filter-input {
@@ -1156,11 +1157,18 @@
 
 .admin-search-filter-card {
   overflow: visible;
+  position: relative;
+  z-index: 500;
 }
 
 .admin-search-filter-card .houses-filter-row {
   margin-top: 0;
   overflow: visible;
+}
+
+.admin-search-filter-card .cars-ss,
+.admin-search-filter-card .cars-ss-menu {
+  z-index: 1500;
 }
 
 .pane.on .ph + .admin-search-filter-card {
@@ -1504,16 +1512,23 @@
   .admin-search-filter-card .houses-filter-row {
     grid-template-columns: 1fr;
     grid-template-rows: auto;
-    gap: 8px;
+    gap: 10px;
+  }
+
+  .admin-search-filter-card .houses-filter-row > * {
+    width: 100%;
+    min-width: 0;
   }
 
   .admin-search-filter-card .houses-filter-row .cars-ss {
     width: 100%;
     min-width: 0;
+    justify-self: stretch;
   }
 
   .admin-search-filter-card .houses-filter-row .houses-filter-btn,
-  .admin-search-filter-card .houses-filter-row .cars-ss {
+  .admin-search-filter-card .houses-filter-row .cars-ss,
+  .admin-search-filter-card .houses-filter-row .houses-filter-input {
     grid-column: 1 / -1;
   }
 
@@ -2200,7 +2215,8 @@
 
 /* Vehicles page: filter row has 5 controls (input + 3 selects + button). */
 .vehicles-page .houses-filter-row {
-  grid-template-columns: minmax(220px, 1fr) 126px 136px 126px auto;
+  grid-template-columns: minmax(220px, 1fr) minmax(120px, 150px) minmax(120px, 150px) minmax(120px, 150px) 110px;
+  gap: 10px;
 }
 
 .vehicles-page .houses-filter-input,
@@ -2337,6 +2353,7 @@
 @media (max-width: 1060px) {
   .vehicles-page .houses-filter-row {
     grid-template-columns: minmax(200px, 1fr) 1fr 1fr auto;
+    gap: 10px;
   }
 
   .vehicles-page .houses-filter-input {
@@ -2387,8 +2404,9 @@
   }
 
   .vehicles-page .houses-filter-row {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    grid-template-rows: auto auto auto;
+    grid-template-columns: 1fr;
+    grid-template-rows: repeat(5, auto);
+    gap: 10px;
   }
 
   .vehicles-page .houses-filter-input {

@@ -128,11 +128,11 @@
   }
 
   .houses-filter-row .cars-ss {
-    min-width: 136px;
+    min-width: 0;
   }
 
   .houses-filter-row .cars-ss + .cars-ss {
-    margin-left: 8px;
+    margin-left: 0;
   }
 
   .cars-ss::after {
@@ -181,7 +181,7 @@
 
   .cars-ss-menu {
     position: absolute;
-    z-index: 1200;
+    z-index: 9999;
     top: calc(100% + 4px);
     left: 0;
     right: 0;
