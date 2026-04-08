@@ -186,7 +186,7 @@ export default function AdminFeesBillingPenalty() {
           <div className="ct">ส่วนที่ 1: สร้างใบแจ้งหนี้</div>
         </div>
         <form className="cb" style={{ display: 'grid', gap: 12, padding: 12 }} onSubmit={handleProcessInvoices}>
-          <div className="house-grid" style={{ gridTemplateColumns: 'repeat(3, minmax(160px, 1fr))', gap: 10 }}>
+          <div className="house-grid house-grid-3" style={{ gap: 10 }}>
             <label className="house-field">
               <span>ปี (พ.ศ.)</span>
               <select value={processForm.yearBE} onChange={(e) => setProcessForm((prev) => ({ ...prev, yearBE: e.target.value }))}>

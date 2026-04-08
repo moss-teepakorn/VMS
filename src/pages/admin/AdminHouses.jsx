@@ -354,7 +354,7 @@ const AdminHouses = () => {
   const soiOptions = useMemo(() => {
     const values = [...new Set(houses.map((house) => house.soi).filter(Boolean))]
       .sort((left, right) => Number(left) - Number(right))
-    return values
+    return values.map((soi) => ({ value: String(soi), label: `ซอย ${soi}` }))
   }, [houses])
 
   const getStatusBadge = (status) => {

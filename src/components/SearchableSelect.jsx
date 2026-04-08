@@ -12,7 +12,13 @@ export default function SearchableSelect({
   const [open, setOpen] = useState(false)
   const [keyword, setKeyword] = useState('')
 
-  const optionsList = options || []
+  const optionsList = useMemo(() => {
+    if (!Array.isArray(options)) return []
+    return options.map((option) => {
+      if (option && typeof option === 'object') return option
+      return { value: option, label: String(option) }
+    })
+  }, [options])
 
   const selected = useMemo(
     () => optionsList.find((option) => String(option.value) === String(value)) || null,

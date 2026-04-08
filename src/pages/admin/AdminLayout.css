@@ -1698,6 +1698,16 @@ button, input, select, textarea {
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
+.house-grid.house-grid-3 {
+  grid-template-columns: repeat(3, minmax(160px, 1fr));
+}
+
+@media (max-width: 900px) {
+  .pane.on.houses-compact.fees-compact .house-grid.house-grid-3 {
+    grid-template-columns: 1fr !important;
+  }
+}
+
 .house-grid-4 {
   grid-template-columns: repeat(4, minmax(0, 1fr));
 }
