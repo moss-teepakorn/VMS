@@ -747,7 +747,7 @@ export default function AdminFeesPrintInvoices() {
           <div className="ct">ผลลัพธ์ ({fees.length}) | เลือกแล้ว {selectedFees.length}</div>
         </div>
         <div className="cb houses-table-card-body houses-main-body">
-          <div style={{ overflowX: 'auto' }}>
+          <div className="houses-desktop-only" style={{ overflowX: 'auto' }}>
             <table className="tw houses-table houses-main-table" style={{ width: '100%' }}>
               <thead>
                 <tr>
@@ -793,6 +793,34 @@ export default function AdminFeesPrintInvoices() {
                 })}
               </tbody>
             </table>
+          </div>
+          <div className="houses-mobile-only">
+            {loading ? (
+              <div className="houses-card-empty">กำลังโหลดข้อมูล...</div>
+            ) : fees.length === 0 ? (
+              <div className="houses-card-empty">ไม่พบข้อมูลตามเงื่อนไข</div>
+            ) : fees.map((fee) => {
+              const selected = selectedIds.includes(fee.id)
+              const statusBadge = getFeeStatusBadge(fee)
+              return (
+                <div key={fee.id} className="houses-mcard" style={{ borderColor: selected ? '#86efac' : undefined, background: selected ? '#f0fdf4' : undefined }}>
+                  <div className="houses-mcard-top">
+                    <input type="checkbox" checked={selected} onChange={() => toggleRow(fee.id)} />
+                    <span className="houses-mcard-no">{fee.houses?.house_no || '-'}</span>
+                    <span className="houses-mcard-soi">ซอย {fee.houses?.soi || '-'}</span>
+                    <span className={`houses-mcard-badge ${statusBadge.className}`}>{statusBadge.label}</span>
+                  </div>
+                  <div className="houses-mcard-owner">{fee.houses?.owner_name || '-'}</div>
+                  <div className="houses-mcard-meta">
+                    <span><span className="houses-mcard-label">ปี:</span> {toBE(fee.year)}</span>
+                    <span><span className="houses-mcard-label">งวด:</span> {periodLabel(fee.period)}</span>
+                    <span><span className="houses-mcard-label">ครบกำหนด:</span> {formatDateDMY(fee.due_date)}</span>
+                    <span><span className="houses-mcard-label">ยอดรวม:</span> {Number(fee.total_amount || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                    <span><span className="houses-mcard-label">ยอดค้าง:</span> {getOutstandingAmountForFee(fee).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                  </div>
+                </div>
+              )
+            })}
           </div>
         </div>
       </div>

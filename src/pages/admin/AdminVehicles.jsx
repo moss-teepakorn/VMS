@@ -615,10 +615,47 @@ const AdminVehicles = () => {
   const parseVehicleExcelFile = async (file) => {
     const buffer = await file.arrayBuffer()
     const workbook = XLSX.read(buffer, { type: 'array' })
-    const firstSheetName = workbook.SheetNames[0]
-    if (!firstSheetName) return []
-    const sheet = workbook.Sheets[firstSheetName]
-    return XLSX.utils.sheet_to_json(sheet, { defval: '' })
+    const sheetNames = workbook.SheetNames || []
+    if (sheetNames.length === 0) return []
+
+    const isRowEmpty = (row) => Object.values(row || {}).every((value) => String(value || '').trim() === '')
+
+    const isExampleRow = (row) => {
+      const note = String(pickCellValue(row, VEHICLE_EXCEL_COLUMN_ALIASES.note) || '').trim().toLowerCase()
+      return note.includes('ตัวอย่าง') || note.includes('example')
+    }
+
+    const scoreSheet = (sheetName, rows) => {
+      const normalizedName = String(sheetName || '').trim().toLowerCase()
+      const importableRows = rows.filter((row) => {
+        const houseNo = String(pickCellValue(row, VEHICLE_EXCEL_COLUMN_ALIASES.house_no) || '').trim()
+        const plate = String(pickCellValue(row, VEHICLE_EXCEL_COLUMN_ALIASES.license_plate) || '').trim()
+        const prefix = String(pickCellValue(row, VEHICLE_EXCEL_COLUMN_ALIASES.license_plate_prefix) || '').trim()
+        const number = String(pickCellValue(row, VEHICLE_EXCEL_COLUMN_ALIASES.license_plate_number) || '').trim()
+        return houseNo || plate || prefix || number
+      })
+
+      const exampleCount = importableRows.filter(isExampleRow).length
+      let score = importableRows.length - (exampleCount * 2)
+
+      if (normalizedName.includes('template') || normalizedName.includes('ตัวอย่าง')) {
+        score -= 5
+      }
+
+      return { score, importableRows }
+    }
+
+    const candidates = sheetNames.map((sheetName) => {
+      const sheet = workbook.Sheets[sheetName]
+      const rows = XLSX.utils.sheet_to_json(sheet, { defval: '' }).filter((row) => !isRowEmpty(row))
+      const { score, importableRows } = scoreSheet(sheetName, rows)
+      return { sheetName, score, rows: importableRows }
+    })
+
+    const best = candidates.sort((a, b) => b.score - a.score)[0]
+    if (!best || best.rows.length === 0) return []
+
+    return best.rows.filter((row) => !isExampleRow(row))
   }
 
   const downloadVehicleTemplate = () => {
