@@ -232,6 +232,14 @@
     display: none;
   }
 
+  select {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath fill='%236a7a8c' d='M0 0l5 6 5-6z'/%3E%3C/svg%3E") !important;
+    background-repeat: no-repeat !important;
+    background-position: right 10px center !important;
+    background-size: 10px 6px !important;
+    padding-right: 34px !important;
+  }
+
   select option {
     font-size: 14px;
   }
