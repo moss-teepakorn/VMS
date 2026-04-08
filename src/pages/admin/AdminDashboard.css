@@ -1155,10 +1155,24 @@
   overflow: visible;
 }
 
-.admin-search-filter-card {
-  overflow: visible;
+.pane.on .admin-search-filter-card {
+  overflow: visible !important;
   position: relative;
   z-index: 500;
+}
+
+.pane.on .admin-search-filter-card .cb {
+  overflow: visible !important;
+}
+
+.pane.on .admin-search-filter-card .houses-filter-row,
+.pane.on .admin-search-filter-card .cars-ss,
+.pane.on .admin-search-filter-card .cars-ss-menu {
+  overflow: visible !important;
+}
+
+.pane.on .admin-search-filter-card .cars-ss-menu {
+  z-index: 10000 !important;
 }
 
 .admin-search-filter-card .houses-filter-row {
