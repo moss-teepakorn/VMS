@@ -7,6 +7,11 @@ export default function DropdownList({
   placeholder,
   compact = false,
   className = '',
+  disabled = false,
+  id,
+  name,
+  style = {},
+  ...rest
 }) {
   const rootRef = useRef(null)
   const [open, setOpen] = useState(false)
@@ -51,23 +56,31 @@ export default function DropdownList({
   return (
     <div
       ref={rootRef}
+      id={id}
+      data-name={name}
       className={`cars-ss ${compact ? 'cars-ss--compact' : ''} ${open ? 'is-open' : ''} ${className}`.trim()}
+      style={style}
+      {...rest}
     >
       <input
+        name={name}
         className="cars-ss-input"
-        value={open ? keyword : selected?.label || ''}
+        value={disabled ? selected?.label || '' : open ? keyword : selected?.label || ''}
         onChange={(event) => {
+          if (disabled) return
           setKeyword(event.target.value)
           setOpen(true)
         }}
         onFocus={() => {
+          if (disabled) return
           setKeyword('')
           setOpen(true)
         }}
         placeholder={placeholder}
-        readOnly={false}
+        disabled={disabled}
+        readOnly={disabled}
       />
-      {open && (
+      {open && !disabled && (
         <div className="cars-ss-menu">
           {filtered.length === 0 ? (
             <div className="cars-ss-empty">ไม่พบข้อมูล</div>
@@ -80,12 +93,15 @@ export default function DropdownList({
                   type="button"
                   className={`cars-ss-item ${isSelected ? 'is-selected' : ''}`}
                   onClick={() => {
+                    if (option.disabled) return
                     onChange(option.value)
                     setKeyword(option.label)
                     setOpen(false)
                   }}
+                  disabled={option.disabled}
                 >
-                  {option.label}
+                  <span>{option.label}</span>
+                  <span className="cars-ss-item-arrow">›</span>
                 </button>
               )
             })

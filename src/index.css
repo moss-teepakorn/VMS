@@ -204,6 +204,9 @@
 
   .cars-ss-item {
     width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
     border: none;
     text-align: left;
     padding: 10px 12px;
@@ -213,6 +216,12 @@
     cursor: pointer;
     font-size: 13px;
     line-height: 1.35;
+  }
+
+  .cars-ss-item .cars-ss-item-arrow {
+    color: #6a7a8c;
+    margin-left: 12px;
+    font-size: 14px;
   }
 
   .cars-ss-item:hover {

@@ -1,4 +1,5 @@
 import { useEffect, useState, useRef, useCallback } from 'react'
+import StyledSelect from '../../components/StyledSelect'
 import { useNavigate } from 'react-router-dom'
 import Chart from 'chart.js/auto'
 import html2canvas from 'html2canvas'
@@ -2692,17 +2693,17 @@ export default function ResidentLayout() {
               )}
 
               <div className="fee-toolbar-row" style={{ marginBottom: 16 }}>
-                <select className="fs fee-toolbar-select" value={feeStatusFilter} onChange={(e) => setFeeStatusFilter(e.target.value)}>
+                <StyledSelect className="fs fee-toolbar-select" value={feeStatusFilter} onChange={(e) => setFeeStatusFilter(e.target.value)}>
                   <option value="all">ทุกสถานะ</option>
                   <option value="unpaid">ยังไม่ชำระ</option>
                   <option value="pending">รอตรวจสอบ</option>
                   <option value="paid">ชำระแล้ว</option>
                   <option value="overdue">ค้างชำระ</option>
-                </select>
-                <select className="fs fee-toolbar-select" value={feeYearFilter} onChange={(e) => setFeeYearFilter(e.target.value)}>
+                </StyledSelect>
+                <StyledSelect className="fs fee-toolbar-select" value={feeYearFilter} onChange={(e) => setFeeYearFilter(e.target.value)}>
                   <option value="all">ทุกปี</option>
                   {feeYearOptions.map((year) => <option key={year} value={year}>{year}</option>)}
-                </select>
+                </StyledSelect>
                 <button className="btn btn-a btn-sm fee-toolbar-button" onClick={() => loadFeeData({ status: feeStatusFilter, year: feeYearFilter })}>🔍 ค้นหา</button>
               </div>
 
@@ -2876,11 +2877,11 @@ export default function ResidentLayout() {
                       </div>
                       <div className="fg">
                         <label className="fl">หมวดหมู่</label>
-                        <select className="fs" value={issueForm.category} onChange={(e) => setIssueForm((p) => ({ ...p, category: e.target.value }))}>
+                        <StyledSelect className="fs" value={issueForm.category} onChange={(e) => setIssueForm((p) => ({ ...p, category: e.target.value }))}>
                           {ISSUE_CATEGORY_OPTIONS.map((category) => (
                             <option key={category} value={category}>{category}</option>
                           ))}
-                        </select>
+                        </StyledSelect>
                       </div>
                       <div className="fg">
                         <label className="fl">แนบรูปภาพ (ไม่บังคับ)</label>
@@ -3036,7 +3037,7 @@ export default function ResidentLayout() {
                     <span className="notif-input-icon">🔍</span>
                     <input className="fi notif-input" type="text" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} placeholder="ค้นหา ประเภท / รายละเอียด" />
                   </div>
-                  <select className="fs notif-select" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
+                  <StyledSelect className="fs notif-select" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
                     <option value="all">ทุกสถานะ</option>
                     <option value="new">ยังไม่ดำเนินการ</option>
                     <option value="in_progress">กำลังดำเนินการ</option>
@@ -3044,13 +3045,13 @@ export default function ResidentLayout() {
                     <option value="not_fixed">ส่งกลับไปดำเนินการใหม่</option>
                     <option value="closed">ปิดรายการ</option>
                     <option value="cancelled">ยกเลิก</option>
-                  </select>
-                  <select className="fs notif-select" value={notifDateFilter} onChange={(e) => setNotifDateFilter(e.target.value)}>
+                  </StyledSelect>
+                  <StyledSelect className="fs notif-select" value={notifDateFilter} onChange={(e) => setNotifDateFilter(e.target.value)}>
                     <option value="all">ทุกช่วงเวลา</option>
                     <option value="today">วันนี้</option>
                     <option value="7d">7 วันล่าสุด</option>
                     <option value="30d">30 วันล่าสุด</option>
-                  </select>
+                  </StyledSelect>
                   <button className="btn btn-p btn-sm notif-search-btn" onClick={() => loadViolations({ status: statusFilter, search: searchTerm })}>ค้นหา</button>
                 </div>
               </div>
@@ -3321,12 +3322,12 @@ export default function ResidentLayout() {
 
               <div style={{ display: 'flex', gap: 7, marginBottom: 14, flexWrap: 'wrap' }}>
                 <input className="fi" style={{ flex: 1, minWidth: 150 }} value={marketSearch} onChange={(e) => setMarketSearch(e.target.value)} placeholder="🔍 ค้นหาสินค้า..." />
-                <select className="fs" style={{ width: 'auto', minWidth: 120 }} value={marketFilter} onChange={(e) => setMarketFilter(e.target.value)}>
+                <StyledSelect className="fs" style={{ width: 'auto', minWidth: 120 }} value={marketFilter} onChange={(e) => setMarketFilter(e.target.value)}>
                   <option value="all">ทุกประเภท</option>
                   <option value="sell">ขาย</option>
                   <option value="free">ให้ฟรี</option>
                   <option value="rent">ให้เช่า</option>
-                </select>
+                </StyledSelect>
               </div>
 
               {filteredMarket.length === 0 ? (
@@ -3451,11 +3452,11 @@ export default function ResidentLayout() {
                       </label>
                       <label className="house-field">
                         <span>วิธีชำระ *</span>
-                        <select value={paymentForm.payment_method} onChange={(e) => setPaymentForm((p) => ({ ...p, payment_method: e.target.value }))}>
+                        <StyledSelect value={paymentForm.payment_method} onChange={(e) => setPaymentForm((p) => ({ ...p, payment_method: e.target.value }))}>
                           <option value="transfer">โอนเงิน</option>
                           <option value="cash">เงินสด</option>
                           <option value="qr">QR</option>
-                        </select>
+                        </StyledSelect>
                       </label>
                       <label className="house-field" style={{ gridColumn: '1 / -1' }}>
                         <span>ลิงก์หลักฐาน (สลิป) *</span>
@@ -3508,10 +3509,10 @@ export default function ResidentLayout() {
                     <div className="house-grid house-grid-1">
                       <label className="house-field">
                         <span>สถานะงานที่ลูกบ้านแจ้งกลับ</span>
-                        <select value={residentViolationStatus} onChange={(e) => setResidentViolationStatus(e.target.value)} disabled={editingViolation?.status === 'closed'}>
+                        <StyledSelect value={residentViolationStatus} onChange={(e) => setResidentViolationStatus(e.target.value)} disabled={editingViolation?.status === 'closed'}>
                           <option value="in_progress">กำลังดำเนินการ</option>
                           <option value="resolved">แก้ไขแล้ว</option>
-                        </select>
+                        </StyledSelect>
                       </label>
                       <label className="house-field">
                         <span>รายละเอียดที่ต้องการแจ้งกลับ *</span>
@@ -3583,16 +3584,16 @@ export default function ResidentLayout() {
                       </label>
                       <label className="house-field">
                         <span>จังหวัด</span>
-                        <select name="province" value={vehicleReqForm.province} onChange={handleVehicleReqFormChange}>
+                        <StyledSelect name="province" value={vehicleReqForm.province} onChange={handleVehicleReqFormChange}>
                           {PROVINCE_OPTIONS.map((p) => <option key={p} value={p}>{p}</option>)}
-                        </select>
+                        </StyledSelect>
                       </label>
                       {vehicleReqMode === 'add' && (
                         <label className="house-field">
                           <span>ประเภทรถ</span>
-                          <select name="vehicle_type" value={vehicleReqForm.vehicle_type} onChange={handleVehicleReqFormChange}>
+                          <StyledSelect name="vehicle_type" value={vehicleReqForm.vehicle_type} onChange={handleVehicleReqFormChange}>
                             {VEHICLE_TYPES_OPT.map((t) => <option key={t} value={t}>{t}</option>)}
-                          </select>
+                          </StyledSelect>
                         </label>
                       )}
                     </div>
@@ -3604,9 +3605,9 @@ export default function ResidentLayout() {
                       <div className="house-grid house-grid-3">
                         <label className="house-field">
                           <span>ยี่ห้อ</span>
-                          <select name="brand" value={vehicleReqForm.brand} onChange={handleVehicleReqFormChange}>
+                          <StyledSelect name="brand" value={vehicleReqForm.brand} onChange={handleVehicleReqFormChange}>
                             {BRAND_OPTIONS.map((b) => <option key={b} value={b}>{b}</option>)}
-                          </select>
+                          </StyledSelect>
                         </label>
                         {vehicleReqForm.brand === 'อื่นๆ' && (
                           <label className="house-field">
@@ -3627,9 +3628,9 @@ export default function ResidentLayout() {
                     <div className="house-grid house-grid-3">
                       <label className="house-field">
                         <span>สี</span>
-                        <select name="color" value={vehicleReqForm.color} onChange={handleVehicleReqFormChange}>
+                        <StyledSelect name="color" value={vehicleReqForm.color} onChange={handleVehicleReqFormChange}>
                           {COLOR_OPTIONS.map((c) => <option key={c} value={c}>{c}</option>)}
-                        </select>
+                        </StyledSelect>
                       </label>
                       {vehicleReqForm.color === 'อื่นๆ' && (
                         <label className="house-field">
@@ -3639,16 +3640,16 @@ export default function ResidentLayout() {
                       )}
                       <label className="house-field">
                         <span>สถานะการใช้รถ</span>
-                        <select name="vehicle_status" value={vehicleReqForm.vehicle_status} onChange={handleVehicleReqFormChange}>
+                        <StyledSelect name="vehicle_status" value={vehicleReqForm.vehicle_status} onChange={handleVehicleReqFormChange}>
                           <option value="active">ใช้งาน / จอดในพื้นที่</option>
                           <option value="inactive">ไม่ได้จอดในพื้นที่</option>
-                        </select>
+                        </StyledSelect>
                       </label>
                       <label className="house-field">
                         <span>สถานที่จอด</span>
-                        <select name="parking_location" value={vehicleReqForm.parking_location} onChange={handleVehicleReqFormChange}>
+                        <StyledSelect name="parking_location" value={vehicleReqForm.parking_location} onChange={handleVehicleReqFormChange}>
                           {PARKING_OPTIONS.map((p) => <option key={p} value={p}>{p}</option>)}
-                        </select>
+                        </StyledSelect>
                       </label>
                     </div>
                   </section>
@@ -3775,19 +3776,19 @@ export default function ResidentLayout() {
                       </label>
                       <label className="house-field">
                         <span>ประเภท</span>
-                        <select value={marketPostForm.listing_type} onChange={(e) => setMarketPostForm((cur) => ({ ...cur, listing_type: e.target.value }))}>
+                        <StyledSelect value={marketPostForm.listing_type} onChange={(e) => setMarketPostForm((cur) => ({ ...cur, listing_type: e.target.value }))}>
                           <option value="sell">ขาย</option>
                           <option value="free">ให้ฟรี</option>
                           <option value="rent">ให้เช่า</option>
                           <option value="wanted">ต้องการ</option>
-                        </select>
+                        </StyledSelect>
                       </label>
                       <label className="house-field">
                         <span>หมวดหมู่</span>
-                        <select value={marketPostForm.category} onChange={(e) => setMarketPostForm((cur) => ({ ...cur, category: e.target.value }))}>
+                        <StyledSelect value={marketPostForm.category} onChange={(e) => setMarketPostForm((cur) => ({ ...cur, category: e.target.value }))}>
                           <option value="">เลือกหมวดหมู่</option>
                           {MARKET_CATEGORY_OPTIONS.map((cat) => <option key={cat} value={cat}>{cat}</option>)}
-                        </select>
+                        </StyledSelect>
                       </label>
                       <label className="house-field">
                         <span>ราคา (บาท)</span>
