@@ -107,7 +107,7 @@ async function listFallbackHouseProfileIssuesByHouse(houseId) {
 
   const { data, error } = await supabase
     .from('issues')
-    .select('id, house_id, title, detail, status, admin_note, created_at, resolved_at, updated_at, houses(id, house_no, soi, owner_name, resident_name, contact_name, phone, line_id, email)')
+    .select('id, house_id, title, detail, status, admin_note, created_at, resolved_at, houses(id, house_no, soi, owner_name, resident_name, contact_name, phone, line_id, email)')
     .eq('house_id', houseId)
     .in('status', ['pending', 'in_progress', 'new', 'resolved', 'closed', 'not_fixed', 'cancelled'])
     .order('created_at', { ascending: false })
@@ -132,7 +132,7 @@ function mapFallbackIssueToHouseProfileRequest(issue, profileMap = new Map()) {
     requested_phone: payload.phone || null,
     admin_note: issue.admin_note || '',
     created_at: issue.created_at,
-    reviewed_at: issue.resolved_at || issue.updated_at || null,
+    reviewed_at: issue.resolved_at || null,
     houses: issue.houses || null,
     profiles: profile
       ? {
@@ -425,7 +425,7 @@ export async function createHouseProfileUpdateRequest({ profileId, houseId, payl
         category: 'ทั่วไป',
         status: 'pending',
       }])
-      .select('id, house_id, title, detail, status, admin_note, created_at, resolved_at, updated_at, houses(id, house_no, soi, owner_name, resident_name, contact_name, phone, line_id, email)')
+      .select('id, house_id, title, detail, status, admin_note, created_at, resolved_at, houses(id, house_no, soi, owner_name, resident_name, contact_name, phone, line_id, email)')
       .single()
 
     if (fallbackIssueError) throw fallbackIssueError
@@ -503,7 +503,7 @@ export async function listAccountRequests({ status = 'all' } = {}) {
   try {
     let issueQuery = supabase
       .from('issues')
-      .select('id, house_id, title, detail, status, admin_note, created_at, resolved_at, updated_at, houses(id, house_no, soi, owner_name, resident_name, contact_name, phone, line_id, email)')
+      .select('id, house_id, title, detail, status, admin_note, created_at, resolved_at, houses(id, house_no, soi, owner_name, resident_name, contact_name, phone, line_id, email)')
       .order('created_at', { ascending: false })
 
     if (status === 'pending') {
@@ -647,11 +647,10 @@ export async function updateAccountRequestStatus(requestId, { status, adminNote 
       .update({
         status: issueStatus,
         admin_note: adminNote,
-        resolved_at: issueStatus === 'resolved' ? new Date().toISOString() : null,
-        updated_at: new Date().toISOString(),
+        resolved_at: issueStatus === 'pending' ? null : new Date().toISOString(),
       })
       .eq('id', issueId)
-      .select('id, house_id, title, detail, status, admin_note, created_at, resolved_at, updated_at, houses(id, house_no, soi, owner_name, resident_name, contact_name, phone, line_id, email)')
+      .select('id, house_id, title, detail, status, admin_note, created_at, resolved_at, houses(id, house_no, soi, owner_name, resident_name, contact_name, phone, line_id, email)')
       .single()
 
     if (issueError) throw issueError

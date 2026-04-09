@@ -6,6 +6,7 @@ import { insertPageViewLog } from '../../lib/loginLogs'
 import { applyDocumentTitle, getSetupConfig } from '../../lib/setup'
 import { updateUser, getHouseDetail } from '../../lib/users'
 import { listVehicleRequests } from '../../lib/vehicleRequests'
+import { listVehicles } from '../../lib/vehicles'
 import { listAccountRequests } from '../../lib/accountRequests'
 import { listIssues } from '../../lib/issues'
 import Swal from 'sweetalert2'
@@ -93,12 +94,38 @@ const AdminLayout = () => {
         listIssues({ status: 'pending' }),
       ])
 
+      const pendingVehiclesRes = await Promise.allSettled([
+        listVehicles({ status: 'pending' }),
+      ])
+
       const vehicleReqs = vehicleRes.status === 'fulfilled' ? (vehicleRes.value || []) : []
       const accountReqs = accountRes.status === 'fulfilled' ? (accountRes.value || []) : []
       const issues = issuesRes.status === 'fulfilled' ? (issuesRes.value || []) : []
+      const pendingVehicles = pendingVehiclesRes[0].status === 'fulfilled' ? (pendingVehiclesRes[0].value || []) : []
+
+      const vehicleRequestKeySet = new Set(
+        vehicleReqs
+          .filter((row) => row.status === 'pending')
+          .map((row) => [
+            String(row.house_id || ''),
+            String(row.license_plate || '').trim().toLowerCase(),
+            String(row.province || '').trim().toLowerCase(),
+            String(row.vehicle_type || '').trim().toLowerCase(),
+          ].join('|')),
+      )
+
+      const fallbackPendingVehicleCount = pendingVehicles.filter((row) => {
+        const key = [
+          String(row.house_id || ''),
+          String(row.license_plate || '').trim().toLowerCase(),
+          String(row.province || '').trim().toLowerCase(),
+          String(row.vehicle_type || '').trim().toLowerCase(),
+        ].join('|')
+        return !vehicleRequestKeySet.has(key)
+      }).length
 
       setNotifyCounts({
-        requests: vehicleReqs.length + accountReqs.length,
+        requests: vehicleReqs.length + fallbackPendingVehicleCount + accountReqs.length,
         issues: issues.length,
       })
     }
