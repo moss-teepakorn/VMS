@@ -32,6 +32,7 @@ import { listRuleDocuments } from '../../lib/rules'
 import { getHouseDetail, updateUser } from '../../lib/users'
 import { getSetupConfig, applyDocumentTitle } from '../../lib/setup'
 import { insertPageViewLog } from '../../lib/loginLogs'
+import { hasPinEnrollmentForCurrentDevice, resetPinForCurrentDevice } from '../../lib/pinAuth'
 import villageLogo from '../../assets/village-logo.svg'
 import '../admin/AdminLayout.css'
 import '../admin/AdminDashboard.css'
@@ -347,6 +348,9 @@ export default function ResidentLayout() {
   const [passwordSaving, setPasswordSaving] = useState(false)
   const [showNewPw, setShowNewPw] = useState(false)
   const [showConfPw, setShowConfPw] = useState(false)
+  const [pinEnabledOnDevice, setPinEnabledOnDevice] = useState(false)
+  const [pinStatusLoading, setPinStatusLoading] = useState(false)
+  const [pinResetting, setPinResetting] = useState(false)
 
   const [techSearch, setTechSearch] = useState('')
   const [selectedTech, setSelectedTech] = useState(null)
@@ -458,6 +462,27 @@ export default function ResidentLayout() {
       })
     }
   }, [profile])
+
+  useEffect(() => {
+    let mounted = true
+    if (!profile?.id) {
+      setPinEnabledOnDevice(false)
+      return () => {}
+    }
+
+    setPinStatusLoading(true)
+    hasPinEnrollmentForCurrentDevice()
+      .then((enabled) => {
+        if (mounted) setPinEnabledOnDevice(Boolean(enabled))
+      })
+      .finally(() => {
+        if (mounted) setPinStatusLoading(false)
+      })
+
+    return () => {
+      mounted = false
+    }
+  }, [profile?.id])
 
   useEffect(() => {
     if (!profile?.id) return
@@ -1887,6 +1912,31 @@ export default function ResidentLayout() {
       await showSwal({ icon: 'error', title: 'ไม่สำเร็จ', text: error.message })
     } finally {
       setPasswordSaving(false)
+    }
+  }
+
+  async function handleResetPinForThisDevice() {
+    if (!profile?.id) return
+
+    const { isConfirmed } = await showSwal({
+      icon: 'warning',
+      title: 'รีเซ็ต PIN อุปกรณ์นี้?',
+      text: 'หลังรีเซ็ต ต้องเข้าสู่ระบบด้วยรหัสผ่านและตั้ง PIN ใหม่',
+      showCancelButton: true,
+      confirmButtonText: 'รีเซ็ต PIN',
+      cancelButtonText: 'ยกเลิก',
+    })
+    if (!isConfirmed) return
+
+    setPinResetting(true)
+    try {
+      await resetPinForCurrentDevice({ userId: profile.id })
+      setPinEnabledOnDevice(false)
+      await showSwal({ icon: 'success', title: 'รีเซ็ต PIN แล้ว', timer: 1400, showConfirmButton: false })
+    } catch (error) {
+      await showSwal({ icon: 'error', title: 'รีเซ็ต PIN ไม่สำเร็จ', text: error.message })
+    } finally {
+      setPinResetting(false)
     }
   }
 
@@ -3432,6 +3482,27 @@ export default function ResidentLayout() {
                         {passwordSaving ? 'กำลังเปลี่ยน...' : '🔒 เปลี่ยนรหัสผ่าน'}
                       </button>
                     </form>
+                  </div>
+                </div>
+
+                <div className="card">
+                  <div className="ch"><div className="ch-ico">🔐</div><div className="ct">PIN อุปกรณ์นี้</div></div>
+                  <div className="cb">
+                    <div className="al al-i">
+                      {pinStatusLoading
+                        ? 'กำลังตรวจสอบสถานะ PIN...'
+                        : pinEnabledOnDevice
+                          ? 'สถานะ: เปิดใช้งาน PIN บนอุปกรณ์นี้'
+                          : 'สถานะ: ยังไม่ได้เปิดใช้งาน PIN บนอุปกรณ์นี้'}
+                    </div>
+                    <button
+                      className="btn btn-a btn-sm"
+                      type="button"
+                      onClick={handleResetPinForThisDevice}
+                      disabled={pinResetting || pinStatusLoading || !pinEnabledOnDevice}
+                    >
+                      {pinResetting ? 'กำลังรีเซ็ต...' : 'รีเซ็ต PIN อุปกรณ์นี้'}
+                    </button>
                   </div>
                 </div>
               </div>

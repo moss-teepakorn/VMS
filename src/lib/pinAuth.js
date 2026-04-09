@@ -168,3 +168,26 @@ export async function verifyPinForCurrentDevice({ username, pin }) {
   setPinUsernameHint(profile.username)
   return profile
 }
+
+export async function resetPinForCurrentDevice({ userId }) {
+  if (!userId) throw new Error('ไม่พบผู้ใช้งาน')
+
+  const deviceId = getOrCreateDeviceId()
+  const { error } = await supabase
+    .from(PIN_TABLE)
+    .update({
+      is_active: false,
+      failed_attempts: 0,
+      locked_until: null,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('user_id', userId)
+    .eq('device_id', deviceId)
+    .eq('is_active', true)
+
+  if (error) {
+    throw new Error(`รีเซ็ต PIN ไม่สำเร็จ: ${error.message}`)
+  }
+
+  return true
+}
