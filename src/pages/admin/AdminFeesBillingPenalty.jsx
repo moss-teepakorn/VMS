@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react'
 import StyledSelect from '../../components/StyledSelect'
 import Swal from 'sweetalert2'
 import { getSystemConfig } from '../../lib/systemConfig'
+import { getPaymentCycleConfigByYear } from '../../lib/paymentCycles'
 import { calculateOverdueFeesByIds, listFees, processHalfYearFeesAllHouses } from '../../lib/fees'
 
 function toBE(yearCE) {
@@ -32,10 +33,52 @@ export default function AdminFeesBillingPenalty() {
   })
   const [invoiceSummary, setInvoiceSummary] = useState(null)
   const [overdueSummary, setOverdueSummary] = useState(null)
+  const [periodOptions, setPeriodOptions] = useState([
+    { value: 'first_half', label: 'ครึ่งปีแรก (1/1 - 30/6)' },
+    { value: 'second_half', label: 'ครึ่งปีหลัง (1/7 - 31/12)' },
+  ])
 
   useEffect(() => {
     getSystemConfig().then(setSetup).catch(() => {})
   }, [])
+
+  useEffect(() => {
+    const syncPeriodOptions = async () => {
+      const yearCE = toGregorianYear(processForm.yearBE)
+      if (!yearCE) return
+
+      try {
+        const cycleConfig = await getPaymentCycleConfigByYear(yearCE)
+        if (!cycleConfig || cycleConfig.frequency !== 'half_yearly') {
+          setPeriodOptions([
+            { value: 'first_half', label: 'ครึ่งปีแรก (1/1 - 30/6)' },
+            { value: 'second_half', label: 'ครึ่งปีหลัง (1/7 - 31/12)' },
+          ])
+          return
+        }
+
+        const p1 = (cycleConfig.periods || []).find((row) => Number(row.seq_no) === 1)
+        const p2 = (cycleConfig.periods || []).find((row) => Number(row.seq_no) === 2)
+
+        const formatRange = (row, fallback) => {
+          if (!row?.start_date || !row?.end_date) return fallback
+          return `${row.period_label || fallback} (${row.start_date} - ${row.end_date})`
+        }
+
+        setPeriodOptions([
+          { value: 'first_half', label: formatRange(p1, 'ครึ่งปีแรก') },
+          { value: 'second_half', label: formatRange(p2, 'ครึ่งปีหลัง') },
+        ])
+      } catch {
+        setPeriodOptions([
+          { value: 'first_half', label: 'ครึ่งปีแรก (1/1 - 30/6)' },
+          { value: 'second_half', label: 'ครึ่งปีหลัง (1/7 - 31/12)' },
+        ])
+      }
+    }
+
+    syncPeriodOptions()
+  }, [processForm.yearBE])
 
   const processYearOptions = useMemo(() => {
     const currentBE = new Date().getFullYear() + 543
@@ -199,8 +242,9 @@ export default function AdminFeesBillingPenalty() {
             <label className="house-field">
               <span>รอบ</span>
               <StyledSelect value={processForm.period} onChange={(e) => setProcessForm((prev) => ({ ...prev, period: e.target.value }))}>
-                <option value="first_half">ครึ่งปีแรก (1/1 - 30/6)</option>
-                <option value="second_half">ครึ่งปีหลัง (1/7 - 31/12)</option>
+                {periodOptions.map((item) => (
+                  <option key={item.value} value={item.value}>{item.label}</option>
+                ))}
               </StyledSelect>
             </label>
             <label className="house-field" style={{ justifyContent: 'center', display: 'flex', alignItems: 'center', gap: 8 }}>

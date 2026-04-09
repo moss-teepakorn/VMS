@@ -520,8 +520,6 @@ const AdminConfig = () => {
               <div className="ch"><div className="ct">การตั้งค่าค่าบริการ</div></div>
               <div className="cb cfg-section-body cfg-grid cfg-grid-3">
                 <label className="cfg-field"><span>อัตราค่าส่วนกลาง/ตร.ว.</span><input type="number" name="fee_rate_per_sqw" value={form.fee_rate_per_sqw ?? ''} onChange={handleChange} /></label>
-                <label className="cfg-field"><span>รอบเก็บ/ปี</span><input type="number" name="fee_periods_per_year" value={form.fee_periods_per_year ?? ''} onChange={handleChange} /></label>
-                <label className="cfg-field"><span>วันครบกำหนดชำระ</span><input type="number" name="fee_due_day" value={form.fee_due_day ?? ''} onChange={handleChange} /></label>
                 <label className="cfg-field"><span>ค่าขยะ/รอบ</span><input type="number" name="waste_fee_per_period" value={form.waste_fee_per_period ?? ''} onChange={handleChange} /></label>
                 <label className="cfg-field"><span>ค่าจอด/คัน</span><input type="number" name="parking_fee_per_vehicle" value={form.parking_fee_per_vehicle ?? ''} onChange={handleChange} /></label>
                 <label className="cfg-field"><span>ค่าทวงถาม</span><input type="number" name="notice_fee" value={form.notice_fee ?? ''} onChange={handleChange} /></label>
@@ -533,7 +531,6 @@ const AdminConfig = () => {
               <div className="cb cfg-section-body cfg-grid cfg-grid-3">
                 <label className="cfg-field"><span>ส่วนลดจ่ายเร็ว (%)</span><input type="number" name="early_pay_discount_pct" value={form.early_pay_discount_pct ?? ''} onChange={handleChange} /></label>
                 <label className="cfg-field"><span>ค่าปรับค้างชำระ (%)</span><input type="number" name="overdue_fine_pct" value={form.overdue_fine_pct ?? ''} onChange={handleChange} /></label>
-                <label className="cfg-field"><span>ผ่อนผัน (วัน)</span><input type="number" name="overdue_grace_days" value={form.overdue_grace_days ?? ''} onChange={handleChange} /></label>
                 <label className="cfg-field cfg-span-full"><span>ข้อความท้ายใบแจ้งหนี้</span><textarea name="invoice_message" rows="2" placeholder="ข้อความแสดงท้ายใบแจ้งหนี้" value={form.invoice_message || ''} onChange={handleChange} /></label>
                 <label className="cfg-field"><span>รูปแบบวันที่</span><input name="date_format" placeholder="เช่น DD/MM/YYYY (พ.ศ.)" value={form.date_format || ''} onChange={handleChange} /></label>
                 <label className="cfg-field"><span>ภาษา</span><input name="system_language" placeholder="เช่น ภาษาไทย" value={form.system_language || ''} onChange={handleChange} /></label>

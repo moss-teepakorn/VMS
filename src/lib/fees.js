@@ -131,6 +131,134 @@ function halfYearDates(yearCE, period) {
   }
 }
 
+async function getPaymentCycleConfigByYearCE(yearCE) {
+  const targetYear = Number(yearCE)
+  if (!Number.isFinite(targetYear) || targetYear <= 0) return null
+
+  const { data: config, error: configError } = await supabase
+    .from('payment_cycle_configs')
+    .select('id, year_ce, frequency, is_active')
+    .eq('year_ce', targetYear)
+    .maybeSingle()
+
+  if (configError) throw configError
+  if (!config || config.is_active === false) return null
+
+  const { data: periods, error: periodsError } = await supabase
+    .from('payment_cycle_periods')
+    .select('seq_no, period_label, start_date, end_date, due_date, due_year_offset, enable_penalty, penalty_start_date, penalty_year_offset')
+    .eq('config_id', config.id)
+    .order('seq_no', { ascending: true })
+
+  if (periodsError) throw periodsError
+
+  return {
+    ...config,
+    periods: periods || [],
+  }
+}
+
+function getHalfYearPeriodRowFromCycle(cycleConfig, period) {
+  if (!cycleConfig || !Array.isArray(cycleConfig.periods)) return null
+  if (cycleConfig.frequency !== 'half_yearly') return null
+  if (period === 'first_half') return cycleConfig.periods.find((row) => Number(row.seq_no) === 1) || null
+  if (period === 'second_half') return cycleConfig.periods.find((row) => Number(row.seq_no) === 2) || null
+  return null
+}
+
+function resolveHalfYearDatesFromCycle(yearCE, period, cycleConfig) {
+  const fallback = halfYearDates(yearCE, period)
+  const periodRow = getHalfYearPeriodRowFromCycle(cycleConfig, period)
+  if (!periodRow) return fallback
+
+  return {
+    invoice_date: periodRow.start_date || fallback.invoice_date,
+    due_date: periodRow.due_date || fallback.due_date,
+  }
+}
+
+async function preloadCycleConfigByYears(years = [], cycleConfigByYear = {}) {
+  const targets = [...new Set((Array.isArray(years) ? years : [])
+    .map((year) => Number(year))
+    .filter((year) => Number.isFinite(year) && year > 0))]
+
+  if (targets.length === 0) return { ...(cycleConfigByYear || {}) }
+
+  const resultMap = { ...(cycleConfigByYear || {}) }
+  const missingYears = targets.filter((year) => !Object.prototype.hasOwnProperty.call(resultMap, String(year)))
+  if (missingYears.length === 0) return resultMap
+
+  const { data: configs, error: configError } = await supabase
+    .from('payment_cycle_configs')
+    .select('id, year_ce, frequency, is_active')
+    .in('year_ce', missingYears)
+
+  if (configError) throw configError
+
+  const activeConfigs = (configs || []).filter((row) => row.is_active !== false)
+  const configIdList = activeConfigs.map((row) => row.id).filter(Boolean)
+
+  let periodsByConfigId = new Map()
+  if (configIdList.length > 0) {
+    const { data: periodRows, error: periodError } = await supabase
+      .from('payment_cycle_periods')
+      .select('config_id, seq_no, period_label, start_date, end_date, due_date, due_year_offset, enable_penalty, penalty_start_date, penalty_year_offset')
+      .in('config_id', configIdList)
+      .order('seq_no', { ascending: true })
+
+    if (periodError) throw periodError
+
+    periodsByConfigId = (periodRows || []).reduce((acc, row) => {
+      const key = String(row.config_id || '')
+      const current = acc.get(key) || []
+      current.push(row)
+      acc.set(key, current)
+      return acc
+    }, new Map())
+  }
+
+  for (const year of missingYears) {
+    const config = activeConfigs.find((row) => Number(row.year_ce) === Number(year))
+    if (!config) {
+      resultMap[String(year)] = null
+      continue
+    }
+
+    resultMap[String(year)] = {
+      ...config,
+      periods: periodsByConfigId.get(String(config.id)) || [],
+    }
+  }
+
+  return resultMap
+}
+
+function resolvePenaltyPolicyForFee(fee, cycleConfigByYear = {}) {
+  const year = Number(fee?.year || 0)
+  if (!year) return { enabled: null, penaltyStartDate: null }
+
+  const cycleConfig = cycleConfigByYear[String(year)]
+  if (!cycleConfig || !Array.isArray(cycleConfig.periods)) {
+    return { enabled: null, penaltyStartDate: null }
+  }
+
+  let periodRow = null
+  if (fee?.period === 'first_half') {
+    periodRow = getHalfYearPeriodRowFromCycle(cycleConfig, 'first_half')
+  } else if (fee?.period === 'second_half') {
+    periodRow = getHalfYearPeriodRowFromCycle(cycleConfig, 'second_half')
+  } else if (fee?.period === 'full_year' && cycleConfig.frequency === 'yearly') {
+    periodRow = cycleConfig.periods.find((row) => Number(row.seq_no) === 1) || null
+  }
+
+  if (!periodRow) return { enabled: null, penaltyStartDate: null }
+
+  return {
+    enabled: Boolean(periodRow.enable_penalty),
+    penaltyStartDate: periodRow.penalty_start_date || null,
+  }
+}
+
 function getNextHalfYearPeriod(yearCE, period) {
   if (period === 'first_half') {
     return { year: yearCE, period: 'second_half' }
@@ -297,7 +425,7 @@ export async function createFee(payload) {
   return data
 }
 
-export async function processHalfYearFeesAllHouses({ yearBE, period, setup, overwritePending = false }) {
+export async function processHalfYearFeesAllHouses({ yearBE, period, setup, overwritePending = false, cycleConfig = null }) {
   const yearCE = toGregorianYear(yearBE)
   if (!yearCE) throw new Error('ปีไม่ถูกต้อง')
   if (!['first_half', 'second_half'].includes(period)) {
@@ -334,7 +462,8 @@ export async function processHalfYearFeesAllHouses({ yearBE, period, setup, over
   const wastePerPeriod = toAmount(setup?.waste_fee_per_period)
   const finePct = toAmount(setup?.overdue_fine_pct)
   const noticeFee = round2(toAmount(setup?.notice_fee))
-  const dates = halfYearDates(yearCE, period)
+  const resolvedCycleConfig = cycleConfig || await getPaymentCycleConfigByYearCE(yearCE)
+  const dates = resolveHalfYearDatesFromCycle(yearCE, period, resolvedCycleConfig)
 
   // Fields required for accurate carry-forward calculation
   const CARRY_SELECT = 'id, house_id, status, fee_common, fee_overdue_common, fee_overdue_notice, fee_notice, note'
@@ -635,7 +764,7 @@ export async function calculateFullYearFeeByHouse({ houseId, year, setup }) {
 export async function calculateOverdueFeeCharges(feeId, setup) {
   const { data: fee, error: feeError } = await supabase
     .from('fees')
-    .select('id, status, due_date, fee_common, fee_overdue_common')
+    .select('id, year, period, status, due_date, fee_common, fee_overdue_common')
     .eq('id', feeId)
     .single()
 
@@ -649,7 +778,9 @@ export async function calculateOverdueFeeCharges(feeId, setup) {
     throw new Error('ใบแจ้งหนี้ถูกยกเลิกโดยระบบ ไม่สามารถคำนวณค่าปรับได้')
   }
 
-  const updatePayload = buildOverdueUpdatePayload(fee, setup)
+  const cycleConfigByYear = await preloadCycleConfigByYears([fee?.year], {})
+  const penaltyPolicy = resolvePenaltyPolicyForFee(fee, cycleConfigByYear)
+  const updatePayload = buildOverdueUpdatePayload(fee, setup, penaltyPolicy)
 
   if (!updatePayload) {
     throw new Error('ยังไม่ถึงเงื่อนไขการคำนวณค่าปรับ')
@@ -669,7 +800,7 @@ export async function calculateOverdueFeeCharges(feeId, setup) {
 export async function calculateOverdueFeesBulk({ year, setup } = {}) {
   let query = supabase
     .from('fees')
-    .select('id, status, due_date, fee_common, fee_overdue_common')
+    .select('id, year, period, status, due_date, fee_common, fee_overdue_common')
 
   if (year && year !== 'all') {
     query = query.eq('year', Number(year))
@@ -677,6 +808,8 @@ export async function calculateOverdueFeesBulk({ year, setup } = {}) {
 
   const { data, error } = await query
   if (error) throw error
+
+  const cycleConfigByYear = await preloadCycleConfigByYears((data || []).map((row) => row?.year), {})
 
   let updated = 0
   let skippedPaid = 0
@@ -693,7 +826,8 @@ export async function calculateOverdueFeesBulk({ year, setup } = {}) {
       continue
     }
 
-    const updatePayload = buildOverdueUpdatePayload(fee, setup)
+    const penaltyPolicy = resolvePenaltyPolicyForFee(fee, cycleConfigByYear)
+    const updatePayload = buildOverdueUpdatePayload(fee, setup, penaltyPolicy)
     if (!updatePayload) {
       skippedNotDue += 1
       continue
@@ -724,10 +858,12 @@ export async function calculateOverdueFeesByIds({ feeIds, setup } = {}) {
 
   const { data, error } = await supabase
     .from('fees')
-    .select('id, status, due_date, fee_common, fee_overdue_common')
+    .select('id, year, period, status, due_date, fee_common, fee_overdue_common')
     .in('id', ids)
 
   if (error) throw error
+
+  const cycleConfigByYear = await preloadCycleConfigByYears((data || []).map((row) => row?.year), {})
 
   let updated = 0
   let skippedPaid = 0
@@ -744,7 +880,8 @@ export async function calculateOverdueFeesByIds({ feeIds, setup } = {}) {
       continue
     }
 
-    const updatePayload = buildOverdueUpdatePayload(fee, setup)
+    const penaltyPolicy = resolvePenaltyPolicyForFee(fee, cycleConfigByYear)
+    const updatePayload = buildOverdueUpdatePayload(fee, setup, penaltyPolicy)
     if (!updatePayload) {
       skippedNotDue += 1
       continue
@@ -1387,12 +1524,19 @@ export function summarizeFees(fees, payments) {
   }
 }
 
-function buildOverdueUpdatePayload(fee, setup) {
+function buildOverdueUpdatePayload(fee, setup, penaltyPolicy = { enabled: null, penaltyStartDate: null }) {
   const finePct = toAmount(setup?.overdue_fine_pct)
   const noticeFee = round2(toAmount(setup?.notice_fee))
 
   const now = new Date()
   const dueOver = fee?.due_date ? now > new Date(`${fee.due_date}T23:59:59`) : false
+  let penaltyOver = dueOver
+
+  if (penaltyPolicy?.enabled === false) {
+    penaltyOver = false
+  } else if (penaltyPolicy?.enabled === true && penaltyPolicy?.penaltyStartDate) {
+    penaltyOver = now > new Date(`${penaltyPolicy.penaltyStartDate}T23:59:59`)
+  }
 
   const carryBase = toAmount(fee?.fee_overdue_common)
   const currentBase = toAmount(fee?.fee_common)
@@ -1400,8 +1544,8 @@ function buildOverdueUpdatePayload(fee, setup) {
   const overdueFineCarry = carryBase > 0 ? round2(carryBase * (finePct / 100)) : 0
   const overdueNoticeCarry = carryBase > 0 ? noticeFee : 0
 
-  const overdueFineCurrent = dueOver && currentBase > 0 ? round2(currentBase * (finePct / 100)) : 0
-  const overdueNoticeCurrent = dueOver && currentBase > 0 ? noticeFee : 0
+  const overdueFineCurrent = penaltyOver && currentBase > 0 ? round2(currentBase * (finePct / 100)) : 0
+  const overdueNoticeCurrent = penaltyOver && currentBase > 0 ? noticeFee : 0
 
   const hasAnyCharge = overdueFineCarry > 0 || overdueNoticeCarry > 0 || overdueFineCurrent > 0 || overdueNoticeCurrent > 0
   if (!hasAnyCharge) return null
