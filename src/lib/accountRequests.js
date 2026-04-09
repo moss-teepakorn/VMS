@@ -187,6 +187,15 @@ function isFallbackAccountRequestId(requestId) {
   return String(requestId || '').startsWith(FALLBACK_ACCOUNT_REQUEST_PREFIX)
 }
 
+async function hasSupabaseSession() {
+  try {
+    const { data } = await supabase.auth.getSession()
+    return Boolean(data?.session)
+  } catch {
+    return false
+  }
+}
+
 function getProfileIdFromFallbackRequestId(requestId) {
   if (!isFallbackAccountRequestId(requestId)) return null
   return String(requestId || '').slice(FALLBACK_ACCOUNT_REQUEST_PREFIX.length) || null
@@ -256,6 +265,35 @@ async function ensureNoPendingInactiveResidentByHouse(houseId) {
   if (pendingProfile) {
     throw new Error('บ้านนี้มีบัญชีที่ยังไม่ได้อนุมัติอยู่แล้ว กรุณารอผู้ดูแลระบบดำเนินการ')
   }
+}
+
+async function createHouseProfileUpdateFallbackIssue({ profileId, houseId, profileRow, payload }) {
+  const issuePayloadText = `${HOUSE_PROFILE_ISSUE_PREFIX}${JSON.stringify({
+    profile_id: profileId,
+    requested_username: profileRow.username || null,
+    payload,
+  })}`
+
+  const { data: fallbackIssue, error: fallbackIssueError } = await supabase
+    .from('issues')
+    .insert([{
+      house_id: houseId,
+      title: 'คำขอแก้ไขข้อมูลส่วนตัว',
+      detail: issuePayloadText,
+      category: 'ทั่วไป',
+      status: 'pending',
+    }])
+    .select('id, house_id, title, detail, status, admin_note, created_at, resolved_at, houses(id, house_no, soi, owner_name, resident_name, contact_name, phone, line_id, email)')
+    .single()
+
+  if (fallbackIssueError) throw fallbackIssueError
+
+  const mapped = mapFallbackIssueToHouseProfileRequest(
+    fallbackIssue,
+    new Map([[String(profileRow.id), profileRow]]),
+  )
+  if (!mapped) throw new Error('สร้างคำขอสำรองไม่สำเร็จ')
+  return mapped
 }
 
 export async function createAccountRegistrationRequest({ username, houseNo, phone, password }) {
@@ -391,6 +429,16 @@ export async function createHouseProfileUpdateRequest({ profileId, houseId, payl
     throw new Error('มีคำขอแก้ไขข้อมูลบ้านที่รออนุมัติอยู่แล้ว')
   }
 
+  const hasSession = await hasSupabaseSession()
+  if (!hasSession) {
+    return createHouseProfileUpdateFallbackIssue({
+      profileId,
+      houseId,
+      profileRow,
+      payload: nextPayload,
+    })
+  }
+
   const serializedPayload = `${HOUSE_PROFILE_UPDATE_PREFIX}${JSON.stringify(nextPayload)}`
 
   const { data, error } = await supabase
@@ -409,33 +457,12 @@ export async function createHouseProfileUpdateRequest({ profileId, houseId, payl
 
   if (error) {
     if (!isAccountRequestInsertDenied(error) && !isHouseProfileRequestInsertUnsupported(error)) throw error
-
-    const issuePayloadText = `${HOUSE_PROFILE_ISSUE_PREFIX}${JSON.stringify({
-      profile_id: profileId,
-      requested_username: profileRow.username || null,
+    return createHouseProfileUpdateFallbackIssue({
+      profileId,
+      houseId,
+      profileRow,
       payload: nextPayload,
-    })}`
-
-    const { data: fallbackIssue, error: fallbackIssueError } = await supabase
-      .from('issues')
-      .insert([{
-        house_id: houseId,
-        title: 'คำขอแก้ไขข้อมูลส่วนตัว',
-        detail: issuePayloadText,
-        category: 'ทั่วไป',
-        status: 'pending',
-      }])
-      .select('id, house_id, title, detail, status, admin_note, created_at, resolved_at, houses(id, house_no, soi, owner_name, resident_name, contact_name, phone, line_id, email)')
-      .single()
-
-    if (fallbackIssueError) throw fallbackIssueError
-
-    const mapped = mapFallbackIssueToHouseProfileRequest(
-      fallbackIssue,
-      new Map([[String(profileRow.id), profileRow]]),
-    )
-    if (!mapped) throw new Error('สร้างคำขอสำรองไม่สำเร็จ')
-    return mapped
+    })
   }
   return data
 }
@@ -451,19 +478,22 @@ export async function listHouseProfileUpdateRequestsByProfile(profileId, { statu
 
   if (profileError) throw profileError
 
-  let query = supabase
-    .from('account_requests')
-    .select(ACCOUNT_REQUEST_SELECT)
-    .eq('profile_id', profileId)
-    .eq('request_type', 'house_profile_update')
-    .order('created_at', { ascending: false })
+  const hasSession = await hasSupabaseSession()
+  let requestRows = []
+  if (hasSession) {
+    let query = supabase
+      .from('account_requests')
+      .select(ACCOUNT_REQUEST_SELECT)
+      .eq('profile_id', profileId)
+      .eq('request_type', 'house_profile_update')
+      .order('created_at', { ascending: false })
 
-  if (status !== 'all') query = query.eq('status', status)
+    if (status !== 'all') query = query.eq('status', status)
 
-  const { data, error } = await query
-  if (error && !isAccountRequestInsertDenied(error)) throw error
-
-  const requestRows = error ? [] : (data || [])
+    const { data, error } = await query
+    if (error && !isAccountRequestInsertDenied(error)) throw error
+    requestRows = error ? [] : (data || [])
+  }
   const fallbackIssues = profileRow?.house_id
     ? await listFallbackHouseProfileIssuesByHouse(profileRow.house_id)
     : []
@@ -480,23 +510,27 @@ export async function listHouseProfileUpdateRequestsByProfile(profileId, { statu
 }
 
 export async function listAccountRequests({ status = 'all' } = {}) {
-  let query = supabase
-    .from('account_requests')
-    .select(ACCOUNT_REQUEST_SELECT)
-    .order('created_at', { ascending: false })
+  const hasSession = await hasSupabaseSession()
+  let requestRows = []
+  if (hasSession) {
+    let query = supabase
+      .from('account_requests')
+      .select(ACCOUNT_REQUEST_SELECT)
+      .order('created_at', { ascending: false })
 
-  if (status !== 'all') query = query.eq('status', status)
+    if (status !== 'all') query = query.eq('status', status)
 
-  const { data, error } = await query
+    const { data, error } = await query
 
-  let requestRows = data || []
-  if (error) {
-    const msg = String(error.message || '').toLowerCase()
-    const isMissingTable = msg.includes('account_requests') && (msg.includes('does not exist') || msg.includes('relation'))
-    if (!isMissingTable && !isAccountRequestInsertDenied(error)) {
-      throw error
+    requestRows = data || []
+    if (error) {
+      const msg = String(error.message || '').toLowerCase()
+      const isMissingTable = msg.includes('account_requests') && (msg.includes('does not exist') || msg.includes('relation'))
+      if (!isMissingTable && !isAccountRequestInsertDenied(error)) {
+        throw error
+      }
+      requestRows = []
     }
-    requestRows = []
   }
 
   let fallbackHouseProfileRows = []
@@ -573,18 +607,22 @@ export async function listAccountRequests({ status = 'all' } = {}) {
     return requestRows
   }
 
-  const { data: relatedRequests, error: relatedRequestsError } = await supabase
-    .from('account_requests')
-    .select('profile_id')
-    .eq('request_type', 'register')
-    .in('profile_id', profileIds)
+  let relatedRequests = []
+  if (hasSession) {
+    const { data: relatedData, error: relatedRequestsError } = await supabase
+      .from('account_requests')
+      .select('profile_id')
+      .eq('request_type', 'register')
+      .in('profile_id', profileIds)
 
-  if (relatedRequestsError) {
-    const msg = String(relatedRequestsError.message || '').toLowerCase()
-    const isMissingTable = msg.includes('account_requests') && (msg.includes('does not exist') || msg.includes('relation'))
-    if (!isMissingTable && !isAccountRequestInsertDenied(relatedRequestsError)) {
-      throw relatedRequestsError
+    if (relatedRequestsError) {
+      const msg = String(relatedRequestsError.message || '').toLowerCase()
+      const isMissingTable = msg.includes('account_requests') && (msg.includes('does not exist') || msg.includes('relation'))
+      if (!isMissingTable && !isAccountRequestInsertDenied(relatedRequestsError)) {
+        throw relatedRequestsError
+      }
     }
+    relatedRequests = relatedData || []
   }
 
   const relatedProfileIdSet = new Set((relatedRequests || []).map((row) => String(row.profile_id || '')).filter(Boolean))
