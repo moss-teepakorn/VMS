@@ -13,6 +13,9 @@ import {
   approveAccountRequest,
   updateAccountRequestStatus,
   cancelAccountRequest,
+  extractHouseProfileUpdatePayload,
+  extractHouseProfileUpdateRejectReason,
+  rejectHouseProfileUpdateRequest,
 } from '../../lib/accountRequests'
 import { useAuth } from '../../contexts/AuthContext'
 
@@ -48,6 +51,7 @@ const CATEGORY_LIST = [
   { key: 'vehicle_add', icon: '🆕', label: 'ขอเพิ่มรถ' },
   { key: 'vehicle_edit', icon: '✏️', label: 'ขอแก้ไขรถ' },
   { key: 'account_register', icon: '👤', label: 'ลงทะเบียนผู้ใช้งาน' },
+  { key: 'house_profile_update', icon: '🏠', label: 'แก้ไขข้อมูลส่วนตัว' },
 ]
 
 const AdminRequests = () => {
@@ -143,13 +147,15 @@ const AdminRequests = () => {
     }
     if (categoryFilter === 'vehicle_edit') return request.__kind === 'vehicle' && request.request_type === 'edit'
     if (categoryFilter === 'account_register') return request.__kind === 'account' && request.request_type === 'register'
+    if (categoryFilter === 'house_profile_update') return request.__kind === 'account' && request.request_type === 'house_profile_update'
     return true
   })
 
   const pendingVehicleAddCount = vehicleRequests.filter((request) => request.status === 'pending' && request.request_type === 'add').length + adminPendingVehicles.length
   const pendingVehicleEditCount = vehicleRequests.filter((request) => request.status === 'pending' && request.request_type === 'edit').length
   const pendingAccountRegisterCount = accountRequests.filter((request) => request.status === 'pending' && request.request_type === 'register').length
-  const pendingAllCount = pendingVehicleAddCount + pendingVehicleEditCount + pendingAccountRegisterCount
+  const pendingHouseProfileUpdateCount = accountRequests.filter((request) => request.status === 'pending' && request.request_type === 'house_profile_update').length
+  const pendingAllCount = pendingVehicleAddCount + pendingVehicleEditCount + pendingAccountRegisterCount + pendingHouseProfileUpdateCount
 
   function getApprovalDraft(req) {
     return approvalDrafts[req.id] || {
@@ -230,10 +236,13 @@ const AdminRequests = () => {
   }
 
   async function handleApproveAccount(req) {
+    const isHouseProfileUpdateRequest = req.request_type === 'house_profile_update'
     const { isConfirmed } = await showSwal({
       icon: 'question',
-      title: 'อนุมัติคำขอลงทะเบียน?',
-      text: `จะเปิดใช้งานบัญชี ${req.requested_username || req.profiles?.username || '-'}`,
+      title: isHouseProfileUpdateRequest ? 'อนุมัติคำขอแก้ไขข้อมูลบ้าน?' : 'อนุมัติคำขอลงทะเบียน?',
+      text: isHouseProfileUpdateRequest
+        ? `จะอัปเดตข้อมูลบ้าน ${req.houses?.house_no || '-'} ตามคำขอของลูกบ้าน`
+        : `จะเปิดใช้งานบัญชี ${req.requested_username || req.profiles?.username || '-'}`,
       showCancelButton: true,
       confirmButtonText: 'อนุมัติ',
       cancelButtonText: 'ยกเลิก',
@@ -274,7 +283,11 @@ const AdminRequests = () => {
     try {
       setSaving(true)
       if (req.__kind === 'account') {
-        await updateAccountRequestStatus(req.id, { status: 'rejected', adminNote: reason, reviewedById: profile?.id || null })
+        if (req.request_type === 'house_profile_update') {
+          await rejectHouseProfileUpdateRequest(req.id, { reason, reviewedById: profile?.id || null })
+        } else {
+          await updateAccountRequestStatus(req.id, { status: 'rejected', adminNote: reason, reviewedById: profile?.id || null })
+        }
       } else if (req.__kind === 'vehicle_fallback') {
         await updateVehicle(req.vehicle_id, { status: 'removed', note: reason })
       } else {
@@ -359,7 +372,9 @@ const AdminRequests = () => {
                   ? pendingVehicleAddCount
                   : cat.key === 'vehicle_edit'
                     ? pendingVehicleEditCount
-                    : pendingAccountRegisterCount
+                    : cat.key === 'account_register'
+                      ? pendingAccountRegisterCount
+                      : pendingHouseProfileUpdateCount
 
               return (
                 <div
@@ -403,17 +418,26 @@ const AdminRequests = () => {
                 const badge = getRequestStatusBadge(req.status)
                 const lockAfter = req.status === 'approved' || req.status === 'cancelled'
                 const isAccountRequest = req.__kind === 'account'
+                const isHouseProfileUpdateRequest = isAccountRequest && req.request_type === 'house_profile_update'
                 const isFallbackVehicle = req.__kind === 'vehicle_fallback'
+                const requestedHousePayload = isHouseProfileUpdateRequest
+                  ? (extractHouseProfileUpdatePayload(req.admin_note) || {})
+                  : null
+                const houseRejectReason = isHouseProfileUpdateRequest
+                  ? extractHouseProfileUpdateRejectReason(req.admin_note)
+                  : ''
 
                 return (
                   <div key={`${req.__kind}-${req.id}`} className="card">
                     <div className="ch" style={{ flexWrap: 'wrap', gap: 8 }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8, flex: 1 }}>
-                        <div className="ch-ico">{isAccountRequest ? '👤' : req.request_type === 'add' ? '🆕' : '✏️'}</div>
+                        <div className="ch-ico">{isHouseProfileUpdateRequest ? '🏠' : isAccountRequest ? '👤' : req.request_type === 'add' ? '🆕' : '✏️'}</div>
                         <div>
                           <div className="ct">
                             {isAccountRequest
-                              ? `ลงทะเบียนผู้ใช้งาน — ${req.requested_username || req.profiles?.username || '-'}`
+                              ? (isHouseProfileUpdateRequest
+                                ? `แก้ไขข้อมูลบ้าน — บ้าน ${req.houses?.house_no || '-'} (${req.profiles?.full_name || req.houses?.owner_name || '-'})`
+                                : `ลงทะเบียนผู้ใช้งาน — ${req.requested_username || req.profiles?.username || '-'}`)
                               : `${req.request_type === 'add' ? 'ขอเพิ่มรถ' : 'ขอแก้ไขรถ'} — ${req.license_plate || '-'}`}
                           </div>
                           <div style={{ fontSize: 11.5, color: 'rgba(255,255,255,.65)', marginTop: 2 }}>
@@ -428,12 +452,29 @@ const AdminRequests = () => {
                     <div className="cb" style={{ padding: 14 }}>
                       {isAccountRequest ? (
                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(170px, 1fr))', gap: '6px 14px', marginBottom: 12 }}>
-                          {[
-                            { label: 'Username', value: req.requested_username || req.profiles?.username },
-                            { label: 'บ้านเลขที่', value: req.houses?.house_no },
-                            { label: 'ชื่อเจ้าของบ้าน', value: req.houses?.owner_name },
-                            { label: 'เบอร์โทรบ้าน', value: req.requested_phone || req.houses?.phone },
-                          ].filter((f) => f.value).map((f) => (
+                          {(
+                            isHouseProfileUpdateRequest
+                              ? [
+                                { label: 'บ้านเลขที่', value: req.houses?.house_no },
+                                { label: 'ชื่อเจ้าของบ้าน', value: req.houses?.owner_name },
+                                { label: 'ผู้อยู่อาศัย (เดิม)', value: req.houses?.resident_name || '-' },
+                                { label: 'ผู้อยู่อาศัย (ขอแก้ไข)', value: requestedHousePayload?.resident_name || '-' },
+                                { label: 'ผู้ติดต่อหลัก (เดิม)', value: req.houses?.contact_name || '-' },
+                                { label: 'ผู้ติดต่อหลัก (ขอแก้ไข)', value: requestedHousePayload?.contact_name || '-' },
+                                { label: 'เบอร์โทร (เดิม)', value: req.houses?.phone || '-' },
+                                { label: 'เบอร์โทร (ขอแก้ไข)', value: requestedHousePayload?.phone || '-' },
+                                { label: 'LINE ID (เดิม)', value: req.houses?.line_id || '-' },
+                                { label: 'LINE ID (ขอแก้ไข)', value: requestedHousePayload?.line_id || '-' },
+                                { label: 'Email (เดิม)', value: req.houses?.email || '-' },
+                                { label: 'Email (ขอแก้ไข)', value: requestedHousePayload?.email || '-' },
+                              ]
+                              : [
+                                { label: 'Username', value: req.requested_username || req.profiles?.username },
+                                { label: 'บ้านเลขที่', value: req.houses?.house_no },
+                                { label: 'ชื่อเจ้าของบ้าน', value: req.houses?.owner_name },
+                                { label: 'เบอร์โทรบ้าน', value: req.requested_phone || req.houses?.phone },
+                              ]
+                          ).filter((f) => f.value).map((f) => (
                             <div key={f.label} style={{ fontSize: 12.5 }}>
                               <span style={{ color: 'var(--mu)', fontSize: 11 }}>{f.label}</span>
                               <div style={{ fontWeight: 600, color: 'var(--tx)', marginTop: 1 }}>{f.value}</div>
@@ -518,7 +559,13 @@ const AdminRequests = () => {
                         </>
                       )}
 
-                      {req.admin_note && (
+                      {isHouseProfileUpdateRequest && houseRejectReason && (
+                        <div style={{ background: 'var(--prl)', borderRadius: 8, padding: '8px 12px', marginBottom: 12, fontSize: 12.5, color: 'var(--dg)' }}>
+                          💬 หมายเหตุนิติ: {houseRejectReason}
+                        </div>
+                      )}
+
+                      {req.admin_note && !isHouseProfileUpdateRequest && (
                         <div style={{ background: 'var(--prl)', borderRadius: 8, padding: '8px 12px', marginBottom: 12, fontSize: 12.5, color: 'var(--dg)' }}>
                           💬 หมายเหตุนิติ: {req.admin_note}
                         </div>

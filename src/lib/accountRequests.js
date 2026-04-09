@@ -4,6 +4,8 @@ import { isReservedAdminUsername } from './reservedUsernames'
 import { assertCanActivateResident } from './userLimits'
 
 const FALLBACK_ACCOUNT_REQUEST_PREFIX = 'fallback-profile-'
+const HOUSE_PROFILE_UPDATE_PREFIX = '[HOUSE_PROFILE_UPDATE] '
+const HOUSE_PROFILE_REJECT_PREFIX = '[HOUSE_PROFILE_REJECT] '
 
 function normalizeText(value) {
   return String(value || '').trim()
@@ -15,6 +17,60 @@ function normalizeLower(value) {
 
 function normalizePhoneDigits(value) {
   return normalizeText(value).replace(/[^0-9]/g, '')
+}
+
+function normalizeOptionalValue(value) {
+  const text = String(value ?? '').trim()
+  return text || null
+}
+
+function buildHouseProfileUpdatePayload(input = {}) {
+  return {
+    resident_name: normalizeOptionalValue(input.resident_name),
+    contact_name: normalizeOptionalValue(input.contact_name),
+    phone: normalizeOptionalValue(input.phone),
+    line_id: normalizeOptionalValue(input.line_id),
+    email: normalizeOptionalValue(input.email),
+  }
+}
+
+function hasHouseProfilePayloadValue(payload = {}) {
+  return ['resident_name', 'contact_name', 'phone', 'line_id', 'email']
+    .some((key) => String(payload?.[key] || '').trim().length > 0)
+}
+
+function parseHouseProfilePayloadFromNote(note) {
+  const raw = String(note || '')
+  const inline = raw.startsWith(HOUSE_PROFILE_UPDATE_PREFIX)
+    ? raw.slice(HOUSE_PROFILE_UPDATE_PREFIX.length).trim()
+    : ''
+  const embeddedIdx = raw.indexOf(HOUSE_PROFILE_UPDATE_PREFIX)
+  const embedded = embeddedIdx >= 0
+    ? raw.slice(embeddedIdx + HOUSE_PROFILE_UPDATE_PREFIX.length).trim()
+    : ''
+  const payloadText = inline || embedded
+  if (!payloadText) return null
+
+  try {
+    return buildHouseProfileUpdatePayload(JSON.parse(payloadText))
+  } catch {
+    return null
+  }
+}
+
+function parseHouseProfileRejectReasonFromNote(note) {
+  const raw = String(note || '').trim()
+  if (!raw.startsWith(HOUSE_PROFILE_REJECT_PREFIX)) return ''
+  const firstLine = raw.split('\n')[0]
+  return firstLine.slice(HOUSE_PROFILE_REJECT_PREFIX.length).trim()
+}
+
+export function extractHouseProfileUpdatePayload(note) {
+  return parseHouseProfilePayloadFromNote(note)
+}
+
+export function extractHouseProfileUpdateRejectReason(note) {
+  return parseHouseProfileRejectReasonFromNote(note)
 }
 
 function isAccountRequestInsertDenied(error) {
@@ -202,10 +258,78 @@ export async function createAccountRegistrationRequest({ username, houseNo, phon
   }
 }
 
+export async function createHouseProfileUpdateRequest({ profileId, houseId, payload }) {
+  if (!profileId) throw new Error('ไม่พบข้อมูลผู้ใช้งาน')
+  if (!houseId) throw new Error('ไม่พบบ้านของผู้ใช้งาน')
+
+  const nextPayload = buildHouseProfileUpdatePayload(payload)
+  if (!hasHouseProfilePayloadValue(nextPayload)) {
+    throw new Error('กรุณากรอกข้อมูลที่ต้องการแก้ไขอย่างน้อย 1 รายการ')
+  }
+
+  const { data: profileRow, error: profileError } = await supabase
+    .from('profiles')
+    .select('id, username')
+    .eq('id', profileId)
+    .maybeSingle()
+
+  if (profileError) throw profileError
+  if (!profileRow) throw new Error('ไม่พบข้อมูลผู้ใช้งาน')
+
+  const { data: existingPending, error: pendingError } = await supabase
+    .from('account_requests')
+    .select('id')
+    .eq('profile_id', profileId)
+    .eq('house_id', houseId)
+    .eq('request_type', 'house_profile_update')
+    .eq('status', 'pending')
+    .limit(1)
+
+  if (pendingError) throw pendingError
+  if ((existingPending || []).length > 0) {
+    throw new Error('มีคำขอแก้ไขข้อมูลบ้านที่รออนุมัติอยู่แล้ว')
+  }
+
+  const serializedPayload = `${HOUSE_PROFILE_UPDATE_PREFIX}${JSON.stringify(nextPayload)}`
+
+  const { data, error } = await supabase
+    .from('account_requests')
+    .insert([{
+      request_type: 'house_profile_update',
+      status: 'pending',
+      house_id: houseId,
+      profile_id: profileId,
+      requested_username: profileRow.username || null,
+      requested_phone: nextPayload.phone,
+      admin_note: serializedPayload,
+    }])
+    .select('*, houses(id, house_no, soi, owner_name, phone), profiles(id, username, full_name, is_active, role)')
+    .single()
+
+  if (error) throw error
+  return data
+}
+
+export async function listHouseProfileUpdateRequestsByProfile(profileId, { status = 'all' } = {}) {
+  if (!profileId) return []
+  let query = supabase
+    .from('account_requests')
+    .select('*, houses(id, house_no, soi, owner_name, resident_name, contact_name, phone, line_id, email), profiles(id, username, full_name, is_active, role)')
+    .eq('profile_id', profileId)
+    .eq('request_type', 'house_profile_update')
+    .order('created_at', { ascending: false })
+
+  if (status !== 'all') query = query.eq('status', status)
+
+  const { data, error } = await query
+  if (error) throw error
+  return data || []
+}
+
 export async function listAccountRequests({ status = 'all' } = {}) {
   let query = supabase
     .from('account_requests')
-    .select('*, houses(id, house_no, soi, owner_name, phone), profiles(id, username, full_name, is_active, role)')
+    .select('*, houses(id, house_no, soi, owner_name, resident_name, contact_name, phone, line_id, email), profiles(id, username, full_name, is_active, role)')
     .order('created_at', { ascending: false })
 
   if (status !== 'all') query = query.eq('status', status)
@@ -389,7 +513,7 @@ export async function updateAccountRequestStatus(requestId, { status, adminNote 
     .from('account_requests')
     .update(updates)
     .eq('id', requestId)
-    .select('*, houses(id, house_no, soi, owner_name, phone), profiles(id, username, full_name, is_active, role)')
+    .select('*, houses(id, house_no, soi, owner_name, resident_name, contact_name, phone, line_id, email), profiles(id, username, full_name, is_active, role)')
     .single()
 
   if (error) throw error
@@ -407,13 +531,36 @@ export async function approveAccountRequest(requestId, { reviewedById = null } =
 
   const { data: request, error: requestError } = await supabase
     .from('account_requests')
-    .select('id, profile_id, status')
+    .select('id, profile_id, house_id, status, request_type, admin_note')
     .eq('id', requestId)
     .maybeSingle()
 
   if (requestError) throw requestError
   if (!request) throw new Error('ไม่พบคำขอ')
   if (!request.profile_id) throw new Error('คำขอไม่มีผู้ใช้งานที่เชื่อมโยง')
+
+  if (request.request_type === 'house_profile_update') {
+    const payload = parseHouseProfilePayloadFromNote(request.admin_note)
+    if (!payload || !hasHouseProfilePayloadValue(payload)) {
+      throw new Error('คำขอแก้ไขข้อมูลบ้านไม่มีข้อมูลที่ใช้งานได้')
+    }
+
+    const { error: houseError } = await supabase
+      .from('houses')
+      .update({
+        resident_name: payload.resident_name,
+        contact_name: payload.contact_name,
+        phone: payload.phone,
+        line_id: payload.line_id,
+        email: payload.email,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', request.house_id)
+
+    if (houseError) throw houseError
+
+    return updateAccountRequestStatus(requestId, { status: 'approved', reviewedById })
+  }
 
   const { data: profileBeforeUpdate, error: profileBeforeUpdateError } = await supabase
     .from('profiles')
@@ -434,6 +581,40 @@ export async function approveAccountRequest(requestId, { reviewedById = null } =
   if (profileError) throw profileError
 
   return updateAccountRequestStatus(requestId, { status: 'approved', reviewedById })
+}
+
+export async function rejectHouseProfileUpdateRequest(requestId, { reason, reviewedById = null } = {}) {
+  const rejectReason = String(reason || '').trim()
+  if (!rejectReason) throw new Error('กรุณาระบุเหตุผลการปฏิเสธ')
+
+  const { data: request, error: requestError } = await supabase
+    .from('account_requests')
+    .select('id, request_type, admin_note')
+    .eq('id', requestId)
+    .maybeSingle()
+
+  if (requestError) throw requestError
+  if (!request) throw new Error('ไม่พบคำขอ')
+  if (request.request_type !== 'house_profile_update') {
+    return updateAccountRequestStatus(requestId, {
+      status: 'rejected',
+      adminNote: rejectReason,
+      reviewedById,
+    })
+  }
+
+  const payload = parseHouseProfilePayloadFromNote(request.admin_note)
+  const preservedPayloadText = payload ? `${HOUSE_PROFILE_UPDATE_PREFIX}${JSON.stringify(payload)}` : ''
+  const adminNote = [
+    `${HOUSE_PROFILE_REJECT_PREFIX}${rejectReason}`,
+    preservedPayloadText,
+  ].filter(Boolean).join('\n')
+
+  return updateAccountRequestStatus(requestId, {
+    status: 'rejected',
+    adminNote,
+    reviewedById,
+  })
 }
 
 export async function resetPasswordByIdentity({ username, houseNo, phone, newPassword }) {

@@ -27,6 +27,11 @@ import {
   cancelVehicleRequest,
   deleteVehicleRequestImagesByPaths,
 } from '../../lib/vehicleRequests'
+import {
+  createHouseProfileUpdateRequest,
+  extractHouseProfileUpdateRejectReason,
+  listHouseProfileUpdateRequestsByProfile,
+} from '../../lib/accountRequests'
 import { listIssues, createIssue, uploadIssueImages, updateIssue } from '../../lib/issues'
 import { listRuleDocuments } from '../../lib/rules'
 import { getHouseDetail, updateUser } from '../../lib/users'
@@ -335,6 +340,17 @@ export default function ResidentLayout() {
   const [issues, setIssues] = useState([])
   const [houseDetail, setHouseDetail] = useState(null)
   const [houseDetailLoaded, setHouseDetailLoaded] = useState(false)
+  const [houseProfileRequests, setHouseProfileRequests] = useState([])
+  const [houseProfileRequestsLoaded, setHouseProfileRequestsLoaded] = useState(false)
+  const [showHouseProfileReqModal, setShowHouseProfileReqModal] = useState(false)
+  const [houseProfileReqSaving, setHouseProfileReqSaving] = useState(false)
+  const [houseProfileReqForm, setHouseProfileReqForm] = useState({
+    resident_name: '',
+    contact_name: '',
+    phone: '',
+    line_id: '',
+    email: '',
+  })
 
   const [showIssueForm, setShowIssueForm] = useState(false)
   const [issueForm, setIssueForm] = useState({ title: '', detail: '', category: 'ทั่วไป' })
@@ -519,6 +535,28 @@ export default function ResidentLayout() {
     window.addEventListener('resize', fn)
     return () => window.removeEventListener('resize', fn)
   }, [])
+
+  const loadHouseProfileRequests = useCallback(async () => {
+    if (!profile?.id) {
+      setHouseProfileRequests([])
+      setHouseProfileRequestsLoaded(true)
+      return
+    }
+
+    try {
+      setHouseProfileRequestsLoaded(false)
+      const rows = await listHouseProfileUpdateRequestsByProfile(profile.id)
+      setHouseProfileRequests(rows || [])
+    } catch {
+      setHouseProfileRequests([])
+    } finally {
+      setHouseProfileRequestsLoaded(true)
+    }
+  }, [profile?.id])
+
+  useEffect(() => {
+    loadHouseProfileRequests()
+  }, [loadHouseProfileRequests])
 
   const loadFeeData = useCallback(async (override = {}) => {
     if (!profile?.house_id) return
@@ -1297,6 +1335,11 @@ export default function ResidentLayout() {
   const houseAreaSqw = Number(houseDetail?.area_sqw ?? houseDetail?.area ?? 0)
   const houseAnnualFee = Number(houseDetail?.annual_fee || (houseAreaSqw > 0 ? houseAreaSqw * 12 * Number(houseDetail?.fee_rate || 0) : 0))
   const houseVehicles = vehicles.filter((vehicle) => String(vehicle.house_id) === String(profile?.house_id))
+  const latestHouseProfileRequest = houseProfileRequests[0] || null
+  const pendingHouseProfileRequest = houseProfileRequests.find((item) => item.status === 'pending') || null
+  const latestHouseProfileRejectReason = latestHouseProfileRequest
+    ? extractHouseProfileUpdateRejectReason(latestHouseProfileRequest.admin_note)
+    : ''
   const houseAddressText = [houseDetail?.address]
     .filter(Boolean)
     .join(' · ')
@@ -1882,6 +1925,54 @@ export default function ResidentLayout() {
       setIssues(all.filter((i) => i.house_id === profile.house_id))
     } catch (error) {
       await showSwal({ icon: 'error', title: 'บันทึกคะแนนไม่สำเร็จ', text: error.message })
+    }
+  }
+
+  function openHouseProfileReqModal() {
+    setHouseProfileReqForm({
+      resident_name: houseDetail?.resident_name || '',
+      contact_name: houseDetail?.contact_name || '',
+      phone: houseDetail?.phone || '',
+      line_id: houseDetail?.line_id || '',
+      email: houseDetail?.email || '',
+    })
+    setShowHouseProfileReqModal(true)
+  }
+
+  function closeHouseProfileReqModal() {
+    if (houseProfileReqSaving) return
+    setShowHouseProfileReqModal(false)
+  }
+
+  async function handleSubmitHouseProfileReq(e) {
+    e.preventDefault()
+    if (!profile?.id || !profile?.house_id) {
+      await showSwal({ icon: 'warning', title: 'ไม่พบบ้านของผู้ใช้งาน' })
+      return
+    }
+
+    const payload = {
+      resident_name: houseProfileReqForm.resident_name,
+      contact_name: houseProfileReqForm.contact_name,
+      phone: houseProfileReqForm.phone,
+      line_id: houseProfileReqForm.line_id,
+      email: houseProfileReqForm.email,
+    }
+
+    setHouseProfileReqSaving(true)
+    try {
+      await createHouseProfileUpdateRequest({
+        profileId: profile.id,
+        houseId: profile.house_id,
+        payload,
+      })
+      await loadHouseProfileRequests()
+      setShowHouseProfileReqModal(false)
+      await showSwal({ icon: 'success', title: 'ส่งคำขอแล้ว', text: 'ระบบส่งคำขอให้นิติพิจารณาแล้ว', timer: 1500, showConfirmButton: false })
+    } catch (error) {
+      await showSwal({ icon: 'error', title: 'ส่งคำขอไม่สำเร็จ', text: error.message })
+    } finally {
+      setHouseProfileReqSaving(false)
     }
   }
 
@@ -2566,8 +2657,30 @@ export default function ResidentLayout() {
                       <div className="ph-sub">บ้าน {houseDetail?.house_no || houseNo}</div>
                     </div>
                   </div>
+                  <div className="ph-acts" style={{ gap: 8 }}>
+                    <button className="btn btn-p btn-sm" onClick={openHouseProfileReqModal} disabled={Boolean(pendingHouseProfileRequest) || !houseDetailLoaded}>
+                      {pendingHouseProfileRequest ? 'รออนุมัติคำขออยู่' : '📝 ขอแก้ไขข้อมูลบ้าน'}
+                    </button>
+                  </div>
                 </div>
               </div>
+
+              {houseProfileRequestsLoaded && latestHouseProfileRequest && (
+                <div className={`al ${latestHouseProfileRequest.status === 'approved' ? 'al-s' : latestHouseProfileRequest.status === 'rejected' ? 'al-w' : 'al-i'}`}>
+                  {latestHouseProfileRequest.status === 'pending' && (
+                    <>ℹ️ มีคำขอแก้ไขข้อมูลบ้านรออนุมัติ ตั้งแต่ {formatDate(latestHouseProfileRequest.created_at)}</>
+                  )}
+                  {latestHouseProfileRequest.status === 'approved' && (
+                    <>✅ คำขอแก้ไขข้อมูลบ้านได้รับการอนุมัติแล้ว เมื่อ {formatDate(latestHouseProfileRequest.reviewed_at || latestHouseProfileRequest.updated_at)}</>
+                  )}
+                  {latestHouseProfileRequest.status === 'rejected' && (
+                    <>⚠️ คำขอถูกปฏิเสธ{latestHouseProfileRejectReason ? `: ${latestHouseProfileRejectReason}` : ''}</>
+                  )}
+                  {latestHouseProfileRequest.status === 'cancelled' && (
+                    <>🚫 คำขอแก้ไขข้อมูลบ้านถูกยกเลิก</>
+                  )}
+                </div>
+              )}
               <div className="g2">
                 <div className="card">
                   <div className="ch"><div className="ch-ico">🏠</div><div className="ct">ข้อมูลที่อยู่</div></div>
@@ -3510,6 +3623,67 @@ export default function ResidentLayout() {
           )}
 
         </div>
+
+        {showHouseProfileReqModal && (
+          <div className="house-mo">
+            <div className="house-md house-md--md">
+              <div className="house-md-head">
+                <div>
+                  <div className="house-md-title">📝 ขอแก้ไขข้อมูลบ้าน</div>
+                  <div className="house-md-sub">รายการที่แก้ไขได้: ผู้อาศัย, ผู้ติดต่อหลัก, เบอร์โทร, LINE ID, Email</div>
+                </div>
+              </div>
+              <form onSubmit={handleSubmitHouseProfileReq}>
+                <div className="house-md-body">
+                  <section className="house-sec">
+                    <div className="house-grid house-grid-3">
+                      <label className="house-field">
+                        <span>บ้านเลขที่</span>
+                        <input value={houseDetail?.house_no || '-'} disabled style={{ background: '#e5e7eb', color: '#64748b' }} />
+                      </label>
+                      <label className="house-field">
+                        <span>ซอย</span>
+                        <input value={houseDetail?.soi || '-'} disabled style={{ background: '#e5e7eb', color: '#64748b' }} />
+                      </label>
+                      <label className="house-field">
+                        <span>เจ้าของบ้าน</span>
+                        <input value={houseDetail?.owner_name || '-'} disabled style={{ background: '#e5e7eb', color: '#64748b' }} />
+                      </label>
+                      <label className="house-field">
+                        <span>ผู้อยู่อาศัย (แก้ไขได้)</span>
+                        <input value={houseProfileReqForm.resident_name} onChange={(e) => setHouseProfileReqForm((prev) => ({ ...prev, resident_name: e.target.value }))} placeholder="ชื่อผู้อยู่อาศัย" />
+                      </label>
+                      <label className="house-field">
+                        <span>ผู้ติดต่อหลัก (แก้ไขได้)</span>
+                        <input value={houseProfileReqForm.contact_name} onChange={(e) => setHouseProfileReqForm((prev) => ({ ...prev, contact_name: e.target.value }))} placeholder="ชื่อผู้ติดต่อหลัก" />
+                      </label>
+                      <label className="house-field">
+                        <span>เบอร์โทร (แก้ไขได้)</span>
+                        <input value={houseProfileReqForm.phone} onChange={(e) => setHouseProfileReqForm((prev) => ({ ...prev, phone: e.target.value }))} placeholder="08x-xxx-xxxx" />
+                      </label>
+                      <label className="house-field">
+                        <span>LINE ID (แก้ไขได้)</span>
+                        <input value={houseProfileReqForm.line_id} onChange={(e) => setHouseProfileReqForm((prev) => ({ ...prev, line_id: e.target.value }))} placeholder="Line ID" />
+                      </label>
+                      <label className="house-field">
+                        <span>Email (แก้ไขได้)</span>
+                        <input type="email" value={houseProfileReqForm.email} onChange={(e) => setHouseProfileReqForm((prev) => ({ ...prev, email: e.target.value }))} placeholder="name@example.com" />
+                      </label>
+                      <label className="house-field">
+                        <span>ลักษณะการอยู่อาศัย</span>
+                        <input value={houseDetail?.house_type || '-'} disabled style={{ background: '#e5e7eb', color: '#64748b' }} />
+                      </label>
+                    </div>
+                  </section>
+                </div>
+                <div className="house-md-foot">
+                  <button className="btn btn-g" type="button" onClick={closeHouseProfileReqModal} disabled={houseProfileReqSaving}>ยกเลิก</button>
+                  <button className="btn btn-p" type="submit" disabled={houseProfileReqSaving}>{houseProfileReqSaving ? 'กำลังส่งคำขอ...' : 'ส่งคำขอให้นิติอนุมัติ'}</button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
 
         {showPaymentModal && (
           <div className="house-mo">
