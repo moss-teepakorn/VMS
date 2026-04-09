@@ -231,7 +231,7 @@ export default function AdminRules() {
             onChange={(e) => setSearchTerm(e.target.value)}
             placeholder="ค้นหา หัวข้อ / รายละเอียด"
           />
-          <StyledSelect className="houses-filter-select" value={categoryFilter} onChange={(e) => setCategoryFilter(e.target.value)}>
+          <StyledSelect value={categoryFilter} onChange={(e) => setCategoryFilter(e.target.value)}>
             <option value="all">ทุกหมวด</option>
             {CATEGORY_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
           </StyledSelect>

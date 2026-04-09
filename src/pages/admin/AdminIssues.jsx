@@ -304,11 +304,11 @@ const AdminIssues = () => {
             onChange={(e) => setSearchTerm(e.target.value)}
             placeholder="ค้นหา หัวข้อ / รายละเอียด / บ้าน"
           />
-          <StyledSelect className="houses-filter-select issue-select-wide" value={categoryFilter} onChange={(e) => setCategoryFilter(e.target.value)}>
+          <StyledSelect className="issue-select-wide" value={categoryFilter} onChange={(e) => setCategoryFilter(e.target.value)}>
             <option value="all">ทุกหมวด</option>
             {ISSUE_CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
           </StyledSelect>
-          <StyledSelect className="houses-filter-select issue-select-wide" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
+          <StyledSelect className="issue-select-wide" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
             <option value="all">ทุกสถานะ</option>
             {ISSUE_STATUSES.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
           </StyledSelect>

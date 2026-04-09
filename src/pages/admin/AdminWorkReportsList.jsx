@@ -248,16 +248,16 @@ const AdminWorkReportsList = () => {
             className="houses-filter-input"
             style={{ flex: '1', minWidth: '160px' }}
           />
-          <StyledSelect value={filterMonth} onChange={(e) => setFilterMonth(e.target.value)} className="houses-filter-select" style={{ width: '118px' }}>
+          <StyledSelect value={filterMonth} onChange={(e) => setFilterMonth(e.target.value)} style={{ width: '170px' }}>
             <option value="">ทุกเดือน</option>
             {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((m) => (
               <option key={m} value={m}>{new Date(2024, m - 1).toLocaleDateString('th-TH', { month: 'long' })}</option>
             ))}
           </StyledSelect>
-          <StyledSelect value={filterYear} onChange={(e) => setFilterYear(e.target.value)} className="houses-filter-select" style={{ width: '100px' }}>
+          <StyledSelect value={filterYear} onChange={(e) => setFilterYear(e.target.value)} style={{ width: '150px' }}>
             {YEAR_OPTIONS.map((y) => <option key={y} value={y}>{y + 543}</option>)}
           </StyledSelect>
-          <StyledSelect value={filterCategory} onChange={(e) => setFilterCategory(e.target.value)} className="houses-filter-select" style={{ width: '130px' }}>
+          <StyledSelect value={filterCategory} onChange={(e) => setFilterCategory(e.target.value)} style={{ width: '220px' }}>
             <option value="all">ทุกหมวดหมู่</option>
             {CATEGORIES.map((cat) => <option key={cat.value} value={cat.value}>{cat.label}</option>)}
           </StyledSelect>

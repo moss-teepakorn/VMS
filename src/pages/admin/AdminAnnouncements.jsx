@@ -346,7 +346,7 @@ const AdminAnnouncements = () => {
             onChange={(e) => setSearchTerm(e.target.value)}
             placeholder="ค้นหา หัวข้อ / เนื้อหา"
           />
-          <StyledSelect className="houses-filter-select" value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)}>
+          <StyledSelect value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)}>
             <option value="all">ทุกประเภท</option>
             {TYPE_OPTIONS.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
           </StyledSelect>

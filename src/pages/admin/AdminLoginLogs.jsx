@@ -193,7 +193,7 @@ export default function AdminLoginLogs() {
           <StyledSelect
             value={roleFilter}
             onChange={(e) => setRoleFilter(e.target.value)}
-            className="houses-filter-select login-logs-search-select"
+            className="login-logs-search-select"
           >
             <option value="all">ทุกบทบาท</option>
             <option value="admin">ผู้ดูแลระบบ</option>

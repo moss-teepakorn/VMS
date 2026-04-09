@@ -165,7 +165,7 @@ export default function AdminReportOutstanding() {
 
       <div className="card report-filter-card">
         <div className="cb" style={{ padding: 12 }}>
-          <form className="report-filter-grid" onSubmit={(event) => { event.preventDefault(); runReport() }}>
+          <form className="report-filter-grid report-filter-grid-3" onSubmit={(event) => { event.preventDefault(); runReport() }}>
             <label className="house-field" style={{ margin: 0 }}>
               <span>ค้นหา (ซอย / บ้าน / ชื่อ)</span>
               <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="เช่น 99/7 หรือ สมชาย" />

@@ -203,7 +203,7 @@ const AdminTechnicians = () => {
             onChange={(e) => setSearchTerm(e.target.value)}
             placeholder="ค้นหา ชื่อ / เบอร์โทร / Line ID / ความเชี่ยวชาญ"
           />
-          <StyledSelect className="houses-filter-select" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
+          <StyledSelect value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
             <option value="all">ทุกสถานะ</option>
             <option value="pending">รออนุมัติ</option>
             <option value="approved">อนุมัติแล้ว</option>

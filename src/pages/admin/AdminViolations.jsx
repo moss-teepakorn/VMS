@@ -941,7 +941,7 @@ const AdminViolations = () => {
             onChange={(e) => setSearchTerm(e.target.value)}
             placeholder="ค้นหา ประเภท / บ้าน / เจ้าของ"
           />
-          <StyledSelect className="houses-filter-select" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
+          <StyledSelect value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
             <option value="all">ทุกสถานะ</option>
             <option value="new">ใหม่ (รอดำเนินการ)</option>
             <option value="in_progress">ลูกบ้านกำลังดำเนินการ</option>

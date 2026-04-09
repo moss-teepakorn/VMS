@@ -156,7 +156,7 @@ export default function AdminReportExpensePayments() {
 
       <div className="card report-filter-card">
         <div className="cb" style={{ padding: 12 }}>
-          <form className="report-filter-grid" onSubmit={(event) => { event.preventDefault(); runReport() }}>
+          <form className="report-filter-grid report-filter-grid-4" onSubmit={(event) => { event.preventDefault(); runReport() }}>
             <label className="house-field" style={{ margin: 0 }}>
               <span>เดือนเริ่มต้น</span>
               <StyledSelect value={startMonth} onChange={(event) => setStartMonth(Number(event.target.value))}>

@@ -481,11 +481,11 @@ const AdminMarketplace = () => {
             onChange={(e) => setSearchTerm(e.target.value)}
             placeholder="ค้นหา ชื่อ / หมวด / บ้าน"
           />
-          <StyledSelect className="houses-filter-select" value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)}>
+          <StyledSelect value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)} style={{ width: 220 }}>
             <option value="all">ทุกประเภทลิสต์</option>
             {LISTING_TYPES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
           </StyledSelect>
-          <StyledSelect className="houses-filter-select" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
+          <StyledSelect value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} style={{ width: 170 }}>
             <option value="all">ทุกสถานะ</option>
             {STATUS_OPTIONS.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
           </StyledSelect>

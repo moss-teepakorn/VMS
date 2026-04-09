@@ -336,7 +336,7 @@ const AdminRequests = () => {
       <div className="card report-filter-card admin-search-filter-card">
         <div className="cb">
           <div className="houses-filter-row request-search-row">
-            <StyledSelect className="fs request-search-status" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
+            <StyledSelect className="request-search-status" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
               <option value="pending">รอดำเนินการ</option>
               <option value="approved">อนุมัติแล้ว</option>
               <option value="rejected">ปฏิเสธ</option>
