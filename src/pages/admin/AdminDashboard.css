@@ -898,6 +898,22 @@
   flex-wrap: wrap;
 }
 
+.houses-list-head .houses-list-actions .btn {
+  background: rgba(255, 255, 255, 0.14) !important;
+  color: #ffffff !important;
+  border-color: rgba(255, 255, 255, 0.42) !important;
+  box-shadow: none !important;
+}
+
+.houses-list-head .houses-list-actions .btn:hover {
+  background: rgba(255, 255, 255, 0.26) !important;
+  border-color: rgba(255, 255, 255, 0.65) !important;
+}
+
+.houses-list-head .houses-list-actions .btn:focus-visible {
+  outline-color: rgba(255, 255, 255, 0.85);
+}
+
 .houses-table-card-body {
   width: 100%;
   box-sizing: border-box;
