@@ -535,17 +535,26 @@ export async function listAccountRequests({ status = 'all' } = {}) {
 
   let fallbackHouseProfileRows = []
   try {
-    let issueQuery = supabase
-      .from('issues')
-      .select('id, house_id, title, detail, status, admin_note, created_at, resolved_at, houses(id, house_no, soi, owner_name, resident_name, contact_name, phone, line_id, email)')
-      .order('created_at', { ascending: false })
+    let issueRows = []
+    {
+      const { data, error } = await supabase
+        .from('issues')
+        .select('id, house_id, title, detail, status, admin_note, created_at, resolved_at, houses(id, house_no, soi, owner_name, resident_name, contact_name, phone, line_id, email)')
+        .order('created_at', { ascending: false })
 
-    if (status === 'pending') {
-      issueQuery = issueQuery.in('status', ['pending', 'in_progress', 'new'])
+      if (!error) {
+        issueRows = data || []
+      } else {
+        // Fallback query without relation embedding if relation policies or schema drift block the nested select.
+        const { data: plainRows, error: plainError } = await supabase
+          .from('issues')
+          .select('id, house_id, title, detail, status, admin_note, created_at, resolved_at')
+          .order('created_at', { ascending: false })
+
+        if (plainError) throw plainError
+        issueRows = plainRows || []
+      }
     }
-
-    const { data: issueRows, error: issueError } = await issueQuery
-    if (issueError) throw issueError
 
     const parsedRows = (issueRows || [])
       .map((issue) => ({ issue, parsed: parseHouseProfileIssuePayloadFromDetail(issue.detail) }))
@@ -559,13 +568,18 @@ export async function listAccountRequests({ status = 'all' } = {}) {
         .select('id, username, full_name, is_active, role')
         .in('id', profileIds)
 
-      if (profileMapError) throw profileMapError
-      profileById = new Map((profiles || []).map((item) => [String(item.id), item]))
+      if (!profileMapError) {
+        profileById = new Map((profiles || []).map((item) => [String(item.id), item]))
+      }
     }
 
-    fallbackHouseProfileRows = parsedRows
+    const mappedFallbackRows = parsedRows
       .map((entry) => mapFallbackIssueToHouseProfileRequest(entry.issue, profileById))
       .filter(Boolean)
+
+    fallbackHouseProfileRows = status === 'all'
+      ? mappedFallbackRows
+      : mappedFallbackRows.filter((row) => row.status === status)
   } catch {
     fallbackHouseProfileRows = []
   }

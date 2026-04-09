@@ -199,6 +199,8 @@
 .notif-list-card {
   border: 1px solid var(--bo);
   box-shadow: 0 8px 18px rgba(15, 23, 42, 0.08);
+  position: relative;
+  z-index: 1;
 }
 
 .notif-mobile-list {
