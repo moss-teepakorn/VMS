@@ -1144,6 +1144,20 @@
 
 .report-filter-card {
   border: 1px solid var(--bo);
+  overflow: visible !important;
+  position: relative;
+  z-index: 500;
+}
+
+.report-filter-card .cb,
+.report-filter-card .report-filter-grid,
+.report-filter-card .house-field,
+.report-filter-card .cars-ss {
+  overflow: visible !important;
+}
+
+.report-filter-card .cars-ss-menu {
+  z-index: 10000 !important;
 }
 
 .report-filter-grid {
