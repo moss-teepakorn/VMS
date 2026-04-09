@@ -2,6 +2,7 @@ import { supabase } from './supabase'
 
 const ISSUE_IMAGE_BUCKET = 'issue-images'
 const MAX_ISSUE_IMAGE_BYTES = 100 * 1024
+const INTERNAL_HOUSE_PROFILE_ISSUE_PREFIX = '[HOUSE_PROFILE_UPDATE_ISSUE] '
 
 const ISSUE_CATEGORY_LABELS = {
   general: 'ทั่วไป',
@@ -20,6 +21,11 @@ function normalizeIssueCategory(category) {
   return ISSUE_CATEGORY_LABELS[raw] || raw
 }
 
+function isInternalHouseProfileIssue(item) {
+  const detail = String(item?.detail || '').trim()
+  return detail.startsWith(INTERNAL_HOUSE_PROFILE_ISSUE_PREFIX)
+}
+
 export async function listIssues({ status = 'all', category = 'all', search = '' } = {}) {
   const { data, error } = await supabase
     .from('issues')
@@ -28,10 +34,12 @@ export async function listIssues({ status = 'all', category = 'all', search = ''
 
   if (error) throw error
 
-  const normalizedRows = (data ?? []).map((item) => ({
-    ...item,
-    category: normalizeIssueCategory(item.category),
-  }))
+  const normalizedRows = (data ?? [])
+    .filter((item) => !isInternalHouseProfileIssue(item))
+    .map((item) => ({
+      ...item,
+      category: normalizeIssueCategory(item.category),
+    }))
 
   const keyword = (search || '').trim().toLowerCase()
   return normalizedRows.filter((item) => {
