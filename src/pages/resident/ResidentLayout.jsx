@@ -2864,14 +2864,14 @@ export default function ResidentLayout() {
               )}
 
               <div className="fee-toolbar-row" style={{ marginBottom: 16 }}>
-                <StyledSelect className="fs fee-toolbar-select" value={feeStatusFilter} onChange={(e) => setFeeStatusFilter(e.target.value)}>
+                <StyledSelect className="fee-toolbar-select" value={feeStatusFilter} onChange={(e) => setFeeStatusFilter(e.target.value)}>
                   <option value="all">ทุกสถานะ</option>
                   <option value="unpaid">ยังไม่ชำระ</option>
                   <option value="pending">รอตรวจสอบ</option>
                   <option value="paid">ชำระแล้ว</option>
                   <option value="overdue">ค้างชำระ</option>
                 </StyledSelect>
-                <StyledSelect className="fs fee-toolbar-select" value={feeYearFilter} onChange={(e) => setFeeYearFilter(e.target.value)}>
+                <StyledSelect className="fee-toolbar-select" value={feeYearFilter} onChange={(e) => setFeeYearFilter(e.target.value)}>
                   <option value="all">ทุกปี</option>
                   {feeYearOptions.map((year) => <option key={year} value={year}>{year}</option>)}
                 </StyledSelect>
@@ -3048,7 +3048,7 @@ export default function ResidentLayout() {
                       </div>
                       <div className="fg">
                         <label className="fl">หมวดหมู่</label>
-                        <StyledSelect className="fs" value={issueForm.category} onChange={(e) => setIssueForm((p) => ({ ...p, category: e.target.value }))}>
+                        <StyledSelect value={issueForm.category} onChange={(e) => setIssueForm((p) => ({ ...p, category: e.target.value }))}>
                           {ISSUE_CATEGORY_OPTIONS.map((category) => (
                             <option key={category} value={category}>{category}</option>
                           ))}
@@ -3196,9 +3196,7 @@ export default function ResidentLayout() {
                     <div className="ph-ico">⚠️</div>
                     <div><div className="ph-h1">การแจ้งเตือนจากนิติ</div><div className="ph-sub">การกระทำผิดและข้อมูลสำคัญ</div></div>
                   </div>
-                  <div className="ph-acts">
-                    <button className="btn btn-p btn-sm" onClick={() => { setShowIssueForm(true); navTo('issue') }}>+ แจ้งเตือนใหม่</button>
-                  </div>
+                  <div className="ph-acts" />
                 </div>
               </div>
 
@@ -3208,7 +3206,7 @@ export default function ResidentLayout() {
                     <span className="notif-input-icon">🔍</span>
                     <input className="fi notif-input" type="text" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} placeholder="ค้นหา ประเภท / รายละเอียด" />
                   </div>
-                  <StyledSelect className="fs notif-select" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
+                  <StyledSelect className="notif-select" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
                     <option value="all">ทุกสถานะ</option>
                     <option value="new">ยังไม่ดำเนินการ</option>
                     <option value="in_progress">กำลังดำเนินการ</option>
@@ -3217,7 +3215,7 @@ export default function ResidentLayout() {
                     <option value="closed">ปิดรายการ</option>
                     <option value="cancelled">ยกเลิก</option>
                   </StyledSelect>
-                  <StyledSelect className="fs notif-select" value={notifDateFilter} onChange={(e) => setNotifDateFilter(e.target.value)}>
+                  <StyledSelect className="notif-select" value={notifDateFilter} onChange={(e) => setNotifDateFilter(e.target.value)}>
                     <option value="all">ทุกช่วงเวลา</option>
                     <option value="today">วันนี้</option>
                     <option value="7d">7 วันล่าสุด</option>
@@ -3493,7 +3491,7 @@ export default function ResidentLayout() {
 
               <div style={{ display: 'flex', gap: 7, marginBottom: 14, flexWrap: 'wrap' }}>
                 <input className="fi" style={{ flex: 1, minWidth: 150 }} value={marketSearch} onChange={(e) => setMarketSearch(e.target.value)} placeholder="🔍 ค้นหาสินค้า..." />
-                <StyledSelect className="fs" style={{ width: 'auto', minWidth: 120 }} value={marketFilter} onChange={(e) => setMarketFilter(e.target.value)}>
+                <StyledSelect style={{ width: 'auto', minWidth: 120 }} value={marketFilter} onChange={(e) => setMarketFilter(e.target.value)}>
                   <option value="all">ทุกประเภท</option>
                   <option value="sell">ขาย</option>
                   <option value="free">ให้ฟรี</option>
@@ -3714,7 +3712,7 @@ export default function ResidentLayout() {
 
         {showPaymentModal && (
           <div className="house-mo">
-            <div className="house-md house-md--sm">
+            <div className="house-md house-md--payment-submit">
               <div className="house-md-head">
                 <div>
                   <div className="house-md-title">💳 ส่งหลักฐานการชำระ</div>
@@ -3836,7 +3834,7 @@ export default function ResidentLayout() {
 
         {showVehicleReqModal && (
           <div className="house-mo house-mo--vehicle-req">
-            <div className="house-md house-md--xl house-md--vehicle-req">
+            <div className="house-md house-md--vehicle-req">
               <div className="house-md-head">
                 <div>
                   <div className="house-md-title">

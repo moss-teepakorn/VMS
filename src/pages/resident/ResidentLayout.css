@@ -163,6 +163,17 @@
   min-height: 36px;
 }
 
+.notif-select.cars-ss {
+  border: none !important;
+  background: transparent !important;
+}
+
+.notif-select .cars-ss-input {
+  border: 1.5px solid var(--bo) !important;
+  background: var(--card) !important;
+  box-shadow: none !important;
+}
+
 .notif-search-btn {
   min-height: 36px;
   font-weight: 700;
@@ -407,6 +418,17 @@
 .fee-toolbar-select {
   min-width: 145px;
   flex: 0 1 180px;
+}
+
+.fee-toolbar-select.cars-ss {
+  border: none !important;
+  background: transparent !important;
+}
+
+.fee-toolbar-select .cars-ss-input {
+  border: 1.5px solid var(--bo) !important;
+  background: var(--card) !important;
+  box-shadow: none !important;
 }
 
 .fee-toolbar-button {
@@ -701,8 +723,25 @@
 }
 
 .house-md--vehicle-req {
-  --house-md-max-w: 1180px;
-  --house-md-max-h: calc(100dvh - 44px);
+  --house-md-max-w: 980px;
+  --house-md-max-h: calc(100dvh - 72px);
+}
+
+.house-md--vehicle-req .cars-ss {
+  position: relative;
+}
+
+.house-md--vehicle-req .cars-ss.is-open {
+  z-index: 50;
+}
+
+.house-md--vehicle-req .cars-ss-menu {
+  z-index: 12000;
+}
+
+.house-md--payment-submit {
+  --house-md-max-w: 520px;
+  --house-md-max-h: 560px;
 }
 
 .house-md--house-profile-req {
@@ -876,5 +915,10 @@
   .house-mo--vehicle-req {
     align-items: flex-end;
     padding-top: 10px;
+  }
+
+  .house-md--payment-submit {
+    --house-md-max-w: 100%;
+    --house-md-max-h: calc(100dvh - 16px);
   }
 }
