@@ -139,13 +139,6 @@ function templateFromFrequency(frequency, baseYearCE) {
   })
 }
 
-function formatDate(value) {
-  if (!value) return '-'
-  const date = new Date(value)
-  if (Number.isNaN(date.getTime())) return '-'
-  return date.toLocaleDateString('th-TH', { day: '2-digit', month: '2-digit', year: 'numeric' })
-}
-
 export default function AdminPaymentCycles() {
   const { profile } = useAuth()
   const [loading, setLoading] = useState(false)
@@ -412,12 +405,6 @@ export default function AdminPaymentCycles() {
         </div>
       </div>
 
-      <div className="card">
-        <div className="cb payment-cycles-note">
-          <strong>สรุปปี {yearBE || '-'}:</strong> กำหนดไว้ {periods.length} รอบ
-          <span>ตัวอย่างรอบแรก: {periods[0] ? `${formatDate(periods[0].start_date)} ถึง ${formatDate(periods[0].end_date)} | ชำระภายใน ${formatDate(periods[0].due_date)}` : '-'}</span>
-        </div>
-      </div>
     </div>
   )
 }

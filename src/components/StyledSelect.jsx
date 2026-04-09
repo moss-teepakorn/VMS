@@ -29,7 +29,7 @@ export default function StyledSelect({
 
   const handleChange = (nextValue) => {
     if (!onChange) return
-    onChange({ target: { value: nextValue } })
+    onChange({ target: { value: nextValue, name, id } })
   }
 
   return (

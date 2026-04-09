@@ -1397,13 +1397,26 @@
   min-width: 0;
 }
 
+.users-search-select.cars-ss,
+.users-role-select.cars-ss {
+  position: relative;
+}
+
 .users-search-select.cars-ss::after,
 .users-role-select.cars-ss::after {
   content: '▾';
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
   color: #334155;
   font-size: 14px;
   font-weight: 800;
   opacity: 1;
+}
+
+.users-search-select .cars-ss-input,
+.users-role-select .cars-ss-input {
+  padding-right: 34px;
 }
 
 .users-search-refresh {
