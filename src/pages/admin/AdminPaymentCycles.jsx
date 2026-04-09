@@ -10,7 +10,7 @@ const FREQUENCY_OPTIONS = [
   { value: 'monthly', label: 'รายเดือน (12 รอบ/ปี)' },
   { value: 'quarterly', label: 'รายไตรมาส (4 รอบ/ปี)' },
   { value: 'half_yearly', label: 'รายครึ่งปี (2 รอบ/ปี)' },
-  { value: 'yearly', label: 'รายปี (1 รอบ/ปี)' },
+  { value: 'yearly', label: 'รายปี (12 รายการ/ปี)' },
 ]
 
 function toBE(yearCE) {
@@ -119,19 +119,24 @@ function templateFromFrequency(frequency, baseYearCE) {
     ]
   }
 
-  return [
-    {
-      seq_no: 1,
-      period_label: 'รอบที่ 1',
-      start_date: isoDate(year, 1, 1),
-      end_date: isoDate(year, 12, 31),
-      due_date: isoDate(year + 1, 1, 31),
-      due_year_offset: 1,
+  return Array.from({ length: 12 }).map((_, index) => {
+    const month = index + 1
+    const start = isoDate(year, month, 1)
+    const end = isoDate(year, month, lastDayOfMonth(year, month))
+    const next = nextMonthYear(year, month)
+    const due = isoDate(next.year, next.month, lastDayOfMonth(next.year, next.month))
+    return {
+      seq_no: month,
+      period_label: `รอบที่ ${month}`,
+      start_date: start,
+      end_date: end,
+      due_date: due,
+      due_year_offset: next.year - year,
       enable_penalty: false,
-      penalty_start_date: isoDate(year + 1, 2, 1),
-      penalty_year_offset: 1,
-    },
-  ]
+      penalty_start_date: isoDate(next.year, next.month, 1),
+      penalty_year_offset: next.year - year,
+    }
+  })
 }
 
 function formatDate(value) {
