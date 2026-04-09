@@ -130,6 +130,7 @@ function mapFallbackIssueToHouseProfileRequest(issue, profileMap = new Map()) {
     profile_id: parsed.profile_id,
     requested_username: parsed.requested_username || profile?.username || null,
     requested_phone: payload.phone || null,
+    request_payload: payload,
     admin_note: issue.admin_note || '',
     created_at: issue.created_at,
     reviewed_at: issue.resolved_at || null,
@@ -845,7 +846,6 @@ export async function approveAccountRequest(requestId, { reviewedById = null } =
         phone: payload.phone,
         line_id: payload.line_id,
         email: payload.email,
-        updated_at: new Date().toISOString(),
       })
       .eq('id', issueRow.house_id)
 
@@ -882,7 +882,6 @@ export async function approveAccountRequest(requestId, { reviewedById = null } =
         phone: payload.phone,
         line_id: payload.line_id,
         email: payload.email,
-        updated_at: new Date().toISOString(),
       })
       .eq('id', request.house_id)
 

@@ -421,7 +421,7 @@ const AdminRequests = () => {
                 const isHouseProfileUpdateRequest = isAccountRequest && req.request_type === 'house_profile_update'
                 const isFallbackVehicle = req.__kind === 'vehicle_fallback'
                 const requestedHousePayload = isHouseProfileUpdateRequest
-                  ? (extractHouseProfileUpdatePayload(req.admin_note) || {})
+                  ? (extractHouseProfileUpdatePayload(req.admin_note) || req.request_payload || {})
                   : null
                 const houseRejectReason = isHouseProfileUpdateRequest
                   ? extractHouseProfileUpdateRejectReason(req.admin_note)
