@@ -1165,6 +1165,11 @@
   align-items: end;
 }
 
+.report-filter-action .btn {
+  height: 39px;
+  min-height: 39px;
+}
+
 .admin-search-filter-card {
   border: 1px solid var(--bo);
 }

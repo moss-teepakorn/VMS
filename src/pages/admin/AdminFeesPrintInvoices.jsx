@@ -728,7 +728,7 @@ export default function AdminFeesPrintInvoices() {
 
       <div className="card report-filter-card admin-search-filter-card">
         <form className="cb" style={{ padding: 12, display: 'grid', gap: 10 }} onSubmit={handleSearch}>
-          <div className="house-grid" style={{ gridTemplateColumns: 'repeat(5, minmax(150px, 1fr))', gap: 10 }}>
+          <div className="house-grid" style={{ gridTemplateColumns: 'minmax(120px, 0.95fr) minmax(280px, 1.7fr) minmax(150px, 1fr) minmax(180px, 1.1fr)', gap: 10 }}>
             <label className="house-field">
               <span>ปี (พ.ศ.)</span>
               <StyledSelect value={filters.yearBE} onChange={(e) => setFilters((prev) => ({ ...prev, yearBE: e.target.value }))}>
@@ -752,7 +752,7 @@ export default function AdminFeesPrintInvoices() {
                 <option value="all">ทั้งหมด</option>
               </StyledSelect>
             </label>
-            <label className="house-field" style={{ gridColumn: 'span 2' }}>
+            <label className="house-field">
               <span>บ้านเลขที่ (กรอกเอง)</span>
               <input
                 type="text"
