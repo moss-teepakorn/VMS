@@ -1398,15 +1398,17 @@
 }
 
 .users-search-select.cars-ss,
-.users-role-select.cars-ss {
+.users-role-select.cars-ss,
+.payment-cycles-frequency.cars-ss {
   position: relative;
 }
 
 .users-search-select.cars-ss::after,
-.users-role-select.cars-ss::after {
+.users-role-select.cars-ss::after,
+.payment-cycles-frequency.cars-ss::after {
   content: '▾';
   right: 12px;
-  top: 50%;
+  top: 18px;
   transform: translateY(-50%);
   color: #334155;
   font-size: 14px;
@@ -1415,7 +1417,8 @@
 }
 
 .users-search-select .cars-ss-input,
-.users-role-select .cars-ss-input {
+.users-role-select .cars-ss-input,
+.payment-cycles-frequency .cars-ss-input {
   padding-right: 34px;
 }
 
