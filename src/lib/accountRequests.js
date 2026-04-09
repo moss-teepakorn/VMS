@@ -604,7 +604,8 @@ export async function listAccountRequests({ status = 'all' } = {}) {
 
   const profileIds = profileCandidates.map((profile) => profile.id).filter(Boolean)
   if (profileIds.length === 0) {
-    return requestRows
+    return [...requestRows, ...fallbackHouseProfileRows]
+      .sort((left, right) => new Date(right.created_at || 0).getTime() - new Date(left.created_at || 0).getTime())
   }
 
   let relatedRequests = []
@@ -628,7 +629,8 @@ export async function listAccountRequests({ status = 'all' } = {}) {
   const relatedProfileIdSet = new Set((relatedRequests || []).map((row) => String(row.profile_id || '')).filter(Boolean))
   const fallbackProfiles = profileCandidates.filter((profile) => !relatedProfileIdSet.has(String(profile.id)))
   if (fallbackProfiles.length === 0) {
-    return requestRows
+    return [...requestRows, ...fallbackHouseProfileRows]
+      .sort((left, right) => new Date(right.created_at || 0).getTime() - new Date(left.created_at || 0).getTime())
   }
 
   const houseIds = [...new Set(fallbackProfiles.map((profile) => profile.house_id).filter(Boolean))]

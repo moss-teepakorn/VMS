@@ -132,6 +132,9 @@
 .notif-search-card {
   border: 1px solid var(--bo);
   box-shadow: 0 6px 16px rgba(15, 23, 42, 0.08);
+  overflow: visible !important;
+  position: relative;
+  z-index: 500;
 }
 
 .notif-search-row {
@@ -140,6 +143,20 @@
   gap: 10px;
   align-items: center;
   padding: 16px;
+  overflow: visible;
+}
+
+.notif-search-card .cb,
+.notif-search-row .cars-ss {
+  overflow: visible !important;
+}
+
+.notif-search-row .cars-ss.is-open {
+  z-index: 1000;
+}
+
+.notif-search-row .cars-ss-menu {
+  z-index: 12000 !important;
 }
 
 .notif-input-wrap {
