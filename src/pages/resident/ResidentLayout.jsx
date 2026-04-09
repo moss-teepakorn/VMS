@@ -3626,28 +3626,56 @@ export default function ResidentLayout() {
 
         {showHouseProfileReqModal && (
           <div className="house-mo">
-            <div className="house-md house-md--md">
+            <div className="house-md house-md--house-profile-req">
               <div className="house-md-head">
                 <div>
                   <div className="house-md-title">📝 ขอแก้ไขข้อมูลบ้าน</div>
-                  <div className="house-md-sub">รายการที่แก้ไขได้: ผู้อาศัย, ผู้ติดต่อหลัก, เบอร์โทร, LINE ID, Email</div>
+                  <div className="house-md-sub">แสดงข้อมูลบ้านทั้งหมด โดยแก้ไขได้เฉพาะ ผู้อาศัย, ผู้ติดต่อหลัก, เบอร์โทร, LINE ID, Email</div>
                 </div>
               </div>
               <form onSubmit={handleSubmitHouseProfileReq}>
                 <div className="house-md-body">
                   <section className="house-sec">
-                    <div className="house-grid house-grid-3">
+                    <div className="house-profile-req-grid">
                       <label className="house-field">
                         <span>บ้านเลขที่</span>
-                        <input value={houseDetail?.house_no || '-'} disabled style={{ background: '#e5e7eb', color: '#64748b' }} />
+                        <input className="house-readonly-input" value={houseDetail?.house_no || '-'} disabled />
                       </label>
                       <label className="house-field">
                         <span>ซอย</span>
-                        <input value={houseDetail?.soi || '-'} disabled style={{ background: '#e5e7eb', color: '#64748b' }} />
+                        <input className="house-readonly-input" value={houseDetail?.soi || '-'} disabled />
+                      </label>
+                      <label className="house-field">
+                        <span>ชั้นที่</span>
+                        <input className="house-readonly-input" value={Number.isFinite(Number(houseDetail?.floor_no)) ? Number(houseDetail?.floor_no) : '-'} disabled />
+                      </label>
+                      <label className="house-field">
+                        <span>หมายเลขห้อง</span>
+                        <input className="house-readonly-input" value={houseDetail?.room_no || '-'} disabled />
                       </label>
                       <label className="house-field">
                         <span>เจ้าของบ้าน</span>
-                        <input value={houseDetail?.owner_name || '-'} disabled style={{ background: '#e5e7eb', color: '#64748b' }} />
+                        <input className="house-readonly-input" value={houseDetail?.owner_name || '-'} disabled />
+                      </label>
+                      <label className="house-field house-field--full">
+                        <span>ที่อยู่</span>
+                        <input className="house-readonly-input" value={houseAddressText || '-'} disabled />
+                      </label>
+                      <label className="house-field">
+                        <span>พื้นที่ (ตร.ว.)</span>
+                        <input className="house-readonly-input" value={houseAreaSqw > 0 ? formatMoney(houseAreaSqw) : '-'} disabled />
+                      </label>
+                      <label className="house-field">
+                        <span>อัตราค่าส่วนกลาง / ตร.ว. / เดือน</span>
+                        <input className="house-readonly-input" value={houseDetail?.fee_rate ? `฿${formatMoney(houseDetail.fee_rate)}` : '-'} disabled />
+                      </label>
+                      <label className="house-field">
+                        <span>ค่าส่วนกลางต่อเดือน</span>
+                        <input className="house-readonly-input" value={houseAreaSqw > 0 && Number(houseDetail?.fee_rate || 0) > 0 ? `฿${formatMoney(houseAreaSqw * Number(houseDetail?.fee_rate || 0))}` : '-'} disabled />
+                      </label>
+                      <label className="house-field">
+                        <span>ค่าส่วนกลางต่อปี</span>
+                        <input className="house-readonly-input" value={houseAnnualFee > 0 ? `฿${formatMoney(houseAnnualFee)}` : '-'} disabled />
                       </label>
                       <label className="house-field">
                         <span>ผู้อยู่อาศัย (แก้ไขได้)</span>
@@ -3671,7 +3699,11 @@ export default function ResidentLayout() {
                       </label>
                       <label className="house-field">
                         <span>ลักษณะการอยู่อาศัย</span>
-                        <input value={houseDetail?.house_type || '-'} disabled style={{ background: '#e5e7eb', color: '#64748b' }} />
+                        <input className="house-readonly-input" value={houseDetail?.house_type || '-'} disabled />
+                      </label>
+                      <label className="house-field">
+                        <span>สถานะบ้าน</span>
+                        <input className="house-readonly-input" value={houseDetail?.status || '-'} disabled />
                       </label>
                     </div>
                   </section>

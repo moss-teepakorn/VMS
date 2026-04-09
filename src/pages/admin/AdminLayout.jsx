@@ -87,19 +87,20 @@ const AdminLayout = () => {
 
   useEffect(() => {
     const loadNotifies = async () => {
-      try {
-        const [vehicleReqs, accountReqs, issues] = await Promise.all([
-          listVehicleRequests({ status: 'pending' }),
-          listAccountRequests({ status: 'pending' }),
-          listIssues({ status: 'pending' }),
-        ])
-        setNotifyCounts({
-          requests: (vehicleReqs || []).length + (accountReqs || []).length,
-          issues: (issues || []).length,
-        })
-      } catch {
-        setNotifyCounts({ requests: 0, issues: 0 })
-      }
+      const [vehicleRes, accountRes, issuesRes] = await Promise.allSettled([
+        listVehicleRequests({ status: 'pending' }),
+        listAccountRequests({ status: 'pending' }),
+        listIssues({ status: 'pending' }),
+      ])
+
+      const vehicleReqs = vehicleRes.status === 'fulfilled' ? (vehicleRes.value || []) : []
+      const accountReqs = accountRes.status === 'fulfilled' ? (accountRes.value || []) : []
+      const issues = issuesRes.status === 'fulfilled' ? (issuesRes.value || []) : []
+
+      setNotifyCounts({
+        requests: vehicleReqs.length + accountReqs.length,
+        issues: issues.length,
+      })
     }
     loadNotifies()
   }, [location.pathname])

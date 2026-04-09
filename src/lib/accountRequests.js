@@ -6,6 +6,7 @@ import { assertCanActivateResident } from './userLimits'
 const FALLBACK_ACCOUNT_REQUEST_PREFIX = 'fallback-profile-'
 const HOUSE_PROFILE_UPDATE_PREFIX = '[HOUSE_PROFILE_UPDATE] '
 const HOUSE_PROFILE_REJECT_PREFIX = '[HOUSE_PROFILE_REJECT] '
+const ACCOUNT_REQUEST_SELECT = '*, houses(id, house_no, soi, owner_name, resident_name, contact_name, phone, line_id, email), profiles:profile_id(id, username, full_name, is_active, role)'
 
 function normalizeText(value) {
   return String(value || '').trim()
@@ -303,7 +304,7 @@ export async function createHouseProfileUpdateRequest({ profileId, houseId, payl
       requested_phone: nextPayload.phone,
       admin_note: serializedPayload,
     }])
-    .select('*, houses(id, house_no, soi, owner_name, phone), profiles(id, username, full_name, is_active, role)')
+    .select(ACCOUNT_REQUEST_SELECT)
     .single()
 
   if (error) throw error
@@ -314,7 +315,7 @@ export async function listHouseProfileUpdateRequestsByProfile(profileId, { statu
   if (!profileId) return []
   let query = supabase
     .from('account_requests')
-    .select('*, houses(id, house_no, soi, owner_name, resident_name, contact_name, phone, line_id, email), profiles(id, username, full_name, is_active, role)')
+    .select(ACCOUNT_REQUEST_SELECT)
     .eq('profile_id', profileId)
     .eq('request_type', 'house_profile_update')
     .order('created_at', { ascending: false })
@@ -329,7 +330,7 @@ export async function listHouseProfileUpdateRequestsByProfile(profileId, { statu
 export async function listAccountRequests({ status = 'all' } = {}) {
   let query = supabase
     .from('account_requests')
-    .select('*, houses(id, house_no, soi, owner_name, resident_name, contact_name, phone, line_id, email), profiles(id, username, full_name, is_active, role)')
+    .select(ACCOUNT_REQUEST_SELECT)
     .order('created_at', { ascending: false })
 
   if (status !== 'all') query = query.eq('status', status)
@@ -513,7 +514,7 @@ export async function updateAccountRequestStatus(requestId, { status, adminNote 
     .from('account_requests')
     .update(updates)
     .eq('id', requestId)
-    .select('*, houses(id, house_no, soi, owner_name, resident_name, contact_name, phone, line_id, email), profiles(id, username, full_name, is_active, role)')
+    .select(ACCOUNT_REQUEST_SELECT)
     .single()
 
   if (error) throw error

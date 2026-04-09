@@ -705,8 +705,32 @@
   --house-md-max-h: calc(100dvh - 44px);
 }
 
+.house-md--house-profile-req {
+  --house-md-max-w: 860px;
+  --house-md-max-h: 760px;
+}
+
+.house-profile-req-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.house-profile-req-grid .house-field--full {
+  grid-column: 1 / -1;
+}
+
+.house-readonly-input {
+  background: #e5e7eb !important;
+  color: #64748b !important;
+}
+
 @media (max-width: 768px) {
   .vc-line { padding-left: 0; }
+
+  .house-profile-req-grid {
+    grid-template-columns: 1fr;
+  }
 
   .tb-user-name {
     display: none;
