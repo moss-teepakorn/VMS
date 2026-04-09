@@ -1,9 +1,10 @@
-import React, { useMemo, useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import StyledSelect from '../../components/StyledSelect'
 import html2canvas from 'html2canvas'
 import { jsPDF } from 'jspdf'
 import Swal from 'sweetalert2'
 import { getSystemConfig } from '../../lib/systemConfig'
+import { buildPeriodLabelMapFromCycle, buildPeriodOptionsFromCycle, getPaymentCycleConfigByYear } from '../../lib/paymentCycles'
 import {
   createNoticePrintLogs,
   listApprovedPaymentItemTotalsByFeeIds,
@@ -103,11 +104,41 @@ export default function AdminFeesPrintNotices() {
     paymentStatus: 'unpaid_only',
     houseNo: '',
   })
+  const [periodLabelMap, setPeriodLabelMap] = useState(buildPeriodLabelMapFromCycle(null))
+  const [periodOptions, setPeriodOptions] = useState(buildPeriodOptionsFromCycle(null, { includeRange: true }))
 
   const processYearOptions = useMemo(() => {
     const currentBE = new Date().getFullYear() + 543
     return [currentBE + 1, currentBE, currentBE - 1, currentBE - 2, currentBE - 3]
   }, [])
+
+  useEffect(() => {
+    const syncPeriodSetup = async () => {
+      const yearCE = toGregorianYear(filters.yearBE)
+      if (!yearCE) return
+
+      try {
+        const cycleConfig = await getPaymentCycleConfigByYear(yearCE)
+        const nextLabelMap = buildPeriodLabelMapFromCycle(cycleConfig)
+        const nextOptions = buildPeriodOptionsFromCycle(cycleConfig, { includeRange: true })
+        setPeriodLabelMap(nextLabelMap)
+        setPeriodOptions(nextOptions)
+
+        if (!nextOptions.some((option) => option.value === filters.period)) {
+          setFilters((prev) => ({ ...prev, period: nextOptions[0]?.value || 'full_year' }))
+        }
+      } catch {
+        const fallbackLabelMap = buildPeriodLabelMapFromCycle(null)
+        const fallbackOptions = buildPeriodOptionsFromCycle(null, { includeRange: true })
+        setPeriodLabelMap(fallbackLabelMap)
+        setPeriodOptions(fallbackOptions)
+      }
+    }
+
+    syncPeriodSetup()
+  }, [filters.yearBE])
+
+  const resolvePeriodLabel = (period) => periodLabelMap[period] || periodLabel(period)
 
   const getApprovedAmountForFee = (fee) => Number(feeApprovedTotals[fee?.id] || 0)
 
@@ -361,7 +392,7 @@ export default function AdminFeesPrintNotices() {
 
     const invoiceBlocks = targetFees.flatMap((fee, feeIndex) => {
       const invoiceNo = buildInvoiceDocumentNo(fee)
-      const periodText = `${periodLabel(fee.period)} ปี ${toBE(fee.year)}`
+      const periodText = `${resolvePeriodLabel(fee.period)} ปี ${toBE(fee.year)}`
       const isLastFee = feeIndex === targetFees.length - 1
       const isNotice = docType === 'notice'
       const noticeNo = Number(noticeNoMap?.[fee.id] || 0)
@@ -648,7 +679,7 @@ export default function AdminFeesPrintNotices() {
 
     try {
       setRunningPrintAction(true)
-      const title = printPreviewTitle || `ใบแจ้งหนี้ค่าส่วนกลาง ${filters.yearBE} ${periodLabel(filters.period)}`
+      const title = printPreviewTitle || `ใบแจ้งหนี้ค่าส่วนกลาง ${filters.yearBE} ${resolvePeriodLabel(filters.period)}`
       const noticeNoMap = printPreviewNoticeNoMap || {}
 
       if (mode === 'image' || mode === 'pdf') {
@@ -727,7 +758,7 @@ export default function AdminFeesPrintNotices() {
 
     try {
       setRunningPrintAction(true)
-      const title = `ใบแจ้งเตือนค้างชำระ ${filters.yearBE} ${periodLabel(filters.period)}`
+      const title = `ใบแจ้งเตือนค้างชำระ ${filters.yearBE} ${resolvePeriodLabel(filters.period)}`
       const noticeNoMap = selectedFees.reduce((acc, fee) => {
         acc[fee.id] = getNoticeCountForFee(fee) + 1
         return acc
@@ -781,9 +812,9 @@ export default function AdminFeesPrintNotices() {
             <label className="house-field">
               <span>ครั้งที่/งวด</span>
               <StyledSelect value={filters.period} onChange={(e) => setFilters((prev) => ({ ...prev, period: e.target.value }))}>
-                <option value="first_half">ครึ่งปีแรก</option>
-                <option value="second_half">ครึ่งปีหลัง</option>
-                <option value="full_year">เต็มปี</option>
+                {periodOptions.map((option) => (
+                  <option key={option.value} value={option.value}>{option.label}</option>
+                ))}
               </StyledSelect>
             </label>
             <label className="house-field">
@@ -855,7 +886,7 @@ export default function AdminFeesPrintNotices() {
                         <div style={{ fontSize: '11px', color: 'var(--mu)' }}>{fee.houses?.owner_name || '-'}</div>
                       </td>
                       <td>{toBE(fee.year)}</td>
-                      <td>{periodLabel(fee.period)}</td>
+                      <td>{resolvePeriodLabel(fee.period)}</td>
                       <td>{formatDateDMY(fee.due_date)}</td>
                       <td>{Number(fee.total_amount || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
                       <td>{getOutstandingAmountForFee(fee).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
@@ -885,7 +916,7 @@ export default function AdminFeesPrintNotices() {
                   <div className="houses-mcard-owner">{fee.houses?.owner_name || '-'}</div>
                   <div className="houses-mcard-meta">
                     <span><span className="houses-mcard-label">ปี:</span> {toBE(fee.year)}</span>
-                    <span><span className="houses-mcard-label">งวด:</span> {periodLabel(fee.period)}</span>
+                    <span><span className="houses-mcard-label">งวด:</span> {resolvePeriodLabel(fee.period)}</span>
                     <span><span className="houses-mcard-label">ครบกำหนด:</span> {formatDateDMY(fee.due_date)}</span>
                     <span><span className="houses-mcard-label">ยอดรวม:</span> {Number(fee.total_amount || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                     <span><span className="houses-mcard-label">ยอดค้าง:</span> {getOutstandingAmountForFee(fee).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>

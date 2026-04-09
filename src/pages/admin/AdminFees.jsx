@@ -5,6 +5,7 @@ import { jsPDF } from 'jspdf'
 import Swal from 'sweetalert2'
 import { listHouses } from '../../lib/houses'
 import { getSystemConfig } from '../../lib/systemConfig'
+import { buildPeriodLabelMapFromCycle, getPaymentCycleConfigByYear } from '../../lib/paymentCycles'
 import villageLogo from '../../assets/village-logo.svg'
 import { resolveImageToDataUrl, DEFAULT_LOGO_DATAURL } from '../../lib/logoUtils'
 import {
@@ -81,6 +82,8 @@ const AdminFees = () => {
   const [fees, setFees] = useState([])
   const [payments, setPayments] = useState([])
   const [houses, setHouses] = useState([])
+  const [periodLabelMapByYear, setPeriodLabelMapByYear] = useState({})
+  const [currentYearPeriodLabels, setCurrentYearPeriodLabels] = useState(buildPeriodLabelMapFromCycle(null))
   const [setup, setSetup] = useState({
     village_name: 'The Greenfield',
     village_logo_url: '',
@@ -150,6 +153,7 @@ const AdminFees = () => {
     period: 'first_half',
     overwritePending: false,
   })
+  const showLegacyBillingActions = false
 
   const feeItemDefs = [
     { key: 'fee_common', label: 'ค่าส่วนกลาง' },
@@ -211,6 +215,27 @@ const AdminFees = () => {
 
       const noticeCounts = await listNoticePrintCountsByFeeIds(feeData.map((row) => row.id))
 
+      const years = Array.from(new Set((feeData || [])
+        .map((row) => Number(row?.year || 0))
+        .filter((year) => Number.isFinite(year) && year > 0)))
+
+      if (years.length > 0) {
+        const cycleRows = await Promise.all(years.map(async (year) => {
+          try {
+            const config = await getPaymentCycleConfigByYear(year)
+            return [year, buildPeriodLabelMapFromCycle(config)]
+          } catch {
+            return [year, buildPeriodLabelMapFromCycle(null)]
+          }
+        }))
+
+        const nextLookup = cycleRows.reduce((acc, [year, labelMap]) => {
+          acc[year] = labelMap
+          return acc
+        }, {})
+        setPeriodLabelMapByYear((prev) => ({ ...prev, ...nextLookup }))
+      }
+
       const paymentTotals = await listPaymentTotalsByFeeIds(feeData.map((row) => row.id))
       const paymentItemTotals = await listApprovedPaymentItemTotalsByFeeIds(feeData.map((row) => row.id))
       setFeeSubmittedTotals(paymentTotals.submitted || {})
@@ -265,6 +290,30 @@ const AdminFees = () => {
     init()
   }, [])
 
+  useEffect(() => {
+    const syncCurrentYearPeriods = async () => {
+      const yearCE = Number(currentFeeYear || 0)
+      if (!Number.isFinite(yearCE) || yearCE <= 0) {
+        setCurrentYearPeriodLabels(buildPeriodLabelMapFromCycle(null))
+        return
+      }
+
+      try {
+        const cycleConfig = await getPaymentCycleConfigByYear(yearCE)
+        setCurrentYearPeriodLabels(buildPeriodLabelMapFromCycle(cycleConfig))
+      } catch {
+        setCurrentYearPeriodLabels(buildPeriodLabelMapFromCycle(null))
+      }
+    }
+
+    syncCurrentYearPeriods()
+  }, [currentFeeYear])
+
+  const resolvePeriodLabel = (period, year) => {
+    const byYear = periodLabelMapByYear[Number(year)] || currentYearPeriodLabels
+    return byYear?.[period] || periodLabel(period)
+  }
+
   const summary = useMemo(() => {
     const totalInvoiced = fees
       .filter((fee) => fee.status !== 'cancelled')
@@ -293,7 +342,8 @@ const AdminFees = () => {
       const ownerName = String(fee?.houses?.owner_name || '').toLowerCase()
       const soi = String(fee?.houses?.soi || '').toLowerCase()
       const period = String(periodLabel(fee?.period || '')).toLowerCase()
-      return houseNo.includes(keyword) || ownerName.includes(keyword) || soi.includes(keyword) || period.includes(keyword)
+      const dynamicPeriod = String(resolvePeriodLabel(fee?.period || '', fee?.year)).toLowerCase()
+      return houseNo.includes(keyword) || ownerName.includes(keyword) || soi.includes(keyword) || period.includes(keyword) || dynamicPeriod.includes(keyword)
     })
   }, [fees, searchKeyword])
 
@@ -384,10 +434,10 @@ const AdminFees = () => {
 
   const periodCards = useMemo(() => ([
     { value: 'all', label: 'ทั้งหมด', count: fees.length },
-    { value: 'first_half', label: 'ครึ่งปีแรก', count: fees.filter((fee) => fee.period === 'first_half').length },
-    { value: 'second_half', label: 'ครึ่งปีหลัง', count: fees.filter((fee) => fee.period === 'second_half').length },
-    { value: 'full_year', label: 'เต็มปี', count: fees.filter((fee) => fee.period === 'full_year').length },
-  ]), [fees])
+    { value: 'first_half', label: currentYearPeriodLabels.first_half, count: fees.filter((fee) => fee.period === 'first_half').length },
+    { value: 'second_half', label: currentYearPeriodLabels.second_half, count: fees.filter((fee) => fee.period === 'second_half').length },
+    { value: 'full_year', label: currentYearPeriodLabels.full_year, count: fees.filter((fee) => fee.period === 'full_year').length },
+  ]), [fees, currentYearPeriodLabels])
 
   const activeFees = useMemo(() => filteredFees.filter((fee) => {
     if (fee.status === 'cancelled') return false
@@ -593,7 +643,7 @@ const AdminFees = () => {
     const result = await Swal.fire({
       icon: 'warning',
       title: 'ยืนยันลบใบแจ้งหนี้?',
-      text: `${fee.houses?.house_no || '-'} ${periodLabel(fee.period)} ปี ${toBE(fee.year)}`,
+      text: `${fee.houses?.house_no || '-'} ${resolvePeriodLabel(fee.period, fee.year)} ปี ${toBE(fee.year)}`,
       showCancelButton: true,
       confirmButtonText: 'ลบ',
       cancelButtonText: 'ยกเลิก',
@@ -794,7 +844,7 @@ const AdminFees = () => {
     // Two invoice sections per house (original + copy) — separate pages
     const invoiceBlocks = targetFees.flatMap((fee, feeIndex) => {
       const invoiceNo = buildInvoiceDocumentNo(fee)
-      const periodText = `${periodLabel(fee.period)} ปี ${toBE(fee.year)}`
+      const periodText = `${resolvePeriodLabel(fee.period, fee.year)} ปี ${toBE(fee.year)}`
       const isLastFee = feeIndex === targetFees.length - 1
       const isNotice = docType === 'notice'
       const noticeNo = Number(noticeNoMap?.[fee.id] || 0)
@@ -1226,7 +1276,7 @@ const AdminFees = () => {
   }
 
   const handlePrintInvoiceByHouse = (fee) => {
-    const title = `ใบแจ้งหนี้ ${fee.houses?.house_no || '-'} ${periodLabel(fee.period)} ปี ${toBE(fee.year)}`
+    const title = `ใบแจ้งหนี้ ${fee.houses?.house_no || '-'} ${resolvePeriodLabel(fee.period, fee.year)} ปี ${toBE(fee.year)}`
     openPrintActionModal([fee], title, { docType: 'invoice' })
   }
 
@@ -1546,10 +1596,10 @@ const AdminFees = () => {
         <div className="ch houses-list-head houses-main-head">
           <div className="ct">ใบแจ้งหนี้ค้างชำระ ({activeFees.length})</div>
           <div className="houses-list-actions" style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center', width: '100%' }}>
-            <button className="btn btn-p btn-sm" onClick={handleOpenProcessModal}>+ สร้างใบแจ้งหนี้</button>
-            <button className="btn btn-a btn-sm" onClick={handlePrintInvoicesAll}>🖨 พิมพ์ใบแจ้งหนี้ทั้งหมด</button>
-            <button className="btn btn-o btn-sm" onClick={handlePrintNoticesAll}>🔔 พิมพ์ใบแจ้งเตือนทั้งหมด</button>
-            <button className="btn btn-dg btn-sm" onClick={handleBulkOverdue}>⚖ คำนวณค่าปรับทั้งหมด</button>
+            {showLegacyBillingActions && <button className="btn btn-p btn-sm" onClick={handleOpenProcessModal}>+ สร้างใบแจ้งหนี้</button>}
+            {showLegacyBillingActions && <button className="btn btn-a btn-sm" onClick={handlePrintInvoicesAll}>🖨 พิมพ์ใบแจ้งหนี้ทั้งหมด</button>}
+            {showLegacyBillingActions && <button className="btn btn-o btn-sm" onClick={handlePrintNoticesAll}>🔔 พิมพ์ใบแจ้งเตือนทั้งหมด</button>}
+            {showLegacyBillingActions && <button className="btn btn-dg btn-sm" onClick={handleBulkOverdue}>⚖ คำนวณค่าปรับทั้งหมด</button>}
             <button className="btn btn-g btn-sm" onClick={() => loadFeeData({ year: currentFeeYear, status: 'all', period: 'all' })}>🔄 รีเฟรช</button>
             <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginLeft: 'auto' }}>
               {periodCards.map((item) => {
@@ -1626,7 +1676,7 @@ const AdminFees = () => {
                           <td>{fee.houses?.soi || '-'}</td>
                           <td>{fee.houses?.house_no || '-'}<div style={{ fontSize: '11px', color: 'var(--mu)' }}>{fee.houses?.owner_name || '-'}</div></td>
                           <td>{toBE(fee.year)}</td>
-                          <td>{periodLabel(fee.period)}</td>
+                          <td>{resolvePeriodLabel(fee.period, fee.year)}</td>
                           <td>{formatDateDMY(fee.due_date)}</td>
                           <td><strong>{Number(fee.total_amount || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong></td>
                           <td><strong style={{ color: outstanding > 0 ? '#9a3412' : '#166534' }}>{outstanding.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong></td>
@@ -1634,10 +1684,10 @@ const AdminFees = () => {
                           <td style={{ width: '1%', whiteSpace: 'nowrap' }}>
                             <div className="td-acts" style={{ justifyContent: 'flex-end', display: 'flex', width: '100%' }}>
                               <button className="btn btn-xs btn-a" onClick={() => handleEditFee(fee)}>แก้ไข</button>
-                              <button className="btn btn-xs btn-g" onClick={() => handlePrintInvoiceByHouse(fee)}>พิมพ์</button>
-                              {isNoticePrintable(fee) && <button className="btn btn-xs btn-o" onClick={() => handlePrintNoticeByHouse(fee)}>พิมพ์ใบเตือน</button>}
+                              {showLegacyBillingActions && <button className="btn btn-xs btn-g" onClick={() => handlePrintInvoiceByHouse(fee)}>พิมพ์</button>}
+                              {showLegacyBillingActions && isNoticePrintable(fee) && <button className="btn btn-xs btn-o" onClick={() => handlePrintNoticeByHouse(fee)}>พิมพ์ใบเตือน</button>}
                               {canCalculateAnnualFee(fee) && <button className="btn btn-xs btn-o" onClick={() => handleCalculateAnnual(fee)}>คำนวณทั้งปี</button>}
-                              {!isFeeFullyPaid(fee) && <button className="btn btn-xs btn-dg" onClick={() => handleCalculateOverdue(fee)}>คำนวณค่าปรับ</button>}
+                              {showLegacyBillingActions && !isFeeFullyPaid(fee) && <button className="btn btn-xs btn-dg" onClick={() => handleCalculateOverdue(fee)}>คำนวณค่าปรับ</button>}
                               <button className="btn btn-xs btn-dg" onClick={() => handleDeleteFee(fee)}>ลบ</button>
                             </div>
                           </td>
@@ -1661,7 +1711,7 @@ const AdminFees = () => {
                 <div key={fee.id} className="mcard">
                   <div className="mcard-top">
                     <div className="mcard-title">{fee.houses?.house_no || '-'}</div>
-                    <div className="mcard-sub">ซอย {fee.houses?.soi || '-'} · {toBE(fee.year)} · {periodLabel(fee.period)}</div>
+                    <div className="mcard-sub">ซอย {fee.houses?.soi || '-'} · {toBE(fee.year)} · {resolvePeriodLabel(fee.period, fee.year)}</div>
                     <span className={`${badge.className} mcard-badge`}>{badge.label}</span>
                   </div>
                   <div className="mcard-body">{fee.houses?.owner_name || '-'}</div>
@@ -1672,10 +1722,10 @@ const AdminFees = () => {
                   </div>
                   <div className="mcard-actions">
                     <button className="btn btn-xs btn-a" onClick={() => handleEditFee(fee)}>แก้ไข</button>
-                    <button className="btn btn-xs btn-g" onClick={() => handlePrintInvoiceByHouse(fee)}>พิมพ์</button>
-                    {isNoticePrintable(fee) && <button className="btn btn-xs btn-o" onClick={() => handlePrintNoticeByHouse(fee)}>ใบเตือน</button>}
+                    {showLegacyBillingActions && <button className="btn btn-xs btn-g" onClick={() => handlePrintInvoiceByHouse(fee)}>พิมพ์</button>}
+                    {showLegacyBillingActions && isNoticePrintable(fee) && <button className="btn btn-xs btn-o" onClick={() => handlePrintNoticeByHouse(fee)}>ใบเตือน</button>}
                     {canCalculateAnnualFee(fee) && <button className="btn btn-xs btn-o" onClick={() => handleCalculateAnnual(fee)}>ทั้งปี</button>}
-                    {!isFeeFullyPaid(fee) && <button className="btn btn-xs btn-dg" onClick={() => handleCalculateOverdue(fee)}>ค่าปรับ</button>}
+                    {showLegacyBillingActions && !isFeeFullyPaid(fee) && <button className="btn btn-xs btn-dg" onClick={() => handleCalculateOverdue(fee)}>ค่าปรับ</button>}
                     <button className="btn btn-xs btn-dg" onClick={() => handleDeleteFee(fee)}>ลบ</button>
                   </div>
                 </div>
@@ -1731,14 +1781,14 @@ const AdminFees = () => {
                         <td>{fee.houses?.soi || '-'}</td>
                         <td>{fee.houses?.house_no || '-'}<div style={{ fontSize: '11px', color: 'var(--mu)' }}>{fee.houses?.owner_name || '-'}</div></td>
                         <td>{toBE(fee.year)}</td>
-                        <td>{periodLabel(fee.period)}</td>
+                        <td>{resolvePeriodLabel(fee.period, fee.year)}</td>
                         <td>{formatDateDMY(fee.due_date)}</td>
                         <td><strong>{Number(fee.total_amount || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong></td>
                         <td><span className={badge.className}>{badge.label}</span></td>
                         <td style={{ width: '1%', whiteSpace: 'nowrap' }}>
                           <div className="td-acts" style={{ justifyContent: 'flex-end', display: 'flex', width: '100%' }}>
                             <button className="btn btn-xs btn-a" onClick={() => handleEditFee(fee)}>แก้ไข</button>
-                            <button className="btn btn-xs btn-g" onClick={() => handlePrintInvoiceByHouse(fee)}>พิมพ์</button>
+                            {showLegacyBillingActions && <button className="btn btn-xs btn-g" onClick={() => handlePrintInvoiceByHouse(fee)}>พิมพ์</button>}
                           </div>
                         </td>
                       </tr>
@@ -1757,7 +1807,7 @@ const AdminFees = () => {
               <div key={fee.id} className="mcard">
                 <div className="mcard-top">
                   <div className="mcard-title">{fee.houses?.house_no || '-'}</div>
-                  <div className="mcard-sub">ซอย {fee.houses?.soi || '-'} · {toBE(fee.year)} · {periodLabel(fee.period)}</div>
+                  <div className="mcard-sub">ซอย {fee.houses?.soi || '-'} · {toBE(fee.year)} · {resolvePeriodLabel(fee.period, fee.year)}</div>
                   <span className={`${badge.className} mcard-badge`}>{badge.label}</span>
                 </div>
                 <div className="mcard-body">{fee.houses?.owner_name || '-'}</div>
@@ -1767,7 +1817,7 @@ const AdminFees = () => {
                 </div>
                 <div className="mcard-actions">
                   <button className="btn btn-xs btn-a" onClick={() => handleEditFee(fee)}>แก้ไข</button>
-                  <button className="btn btn-xs btn-g" onClick={() => handlePrintInvoiceByHouse(fee)}>พิมพ์</button>
+                  {showLegacyBillingActions && <button className="btn btn-xs btn-g" onClick={() => handlePrintInvoiceByHouse(fee)}>พิมพ์</button>}
                 </div>
               </div>
             )})}
@@ -1851,7 +1901,7 @@ const AdminFees = () => {
               <div>
                 <div className="house-md-title">🧾 แก้ไขใบแจ้งหนี้</div>
                 <div className="house-md-sub">
-                  {editingFee.houses?.house_no || '-'} · {editingFee.houses?.owner_name || '-'} · {periodLabel(editingFee.period)} · ปี {toBE(editingFee.year)}
+                  {editingFee.houses?.house_no || '-'} · {editingFee.houses?.owner_name || '-'} · {resolvePeriodLabel(editingFee.period, editingFee.year)} · ปี {toBE(editingFee.year)}
                 </div>
               </div>
               <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center' }}>
@@ -2007,7 +2057,7 @@ const AdminFees = () => {
             <div className="house-md-head">
               <div>
                 <div className="house-md-title">💳 บันทึกรับชำระ</div>
-                <div className="house-md-sub">{payingFee.houses?.house_no || '-'} · {periodLabel(payingFee.period)} · ปี {toBE(payingFee.year)}</div>
+                <div className="house-md-sub">{payingFee.houses?.house_no || '-'} · {resolvePeriodLabel(payingFee.period, payingFee.year)} · ปี {toBE(payingFee.year)}</div>
               </div>
               <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                 <span className="bd b-pr">ยอดคงค้างจริง {paymentInvoiceTotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>

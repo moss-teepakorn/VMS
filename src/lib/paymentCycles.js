@@ -38,6 +38,61 @@ export async function getPaymentCycleConfigByYear(yearCE) {
   }
 }
 
+function formatPeriodLabel(row, fallbackLabel, includeRange = false) {
+  const baseLabel = String(row?.period_label || fallbackLabel || '').trim() || fallbackLabel || '-'
+  if (!includeRange) return baseLabel
+  if (!row?.start_date || !row?.end_date) return baseLabel
+  return `${baseLabel} (${row.start_date} - ${row.end_date})`
+}
+
+export function buildPeriodLabelMapFromCycle(cycleConfig, { includeRange = false } = {}) {
+  const defaultMap = {
+    first_half: 'ครึ่งปีแรก',
+    second_half: 'ครึ่งปีหลัง',
+    full_year: 'เต็มปี',
+  }
+
+  if (!cycleConfig) return defaultMap
+
+  const p1 = (cycleConfig.periods || []).find((row) => Number(row.seq_no) === 1)
+  const p2 = (cycleConfig.periods || []).find((row) => Number(row.seq_no) === 2)
+
+  if (cycleConfig.frequency === 'yearly') {
+    return {
+      ...defaultMap,
+      full_year: formatPeriodLabel(p1, defaultMap.full_year, includeRange),
+    }
+  }
+
+  return {
+    ...defaultMap,
+    first_half: formatPeriodLabel(p1, defaultMap.first_half, includeRange),
+    second_half: formatPeriodLabel(p2, defaultMap.second_half, includeRange),
+  }
+}
+
+export function buildPeriodOptionsFromCycle(cycleConfig, {
+  includeAll = false,
+  includeRange = false,
+} = {}) {
+  const labels = buildPeriodLabelMapFromCycle(cycleConfig, { includeRange })
+  const options = []
+
+  if (includeAll) {
+    options.push({ value: 'all', label: 'ทั้งหมด' })
+  }
+
+  if (!cycleConfig || cycleConfig.frequency === 'half_yearly') {
+    options.push(
+      { value: 'first_half', label: labels.first_half },
+      { value: 'second_half', label: labels.second_half },
+    )
+  }
+
+  options.push({ value: 'full_year', label: labels.full_year })
+  return options
+}
+
 export async function savePaymentCycleConfig({ yearCE, frequency, periods, profileId = null }) {
   const targetYear = toNumber(yearCE, 0)
   if (!targetYear) throw new Error('ปีไม่ถูกต้อง')

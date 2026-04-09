@@ -758,13 +758,13 @@ export default function AdminFeatureReceivePayment() {
             style={{ flex: '1 1 240px', minWidth: 0 }}
           />
           <button className="btn btn-p btn-sm" onClick={handleSearch} disabled={loading} style={{ height: '34px' }}>ค้นหา</button>
-          <StyledSelect className="houses-filter-select" value={yearFilter} onChange={(event) => setYearFilter(event.target.value)} style={{ width: 120 }}>
+          <StyledSelect value={yearFilter} onChange={(event) => setYearFilter(event.target.value)} style={{ width: 180 }}>
             <option value="all">ทุกปี</option>
             {yearOptions.map((year) => (
               <option key={year} value={String(year)}>{year + 543}</option>
             ))}
           </StyledSelect>
-          <StyledSelect className="houses-filter-select" value={monthFilter} onChange={(event) => setMonthFilter(event.target.value)} style={{ width: 140 }}>
+          <StyledSelect value={monthFilter} onChange={(event) => setMonthFilter(event.target.value)} style={{ width: 160 }}>
             <option value="all">ทุกเดือน</option>
             {Array.from({ length: 12 }, (_, index) => index + 1).map((month) => (
               <option key={month} value={String(month)}>
