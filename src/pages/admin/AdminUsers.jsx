@@ -328,18 +328,18 @@ const AdminUsers = () => {
       <div className="card report-filter-card admin-search-filter-card">
         <div className="cb">
           <div className="users-search-row">
-            <StyledSelect className="fs users-search-select" value={statusFilter} onChange={(e) => { setStatusFilter(e.target.value); setSelectedUserIds([]) }}>
+            <StyledSelect className="users-search-select" value={statusFilter} onChange={(e) => { setStatusFilter(e.target.value); setSelectedUserIds([]) }}>
               <option value="all">ทุกสถานะ</option>
               <option value="active">เฉพาะ Active</option>
               <option value="inactive">เฉพาะ Inactive</option>
             </StyledSelect>
-            <StyledSelect className="fs users-search-select" value={soiFilter} onChange={(e) => { setSoiFilter(e.target.value); setHouseFilter('all'); setSelectedUserIds([]) }}>
+            <StyledSelect className="users-search-select" value={soiFilter} onChange={(e) => { setSoiFilter(e.target.value); setHouseFilter('all'); setSelectedUserIds([]) }}>
               <option value="all">ทุกซอย</option>
               {soiOptions.map((soi) => (
                 <option key={`soi-${soi}`} value={soi}>ซอย {soi}</option>
               ))}
             </StyledSelect>
-            <StyledSelect className="fs users-search-select" value={houseFilter} onChange={(e) => { setHouseFilter(e.target.value); setSelectedUserIds([]) }}>
+            <StyledSelect className="users-search-select" value={houseFilter} onChange={(e) => { setHouseFilter(e.target.value); setSelectedUserIds([]) }}>
               <option value="all">ทุกบ้านเลขที่</option>
               {houses
                 .filter((house) => soiFilter === 'all' || String(house.soi || '') === String(soiFilter))

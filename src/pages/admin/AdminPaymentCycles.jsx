@@ -273,7 +273,7 @@ export default function AdminPaymentCycles() {
               onChange={(event) => setYearBE(event.target.value.replace(/[^0-9]/g, '').slice(0, 4))}
               placeholder="ปี พ.ศ."
             />
-            <StyledSelect className="fs payment-cycles-frequency" value={frequency} onChange={(event) => setFrequency(event.target.value)}>
+            <StyledSelect className="payment-cycles-frequency" value={frequency} onChange={(event) => setFrequency(event.target.value)}>
               {FREQUENCY_OPTIONS.map((item) => (
                 <option key={item.value} value={item.value}>{item.label}</option>
               ))}
