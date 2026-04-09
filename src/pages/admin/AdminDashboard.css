@@ -1397,6 +1397,15 @@
   min-width: 0;
 }
 
+.users-search-select.cars-ss::after,
+.users-role-select.cars-ss::after {
+  content: '▾';
+  color: #334155;
+  font-size: 14px;
+  font-weight: 800;
+  opacity: 1;
+}
+
 .users-search-refresh {
   min-height: 36px;
 }

@@ -190,9 +190,6 @@ const AdminUsers = () => {
       setForm((prev) => ({ ...prev, is_active: value === 'true' }))
       return
     }
-    if (name === 'role' && !editingUser && value === 'admin') {
-      return
-    }
     setForm((prev) => ({ ...prev, [name]: value }))
   }
 
@@ -228,7 +225,6 @@ const AdminUsers = () => {
     if (!form.full_name.trim()) return 'กรุณากรอกชื่อ-นามสกุล'
     if (!form.email.trim()) return 'กรุณากรอก email'
     if (!form.phone.trim()) return 'กรุณากรอกเบอร์โทร'
-    if (!editingUser && form.role === 'admin') return 'ไม่สามารถเพิ่มผู้ใช้งานเป็น admin จากหน้านี้ได้'
     return null
   }
 
@@ -248,7 +244,7 @@ const AdminUsers = () => {
         full_name: form.full_name,
         email: form.email,
         phone: form.phone,
-        role: editingUser ? form.role : 'resident',
+        role: form.role,
         is_active: form.is_active,
         house_id: form.house_id,
       }
@@ -509,14 +505,10 @@ const AdminUsers = () => {
                     </label>
                     <label className="house-field">
                       <span>บทบาท</span>
-                      {!editingUser ? (
-                        <input value="ลูกบ้าน (resident)" readOnly className="house-readonly" />
-                      ) : (
-                        <StyledSelect name="role" value={form.role} onChange={handleChange} disabled={form.role === 'admin'}>
-                          {form.role === 'admin' && <option value="admin">ผู้ดูแลระบบ</option>}
-                          <option value="resident">ลูกบ้าน</option>
-                        </StyledSelect>
-                      )}
+                      <StyledSelect name="role" value={form.role} onChange={handleChange} className="users-role-select">
+                        <option value="admin">ผู้ดูแลระบบ</option>
+                        <option value="resident">ลูกบ้าน</option>
+                      </StyledSelect>
                     </label>
                     <label className="house-field house-field-span-2">
                       <span>สถานะ</span>
