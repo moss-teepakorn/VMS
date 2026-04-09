@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useMemo } from 'react'
 import StyledSelect from '../../components/StyledSelect'
 import Swal from 'sweetalert2'
 import {
@@ -33,7 +33,18 @@ const AdminUsers = () => {
   const [saving, setSaving] = useState(false)
   const [form, setForm] = useState(EMPTY_FORM)
   const [statusFilter, setStatusFilter] = useState('all')
+  const [soiFilter, setSoiFilter] = useState('all')
+  const [houseFilter, setHouseFilter] = useState('all')
   const [selectedUserIds, setSelectedUserIds] = useState([])
+
+  const houseById = useMemo(() => {
+    return new Map((houses || []).map((house) => [String(house.id), house]))
+  }, [houses])
+
+  const soiOptions = useMemo(() => {
+    return [...new Set((houses || []).map((house) => String(house.soi || '').trim()).filter(Boolean))]
+      .sort((a, b) => Number(a) - Number(b))
+  }, [houses])
 
   useEffect(() => {
     loadUsers()
@@ -69,21 +80,24 @@ const AdminUsers = () => {
 
   const getHouseNo = (houseId) => {
     if (!houseId) return '-'
-    const house = houses.find((item) => item.id === houseId)
+    const house = houseById.get(String(houseId))
     return house?.house_no || '-'
   }
 
   const getHouseOwnerName = (houseId, fallback = '-') => {
     if (!houseId) return fallback
-    const house = houses.find((item) => item.id === houseId)
+    const house = houseById.get(String(houseId))
     return house?.owner_name || fallback
   }
 
   const getRoleText = (role) => (role === 'admin' ? 'ผู้ดูแลระบบ' : 'ลูกบ้าน')
 
   const filteredUsers = users.filter((user) => {
-    if (statusFilter === 'active') return Boolean(user.is_active)
-    if (statusFilter === 'inactive') return !user.is_active
+    const house = houseById.get(String(user.house_id || ''))
+    if (statusFilter === 'active' && !user.is_active) return false
+    if (statusFilter === 'inactive' && user.is_active) return false
+    if (soiFilter !== 'all' && String(house?.soi || '') !== String(soiFilter)) return false
+    if (houseFilter !== 'all' && String(user.house_id || '') !== String(houseFilter)) return false
     return true
   })
 
@@ -133,7 +147,7 @@ const AdminUsers = () => {
   const openAddModal = () => {
     setEditingUser(null)
     setSelectedHouse(null)
-    setForm(EMPTY_FORM)
+    setForm({ ...EMPTY_FORM, role: 'resident' })
     setShowModal(true)
   }
 
@@ -176,6 +190,9 @@ const AdminUsers = () => {
       setForm((prev) => ({ ...prev, is_active: value === 'true' }))
       return
     }
+    if (name === 'role' && !editingUser && value === 'admin') {
+      return
+    }
     setForm((prev) => ({ ...prev, [name]: value }))
   }
 
@@ -211,6 +228,7 @@ const AdminUsers = () => {
     if (!form.full_name.trim()) return 'กรุณากรอกชื่อ-นามสกุล'
     if (!form.email.trim()) return 'กรุณากรอก email'
     if (!form.phone.trim()) return 'กรุณากรอกเบอร์โทร'
+    if (!editingUser && form.role === 'admin') return 'ไม่สามารถเพิ่มผู้ใช้งานเป็น admin จากหน้านี้ได้'
     return null
   }
 
@@ -230,7 +248,7 @@ const AdminUsers = () => {
         full_name: form.full_name,
         email: form.email,
         phone: form.phone,
-        role: form.role,
+        role: editingUser ? form.role : 'resident',
         is_active: form.is_active,
         house_id: form.house_id,
       }
@@ -311,15 +329,37 @@ const AdminUsers = () => {
         </div>
       </div>
 
-      <div className="card">
-        <div className="ch houses-list-head houses-main-head">
-          <div className="ct">รายชื่อผู้ใช้งาน ({filteredUsers.length}/{users.length})</div>
-          <div className="houses-list-actions">
-            <StyledSelect className="fs" value={statusFilter} onChange={(e) => { setStatusFilter(e.target.value); setSelectedUserIds([]) }} style={{ minWidth: 150, height: 34 }}>
+      <div className="card report-filter-card admin-search-filter-card">
+        <div className="cb">
+          <div className="users-search-row">
+            <StyledSelect className="fs users-search-select" value={statusFilter} onChange={(e) => { setStatusFilter(e.target.value); setSelectedUserIds([]) }}>
               <option value="all">ทุกสถานะ</option>
               <option value="active">เฉพาะ Active</option>
               <option value="inactive">เฉพาะ Inactive</option>
             </StyledSelect>
+            <StyledSelect className="fs users-search-select" value={soiFilter} onChange={(e) => { setSoiFilter(e.target.value); setHouseFilter('all'); setSelectedUserIds([]) }}>
+              <option value="all">ทุกซอย</option>
+              {soiOptions.map((soi) => (
+                <option key={`soi-${soi}`} value={soi}>ซอย {soi}</option>
+              ))}
+            </StyledSelect>
+            <StyledSelect className="fs users-search-select" value={houseFilter} onChange={(e) => { setHouseFilter(e.target.value); setSelectedUserIds([]) }}>
+              <option value="all">ทุกบ้านเลขที่</option>
+              {houses
+                .filter((house) => soiFilter === 'all' || String(house.soi || '') === String(soiFilter))
+                .map((house) => (
+                  <option key={`house-${house.id}`} value={house.id}>{house.house_no}{house.soi ? ` (ซอย ${house.soi})` : ''}</option>
+                ))}
+            </StyledSelect>
+            <button className="btn btn-a btn-sm users-search-refresh" onClick={loadUsers}>🔄 รีเฟรช</button>
+          </div>
+        </div>
+      </div>
+
+      <div className="card">
+        <div className="ch houses-list-head houses-main-head">
+          <div className="ct">รายชื่อผู้ใช้งาน ({filteredUsers.length}/{users.length})</div>
+          <div className="houses-list-actions">
             <button className="btn btn-sm" style={{ background: allFilteredSelected ? '#0f766e' : '#334155', color: '#fff', border: 'none' }} onClick={toggleSelectAllFiltered}>
               {allFilteredSelected ? 'ยกเลิกเลือกทั้งหมด' : 'เลือกทั้งหมด'}
             </button>
@@ -469,10 +509,14 @@ const AdminUsers = () => {
                     </label>
                     <label className="house-field">
                       <span>บทบาท</span>
-                      <StyledSelect name="role" value={form.role} onChange={handleChange}>
-                        <option value="admin">ผู้ดูแลระบบ</option>
-                        <option value="resident">ลูกบ้าน</option>
-                      </StyledSelect>
+                      {!editingUser ? (
+                        <input value="ลูกบ้าน (resident)" readOnly className="house-readonly" />
+                      ) : (
+                        <StyledSelect name="role" value={form.role} onChange={handleChange} disabled={form.role === 'admin'}>
+                          {form.role === 'admin' && <option value="admin">ผู้ดูแลระบบ</option>}
+                          <option value="resident">ลูกบ้าน</option>
+                        </StyledSelect>
+                      )}
                     </label>
                     <label className="house-field house-field-span-2">
                       <span>สถานะ</span>

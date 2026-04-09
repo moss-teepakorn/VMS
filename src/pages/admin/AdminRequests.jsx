@@ -7,6 +7,7 @@ import {
   updateVehicleRequestStatus,
   cancelVehicleRequest,
 } from '../../lib/vehicleRequests'
+import { listVehicles, updateVehicle } from '../../lib/vehicles'
 import {
   listAccountRequests,
   approveAccountRequest,
@@ -52,6 +53,7 @@ const CATEGORY_LIST = [
 const AdminRequests = () => {
   const { profile } = useAuth()
   const [vehicleRequests, setVehicleRequests] = useState([])
+  const [adminPendingVehicles, setAdminPendingVehicles] = useState([])
   const [accountRequests, setAccountRequests] = useState([])
   const [loading, setLoading] = useState(false)
   const [statusFilter, setStatusFilter] = useState('pending')
@@ -63,11 +65,60 @@ const AdminRequests = () => {
     try {
       setLoading(true)
       const status = override.status ?? statusFilter
-      const [vehicleRows, accountRows] = await Promise.all([
+      const [vehicleRows, accountRows, pendingVehicles] = await Promise.all([
         listVehicleRequests({ status }),
         listAccountRequests({ status }),
+        status === 'all' || status === 'pending'
+          ? listVehicles({ status: 'pending' })
+          : Promise.resolve([]),
       ])
+
+      const requestVehicleKeySet = new Set(
+        (vehicleRows || [])
+          .filter((row) => row.status === 'pending')
+          .map((row) => [
+            String(row.house_id || ''),
+            String(row.license_plate || '').trim().toLowerCase(),
+            String(row.province || '').trim().toLowerCase(),
+            String(row.vehicle_type || '').trim().toLowerCase(),
+          ].join('|')),
+      )
+
+      const fallbackVehicles = (pendingVehicles || [])
+        .filter((row) => {
+          const key = [
+            String(row.house_id || ''),
+            String(row.license_plate || '').trim().toLowerCase(),
+            String(row.province || '').trim().toLowerCase(),
+            String(row.vehicle_type || '').trim().toLowerCase(),
+          ].join('|')
+          return !requestVehicleKeySet.has(key)
+        })
+        .map((row) => ({
+          id: `fallback-vehicle-${row.id}`,
+          vehicle_id: row.id,
+          house_id: row.house_id,
+          request_type: 'add',
+          status: 'pending',
+          license_plate: row.license_plate,
+          province: row.province,
+          brand: row.brand,
+          model: row.model,
+          color: row.color,
+          vehicle_type: row.vehicle_type,
+          vehicle_status: row.status,
+          parking_location: row.parking_location,
+          parking_lock_no: row.parking_lock_no,
+          parking_fee: row.parking_fee,
+          note: row.note,
+          created_at: row.created_at,
+          houses: row.houses || null,
+          __kind: 'vehicle_fallback',
+          is_fallback: true,
+        }))
+
       setVehicleRequests(vehicleRows)
+      setAdminPendingVehicles(fallbackVehicles)
       setAccountRequests(accountRows)
     } catch (error) {
       await showSwal({ icon: 'error', title: 'โหลดข้อมูลไม่สำเร็จ', text: error.message })
@@ -82,17 +133,20 @@ const AdminRequests = () => {
 
   const requests = [
     ...vehicleRequests.map((request) => ({ ...request, __kind: 'vehicle' })),
+    ...adminPendingVehicles,
     ...accountRequests.map((request) => ({ ...request, __kind: 'account' })),
   ].sort((left, right) => new Date(right.created_at || 0).getTime() - new Date(left.created_at || 0).getTime())
 
   const filteredRequests = requests.filter((request) => {
-    if (categoryFilter === 'vehicle_add') return request.__kind === 'vehicle' && request.request_type === 'add'
+    if (categoryFilter === 'vehicle_add') {
+      return (request.__kind === 'vehicle' && request.request_type === 'add') || request.__kind === 'vehicle_fallback'
+    }
     if (categoryFilter === 'vehicle_edit') return request.__kind === 'vehicle' && request.request_type === 'edit'
     if (categoryFilter === 'account_register') return request.__kind === 'account' && request.request_type === 'register'
     return true
   })
 
-  const pendingVehicleAddCount = vehicleRequests.filter((request) => request.status === 'pending' && request.request_type === 'add').length
+  const pendingVehicleAddCount = vehicleRequests.filter((request) => request.status === 'pending' && request.request_type === 'add').length + adminPendingVehicles.length
   const pendingVehicleEditCount = vehicleRequests.filter((request) => request.status === 'pending' && request.request_type === 'edit').length
   const pendingAccountRegisterCount = accountRequests.filter((request) => request.status === 'pending' && request.request_type === 'register').length
   const pendingAllCount = pendingVehicleAddCount + pendingVehicleEditCount + pendingAccountRegisterCount
@@ -115,6 +169,30 @@ const AdminRequests = () => {
   }
 
   async function handleApproveVehicle(req) {
+    if (req.__kind === 'vehicle_fallback') {
+      const { isConfirmed } = await showSwal({
+        icon: 'question',
+        title: 'อนุมัติรถรายการนี้?',
+        text: `จะเปลี่ยนสถานะรถ ${req.license_plate || '-'} เป็น ใช้งาน`,
+        showCancelButton: true,
+        confirmButtonText: 'อนุมัติ',
+        cancelButtonText: 'ยกเลิก',
+      })
+      if (!isConfirmed) return
+
+      try {
+        setSaving(true)
+        await updateVehicle(req.vehicle_id, { status: 'active' })
+        await showSwal({ icon: 'success', title: 'อนุมัติเรียบร้อย', timer: 1400, showConfirmButton: false })
+        await loadRequests({ status: statusFilter })
+      } catch (error) {
+        await showSwal({ icon: 'error', title: 'อนุมัติไม่สำเร็จ', text: error.message })
+      } finally {
+        setSaving(false)
+      }
+      return
+    }
+
     const draft = getApprovalDraft(req)
     const approvedRequest = {
       ...req,
@@ -197,6 +275,8 @@ const AdminRequests = () => {
       setSaving(true)
       if (req.__kind === 'account') {
         await updateAccountRequestStatus(req.id, { status: 'rejected', adminNote: reason, reviewedById: profile?.id || null })
+      } else if (req.__kind === 'vehicle_fallback') {
+        await updateVehicle(req.vehicle_id, { status: 'removed', note: reason })
       } else {
         await updateVehicleRequestStatus(req.id, { status: 'rejected', adminNote: reason })
       }
@@ -225,6 +305,8 @@ const AdminRequests = () => {
       setSaving(true)
       if (req.__kind === 'account') {
         await cancelAccountRequest(req.id, { reviewedById: profile?.id || null })
+      } else if (req.__kind === 'vehicle_fallback') {
+        await updateVehicle(req.vehicle_id, { status: 'removed' })
       } else {
         await cancelVehicleRequest(req.id)
       }
@@ -321,6 +403,7 @@ const AdminRequests = () => {
                 const badge = getRequestStatusBadge(req.status)
                 const lockAfter = req.status === 'approved' || req.status === 'cancelled'
                 const isAccountRequest = req.__kind === 'account'
+                const isFallbackVehicle = req.__kind === 'vehicle_fallback'
 
                 return (
                   <div key={`${req.__kind}-${req.id}`} className="card">
@@ -335,6 +418,7 @@ const AdminRequests = () => {
                           </div>
                           <div style={{ fontSize: 11.5, color: 'rgba(255,255,255,.65)', marginTop: 2 }}>
                             บ้าน {req.houses?.house_no || '-'} ซอย {req.houses?.soi || '-'} · {formatDate(req.created_at)}
+                            {isFallbackVehicle ? ' · บันทึกโดยผู้ดูแลระบบ' : ''}
                           </div>
                         </div>
                       </div>
@@ -383,7 +467,7 @@ const AdminRequests = () => {
                             </div>
                           )}
 
-                          {req.status === 'pending' && (
+                          {req.status === 'pending' && !isFallbackVehicle && (
                             <div style={{ background: '#f8fafc', border: '1px solid var(--bo)', borderRadius: 10, padding: 12, marginBottom: 12 }}>
                               <div style={{ fontSize: 11, fontWeight: 800, color: 'var(--mu)', textTransform: 'uppercase', letterSpacing: '.05em', marginBottom: 8 }}>ข้อมูลที่นิติกำหนดก่อนอนุมัติ</div>
                               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 10 }}>
