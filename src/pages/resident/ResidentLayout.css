@@ -716,6 +716,13 @@
   gap: 10px;
 }
 
+.house-profile-req-top-row {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
 .house-profile-req-grid .house-field--full {
   grid-column: 1 / -1;
 }
@@ -729,6 +736,10 @@
   .vc-line { padding-left: 0; }
 
   .house-profile-req-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .house-profile-req-top-row {
     grid-template-columns: 1fr;
   }
 

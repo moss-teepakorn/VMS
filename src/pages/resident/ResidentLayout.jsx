@@ -1334,6 +1334,7 @@ export default function ResidentLayout() {
   const latestAnnouncements = announcements.slice(0, 3)
   const houseAreaSqw = Number(houseDetail?.area_sqw ?? houseDetail?.area ?? 0)
   const houseAnnualFee = Number(houseDetail?.annual_fee || (houseAreaSqw > 0 ? houseAreaSqw * 12 * Number(houseDetail?.fee_rate || 0) : 0))
+  const houseStatusLabel = houseDetail?.status === 'normal' ? 'ปกติ' : (houseDetail?.status || '-')
   const houseVehicles = vehicles.filter((vehicle) => String(vehicle.house_id) === String(profile?.house_id))
   const latestHouseProfileRequest = houseProfileRequests[0] || null
   const pendingHouseProfileRequest = houseProfileRequests.find((item) => item.status === 'pending') || null
@@ -3636,7 +3637,7 @@ export default function ResidentLayout() {
               <form onSubmit={handleSubmitHouseProfileReq}>
                 <div className="house-md-body">
                   <section className="house-sec">
-                    <div className="house-profile-req-grid">
+                    <div className="house-profile-req-top-row">
                       <label className="house-field">
                         <span>บ้านเลขที่</span>
                         <input className="house-readonly-input" value={houseDetail?.house_no || '-'} disabled />
@@ -3653,6 +3654,8 @@ export default function ResidentLayout() {
                         <span>หมายเลขห้อง</span>
                         <input className="house-readonly-input" value={houseDetail?.room_no || '-'} disabled />
                       </label>
+                    </div>
+                    <div className="house-profile-req-grid">
                       <label className="house-field">
                         <span>เจ้าของบ้าน</span>
                         <input className="house-readonly-input" value={houseDetail?.owner_name || '-'} disabled />
@@ -3664,14 +3667,6 @@ export default function ResidentLayout() {
                       <label className="house-field">
                         <span>พื้นที่ (ตร.ว.)</span>
                         <input className="house-readonly-input" value={houseAreaSqw > 0 ? formatMoney(houseAreaSqw) : '-'} disabled />
-                      </label>
-                      <label className="house-field">
-                        <span>อัตราค่าส่วนกลาง / ตร.ว. / เดือน</span>
-                        <input className="house-readonly-input" value={houseDetail?.fee_rate ? `฿${formatMoney(houseDetail.fee_rate)}` : '-'} disabled />
-                      </label>
-                      <label className="house-field">
-                        <span>ค่าส่วนกลางต่อเดือน</span>
-                        <input className="house-readonly-input" value={houseAreaSqw > 0 && Number(houseDetail?.fee_rate || 0) > 0 ? `฿${formatMoney(houseAreaSqw * Number(houseDetail?.fee_rate || 0))}` : '-'} disabled />
                       </label>
                       <label className="house-field">
                         <span>ค่าส่วนกลางต่อปี</span>
@@ -3703,7 +3698,7 @@ export default function ResidentLayout() {
                       </label>
                       <label className="house-field">
                         <span>สถานะบ้าน</span>
-                        <input className="house-readonly-input" value={houseDetail?.status || '-'} disabled />
+                        <input className="house-readonly-input" value={houseStatusLabel} disabled />
                       </label>
                     </div>
                   </section>
