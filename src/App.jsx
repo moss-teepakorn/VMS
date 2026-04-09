@@ -19,6 +19,7 @@ import AdminTechnicians from './pages/admin/AdminTechnicians'
 import AdminMarketplace from './pages/admin/AdminMarketplace'
 import AdminRules from './pages/admin/AdminRules'
 import AdminConfig from './pages/admin/AdminConfig'
+import AdminPaymentCycles from './pages/admin/AdminPaymentCycles'
 import AdminUsers from './pages/admin/AdminUsers'
 import AdminLogs from './pages/admin/AdminLogs'
 import AdminLoginLogs from './pages/admin/AdminLoginLogs'
@@ -124,6 +125,7 @@ function AppRoutes() {
         <Route path="technicians" element={<AdminTechnicians />} />
         <Route path="marketplace" element={<AdminMarketplace />} />
         <Route path="config" element={<AdminConfig />} />
+        <Route path="config/payment-cycles" element={<AdminPaymentCycles />} />
         <Route path="users" element={<AdminUsers />} />
         <Route path="logs" element={<AdminLogs />} />
         <Route path="login-logs" element={<AdminLoginLogs />} />
