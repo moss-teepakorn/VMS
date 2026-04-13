@@ -386,6 +386,19 @@ export async function listFees({ status = 'all', year = 'all', period = 'all', s
   return data ?? []
 }
 
+export async function getFeeById(feeId) {
+  if (!feeId) return null
+
+  const { data, error } = await supabase
+    .from('fees')
+    .select('id, house_id, year, period, invoice_date, due_date, status, fee_common, fee_parking, fee_waste, fee_overdue_common, fee_overdue_fine, fee_overdue_notice, fee_fine, fee_notice, fee_violation, fee_other, total_amount, note, created_at, houses(id, house_no, soi, owner_name, area_sqw, fee_rate)')
+    .eq('id', feeId)
+    .maybeSingle()
+
+  if (error) throw error
+  return data || null
+}
+
 export async function getLatestFeeYear() {
   const { data, error } = await supabase
     .from('fees')

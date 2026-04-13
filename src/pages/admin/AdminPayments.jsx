@@ -11,6 +11,8 @@ import {
   listPayments,
   rejectPayment,
   uploadPaymentSlip,
+  getFeeById,
+  updatePayment,
 } from '../../lib/fees'
 import { getSetupConfig } from '../../lib/setup'
 import villageLogo from '../../assets/village-logo.svg'
@@ -341,6 +343,73 @@ export default function AdminPayments() {
   const [receiveSlipPreview, setReceiveSlipPreview] = useState('')
   const [approveTarget, setApproveTarget] = useState(null)
   const [approving, setApproving] = useState(false)
+  const [approveFeeSnapshot, setApproveFeeSnapshot] = useState(null)
+  const [approveItemDraft, setApproveItemDraft] = useState({})
+  const [loadingApproveItems, setLoadingApproveItems] = useState(false)
+
+  function buildPaymentMetaNote(baseNote, rows = []) {
+    const selectedItemsMeta = rows
+      .filter((row) => Number(row?.paidAmount || 0) > 0)
+      .map((row) => ({
+        key: row.key,
+        label: row.label,
+        dueAmount: Number(row.dueAmount || 0),
+        paidAmount: Number(row.paidAmount || 0),
+      }))
+
+    const noteParts = []
+    if (String(baseNote || '').trim()) noteParts.push(String(baseNote || '').trim())
+    if (selectedItemsMeta.length > 0) {
+      noteParts.push(`${PAYMENT_META_PREFIX}${JSON.stringify({ items: selectedItemsMeta })}`)
+    }
+    return noteParts.join(' | ')
+  }
+
+  function getOutstandingItemsForApproval(fee, payments = [], { excludePaymentId = null } = {}) {
+    if (!fee?.id) return []
+
+    const paidByKey = {}
+    for (const payment of payments) {
+      if (payment?.fee_id !== fee.id) continue
+      if (excludePaymentId && String(payment.id) === String(excludePaymentId)) continue
+      if (!payment?.verified_at) continue
+      if (getRejectedReason(payment?.note)) continue
+
+      const rows = getPaymentItemRows(payment)
+      for (const row of rows) {
+        const keyFromLabel = feeItemDefs.find((def) => def.label === row?.label)?.key
+        const key = row?.key || keyFromLabel
+        if (!feeItemDefs.some((def) => def.key === key)) continue
+        paidByKey[key] = Number(paidByKey[key] || 0) + Number(row?.paidAmount || 0)
+      }
+    }
+
+    return feeItemDefs
+      .map((item) => {
+        const dueAmount = Number(fee?.[item.key] || 0)
+        const paidToDate = Number(paidByKey[item.key] || 0)
+        const outstanding = Math.max(0, dueAmount - paidToDate)
+        return {
+          ...item,
+          dueAmount,
+          paidToDate,
+          outstanding,
+        }
+      })
+      .filter((item) => item.outstanding > 0)
+  }
+
+  function buildAllocationDraft(items = [], totalAmount = 0) {
+    let remain = Number(totalAmount || 0)
+    const draft = {}
+    for (const item of items) {
+      const max = Number(item?.outstanding || 0)
+      const allocated = Math.max(0, Math.min(max, remain))
+      draft[item.key] = allocated
+      remain = Math.max(0, remain - allocated)
+    }
+    return draft
+  }
   const [showReceiptPrintActionModal, setShowReceiptPrintActionModal] = useState(false)
   const [runningReceiptPrintAction, setRunningReceiptPrintAction] = useState(false)
   const [receiptPrintTarget, setReceiptPrintTarget] = useState(null)
@@ -741,17 +810,87 @@ export default function AdminPayments() {
     }
   }
 
-  const openApproveModal = (payment) => {
+  const openApproveModal = async (payment) => {
     setApproveTarget(payment)
+    setApproveFeeSnapshot(null)
+    setApproveItemDraft({})
+
+    if (!payment?.fee_id) return
+
+    try {
+      setLoadingApproveItems(true)
+      const fee = await getFeeById(payment.fee_id)
+      if (!fee) return
+
+      const outstandingItems = getOutstandingItemsForApproval(fee, payments, { excludePaymentId: payment.id })
+      const totalAmount = Number(payment.amount || 0)
+      setApproveFeeSnapshot(fee)
+      setApproveItemDraft(buildAllocationDraft(outstandingItems, totalAmount))
+    } catch (error) {
+      await Swal.fire({ icon: 'error', title: 'โหลดรายละเอียดตัดหนี้ไม่สำเร็จ', text: error.message })
+    } finally {
+      setLoadingApproveItems(false)
+    }
   }
 
   const handleApproveConfirmed = async () => {
     if (!approveTarget) return
     try {
       setApproving(true)
+
+      if (approveTarget?.fee_id && approveFeeSnapshot) {
+        const approvalRows = getOutstandingItemsForApproval(approveFeeSnapshot, payments, { excludePaymentId: approveTarget.id })
+          .map((item) => {
+            const paidAmount = Number(approveItemDraft[item.key] || 0)
+            return {
+              key: item.key,
+              label: item.label,
+              dueAmount: Number(item.outstanding || 0),
+              paidAmount,
+            }
+          })
+          .filter((row) => row.paidAmount > 0)
+
+        const approvedTotal = approvalRows.reduce((sum, row) => sum + Number(row.paidAmount || 0), 0)
+        const targetAmount = Number(approveTarget.amount || 0)
+        const diff = Math.abs(approvedTotal - targetAmount)
+
+        if (approvalRows.length === 0) {
+          await Swal.fire({ icon: 'warning', title: 'กรุณาระบุรายการที่ตัดหนี้อย่างน้อย 1 รายการ' })
+          return
+        }
+
+        if (diff > 0.009) {
+          await Swal.fire({ icon: 'warning', title: 'ยอดตัดหนี้รวมไม่เท่ากับยอดชำระ', text: `ยอดชำระ ${formatMoney(targetAmount)} แต่ยอดตัดหนี้ ${formatMoney(approvedTotal)}` })
+          return
+        }
+
+        const noteWithMeta = buildPaymentMetaNote(getDisplayNote(approveTarget.note), approvalRows)
+
+        await updatePayment(approveTarget.id, {
+          fee_id: approveTarget.fee_id,
+          house_id: approveTarget.house_id,
+          amount: targetAmount,
+          payment_method: approveTarget.payment_method,
+          slip_url: approveTarget.slip_url,
+          paid_at: approveTarget.paid_at,
+          verified_by: null,
+          verified_at: null,
+          note: noteWithMeta,
+          payment_items: approvalRows.map((row) => ({
+            item_key: row.key,
+            item_label: row.label,
+            due_amount: row.dueAmount,
+            paid_amount: row.paidAmount,
+          })),
+        })
+      }
+
       const approved = await approvePayment(approveTarget.id, profile?.id)
       setPayments((prev) => prev.map((item) => (item.id === approved.id ? approved : item)))
       setApproveTarget(null)
+      setApproveFeeSnapshot(null)
+      setApproveItemDraft({})
       await Swal.fire({ icon: 'success', title: 'อนุมัติแล้ว', timer: 1200, showConfirmButton: false })
     } catch (error) {
       await Swal.fire({ icon: 'error', title: 'อนุมัติไม่สำเร็จ', text: error.message })
@@ -763,6 +902,39 @@ export default function AdminPayments() {
   const handleOpenSlip = (payment) => {
     if (!payment.slip_url) return
     window.open(payment.slip_url, '_blank', 'noopener,noreferrer')
+  }
+
+  const approveOutstandingItems = useMemo(() => {
+    if (!approveTarget?.fee_id || !approveFeeSnapshot) return []
+    return getOutstandingItemsForApproval(approveFeeSnapshot, payments, { excludePaymentId: approveTarget.id })
+  }, [approveTarget, approveFeeSnapshot, payments])
+
+  const approveDraftTotal = useMemo(() => {
+    if (!approveOutstandingItems.length) return 0
+    return approveOutstandingItems.reduce((sum, item) => sum + Number(approveItemDraft[item.key] || 0), 0)
+  }, [approveOutstandingItems, approveItemDraft])
+
+  const handleApproveDraftAmountChange = (itemKey, rawValue, maxAmount) => {
+    let nextValue = Number(rawValue)
+    if (!Number.isFinite(nextValue)) nextValue = 0
+    if (nextValue < 0) nextValue = 0
+    if (nextValue > maxAmount) nextValue = maxAmount
+
+    setApproveItemDraft((prev) => ({
+      ...prev,
+      [itemKey]: nextValue,
+    }))
+  }
+
+  const handleAutoAllocateApproveDraft = () => {
+    if (!approveOutstandingItems.length || !approveTarget) return
+    setApproveItemDraft(buildAllocationDraft(approveOutstandingItems, Number(approveTarget.amount || 0)))
+  }
+
+  const handleClearApproveDraft = () => {
+    const next = {}
+    approveOutstandingItems.forEach((item) => { next[item.key] = 0 })
+    setApproveItemDraft(next)
   }
 
   const handleReject = async (payment) => {
@@ -1552,6 +1724,67 @@ export default function AdminPayments() {
                   </div>
                 </div>
               </section>
+
+              {approveTarget.fee_id && (
+                <section className="house-sec">
+                  <div className="house-field" style={{ gap: 8 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+                      <span>ระบุรายการตัดหนี้ (ใช้ตอนอนุมัติ)</span>
+                      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                        <button className="btn btn-xs btn-a" type="button" onClick={handleAutoAllocateApproveDraft} disabled={loadingApproveItems || approving}>เติมอัตโนมัติ</button>
+                        <button className="btn btn-xs btn-g" type="button" onClick={handleClearApproveDraft} disabled={loadingApproveItems || approving}>ล้างค่า</button>
+                      </div>
+                    </div>
+
+                    {loadingApproveItems ? (
+                      <div style={{ fontSize: 13, color: 'var(--mu)' }}>กำลังโหลดรายการคงค้าง...</div>
+                    ) : approveOutstandingItems.length === 0 ? (
+                      <div style={{ fontSize: 13, color: 'var(--mu)' }}>ไม่พบยอดคงค้างแยกรายการ</div>
+                    ) : (
+                      <div className="houses-table-wrap" style={{ maxHeight: 260, overflow: 'auto' }}>
+                        <table className="tw" style={{ width: '100%', minWidth: 620 }}>
+                          <thead>
+                            <tr>
+                              <th style={{ width: 60, textAlign: 'center' }}>ลำดับ</th>
+                              <th>รายการ</th>
+                              <th style={{ width: 160 }}>ยอดคงค้าง</th>
+                              <th style={{ width: 180 }}>ยอดอนุมัติ</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {approveOutstandingItems.map((row, index) => (
+                              <tr key={`${approveTarget.id}-approve-draft-${row.key}`}>
+                                <td style={{ textAlign: 'center' }}>{index + 1}</td>
+                                <td>{row.label}</td>
+                                <td>฿{Number(row.outstanding || 0).toLocaleString('th-TH')}</td>
+                                <td>
+                                  <input
+                                    type="number"
+                                    min="0"
+                                    max={row.outstanding}
+                                    step="0.01"
+                                    value={approveItemDraft[row.key] ?? 0}
+                                    onChange={(e) => handleApproveDraftAmountChange(row.key, e.target.value, Number(row.outstanding || 0))}
+                                    disabled={approving}
+                                    style={{ width: '100%' }}
+                                  />
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+
+                    <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap', color: 'var(--mu)', fontSize: 13 }}>
+                      <span>ยอดชำระที่ลูกบ้านแจ้ง: ฿{formatMoney(approveTarget.amount)}</span>
+                      <span style={{ fontWeight: 700, color: Math.abs(Number(approveTarget.amount || 0) - Number(approveDraftTotal || 0)) <= 0.009 ? 'var(--ac)' : 'var(--dg)' }}>
+                        ยอดตัดหนี้รวม: ฿{formatMoney(approveDraftTotal)}
+                      </span>
+                    </div>
+                  </div>
+                </section>
+              )}
 
               <section className="house-sec">
                 <div className="house-field" style={{ gap: 8 }}>
