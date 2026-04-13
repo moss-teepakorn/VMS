@@ -2,21 +2,59 @@ import { supabase } from './supabase'
 
 const REJECT_PREFIX = '[REJECT] '
 const PAYMENT_SLIP_BUCKET = 'system-assets'
-const PAYMENT_SLIP_TARGET_BYTES = 50 * 1024
+const PAYMENT_SLIP_TARGET_BYTES = 60 * 1024
 const PAYMENT_SLIP_MAX_UPLOAD_BYTES = 12 * 1024 * 1024
 
-function sanitizeFileName(name) {
-  const raw = String(name || 'payment-slip')
-  return raw.replace(/[^a-zA-Z0-9._-]+/g, '_')
+function sanitizeHouseNoForFileName(houseNo) {
+  const raw = String(houseNo || '').trim()
+  if (!raw) return 'general'
+  return raw.replace(/[^a-zA-Z0-9-]+/g, '-')
 }
 
-function buildUniqueSlipName() {
-  const now = new Date()
-  const stamp = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}${String(now.getHours()).padStart(2, '0')}${String(now.getMinutes()).padStart(2, '0')}${String(now.getSeconds()).padStart(2, '0')}`
-  const randomPart = typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
-    ? crypto.randomUUID().replace(/-/g, '').slice(0, 12)
-    : `${Math.random().toString(36).slice(2, 14)}${Date.now().toString(36)}`.slice(0, 12)
-  return `slip_${stamp}_${sanitizeFileName(randomPart)}.jpg`
+function getSlipTimestampParts(paidAt) {
+  const targetDate = paidAt ? new Date(paidAt) : new Date()
+  const safeDate = Number.isFinite(targetDate.getTime()) ? targetDate : new Date()
+  const yyyy = safeDate.getFullYear()
+  const mm = String(safeDate.getMonth() + 1).padStart(2, '0')
+  const dd = String(safeDate.getDate()).padStart(2, '0')
+  const hh = String(safeDate.getHours()).padStart(2, '0')
+  const mi = String(safeDate.getMinutes()).padStart(2, '0')
+  const ss = String(safeDate.getSeconds()).padStart(2, '0')
+  return {
+    datePart: `${yyyy}${mm}${dd}`,
+    timePart: `${hh}${mi}${ss}`,
+  }
+}
+
+function buildResidentSlipFileName({ houseNo, paidAt, runningNo = 1 } = {}) {
+  const { datePart, timePart } = getSlipTimestampParts(paidAt)
+  const seq = String(Number(runningNo) > 0 ? Number(runningNo) : 1).padStart(3, '0')
+  return `${sanitizeHouseNoForFileName(houseNo)}_${datePart}_${timePart}_${seq}.JPG`
+}
+
+async function resolveNextSlipRunningNo({ houseId, houseNo, paidAt }) {
+  const folder = String(houseId || 'general').trim()
+  const safeHouseNo = sanitizeHouseNoForFileName(houseNo)
+  const { datePart, timePart } = getSlipTimestampParts(paidAt)
+  const prefix = `${safeHouseNo}_${datePart}_${timePart}_`
+
+  const { data, error } = await supabase.storage
+    .from(PAYMENT_SLIP_BUCKET)
+    .list(`payment-slips/${folder}`, { limit: 100, sortBy: { column: 'name', order: 'desc' } })
+
+  if (error) throw error
+
+  let maxSeq = 0
+  for (const item of data || []) {
+    const name = String(item?.name || '')
+    if (!name.startsWith(prefix)) continue
+    const match = name.match(/_(\d{3})\.[a-zA-Z]+$/)
+    if (!match) continue
+    const seq = Number(match[1])
+    if (Number.isFinite(seq) && seq > maxSeq) maxSeq = seq
+  }
+
+  return maxSeq + 1
 }
 
 function readFileAsDataUrl(file) {
@@ -79,16 +117,16 @@ async function compressSlipImageToLimit(file, targetBytes = PAYMENT_SLIP_TARGET_
       if (!blob) continue
       if (!bestBlob || blob.size < bestBlob.size) bestBlob = blob
       if (blob.size <= targetBytes) {
-        return new File([blob], buildUniqueSlipName(), { type: 'image/jpeg' })
+        return new File([blob], 'payment-slip.jpg', { type: 'image/jpeg' })
       }
     }
   }
 
   if (bestBlob && bestBlob.size <= targetBytes) {
-    return new File([bestBlob], buildUniqueSlipName(), { type: 'image/jpeg' })
+    return new File([bestBlob], 'payment-slip.jpg', { type: 'image/jpeg' })
   }
 
-  throw new Error('ไม่สามารถย่อรูปให้เหลือ 50KB ได้ กรุณาเลือกรูปที่ขนาดเล็กลง')
+  throw new Error('ไม่สามารถย่อรูปให้เหลือ 60KB ได้ กรุณาเลือกรูปที่ขนาดเล็กลง')
 }
 
 function stripRejectMarker(note) {
@@ -1406,16 +1444,21 @@ export async function updatePayment(paymentId, payload = {}) {
   return data
 }
 
-export async function uploadPaymentSlip(file, { houseId } = {}) {
+export async function uploadPaymentSlip(file, { houseId, houseNo = null, paidAt = null, runningNo = 1 } = {}) {
   if (!file) throw new Error('ไม่พบไฟล์หลักฐานการชำระ')
 
   const compressedFile = await compressSlipImageToLimit(file, PAYMENT_SLIP_TARGET_BYTES)
   const folder = String(houseId || 'general').trim()
-  const path = `payment-slips/${folder}/${compressedFile.name}`
+  const sequence = Number(runningNo) > 0
+    ? Number(runningNo)
+    : await resolveNextSlipRunningNo({ houseId, houseNo, paidAt })
+  const fileName = buildResidentSlipFileName({ houseNo, paidAt, runningNo: sequence })
+  const normalizedFile = new File([compressedFile], fileName, { type: 'image/jpeg' })
+  const path = `payment-slips/${folder}/${normalizedFile.name}`
 
   const { error } = await supabase.storage
     .from(PAYMENT_SLIP_BUCKET)
-    .upload(path, compressedFile, { upsert: true, contentType: 'image/jpeg' })
+    .upload(path, normalizedFile, { upsert: true, contentType: 'image/jpeg' })
 
   if (error) throw error
 

@@ -217,7 +217,7 @@ function CollectionsPage({ collectionRows, selectedCollectionIds, onToggleCollec
   )
 }
 
-function ReceivePage({ receiveRows, receiveFilter, setReceiveFilter, onApprove, onReject, receiveBusy }) {
+function ReceivePage({ receiveRows, receiveFilter, setReceiveFilter, onApprove, onReject, onOpenSlip, receiveBusy }) {
   return (
     <div className="finance-v2-grid">
       <section className="finance-v2-card">
@@ -246,6 +246,11 @@ function ReceivePage({ receiveRows, receiveFilter, setReceiveFilter, onApprove, 
                   <span className={`finance-v2-chip ${status === 'approved' ? 'green' : status === 'rejected' ? 'orange' : 'blue'}`}>
                     {status === 'approved' ? 'อนุมัติแล้ว' : status === 'rejected' ? 'ตีกลับ' : 'รอตรวจสอบ'}
                   </span>
+                  {row.slip_url && (
+                    <button className="btn btn-o btn-sm" onClick={() => onOpenSlip(row.slip_url)}>
+                      ดูสลิป
+                    </button>
+                  )}
                   {!row.verified_at && !isRejected && (
                     <>
                       <button className="btn btn-ok btn-sm" onClick={() => onApprove(row.id)} disabled={receiveBusy}>อนุมัติ</button>
@@ -639,6 +644,11 @@ export default function AdminFinanceV2() {
     }
   }
 
+  const handleOpenSlip = (slipUrl) => {
+    if (!slipUrl) return
+    window.open(slipUrl, '_blank', 'noopener,noreferrer')
+  }
+
   const handlePrintInvoices = () => {
     const rows = printFees.map((row) => [row.houses?.house_no || '-', row.houses?.soi || '-', periodLabel(row.period), toBE(row.year), formatMoney(row.total_amount), feeStatusLabel(row.status)])
     openPrintHtml('ใบแจ้งหนี้ทั้งหมด (การเงิน V2)', ['บ้าน', 'ซอย', 'งวด', 'ปี', 'ยอดรวม', 'สถานะ'], rows)
@@ -708,6 +718,7 @@ export default function AdminFinanceV2() {
         setReceiveFilter={setReceiveFilter}
         onApprove={handleApprove}
         onReject={handleReject}
+        onOpenSlip={handleOpenSlip}
         receiveBusy={actionLoading}
       />
     )

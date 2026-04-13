@@ -688,7 +688,12 @@ export default function AdminPayments() {
     try {
       setSavingReceive(true)
       setUploadingSlip(true)
-      const uploadedSlip = await uploadPaymentSlip(receiveSlipFile, { houseId: targetFee.house_id })
+      const uploadedSlip = await uploadPaymentSlip(receiveSlipFile, {
+        houseId: targetFee.house_id,
+        houseNo: targetFee?.houses?.house_no || '-',
+        paidAt: receiveForm.paid_at,
+        runningNo: null,
+      })
       const selectedItemsMeta = receivePayableItems
         .filter((item) => receiveForm.selectedItems.includes(item.key))
         .map((item) => ({

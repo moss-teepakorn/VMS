@@ -12,7 +12,7 @@ import {
   residentUpdateViolation,
   uploadViolationImages,
 } from '../../lib/violations'
-import { createPayment, listHouseFees, listHousePayments } from '../../lib/fees'
+import { createPayment, listHouseFees, listHousePayments, uploadPaymentSlip } from '../../lib/fees'
 import { listAnnouncements } from '../../lib/announcements'
 import { listWorkReports } from '../../lib/workReports'
 import { listTechnicians } from '../../lib/technicians'
@@ -316,7 +316,10 @@ export default function ResidentLayout() {
   const [feeYearFilter, setFeeYearFilter] = useState('all')
   const [showPaymentModal, setShowPaymentModal] = useState(false)
   const [selectedFee, setSelectedFee] = useState(null)
-  const [paymentForm, setPaymentForm] = useState({ amount: '', payment_method: 'transfer', slip_url: '', note: '' })
+  const [paymentForm, setPaymentForm] = useState({ amount: '', payment_method: 'transfer', note: '' })
+  const [paymentSlipFile, setPaymentSlipFile] = useState(null)
+  const [paymentSlipPreview, setPaymentSlipPreview] = useState('')
+  const [paymentSubmitting, setPaymentSubmitting] = useState(false)
 
   const [violations, setViolations] = useState([])
   const [statusFilter, setStatusFilter] = useState('all')
@@ -1584,14 +1587,47 @@ export default function ResidentLayout() {
 
   function openPaymentModal(fee) {
     setSelectedFee(fee)
-    setPaymentForm({ amount: String(Number(fee.total_amount || 0)), payment_method: 'transfer', slip_url: '', note: '' })
+    setPaymentForm({ amount: String(Number(fee.total_amount || 0)), payment_method: 'transfer', note: '' })
+    if (paymentSlipPreview) URL.revokeObjectURL(paymentSlipPreview)
+    setPaymentSlipPreview('')
+    setPaymentSlipFile(null)
     setShowPaymentModal(true)
   }
 
-  function closePaymentModal() {
+  function closePaymentModal(force = false) {
+    if (paymentSubmitting && !force) return
     setShowPaymentModal(false)
     setSelectedFee(null)
-    setPaymentForm({ amount: '', payment_method: 'transfer', slip_url: '', note: '' })
+    setPaymentForm({ amount: '', payment_method: 'transfer', note: '' })
+    if (paymentSlipPreview) URL.revokeObjectURL(paymentSlipPreview)
+    setPaymentSlipPreview('')
+    setPaymentSlipFile(null)
+  }
+
+  function handleChangePaymentSlip(event) {
+    const file = event.target.files?.[0] || null
+    if (!file) {
+      if (paymentSlipPreview) URL.revokeObjectURL(paymentSlipPreview)
+      setPaymentSlipPreview('')
+      setPaymentSlipFile(null)
+      return
+    }
+
+    if (!String(file.type || '').startsWith('image/')) {
+      showSwal({ icon: 'warning', title: 'แนบได้เฉพาะไฟล์รูปภาพ' })
+      event.target.value = ''
+      return
+    }
+
+    if (file.size > 12 * 1024 * 1024) {
+      showSwal({ icon: 'warning', title: 'ไฟล์รูปใหญ่เกิน 12MB' })
+      event.target.value = ''
+      return
+    }
+
+    if (paymentSlipPreview) URL.revokeObjectURL(paymentSlipPreview)
+    setPaymentSlipFile(file)
+    setPaymentSlipPreview(URL.createObjectURL(file))
   }
 
   async function handleSubmitPayment(event) {
@@ -1600,16 +1636,26 @@ export default function ResidentLayout() {
     if (!paymentForm.amount || Number(paymentForm.amount) <= 0) {
       await showSwal({ icon: 'warning', title: 'กรุณาระบุยอดชำระ' }); return
     }
-    if (!paymentForm.slip_url.trim()) {
-      await showSwal({ icon: 'warning', title: 'กรุณาแนบลิงก์หลักฐานการชำระ' }); return
+    if (!paymentSlipFile) {
+      await showSwal({ icon: 'warning', title: 'กรุณาแนบรูปหลักฐานการชำระ' }); return
     }
     try {
+      setPaymentSubmitting(true)
+      const paidAt = new Date().toISOString()
+      const uploadedSlip = await uploadPaymentSlip(paymentSlipFile, {
+        houseId: profile?.house_id,
+        houseNo: selectedFee?.houses?.house_no || houseDetail?.house_no || '-',
+        paidAt,
+        runningNo: null,
+      })
+
       await createPayment({
         fee_id: selectedFee.id,
         house_id: profile?.house_id,
         amount: Number(paymentForm.amount),
         payment_method: paymentForm.payment_method,
-        slip_url: paymentForm.slip_url,
+        slip_url: uploadedSlip?.url || '',
+        paid_at: paidAt,
         note: paymentForm.note,
         payment_items: [{
           item_key: 'resident_submitted_total',
@@ -1619,10 +1665,12 @@ export default function ResidentLayout() {
         }],
       })
       await showSwal({ icon: 'success', title: 'ส่งหลักฐานแล้ว', text: 'รอนิติตรวจสอบ', timer: 1400, showConfirmButton: false })
-      closePaymentModal()
+      closePaymentModal(true)
       await loadFeeData({ status: feeStatusFilter, year: feeYearFilter })
     } catch (error) {
       await showSwal({ icon: 'error', title: 'ส่งหลักฐานไม่สำเร็จ', text: error.message })
+    } finally {
+      setPaymentSubmitting(false)
     }
   }
 
@@ -3736,8 +3784,16 @@ export default function ResidentLayout() {
                         </StyledSelect>
                       </label>
                       <label className="house-field" style={{ gridColumn: '1 / -1' }}>
-                        <span>ลิงก์หลักฐาน (สลิป) *</span>
-                        <input type="url" placeholder="https://..." value={paymentForm.slip_url} onChange={(e) => setPaymentForm((p) => ({ ...p, slip_url: e.target.value }))} />
+                        <span>แนบรูปหลักฐาน (สลิป) *</span>
+                        <input type="file" accept="image/*" onChange={handleChangePaymentSlip} disabled={paymentSubmitting} />
+                        <div style={{ fontSize: 12, color: 'var(--mu)' }}>ระบบรับเฉพาะรูปภาพ, เปลี่ยนชื่อเป็น บ้านเลขที่_YYYYMMDD_HHMMSS_001.JPG และย่อไม่เกิน 60KB อัตโนมัติ</div>
+                        {paymentSlipPreview && (
+                          <img
+                            src={paymentSlipPreview}
+                            alt="resident-payment-slip-preview"
+                            style={{ width: '100%', maxWidth: 320, borderRadius: 8, border: '1px solid var(--bo)', marginTop: 6 }}
+                          />
+                        )}
                       </label>
                       <label className="house-field" style={{ gridColumn: '1 / -1' }}>
                         <span>หมายเหตุ</span>
@@ -3747,8 +3803,8 @@ export default function ResidentLayout() {
                   </section>
                 </div>
                 <div className="house-md-foot">
-                  <button className="btn btn-g" type="button" onClick={closePaymentModal}>ยกเลิก</button>
-                  <button className="btn btn-p" type="submit">ส่งตรวจสอบ</button>
+                  <button className="btn btn-g" type="button" onClick={closePaymentModal} disabled={paymentSubmitting}>ยกเลิก</button>
+                  <button className="btn btn-p" type="submit" disabled={paymentSubmitting}>{paymentSubmitting ? 'กำลังส่ง...' : 'ส่งตรวจสอบ'}</button>
                 </div>
               </form>
             </div>
