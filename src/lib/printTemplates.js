@@ -128,6 +128,7 @@ export function buildInvoiceHtmlAdminStyle({
   setup = {},
   logoUrl = '',
   signatureUrl = '',
+  houseInfo = {},
   autoPrint = false,
   forCapture = false,
 } = {}) {
@@ -141,7 +142,17 @@ export function buildInvoiceHtmlAdminStyle({
   const bankAccountNo = getSetupValue(setup, 'bank_account_no', 'bankAccountNo', '-')
   const bankAccountName = getSetupValue(setup, 'bank_account_name', 'bankAccountName', '-')
   const feeRatePerSqw = toNumber(getSetupValue(setup, 'fee_rate_per_sqw', 'feeRatePerSqw', 0))
-  const invoiceMessage = getSetupValue(setup, 'invoice_message', 'invoiceMessage', 'กรุณาแนบหลักฐานการโอนทุกครั้งหลังชำระ')
+  const invoiceMessage = getSetupValue(
+    setup,
+    'invoice_message',
+    'invoiceMessage',
+    'กรุณาชำระภายในวันที่กำหนด หากพ้นกำหนดจะคิดค่าปรับ 10%\nไม่รับชำระเงินเป็นเงินสดทุกกรณี คณะกรรมการจะไม่รับผิดชอบจากการชำระด้วยเงินสด\nขอให้ท่านส่งหลักฐานการชำระเงินเข้ามาที่ Line Official ID : @gusto.ssw26 หรือทำผ่านระบบ',
+  )
+  const houseNo = fee?.houses?.house_no || houseInfo?.house_no || '-'
+  const ownerName = fee?.houses?.owner_name || houseInfo?.owner_name || '-'
+  const soi = fee?.houses?.soi || houseInfo?.soi || '-'
+  const areaSqw = toNumber(fee?.houses?.area_sqw || houseInfo?.area_sqw || 0)
+  const feeRate = feeRatePerSqw > 0 ? feeRatePerSqw : toNumber(fee?.houses?.fee_rate || houseInfo?.fee_rate || 0)
 
   const rows = Array.isArray(outstandingItems) ? outstandingItems : []
   const rowHtml = rows.length === 0
@@ -172,7 +183,7 @@ export function buildInvoiceHtmlAdminStyle({
             <div class="village">${villageName}</div>
             <div class="sub">${juristicName}</div>
             <div class="sub">${juristicAddress}</div>
-            <div class="sub">ใบแจ้งหนี้ ${fee?.houses?.house_no || '-'} ${periodText}</div>
+            <div class="sub">ใบแจ้งหนี้ ${houseNo} ${periodText}</div>
           </div>
         </div>
         <div class="doc-meta">
@@ -187,12 +198,12 @@ export function buildInvoiceHtmlAdminStyle({
 
       <section class="box">
         <div class="grid">
-          <div><span>บ้านเลขที่</span><strong>${fee?.houses?.house_no || '-'}</strong></div>
-          <div><span>ชื่อเจ้าของบ้าน</span><strong>${fee?.houses?.owner_name || '-'}</strong></div>
+          <div><span>บ้านเลขที่</span><strong>${houseNo}</strong></div>
+          <div><span>ชื่อเจ้าของบ้าน</span><strong>${ownerName}</strong></div>
           <div><span>งวดเรียกเก็บ</span><strong>${periodText}</strong></div>
-          <div><span>ซอย</span><strong>${fee?.houses?.soi || '-'}</strong></div>
-          <div><span>พื้นที่ (ตร.วา)</span><strong>${toNumber(fee?.houses?.area_sqw).toLocaleString('en-US')}</strong></div>
-          <div><span>อัตราค่าส่วนกลาง</span><strong>${feeRatePerSqw.toLocaleString('en-US')} บาท/ตร.วา/ปี</strong></div>
+          <div><span>ซอย</span><strong>${soi}</strong></div>
+          <div><span>พื้นที่ (ตร.วา)</span><strong>${areaSqw.toLocaleString('en-US')}</strong></div>
+          <div><span>อัตราค่าส่วนกลาง</span><strong>${feeRate.toLocaleString('en-US')} บาท/ตร.วา/ปี</strong></div>
         </div>
       </section>
 
@@ -333,6 +344,7 @@ export function buildInvoiceHtmlAdminStyle({
             padding-top: 4px;
             font-size: 10px;
             color: #4b5563;
+            white-space: pre-line;
           }
           .foot {
             margin-top: 8px;

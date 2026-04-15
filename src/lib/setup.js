@@ -7,12 +7,16 @@ const DEFAULT_SETUP = {
   appLineTail: 'System',
   version: 'v12.3',
   address: 'Gusto Suksawat 26 -1',
+  juristicName: 'นิติบุคคลหมู่บ้านเดอะกรีนฟิลด์',
+  juristicAddress: 'Gusto Suksawat 26 -1',
   loginCircleLogoUrl: '',
   villageLogoUrl: '',
   juristicSignatureUrl: '',
   bankName: '',
   bankAccountNo: '',
   bankAccountName: '',
+  feeRatePerSqw: 0,
+  invoiceMessage: `กรุณาชำระภายในวันที่กำหนด หากพ้นกำหนดจะคิดค่าปรับ 10%\nไม่รับชำระเงินเป็นเงินสดทุกกรณี คณะกรรมการจะไม่รับผิดชอบจากการชำระด้วยเงินสด\nขอให้ท่านส่งหลักฐานการชำระเงินเข้ามาที่ Line Official ID : @gusto.ssw26 หรือทำผ่านระบบ`,
 }
 
 
@@ -51,7 +55,9 @@ let setupCache = null
 
 function toSetup(row) {
   const villageName = row?.village_name?.trim() || DEFAULT_SETUP.villageName
-  const address = row?.juristic_address?.trim() || row?.juristic_name?.trim() || DEFAULT_SETUP.address
+  const juristicName = row?.juristic_name?.trim() || DEFAULT_SETUP.juristicName
+  const juristicAddress = row?.juristic_address?.trim() || juristicName || DEFAULT_SETUP.juristicAddress
+  const address = juristicAddress || DEFAULT_SETUP.address
   const fromLocalLogo = String(localStorage.getItem('vms-login-circle-logo-url') || '').trim()
   const logoPath = resolveLogoPath(row)
   const derivedLogoUrl = logoPath ? buildSystemAssetPublicUrl(logoPath) : ''
@@ -69,12 +75,16 @@ function toSetup(row) {
     ...DEFAULT_SETUP,
     villageName,
     address,
+    juristicName,
+    juristicAddress,
     loginCircleLogoUrl,
     villageLogoUrl,
     juristicSignatureUrl,
     bankName: row?.bank_name?.trim() || DEFAULT_SETUP.bankName,
     bankAccountNo: row?.bank_account_no?.trim() || DEFAULT_SETUP.bankAccountNo,
     bankAccountName: row?.bank_account_name?.trim() || DEFAULT_SETUP.bankAccountName,
+    feeRatePerSqw: Number(row?.fee_rate_per_sqw || DEFAULT_SETUP.feeRatePerSqw || 0),
+    invoiceMessage: String(row?.invoice_message || DEFAULT_SETUP.invoiceMessage || '').trim() || DEFAULT_SETUP.invoiceMessage,
   }
 }
 

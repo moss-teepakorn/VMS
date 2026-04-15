@@ -89,8 +89,11 @@ function getRejectedReason(note) {
 
 function getDisplayNote(note) {
   const raw = String(note || '')
-  if (!raw.startsWith(REJECT_PREFIX)) return raw
-  const lines = raw.split('\n')
+  const noMeta = raw.includes(PAYMENT_META_PREFIX)
+    ? raw.slice(0, raw.indexOf(PAYMENT_META_PREFIX)).trim()
+    : raw
+  if (!noMeta.startsWith(REJECT_PREFIX)) return noMeta
+  const lines = noMeta.split('\n')
   lines.shift()
   return lines.join('\n').trim()
 }
@@ -1203,6 +1206,13 @@ export default function ResidentLayout() {
       setup,
       logoUrl: setup.loginCircleLogoUrl || setup.villageLogoUrl || villageLogo,
       signatureUrl: setup.juristicSignatureUrl || '',
+      houseInfo: {
+        house_no: fee?.houses?.house_no || houseDetail?.house_no || houseNo || '-',
+        owner_name: fee?.houses?.owner_name || houseDetail?.owner_name || profile?.full_name || '-',
+        soi: fee?.houses?.soi || houseDetail?.soi || '-',
+        area_sqw: Number(fee?.houses?.area_sqw || houseDetail?.area_sqw || 0),
+        fee_rate: Number(fee?.houses?.fee_rate || houseDetail?.fee_rate || 0),
+      },
     })
   }
 
