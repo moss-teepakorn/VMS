@@ -2063,6 +2063,45 @@
   gap: 6px;
 }
 
+.qa-split {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+  padding: 12px;
+}
+
+.qa-group {
+  border: 1px solid var(--bo);
+  border-radius: 10px;
+  overflow: hidden;
+  background: var(--card);
+}
+
+.qa-group-head {
+  padding: 10px 12px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--tx);
+  border-bottom: 1px solid var(--bo);
+  background: var(--bg2);
+}
+
+.qa-group .qa-item {
+  padding: 10px 12px;
+}
+
+.qa-empty {
+  color: var(--mu);
+  font-size: 12px;
+  padding: 14px 12px;
+}
+
+@media (min-width: 860px) {
+  .qa-split {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
 /* ═════════════════════════════════════════════════
    UTILITY CLASSES
 ═════════════════════════════════════════════════ */

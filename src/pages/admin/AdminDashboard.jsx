@@ -276,8 +276,16 @@ const AdminDashboard = () => {
 
   const todayLabel = new Date().toLocaleDateString('th-TH', { day: 'numeric', month: 'long', year: 'numeric' })
   const data = dashboard
+  const quickApprovals = data.quickApprovals || { slips: [], requests: [] }
   const goToRequests = () => navigate('/admin/requests')
+  const goToPayments = () => navigate('/admin/payments')
   const goToViolations = () => navigate('/admin/violations')
+  const getStatusBadgeClass = (tone) => {
+    if (tone === 'ok') return 'bd b-ok'
+    if (tone === 'wn') return 'bd b-wn'
+    if (tone === 'dg') return 'bd b-dg'
+    return 'bd b-pr'
+  }
 
   return (
     <div className="pane on dashboard dashboard-v1" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
@@ -392,32 +400,41 @@ const AdminDashboard = () => {
       <div className="g2">
         <div className="chart-box">
           <div className="ch">
-            <h3 style={{ cursor: 'pointer' }} onClick={goToRequests}>⚡ รายการด่วน — รออนุมัติ</h3>
+            <h3>⚡ รายการด่วน — รออนุมัติ</h3>
           </div>
           <div className="cb">
-            <div style={{ overflowX: 'auto' }}>
-              <table style={{ width: '100%', minWidth: '300px' }}>
-                <thead>
-                  <tr>
-                    <th>ประเภท</th>
-                    <th>จาก</th>
-                    <th>รายการ</th>
-                    <th></th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {data.quickApprovals.length === 0 ? (
-                    <tr><td colSpan="4" style={{ textAlign: 'center', color: 'var(--mu)', padding: '16px' }}>ไม่มีรายการรออนุมัติ</td></tr>
-                  ) : data.quickApprovals.map((item, index) => (
-                    <tr key={`${item.type}-${index}`}>
-                      <td><span className={`bd ${item.type === 'สลิป' ? 'b-wn' : 'b-pr'}`}>{item.type}</span></td>
-                      <td>{item.source}</td>
-                      <td style={{ fontSize: '12px' }}>{item.detail}</td>
-                      <td><button className="btn btn-xs btn-a" onClick={goToRequests}>ดู</button></td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+            <div className="qa-split">
+              <div className="qa-group">
+                <div className="qa-group-head" style={{ cursor: 'pointer' }} onClick={goToPayments}>สลิปโอนรอตรวจสอบ</div>
+                {quickApprovals.slips.length === 0 ? (
+                  <div className="qa-empty">ไม่มีสลิปรออนุมัติ</div>
+                ) : quickApprovals.slips.map((item, index) => (
+                  <div key={`slip-${index}`} className="qa-item">
+                    <span className="bd b-wn">{item.type}</span>
+                    <span className="qa-name">บ้าน {item.source}</span>
+                    <span className="qa-status">{item.detail}</span>
+                    <div className="qa-act">
+                      <button className="btn btn-xs btn-a" onClick={goToPayments}>ตรวจสอบ</button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <div className="qa-group">
+                <div className="qa-group-head" style={{ cursor: 'pointer' }} onClick={goToRequests}>คำขออื่นรออนุมัติ</div>
+                {quickApprovals.requests.length === 0 ? (
+                  <div className="qa-empty">ไม่มีคำขอรออนุมัติ</div>
+                ) : quickApprovals.requests.map((item, index) => (
+                  <div key={`req-${index}`} className="qa-item">
+                    <span className={`bd ${item.type === 'ตลาด' ? 'b-pr' : 'b-wn'}`}>{item.type}</span>
+                    <span className="qa-name">บ้าน {item.source}</span>
+                    <span className="qa-status">{item.detail}</span>
+                    <div className="qa-act">
+                      <button className="btn btn-xs btn-a" onClick={goToRequests}>ดูคำขอ</button>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         </div>
@@ -432,13 +449,13 @@ const AdminDashboard = () => {
               <div key={`alert-${index}`} className="vio" style={{ cursor: 'pointer' }} onClick={goToViolations}>
                 <div className="vio-t">{item.title}</div>
                 <div style={{ fontSize: '12px', marginTop: '3px' }}>{item.meta}</div>
-                <div style={{ marginTop: '6px' }}><span className="bd b-wn">{item.status}</span></div>
+                <div style={{ marginTop: '6px' }}><span className={getStatusBadgeClass(item.statusTone)}>{item.statusLabel}</span></div>
               </div>
             ) : (
               <div key={`alert-${index}`} className="iss" style={{ cursor: 'pointer' }} onClick={goToViolations}>
                 <div className="iss-h">
                   <div className="iss-t">{item.title}</div>
-                  <span className={`bd ${item.status === 'resolved' || item.status === 'closed' ? 'b-ok' : 'b-pr'}`}>{item.status}</span>
+                  <span className={getStatusBadgeClass(item.statusTone)}>{item.statusLabel}</span>
                 </div>
                 <div className="iss-m">{item.meta}</div>
               </div>

@@ -1,5 +1,7 @@
 import { supabase } from './supabase'
 
+const REJECT_PREFIX = '[REJECT] '
+
 function sumBy(items, selector) {
   return items.reduce((sum, item) => sum + Number(selector(item) || 0), 0)
 }
@@ -14,11 +16,45 @@ function quarterKey(dateValue) {
   return `Q${Math.floor(date.getMonth() / 3) + 1}`
 }
 
+function toBE(yearCE) {
+  const year = Number(yearCE)
+  if (!Number.isFinite(year)) return '-'
+  return year + 543
+}
+
+function periodLabel(period) {
+  if (period === 'first_half') return 'ครึ่งปีแรก'
+  if (period === 'second_half') return 'ครึ่งปีหลัง'
+  if (period === 'full_year') return 'ทั้งปี'
+  return period || '-'
+}
+
+function isRejectedPayment(note) {
+  return String(note || '').trim().startsWith(REJECT_PREFIX)
+}
+
+function mapStatus(status) {
+  const raw = String(status || '').trim().toLowerCase()
+  if (['resolved', 'closed', 'completed', 'done'].includes(raw)) {
+    return { label: 'แก้ไขแล้ว', tone: 'ok' }
+  }
+  if (['pending', 'open', 'new', 'waiting'].includes(raw)) {
+    return { label: 'รอดำเนินการ', tone: 'wn' }
+  }
+  if (['in_progress', 'processing', 'investigating'].includes(raw)) {
+    return { label: 'กำลังดำเนินการ', tone: 'pr' }
+  }
+  if (['rejected', 'cancelled', 'canceled'].includes(raw)) {
+    return { label: 'ปฏิเสธ', tone: 'dg' }
+  }
+  return { label: status || '-', tone: 'pr' }
+}
+
 export async function getDashboardData() {
   const [housesResult, feesResult, paymentsResult, issuesResult, vehiclesResult, marketplaceResult, techniciansResult, violationsResult] = await Promise.all([
     supabase.from('houses').select('id, house_no, status, created_at'),
     supabase.from('fees').select('id, house_id, year, period, status, total_amount, created_at, invoice_date, due_date, houses(house_no)').order('created_at', { ascending: false }),
-    supabase.from('payments').select('id, house_id, amount, paid_at, payment_method, houses(house_no)').order('paid_at', { ascending: false }),
+    supabase.from('payments').select('id, house_id, amount, paid_at, payment_method, verified_at, note, fees(year, period), houses(house_no)').order('paid_at', { ascending: false }),
     supabase.from('issues').select('id, house_id, title, category, status, rating, created_at, houses(house_no)').order('created_at', { ascending: false }),
     supabase.from('vehicles').select('id, status, created_at, house_id, houses(house_no)').order('created_at', { ascending: false }),
     supabase.from('marketplace').select('id, status, created_at, house_id, title, houses(house_no)').order('created_at', { ascending: false }),
@@ -89,10 +125,10 @@ export async function getDashboardData() {
   }))
 
   const pendingApprovals =
+    payments.filter((item) => !item.verified_at && !isRejectedPayment(item.note)).length +
     vehicles.filter((item) => item.status === 'pending').length +
     marketplace.filter((item) => item.status === 'pending').length +
-    technicians.filter((item) => item.status === 'pending').length +
-    fees.filter((item) => item.status === 'pending').length
+    technicians.filter((item) => item.status === 'pending').length
 
   const openIssues = issues.filter((item) => item.status === 'pending' || item.status === 'in_progress')
   const avgRatingItems = issues.filter((item) => Number(item.rating) > 0)
@@ -100,15 +136,49 @@ export async function getDashboardData() {
     ? sumBy(avgRatingItems, (item) => item.rating) / avgRatingItems.length
     : 0
 
-  const quickApprovals = [
-    ...fees.filter((item) => item.status === 'pending').slice(0, 2).map((item) => ({ type: 'สลิป', source: item.houses?.house_no || '-', detail: `ใบแจ้งหนี้ ${item.period} ${item.year} ฿${Number(item.total_amount || 0).toLocaleString('th-TH')}` })),
-    ...vehicles.filter((item) => item.status === 'pending').slice(0, 2).map((item) => ({ type: 'รถ', source: item.houses?.house_no || '-', detail: `คำขอลงทะเบียนรถใหม่` })),
-    ...marketplace.filter((item) => item.status === 'pending').slice(0, 2).map((item) => ({ type: 'ตลาด', source: item.houses?.house_no || '-', detail: item.title || 'รายการรออนุมัติ' })),
-  ].slice(0, 5)
+  const quickApprovals = {
+    slips: payments
+      .filter((item) => !item.verified_at && !isRejectedPayment(item.note))
+      .slice(0, 4)
+      .map((item) => {
+        const periodText = item.fees
+          ? `งวด ${periodLabel(item.fees.period)} ปี ${toBE(item.fees.year)}`
+          : 'ไม่ระบุงวด'
+        return {
+          type: 'สลิปโอน',
+          source: item.houses?.house_no || '-',
+          detail: `${periodText} · ฿${Number(item.amount || 0).toLocaleString('th-TH')}`,
+          route: '/admin/payments',
+        }
+      }),
+    requests: [
+      ...vehicles.filter((item) => item.status === 'pending').slice(0, 2).map((item) => ({ type: 'รถ', source: item.houses?.house_no || '-', detail: 'คำขอลงทะเบียนรถใหม่', route: '/admin/requests' })),
+      ...marketplace.filter((item) => item.status === 'pending').slice(0, 2).map((item) => ({ type: 'ตลาด', source: item.houses?.house_no || '-', detail: item.title || 'รายการรออนุมัติ', route: '/admin/requests' })),
+      ...technicians.filter((item) => item.status === 'pending').slice(0, 2).map((item) => ({ type: 'ช่าง', source: '-', detail: `คำขอช่าง: ${item.name || '-'}`, route: '/admin/requests' })),
+    ].slice(0, 4),
+  }
 
   const alerts = [
-    ...violations.slice(0, 3).map((item) => ({ kind: 'violation', title: item.type, meta: `บ้าน ${item.houses?.house_no || '-'} · ${new Date(item.created_at).toLocaleDateString('th-TH')}`, status: item.status })),
-    ...issues.slice(0, 3).map((item) => ({ kind: 'issue', title: item.title, meta: `บ้าน ${item.houses?.house_no || '-'} · ${new Date(item.created_at).toLocaleDateString('th-TH')}`, status: item.status })),
+    ...violations.slice(0, 3).map((item) => {
+      const mapped = mapStatus(item.status)
+      return {
+        kind: 'violation',
+        title: item.type,
+        meta: `บ้าน ${item.houses?.house_no || '-'} · ${new Date(item.created_at).toLocaleDateString('th-TH')}`,
+        statusLabel: mapped.label,
+        statusTone: mapped.tone,
+      }
+    }),
+    ...issues.slice(0, 3).map((item) => {
+      const mapped = mapStatus(item.status)
+      return {
+        kind: 'issue',
+        title: item.title,
+        meta: `บ้าน ${item.houses?.house_no || '-'} · ${new Date(item.created_at).toLocaleDateString('th-TH')}`,
+        statusLabel: mapped.label,
+        statusTone: mapped.tone,
+      }
+    }),
   ]
     .sort((a, b) => 0)
     .slice(0, 4)
