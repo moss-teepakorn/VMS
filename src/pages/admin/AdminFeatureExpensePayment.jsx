@@ -223,7 +223,13 @@ export default function AdminFeatureExpensePayment() {
     })
   }
 
-  const openCreate = () => {
+  const openCreate = async () => {
+    try {
+      const latestItemTypes = await listPaymentItemTypes({ onlyActive: true })
+      setItemTypes(latestItemTypes || [])
+    } catch {
+      // Keep current item type options when refresh fails.
+    }
     setModalMode('create')
     setEditingId('')
     setForm(EMPTY_FORM())
@@ -301,7 +307,11 @@ export default function AdminFeatureExpensePayment() {
       setSaving(true)
       if (modalMode === 'edit' && editingId) await updateDisbursement(editingId, payload)
       else await createDisbursement(payload)
-      closeModal()
+      if (modalMode === 'edit') {
+        closeModal()
+      } else {
+        setForm(EMPTY_FORM())
+      }
       Swal.fire({ icon: 'success', title: modalMode === 'edit' ? 'บันทึกแล้ว' : 'สร้างรายการแล้ว', timer: 1100, showConfirmButton: false })
       load()
     } catch (err) {
@@ -391,6 +401,8 @@ export default function AdminFeatureExpensePayment() {
     { ico: '✅', cls: 'p', label: 'อนุมัติ', v: summary.approvedCount, s: `${fmt2(summary.approvedTotal)} บาท`, key: 'approved' },
   ]
 
+  const isCreateInline = showModal && modalMode === 'create'
+
   return (
     <div className="pane on houses-compact fees-compact disbursements-compact">
       <div className="ph houses-ph">
@@ -405,6 +417,8 @@ export default function AdminFeatureExpensePayment() {
         </div>
       </div>
 
+      {!isCreateInline && (
+      <>
       <div className="stats">
         {statCards.map((c) => (
           <div key={c.key} className="sc" style={{ cursor: 'pointer', outline: statusFilter === c.key ? '2px solid #1E40AF' : undefined, outlineOffset: 2 }} onClick={() => setStatusFilter((p) => (p === c.key ? 'all' : c.key))}>
@@ -521,13 +535,222 @@ export default function AdminFeatureExpensePayment() {
           </div>
         </div>
       </div>
+      </>
+      )}
 
       {showModal && (
+        modalMode === 'create' ? (
+          <div className="card houses-main-card">
+            <div className="ch houses-list-head houses-main-head">
+              <div>
+                <div className="ct">สร้างรายการจ่ายเงิน</div>
+                <div className="ph-sub" style={{ marginTop: 4 }}>ระบุผู้อนุมัติและผู้จ่ายตอนบันทึก แล้วปิดรายการด้วยวันที่อนุมัติ+วันที่จ่าย</div>
+              </div>
+              <div className="houses-list-actions">
+                <button className="btn btn-g btn-sm" type="button" disabled={saving} onClick={closeModal}>← Back</button>
+              </div>
+            </div>
+            <div className="cb houses-table-card-body houses-main-body" style={{ maxHeight: 'unset' }}>
+              <section className="house-sec">
+                <div style={{ fontWeight: 700, fontSize: 11, color: 'var(--mu)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.05em' }}>ผู้รับเงินและข้อมูลชำระ</div>
+
+                <div className="house-grid" style={{ gridTemplateColumns: '1fr 1.6fr 1.4fr 1fr', gap: 10, marginBottom: 12 }}>
+                  <label className="house-field">
+                    <span>ประเภท</span>
+                    <StyledSelect value={form.recipient_type} onChange={(e) => setForm((p) => ({ ...p, recipient_type: e.target.value, recipient_name: '', partner_id: '', house_id: '' }))}>
+                      <option value="partner">คู่ค้า / บุคคลภายนอก</option>
+                      <option value="house">ลูกบ้าน</option>
+                    </StyledSelect>
+                  </label>
+
+                  {form.recipient_type === 'partner' ? (
+                    <label className="house-field">
+                      <span>คู่ค้า *</span>
+                      <StyledSelect value={form.partner_id} onChange={(e) => handlePartnerChange(e.target.value)}>
+                        <option value="">— เลือกคู่ค้า —</option>
+                        {partners.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+                      </StyledSelect>
+                    </label>
+                  ) : (
+                    <label className="house-field">
+                      <span>บ้านเลขที่ *</span>
+                      <StyledSelect value={form.house_id} onChange={(e) => handleHouseChange(e.target.value)}>
+                        <option value="">— เลือกบ้าน —</option>
+                        {houses.map((h) => <option key={h.id} value={h.id}>{h.house_no}{h.owner_name ? ` — ${h.owner_name}` : ''}</option>)}
+                      </StyledSelect>
+                    </label>
+                  )}
+
+                  <label className="house-field">
+                    <span>วิธีชำระ</span>
+                    <StyledSelect value={form.payment_method} onChange={(e) => setForm((p) => ({ ...p, payment_method: e.target.value }))}>
+                      <option value="transfer">โอนเงิน</option>
+                      <option value="cash">เงินสด</option>
+                      <option value="cheque">เช็ค</option>
+                    </StyledSelect>
+                  </label>
+
+                  <label className="house-field">
+                    <span>วันที่ทำรายการ *</span>
+                    <input type="date" value={form.disbursement_date} onChange={(e) => setForm((p) => ({ ...p, disbursement_date: e.target.value }))} />
+                  </label>
+                </div>
+
+                <div className="house-grid" style={{ gridTemplateColumns: '1fr', gap: 10, marginBottom: 12 }}>
+                  <label className="house-field">
+                    <span>ชื่อผู้รับเงิน *</span>
+                    <input value={form.recipient_name} onChange={(e) => setForm((p) => ({ ...p, recipient_name: e.target.value }))} placeholder="ชื่อผู้รับเงินจริง (แก้ไขได้)" />
+                  </label>
+                </div>
+
+                <div className="house-grid" style={{ gridTemplateColumns: '1.2fr 1fr 1fr', gap: 10, marginBottom: 12 }}>
+                  <label className="house-field">
+                    <span>ธนาคาร</span>
+                    <StyledSelect value={form.bank_name} onChange={(e) => setForm((p) => ({ ...p, bank_name: e.target.value }))}>
+                      <option value="">— เลือกธนาคาร —</option>
+                      {THAI_BANKS.map((bank) => <option key={bank} value={bank}>{bank}</option>)}
+                    </StyledSelect>
+                  </label>
+                  <label className="house-field">
+                    <span>เลขที่บัญชี</span>
+                    <input value={form.bank_account_no} onChange={(e) => setForm((p) => ({ ...p, bank_account_no: e.target.value }))} />
+                  </label>
+                  <label className="house-field">
+                    <span>ชื่อบัญชี</span>
+                    <input value={form.bank_account_name} onChange={(e) => setForm((p) => ({ ...p, bank_account_name: e.target.value }))} />
+                  </label>
+                </div>
+
+                <div className="house-grid" style={{ gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 12 }}>
+                  <label className="house-field">
+                    <span>ผู้อนุมัติ (กรรมการ) *</span>
+                    <StyledSelect value={form.approver_id} onChange={(e) => setForm((p) => ({ ...p, approver_id: e.target.value }))}>
+                      <option value="">— เลือกผู้อนุมัติ —</option>
+                      {boardMembers.map((m) => <option key={m.id} value={m.id}>{m.full_name} ({m.position})</option>)}
+                    </StyledSelect>
+                  </label>
+                  <label className="house-field">
+                    <span>ผู้จ่ายเงิน (กรรมการ) *</span>
+                    <StyledSelect value={form.payer_id} onChange={(e) => setForm((p) => ({ ...p, payer_id: e.target.value }))}>
+                      <option value="">— เลือกผู้จ่ายเงิน —</option>
+                      {boardMembers.map((m) => <option key={m.id} value={m.id}>{m.full_name} ({m.position})</option>)}
+                    </StyledSelect>
+                  </label>
+                </div>
+
+                <div className="house-grid" style={{ gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 12 }}>
+                  <label className="house-field">
+                    <span>วันที่อนุมัติ (กรอกเมื่อปิดรายการ)</span>
+                    <input type="datetime-local" value={form.approved_at} onChange={(e) => setForm((p) => ({ ...p, approved_at: e.target.value }))} />
+                  </label>
+                  <label className="house-field">
+                    <span>วันที่จ่าย (กรอกเมื่อปิดรายการ)</span>
+                    <input type="datetime-local" value={form.paid_at} onChange={(e) => setForm((p) => ({ ...p, paid_at: e.target.value }))} />
+                  </label>
+                </div>
+
+                <div style={{ fontWeight: 700, fontSize: 11, color: 'var(--mu)', margin: '4px 0 8px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>รายการ</div>
+                <div style={{ overflowX: 'auto', marginBottom: 8 }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 560 }}>
+                    <thead>
+                      <tr>
+                        <th style={{ width: 32, textAlign: 'center', padding: '5px 4px', border: '1px solid var(--bo)', background: 'var(--bgl)', fontSize: 11 }}>#</th>
+                        <th style={{ width: 150, padding: '5px 6px', border: '1px solid var(--bo)', background: 'var(--bgl)', fontSize: 11 }}>ประเภท</th>
+                        <th style={{ padding: '5px 6px', border: '1px solid var(--bo)', background: 'var(--bgl)', fontSize: 11 }}>รายการ *</th>
+                        <th style={{ width: 100, padding: '5px 6px', border: '1px solid var(--bo)', background: 'var(--bgl)', fontSize: 11 }}>จำนวนเงิน *</th>
+                        <th style={{ width: 100, padding: '5px 6px', border: '1px solid var(--bo)', background: 'var(--bgl)', fontSize: 11 }}>หมายเหตุ</th>
+                        <th style={{ width: 28, border: '1px solid var(--bo)', background: 'var(--bgl)' }}></th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {form.items.map((item, idx) => (
+                        <tr key={idx}>
+                          <td style={{ textAlign: 'center', padding: '4px', border: '1px solid var(--bo)', fontSize: 11, color: 'var(--mu)' }}>{idx + 1}</td>
+                          <td style={{ padding: '3px', border: '1px solid var(--bo)' }}>
+                            <StyledSelect style={{ width: '100%', border: 'none', outline: 'none', background: 'transparent', fontSize: 11, padding: '2px' }} value={item.item_type_id} onChange={(e) => updateItem(idx, 'item_type_id', e.target.value)}>
+                              <option value="">— ประเภท —</option>
+                              {itemTypes.map((t) => <option key={t.id} value={t.id}>{t.code} — {t.label}</option>)}
+                            </StyledSelect>
+                          </td>
+                          <td style={{ padding: '3px', border: '1px solid var(--bo)' }}>
+                            <input style={{ width: '100%', border: 'none', outline: 'none', background: 'transparent', fontSize: 11, padding: '2px 3px' }} value={item.item_label} onChange={(e) => updateItem(idx, 'item_label', e.target.value)} placeholder="ชื่อรายการ" />
+                          </td>
+                          <td style={{ padding: '3px', border: '1px solid var(--bo)' }}>
+                            <input type="number" style={{ width: '100%', border: 'none', outline: 'none', background: 'transparent', fontSize: 11, padding: '2px 3px', textAlign: 'right' }} value={item.amount} min={0} onChange={(e) => handleItemAmountChange(idx, e.target.value)} />
+                          </td>
+                          <td style={{ padding: '3px', border: '1px solid var(--bo)' }}>
+                            <input style={{ width: '100%', border: 'none', outline: 'none', background: 'transparent', fontSize: 11, padding: '2px 3px' }} value={item.note} onChange={(e) => updateItem(idx, 'note', e.target.value)} />
+                          </td>
+                          <td style={{ textAlign: 'center', padding: '3px 2px', border: '1px solid var(--bo)' }}>
+                            {form.items.length > 1 && <button type="button" onClick={() => removeItem(idx)} style={{ background: 'none', border: 'none', color: '#dc2626', cursor: 'pointer', fontSize: 13, lineHeight: 1 }}>✕</button>}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                <button type="button" className="btn btn-xs btn-o" onClick={addItem} style={{ marginBottom: 12 }}>+ เพิ่มรายการ</button>
+
+                <div style={{ background: 'var(--bgl)', borderRadius: 8, padding: '12px 14px', marginBottom: 12 }}>
+                  <div style={{ fontWeight: 700, fontSize: 12, marginBottom: 10 }}>ภาษีและยอดรวม</div>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 16, alignItems: 'flex-end', marginBottom: 10 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <label style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 12, cursor: 'pointer' }}>
+                        <input type="checkbox" checked={form.vat_enabled} onChange={(e) => { const en = e.target.checked; const sub = form.items.reduce((s, i) => s + Number(i.amount || 0), 0); setForm((p) => ({ ...p, vat_enabled: en, vat_amount: en ? String(+(sub * Number(p.vat_rate || 7) / 100).toFixed(2)) : '0.00' })) }} />
+                        ภาษีมูลค่าเพิ่ม
+                      </label>
+                      {form.vat_enabled && (
+                        <>
+                          <input type="number" min={0} max={100} style={{ width: 52, padding: '3px 5px', borderRadius: 4, border: '1px solid var(--bo)', fontSize: 12, textAlign: 'right' }} value={form.vat_rate} onChange={(e) => { const r = e.target.value; const sub = form.items.reduce((s, i) => s + Number(i.amount || 0), 0); setForm((p) => ({ ...p, vat_rate: r, vat_amount: String(+(sub * Number(r || 0) / 100).toFixed(2)) })) }} />
+                          <span style={{ fontSize: 11 }}>%</span>
+                          <input type="number" min={0} style={{ width: 84, padding: '3px 5px', borderRadius: 4, border: '1px solid var(--bo)', fontSize: 12, textAlign: 'right' }} value={form.vat_amount} onChange={(e) => setForm((p) => ({ ...p, vat_amount: e.target.value }))} />
+                          <span style={{ fontSize: 11, color: 'var(--mu)' }}>บาท</span>
+                        </>
+                      )}
+                    </div>
+
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <label style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 12, cursor: 'pointer' }}>
+                        <input type="checkbox" checked={form.wht_enabled} onChange={(e) => { const en = e.target.checked; const sub = form.items.reduce((s, i) => s + Number(i.amount || 0), 0); setForm((p) => ({ ...p, wht_enabled: en, wht_amount: en ? String(+(sub * Number(p.wht_rate || 3) / 100).toFixed(2)) : '0.00' })) }} />
+                        หัก ณ ที่จ่าย
+                      </label>
+                      {form.wht_enabled && (
+                        <>
+                          <input type="number" min={0} max={100} style={{ width: 52, padding: '3px 5px', borderRadius: 4, border: '1px solid var(--bo)', fontSize: 12, textAlign: 'right' }} value={form.wht_rate} onChange={(e) => { const r = e.target.value; const sub = form.items.reduce((s, i) => s + Number(i.amount || 0), 0); setForm((p) => ({ ...p, wht_rate: r, wht_amount: String(+(sub * Number(r || 0) / 100).toFixed(2)) })) }} />
+                          <span style={{ fontSize: 11 }}>%</span>
+                          <input type="number" min={0} style={{ width: 84, padding: '3px 5px', borderRadius: 4, border: '1px solid var(--bo)', fontSize: 12, textAlign: 'right' }} value={form.wht_amount} onChange={(e) => setForm((p) => ({ ...p, wht_amount: e.target.value }))} />
+                          <span style={{ fontSize: 11, color: 'var(--mu)' }}>บาท</span>
+                        </>
+                      )}
+                    </div>
+                  </div>
+
+                  <div style={{ borderTop: '1px dashed var(--bo)', paddingTop: 10, display: 'flex', flexDirection: 'column', gap: 4, alignItems: 'flex-end' }}>
+                    <div style={{ fontSize: 12 }}>ยอดก่อนภาษี: <strong>{fmt2(formSubTotal)} บาท</strong></div>
+                    {form.vat_enabled && <div style={{ fontSize: 12 }}>ภาษีมูลค่าเพิ่ม: <strong>+{fmt2(formVatAmount)} บาท</strong></div>}
+                    {form.wht_enabled && <div style={{ fontSize: 12 }}>หัก ณ ที่จ่าย: <strong>-{fmt2(formWhtAmount)} บาท</strong></div>}
+                    <div style={{ fontSize: 14, fontWeight: 800, color: '#1E40AF', marginTop: 2 }}>ยอดสุทธิ: {fmt2(formTotal)} บาท</div>
+                  </div>
+                </div>
+
+                <label className="house-field">
+                  <span>หมายเหตุ</span>
+                  <input value={form.note} onChange={(e) => setForm((p) => ({ ...p, note: e.target.value }))} placeholder="หมายเหตุเพิ่มเติม (ถ้ามี)" />
+                </label>
+              </section>
+
+              <div className="house-md-foot" style={{ padding: '8px 0 0 0' }}>
+                <button className="btn btn-g" type="button" disabled={saving} onClick={closeModal}>← Back</button>
+                <button className="btn btn-p" type="button" disabled={saving} onClick={handleSave}>{saving ? 'กำลังบันทึก...' : 'บันทึก'}</button>
+              </div>
+            </div>
+          </div>
+        ) : (
         <div className="house-mo">
           <div className="house-md house-md--md" style={{ width: 'min(980px, 92vw)', maxHeight: '90vh', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
             <div className="house-md-head">
               <div>
-                <div className="house-md-title">{modalMode === 'edit' ? 'แก้ไขรายการจ่ายเงิน' : 'สร้างรายการจ่ายเงิน'}</div>
+                <div className="house-md-title">แก้ไขรายการจ่ายเงิน</div>
                 <div className="house-md-sub">ระบุผู้อนุมัติและผู้จ่ายตอนบันทึก แล้วปิดรายการด้วยวันที่อนุมัติ+วันที่จ่าย</div>
               </div>
             </div>
@@ -728,6 +951,7 @@ export default function AdminFeatureExpensePayment() {
             </div>
           </div>
         </div>
+        )
       )}
     </div>
   )
