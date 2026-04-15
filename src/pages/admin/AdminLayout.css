@@ -1774,7 +1774,7 @@ button, input, select, textarea {
 }
 
 .swal2-container {
-  z-index: 5000 !important;
+  z-index: 99999 !important;
 }
 
 .cfg-toggle {
