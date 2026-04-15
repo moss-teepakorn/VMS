@@ -285,7 +285,13 @@ export default function AdminFeatureReceivePayment() {
 
   const isDetailEditable = Boolean(detailTarget?.id && editableMap[detailTarget.id])
 
-  const openReceiveModal = () => {
+  const openReceiveModal = async () => {
+    try {
+      const itemRows = await listPaymentItemTypes({ onlyActive: true })
+      setItems(itemRows || [])
+    } catch {
+      // Keep current options if setup fetch fails.
+    }
     setReceiveForm(emptyForm())
     setShowReceiveModal(true)
   }
@@ -643,7 +649,6 @@ export default function AdminFeatureReceivePayment() {
       setYearFilter(String(paidDate.getFullYear()))
       setMonthFilter(String(paidDate.getMonth() + 1))
       await loadPageData()
-      setShowReceiveModal(false)
       setReceiveForm(emptyForm())
       setReceiptPrintTarget(created)
       setShowReceiptPrintActionModal(true)
@@ -777,6 +782,8 @@ export default function AdminFeatureReceivePayment() {
         </div>
       </div>
 
+      {!showReceiveModal && (
+        <>
       <div className="stats">
         <div className="sc"><div className="sc-ico a">🧾</div><div><div className="sc-v">{summary.totalCount}</div><div className="sc-l">รายการรับชำระทั้งหมด</div></div></div>
         <div className="sc"><div className="sc-ico p">💵</div><div><div className="sc-v">฿{formatMoney(summary.totalAmount)}</div><div className="sc-l">ยอดรับชำระทั้งหมด</div></div></div>
@@ -878,18 +885,23 @@ export default function AdminFeatureReceivePayment() {
           </div>
         </div>
       </div>
+        </>
+      )}
 
       {showReceiveModal && (
-        <div className="house-mo">
-          <div className="house-md house-md--md">
-            <div className="house-md-head">
-              <div>
-                <div className="house-md-title">รับชำระเงิน</div>
-                <div className="house-md-sub">ค่าอื่นๆ นอกเหนือจากค่าส่วนกลาง (อนุมัติอัตโนมัติ)</div>
-              </div>
+        <div className="card">
+          <div className="ch houses-list-head houses-main-head">
+            <div>
+              <div className="ct">สร้างรายการรับชำระเงิน</div>
+              <div className="ph-sub" style={{ marginTop: 4 }}>ค่าอื่นๆ นอกเหนือจากค่าส่วนกลาง (อนุมัติอัตโนมัติ)</div>
             </div>
+            <div className="houses-list-actions">
+              <button className="btn btn-g btn-sm" onClick={closeReceiveModal} disabled={savingReceive}>← Back</button>
+            </div>
+          </div>
+          <div className="cb houses-table-card-body houses-main-body">
             <form onSubmit={handleSubmitReceive}>
-              <div className="house-md-body">
+              <div style={{ padding: 12 }}>
                 <section className="house-sec">
                   <div className="house-grid" style={{ gridTemplateColumns: '1fr 1fr', gap: 10 }}>
                     <label className="house-field">
@@ -983,8 +995,8 @@ export default function AdminFeatureReceivePayment() {
                   </div>
                 </section>
               </div>
-              <div className="house-md-foot">
-                <button className="btn btn-g" type="button" onClick={closeReceiveModal} disabled={savingReceive}>ปิด</button>
+              <div className="house-md-foot" style={{ padding: '8px 0 0 0' }}>
+                <button className="btn btn-g" type="button" onClick={closeReceiveModal} disabled={savingReceive}>← Back</button>
                 <button className="btn btn-p" type="submit" disabled={savingReceive}>{savingReceive ? 'กำลังบันทึก...' : 'บันทึกรับชำระ'}</button>
               </div>
             </form>
