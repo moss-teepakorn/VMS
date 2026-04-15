@@ -839,7 +839,10 @@ export default function AdminPayments() {
       setApproving(true)
 
       if (approveTarget?.fee_id && approveFeeSnapshot) {
-        const approvalRows = getOutstandingItemsForApproval(approveFeeSnapshot, payments, { excludePaymentId: approveTarget.id })
+        const outstandingItems = getOutstandingItemsForApproval(approveFeeSnapshot, payments, { excludePaymentId: approveTarget.id })
+        const outstandingTotal = outstandingItems.reduce((sum, item) => sum + Number(item.outstanding || 0), 0)
+
+        const approvalRows = outstandingItems
           .map((item) => {
             const paidAmount = Number(approveItemDraft[item.key] || 0)
             return {
@@ -853,15 +856,27 @@ export default function AdminPayments() {
 
         const approvedTotal = approvalRows.reduce((sum, row) => sum + Number(row.paidAmount || 0), 0)
         const targetAmount = Number(approveTarget.amount || 0)
-        const diff = Math.abs(approvedTotal - targetAmount)
 
         if (approvalRows.length === 0) {
           await Swal.fire({ icon: 'warning', title: 'กรุณาระบุรายการที่ตัดหนี้อย่างน้อย 1 รายการ' })
           return
         }
 
-        if (diff > 0.009) {
-          await Swal.fire({ icon: 'warning', title: 'ยอดตัดหนี้รวมไม่เท่ากับยอดชำระ', text: `ยอดชำระ ${formatMoney(targetAmount)} แต่ยอดตัดหนี้ ${formatMoney(approvedTotal)}` })
+        if (targetAmount - outstandingTotal > 0.009) {
+          await Swal.fire({
+            icon: 'warning',
+            title: 'ยอดที่ลูกบ้านชำระเกินยอดเรียกเก็บ',
+            text: `ยอดเรียกเก็บคงค้าง ${formatMoney(outstandingTotal)} แต่ยอดที่ลูกบ้านชำระ ${formatMoney(targetAmount)} จึงไม่สามารถบันทึกอนุมัติได้`,
+          })
+          return
+        }
+
+        if (approvedTotal - targetAmount > 0.009) {
+          await Swal.fire({
+            icon: 'warning',
+            title: 'ยอดอนุมัติเกินยอดที่ลูกบ้านชำระ',
+            text: `ยอดชำระ ${formatMoney(targetAmount)} แต่ยอดตัดหนี้ ${formatMoney(approvedTotal)}`,
+          })
           return
         }
 
@@ -870,7 +885,7 @@ export default function AdminPayments() {
         await updatePayment(approveTarget.id, {
           fee_id: approveTarget.fee_id,
           house_id: approveTarget.house_id,
-          amount: targetAmount,
+          amount: approvedTotal,
           payment_method: approveTarget.payment_method,
           slip_url: approveTarget.slip_url,
           paid_at: approveTarget.paid_at,
@@ -1778,7 +1793,7 @@ export default function AdminPayments() {
 
                     <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap', color: 'var(--mu)', fontSize: 13 }}>
                       <span>ยอดชำระที่ลูกบ้านแจ้ง: ฿{formatMoney(approveTarget.amount)}</span>
-                      <span style={{ fontWeight: 700, color: Math.abs(Number(approveTarget.amount || 0) - Number(approveDraftTotal || 0)) <= 0.009 ? 'var(--ac)' : 'var(--dg)' }}>
+                      <span style={{ fontWeight: 700, color: Number(approveDraftTotal || 0) - Number(approveTarget.amount || 0) > 0.009 ? 'var(--dg)' : 'var(--ac)' }}>
                         ยอดตัดหนี้รวม: ฿{formatMoney(approveDraftTotal)}
                       </span>
                     </div>
