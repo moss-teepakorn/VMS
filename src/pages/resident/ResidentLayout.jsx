@@ -1224,6 +1224,10 @@ export default function ResidentLayout() {
       logoUrl: setup.loginCircleLogoUrl || setup.villageLogoUrl || villageLogo,
       signatureUrl: setup.juristicSignatureUrl || '',
       itemRows: getPaymentItemRows(payment),
+      houseInfo: {
+        house_no: payment?.houses?.house_no || houseDetail?.house_no || houseNo || '-',
+        owner_name: payment?.houses?.owner_name || houseDetail?.owner_name || profile?.full_name || '-',
+      },
       displayNote: getDisplayNote(payment.note),
     })
   }

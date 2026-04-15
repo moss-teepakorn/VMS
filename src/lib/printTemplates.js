@@ -58,6 +58,24 @@ function getSetupValue(setup = {}, snakeKey, camelKey, fallback = '') {
   return fallback
 }
 
+function normalizeMultilineText(input, fallback = '') {
+  const raw = String(input || '').trim()
+  const source = raw || String(fallback || '')
+  const withLineBreaks = source
+    .replace(/<\s*br\s*\/?\s*>/gi, '\n')
+    .replace(/<\s*\/\s*br\s*>/gi, '\n')
+  const noTags = withLineBreaks.replace(/<[^>]*>/g, '')
+  const lines = noTags
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter((line, index, arr) => {
+      if (line) return true
+      const prev = arr[index - 1]
+      return Boolean(prev)
+    })
+  return lines.join('\n').trim()
+}
+
 function toThaiBahtText(value) {
   const amount = toNumber(value)
   if (!Number.isFinite(amount) || amount < 0) return '-'
@@ -146,6 +164,10 @@ export function buildInvoiceHtmlAdminStyle({
     setup,
     'invoice_message',
     'invoiceMessage',
+    'กรุณาชำระภายในวันที่กำหนด หากพ้นกำหนดจะคิดค่าปรับ 10%\nไม่รับชำระเงินเป็นเงินสดทุกกรณี คณะกรรมการจะไม่รับผิดชอบจากการชำระด้วยเงินสด\nขอให้ท่านส่งหลักฐานการชำระเงินเข้ามาที่ Line Official ID : @gusto.ssw26 หรือทำผ่านระบบ',
+  )
+  const invoiceMessageText = normalizeMultilineText(
+    invoiceMessage,
     'กรุณาชำระภายในวันที่กำหนด หากพ้นกำหนดจะคิดค่าปรับ 10%\nไม่รับชำระเงินเป็นเงินสดทุกกรณี คณะกรรมการจะไม่รับผิดชอบจากการชำระด้วยเงินสด\nขอให้ท่านส่งหลักฐานการชำระเงินเข้ามาที่ Line Official ID : @gusto.ssw26 หรือทำผ่านระบบ',
   )
   const houseNo = fee?.houses?.house_no || houseInfo?.house_no || '-'
@@ -237,7 +259,7 @@ export function buildInvoiceHtmlAdminStyle({
           <div><span>ชื่อบัญชี</span><strong>${bankAccountName}</strong></div>
           <div><span>กำหนดชำระ</span><strong>${formatDateDMY(fee?.due_date)}</strong></div>
         </div>
-        <div class="payment-note">${invoiceMessage}</div>
+        <div class="payment-note">${invoiceMessageText}</div>
       </section>
 
       <section class="foot">
@@ -384,14 +406,15 @@ export function buildReceiptHtmlAdminStyle({
   logoUrl = '',
   signatureUrl = '',
   itemRows = [],
+  houseInfo = {},
   autoPrint = false,
   forCapture = false,
   displayNote = '',
 } = {}) {
   const finalReceiptNo = receiptNo || payment?.receipt_no || `REC-${String(payment?.id || '').slice(0, 8).toUpperCase()}`
   const issueDate = formatDateTime(payment?.verified_at)
-  const houseNo = payment?.houses?.house_no || '-'
-  const ownerName = payment?.houses?.owner_name || '-'
+  const houseNo = payment?.houses?.house_no || houseInfo?.house_no || '-'
+  const ownerName = payment?.houses?.owner_name || houseInfo?.owner_name || '-'
   const invoiceLabel = payment?.fees ? `${periodLabel(payment.fees.period)} ปี ${toBE(payment.fees.year)}` : '-'
   const invoiceNo = payment?.fees ? buildInvoiceDocumentNo(payment.fees) : '-'
   const amount = toNumber(payment?.amount)
