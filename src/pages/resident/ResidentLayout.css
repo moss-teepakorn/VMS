@@ -203,6 +203,33 @@
   z-index: 1;
 }
 
+.notif-payment-card {
+  border: 1px solid var(--bo);
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.08);
+}
+
+.notif-payment-list {
+  display: grid;
+  gap: 8px;
+}
+
+.notif-payment-item {
+  border: 1px solid var(--bo);
+  border-radius: 10px;
+  background: var(--card);
+  padding: 9px 10px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+}
+
+.notif-payment-actions {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
 .notif-mobile-list {
   display: none;
   padding: 10px;
@@ -822,6 +849,11 @@
 
   .notif-search-row {
     grid-template-columns: 1fr;
+  }
+
+  .notif-payment-item {
+    flex-direction: column;
+    align-items: flex-start;
   }
 
   .notif-table-wrap {

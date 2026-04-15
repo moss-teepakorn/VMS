@@ -1549,7 +1549,7 @@ button, input, select, textarea {
 .house-mo {
   position: fixed;
   inset: 0;
-  z-index: 2400;
+  z-index: 12050;
   display: flex;
   align-items: center;
   justify-content: center;

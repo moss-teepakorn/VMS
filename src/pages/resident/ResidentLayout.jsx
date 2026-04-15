@@ -702,6 +702,12 @@ export default function ResidentLayout() {
     }
   }, [activeSection, allFees, payments])
 
+  useEffect(() => {
+    if (activeSection !== 'notif') return
+    loadViolations({ status: statusFilter, search: searchTerm })
+    loadFeeData({ status: feeStatusFilter, year: feeYearFilter })
+  }, [activeSection, statusFilter, searchTerm, feeStatusFilter, feeYearFilter, loadViolations, loadFeeData])
+
   function getFeeStatusBadge(status) {
     if (status === 'paid') return { className: 'bd b-ok', label: 'ชำระแล้ว' }
     if (status === 'pending') return { className: 'bd b-pr', label: 'รอตรวจสอบ' }
@@ -1334,6 +1340,34 @@ export default function ResidentLayout() {
   const latestViolation = violations[0] || null
   const pendingIssues = issues.filter((i) => i.status === 'pending' || i.status === 'in_progress')
   const filteredNotifViolations = violations.filter((violation) => isViolationWithinDateFilter(violation, notifDateFilter))
+  const filteredNotifyApprovedPayments = payments
+    .filter((row) => row.verified_at && !getRejectedReason(row.note))
+    .filter((row) => {
+      const when = new Date(row.verified_at || row.paid_at || 0)
+      if (Number.isNaN(when.getTime())) return false
+      if (notifDateFilter === 'all') return true
+      const now = new Date()
+      const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+      const entryStart = new Date(when.getFullYear(), when.getMonth(), when.getDate())
+      if (notifDateFilter === 'today') return entryStart.getTime() === todayStart.getTime()
+      const diffDays = Math.floor((todayStart.getTime() - entryStart.getTime()) / (1000 * 60 * 60 * 24))
+      if (notifDateFilter === '7d') return diffDays >= 0 && diffDays <= 7
+      if (notifDateFilter === '30d') return diffDays >= 0 && diffDays <= 30
+      return true
+    })
+    .filter((row) => {
+      const kw = String(searchTerm || '').trim().toLowerCase()
+      if (!kw) return true
+      const periodText = row.fees ? formatFeePeriodLabel(row.fees) : '-'
+      const haystack = [
+        row.houses?.house_no,
+        periodText,
+        row.payment_method,
+        row.note,
+      ].join(' ').toLowerCase()
+      return haystack.includes(kw)
+    })
+    .sort((left, right) => new Date(right.verified_at || right.paid_at || 0) - new Date(left.verified_at || left.paid_at || 0))
   const latestAnnouncements = announcements.slice(0, 3)
   const houseAreaSqw = Number(houseDetail?.area_sqw ?? houseDetail?.area ?? 0)
   const houseAnnualFee = Number(houseDetail?.annual_fee || (houseAreaSqw > 0 ? houseAreaSqw * 12 * Number(houseDetail?.fee_rate || 0) : 0))
@@ -3269,7 +3303,45 @@ export default function ResidentLayout() {
                     <option value="7d">7 วันล่าสุด</option>
                     <option value="30d">30 วันล่าสุด</option>
                   </StyledSelect>
-                  <button className="btn btn-p btn-sm notif-search-btn" onClick={() => loadViolations({ status: statusFilter, search: searchTerm })}>ค้นหา</button>
+                  <button
+                    className="btn btn-p btn-sm notif-search-btn"
+                    onClick={async () => {
+                      await Promise.all([
+                        loadViolations({ status: statusFilter, search: searchTerm }),
+                        loadFeeData({ status: feeStatusFilter, year: feeYearFilter }),
+                      ])
+                    }}
+                  >
+                    ค้นหา
+                  </button>
+                </div>
+              </div>
+
+              <div className="card notif-payment-card" style={{ marginBottom: 12 }}>
+                <div className="ch"><div className="ct notif-card-title">การอนุมัติการชำระเงิน ({filteredNotifyApprovedPayments.length} รายการ)</div></div>
+                <div className="cb" style={{ padding: 12 }}>
+                  {feeLoading ? (
+                    <div style={{ color: 'var(--mu)', fontSize: 13 }}>กำลังโหลด...</div>
+                  ) : filteredNotifyApprovedPayments.length === 0 ? (
+                    <div style={{ color: 'var(--mu)', fontSize: 13 }}>ยังไม่มีรายการอนุมัติการชำระ</div>
+                  ) : (
+                    <div className="notif-payment-list">
+                      {filteredNotifyApprovedPayments.slice(0, 12).map((row) => (
+                        <div key={`np-${row.id}`} className="notif-payment-item">
+                          <div>
+                            <div style={{ fontWeight: 700, color: 'var(--tx)', fontSize: 13 }}>✅ อนุมัติแล้ว · ฿{formatMoney(getPaymentAmount(row))}</div>
+                            <div style={{ color: 'var(--mu)', fontSize: 12, marginTop: 2 }}>
+                              {row.fees ? `งวด ${formatFeePeriodLabel(row.fees)}` : 'ไม่ระบุงวด'} · {formatDate(row.verified_at || row.paid_at)} · {formatMethod(row.payment_method)}
+                            </div>
+                          </div>
+                          <div className="notif-payment-actions">
+                            <button className="btn btn-xs btn-g" onClick={() => handlePrintReceipt(row)}>🖨 ใบเสร็จ</button>
+                            {row.slip_url && <button className="btn btn-xs btn-o" onClick={() => openResidentAttachment(row.slip_url, 'หลักฐานการชำระ')}>ดูสลิป</button>}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
 
