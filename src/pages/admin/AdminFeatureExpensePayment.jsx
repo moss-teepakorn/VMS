@@ -79,6 +79,10 @@ const EMPTY_FORM = () => ({
   items: [{ item_type_id: '', item_label: '', amount: '', note: '' }],
 })
 
+function normalizeActiveItemTypes(rows = []) {
+  return (rows || []).filter((row) => row?.is_active !== false)
+}
+
 export default function AdminFeatureExpensePayment() {
   const [disbursements, setDisbursements] = useState([])
   const [loading, setLoading] = useState(false)
@@ -171,12 +175,21 @@ export default function AdminFeatureExpensePayment() {
     setLoading(false)
   }
 
+  const refreshItemTypesFromSetup = async () => {
+    // Use the full list first and then normalize active status so old rows with null/undefined
+    // is_active are still visible in form dropdowns.
+    const latest = await listPaymentItemTypes()
+    const normalized = normalizeActiveItemTypes(latest)
+    setItemTypes(normalized)
+    return normalized
+  }
+
   useEffect(() => {
     load()
     Promise.all([listPartners({ onlyActive: true }), listPaymentItemTypes(), getActiveBoardMembers(), getSetupConfig(), listHouses()])
       .then(([p, it, bm, cfg, h]) => {
         setPartners(p || [])
-        setItemTypes((it || []).filter((t) => t.is_active))
+        setItemTypes(normalizeActiveItemTypes(it))
         setBoardMembers(bm || [])
         setSetup(cfg || {})
         setHouses(h || [])
@@ -225,8 +238,7 @@ export default function AdminFeatureExpensePayment() {
 
   const openCreate = async () => {
     try {
-      const latestItemTypes = await listPaymentItemTypes({ onlyActive: true })
-      setItemTypes(latestItemTypes || [])
+      await refreshItemTypesFromSetup()
     } catch {
       // Keep current item type options when refresh fails.
     }
