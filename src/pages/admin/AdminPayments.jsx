@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react'
+import React, { useEffect, useMemo, useRef, useState } from 'react'
 import StyledSelect from '../../components/StyledSelect'
 import html2canvas from 'html2canvas'
 import { jsPDF } from 'jspdf'
@@ -411,9 +411,12 @@ export default function AdminPayments() {
     }
     return draft
   }
-  const [showReceiptPrintActionModal, setShowReceiptPrintActionModal] = useState(false)
-  const [runningReceiptPrintAction, setRunningReceiptPrintAction] = useState(false)
-  const [receiptPrintTarget, setReceiptPrintTarget] = useState(null)
+  const [showReceiptPrintPreviewModal, setShowReceiptPrintPreviewModal] = useState(false)
+  const [receiptPrintPreviewHtml, setReceiptPrintPreviewHtml] = useState('')
+  const [receiptPrintPreviewTitle, setReceiptPrintPreviewTitle] = useState('ตัวอย่างใบเสร็จ')
+  const [receiptPrintPreviewFileBase, setReceiptPrintPreviewFileBase] = useState('receipt')
+  const [receiptPrintPreviewExporting, setReceiptPrintPreviewExporting] = useState(false)
+  const receiptPrintPreviewIframeRef = useRef(null)
   const [feeOptions, setFeeOptions] = useState([])
   const [receiveForm, setReceiveForm] = useState({
     fee_id: '',
@@ -995,96 +998,146 @@ export default function AdminPayments() {
     })
   }
 
-  const renderReceiptsInIframe = async (html, sheetCount = 2) => {
-    const iframe = document.createElement('iframe')
-    iframe.style.cssText = 'position:fixed;left:-9999px;top:0;border:none;'
-    iframe.style.width = '794px'
-    iframe.style.height = `${sheetCount * 1200}px`
-    document.body.appendChild(iframe)
+  const sanitizeFileBaseName = (input, fallback = 'receipt') => {
+    const safe = String(input || '')
+      .trim()
+      .replace(/[^\w\-.]+/g, '-')
+      .replace(/-{2,}/g, '-')
+      .replace(/^-+|-+$/g, '')
+    return safe || fallback
+  }
 
-    const doc = iframe.contentDocument
-    doc.open()
-    doc.write(html)
-    doc.close()
+  const openReceiptPrintPreviewModal = ({ html, title, fileBase }) => {
+    setReceiptPrintPreviewHtml(html)
+    setReceiptPrintPreviewTitle(title || 'ตัวอย่างใบเสร็จ')
+    setReceiptPrintPreviewFileBase(sanitizeFileBaseName(fileBase, 'receipt'))
+    setShowReceiptPrintPreviewModal(true)
+  }
 
-    await new Promise((resolve) => setTimeout(resolve, 1000))
-    return {
-      iframe,
-      doc,
-      sheets: Array.from(doc.querySelectorAll('.sheet')),
+  const closeReceiptPrintPreviewModal = () => {
+    if (receiptPrintPreviewExporting) return
+    setShowReceiptPrintPreviewModal(false)
+    setReceiptPrintPreviewHtml('')
+    setReceiptPrintPreviewTitle('ตัวอย่างใบเสร็จ')
+    setReceiptPrintPreviewFileBase('receipt')
+  }
+
+  const handlePrintReceiptFromPreview = () => {
+    const frameWindow = receiptPrintPreviewIframeRef.current?.contentWindow
+    if (!frameWindow) {
+      Swal.fire({ icon: 'warning', title: 'ยังไม่พร้อมพิมพ์', text: 'กรุณารอสักครู่แล้วลองอีกครั้ง' })
+      return
+    }
+    frameWindow.focus()
+    frameWindow.print()
+  }
+
+  const captureReceiptPreviewSheets = async () => {
+    const html = String(receiptPrintPreviewHtml || '').trim()
+    if (!html) throw new Error('ไม่พบเอกสารสำหรับดาวน์โหลด')
+
+    const host = document.createElement('iframe')
+    host.setAttribute('aria-hidden', 'true')
+    host.style.position = 'fixed'
+    host.style.left = '-99999px'
+    host.style.top = '-99999px'
+    host.style.width = '820px'
+    host.style.height = '1200px'
+    host.style.visibility = 'hidden'
+    host.style.pointerEvents = 'none'
+
+    document.body.appendChild(host)
+
+    try {
+      await new Promise((resolve, reject) => {
+        host.onload = () => resolve()
+        host.onerror = () => reject(new Error('โหลดเอกสารไม่สำเร็จ'))
+        host.srcdoc = html
+      })
+
+      const doc = host.contentDocument
+      if (!doc) throw new Error('ไม่สามารถเข้าถึงเอกสารสำหรับดาวน์โหลด')
+      if (doc.fonts?.ready) {
+        await doc.fonts.ready.catch(() => {})
+      }
+
+      const sheets = Array.from(doc.querySelectorAll('.sheet'))
+      if (sheets.length === 0) throw new Error('ไม่พบหน้าสำหรับดาวน์โหลด')
+
+      const canvases = []
+      for (const sheet of sheets) {
+        const rect = sheet.getBoundingClientRect()
+        const width = Math.max(794, Math.ceil(rect.width || 794))
+        const height = Math.max(1123, Math.ceil(rect.height || 1123))
+        const canvas = await html2canvas(sheet, {
+          scale: 2,
+          useCORS: true,
+          backgroundColor: '#ffffff',
+          width,
+          height,
+          windowWidth: width,
+          windowHeight: height,
+          scrollX: 0,
+          scrollY: 0,
+        })
+        canvases.push(canvas)
+      }
+
+      return canvases
+    } finally {
+      host.remove()
+    }
+  }
+
+  const downloadReceiptPreviewAsPdf = async () => {
+    if (receiptPrintPreviewExporting) return
+    try {
+      setReceiptPrintPreviewExporting(true)
+      const canvases = await captureReceiptPreviewSheets()
+      const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' })
+      canvases.forEach((canvas, index) => {
+        if (index > 0) pdf.addPage()
+        const imgData = canvas.toDataURL('image/jpeg', 0.95)
+        pdf.addImage(imgData, 'JPEG', 0, 0, 210, 297)
+      })
+      pdf.save(`${receiptPrintPreviewFileBase}.pdf`)
+    } catch (error) {
+      await Swal.fire({ icon: 'error', title: 'ดาวน์โหลด PDF ไม่สำเร็จ', text: error.message || 'โปรดลองอีกครั้ง' })
+    } finally {
+      setReceiptPrintPreviewExporting(false)
+    }
+  }
+
+  const downloadReceiptPreviewAsImage = async () => {
+    if (receiptPrintPreviewExporting) return
+    try {
+      setReceiptPrintPreviewExporting(true)
+      const canvases = await captureReceiptPreviewSheets()
+      canvases.forEach((canvas, index) => {
+        const anchor = document.createElement('a')
+        const suffix = canvases.length > 1 ? `-${index + 1}` : ''
+        anchor.href = canvas.toDataURL('image/png')
+        anchor.download = `${receiptPrintPreviewFileBase}${suffix}.png`
+        document.body.appendChild(anchor)
+        anchor.click()
+        anchor.remove()
+      })
+    } catch (error) {
+      await Swal.fire({ icon: 'error', title: 'ดาวน์โหลดรูปภาพไม่สำเร็จ', text: error.message || 'โปรดลองอีกครั้ง' })
+    } finally {
+      setReceiptPrintPreviewExporting(false)
     }
   }
 
   const handlePrintReceipt = (payment) => {
     if (!payment?.verified_at) return
-    setReceiptPrintTarget(payment)
-    setShowReceiptPrintActionModal(true)
-  }
-
-  const runReceiptPrintAction = async (mode) => {
-    if (!receiptPrintTarget) return
-    setRunningReceiptPrintAction(true)
-
-    try {
-      const target = receiptPrintTarget
-      const fileLabel = `receipt-${buildReceiptNo(target, receiptNoById)}`
-      if (mode === 'paper') {
-        const html = buildReceiptHtml(target, { autoPrint: true })
-        const popup = openHtmlInWindow(html)
-        if (!popup) {
-          await Swal.fire({ icon: 'warning', title: 'ไม่สามารถเปิดหน้าต่างพิมพ์ได้', text: 'กรุณาอนุญาต popup ของเบราว์เซอร์' })
-        }
-        setShowReceiptPrintActionModal(false)
-        return
-      }
-
-      const html = buildReceiptHtml(target, { autoPrint: false, forCapture: true })
-      const { iframe, sheets } = await renderReceiptsInIframe(html, 2)
-      if (sheets.length === 0) {
-        document.body.removeChild(iframe)
-        throw new Error('ไม่พบหน้าสำหรับพิมพ์ใบเสร็จ')
-      }
-
-      if (mode === 'image') {
-        for (let i = 0; i < sheets.length; i += 1) {
-          const canvas = await html2canvas(sheets[i], {
-            scale: 2,
-            useCORS: true,
-            backgroundColor: '#ffffff',
-            width: 794,
-            height: 1122,
-          })
-          const link = document.createElement('a')
-          link.href = canvas.toDataURL('image/png')
-          link.download = `${fileLabel}-${i + 1}.png`
-          link.click()
-        }
-      } else {
-        const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' })
-        const A4W = pdf.internal.pageSize.getWidth()
-        const A4H = pdf.internal.pageSize.getHeight()
-        for (let i = 0; i < sheets.length; i += 1) {
-          const canvas = await html2canvas(sheets[i], {
-            scale: 2,
-            useCORS: true,
-            backgroundColor: '#ffffff',
-            width: 794,
-            height: 1122,
-          })
-          const imgData = canvas.toDataURL('image/jpeg', 0.95)
-          if (i > 0) pdf.addPage()
-          pdf.addImage(imgData, 'JPEG', 0, 0, A4W, A4H, undefined, 'FAST')
-        }
-        pdf.save(`${fileLabel}.pdf`)
-      }
-
-      document.body.removeChild(iframe)
-      setShowReceiptPrintActionModal(false)
-    } catch (error) {
-      await Swal.fire({ icon: 'error', title: 'พิมพ์ใบเสร็จไม่สำเร็จ', text: error.message })
-    } finally {
-      setRunningReceiptPrintAction(false)
-    }
+    const receiptNo = buildReceiptNo(payment, receiptNoById)
+    const html = buildReceiptHtml(payment)
+    openReceiptPrintPreviewModal({
+      html,
+      title: `ใบเสร็จ ${payment.houses?.house_no || '-'} · ${formatPeriod(payment.fees?.period)} ปี ${toBE(payment.fees?.year)}`,
+      fileBase: `receipt-${receiptNo}`,
+    })
   }
 
   const handleRejectFromApproveModal = async () => {
@@ -1432,68 +1485,34 @@ export default function AdminPayments() {
         </div>
       )}
 
-      {showReceiptPrintActionModal && receiptPrintTarget && (
+      {showReceiptPrintPreviewModal && (
         <div className="house-mo">
-          <div className="house-md house-md--xs">
+          <div className="house-md house-md--xl" style={{ '--house-md-max-w': '1120px', '--house-md-max-h': 'calc(100dvh - 36px)' }}>
             <div className="house-md-head">
               <div>
-                <div className="house-md-title">🖨 ตัวเลือกการพิมพ์</div>
-                <div className="house-md-sub">
-                  ใบเสร็จ {receiptPrintTarget.houses?.house_no || '-'} · {formatPeriod(receiptPrintTarget.fees?.period)} ปี {toBE(receiptPrintTarget.fees?.year)}
-                </div>
+                <div className="house-md-title">🖨 {receiptPrintPreviewTitle}</div>
+                <div className="house-md-sub">แสดงตัวอย่างก่อนพิมพ์และดาวน์โหลดเอกสาร</div>
               </div>
             </div>
-            <div className="house-md-body" style={{ display: 'grid', gap: 10 }}>
-              <button
-                className="btn btn-p"
-                type="button"
-                onClick={() => runReceiptPrintAction('paper')}
-                disabled={runningReceiptPrintAction}
-                style={{ justifyContent: 'space-between', padding: '12px 14px', fontFamily: 'inherit', letterSpacing: 0, fontStretch: 'normal' }}
-              >
-                <span style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', lineHeight: 1.25 }}>
-                  <span style={{ fontSize: 15, fontWeight: 700 }}>พิมพ์เอกสาร</span>
-                  <span style={{ fontSize: 12, fontWeight: 500, opacity: 0.88 }}>เปิดหน้าพิมพ์สำหรับใบเสร็จ</span>
-                </span>
-                <span style={{ fontSize: 12, fontWeight: 700 }}>{runningReceiptPrintAction ? 'กำลังดำเนินการ...' : 'Paper'}</span>
-              </button>
-
-              <button
-                className="btn btn-a"
-                type="button"
-                onClick={() => runReceiptPrintAction('pdf')}
-                disabled={runningReceiptPrintAction}
-                style={{ justifyContent: 'space-between', padding: '12px 14px', fontFamily: 'inherit', letterSpacing: 0, fontStretch: 'normal' }}
-              >
-                <span style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', lineHeight: 1.25 }}>
-                  <span style={{ fontSize: 15, fontWeight: 700 }}>Save เป็น PDF</span>
-                  <span style={{ fontSize: 12, fontWeight: 500, opacity: 0.88 }}>ดาวน์โหลดไฟล์ PDF ลงเครื่องทันที</span>
-                </span>
-                <span style={{ fontSize: 12, fontWeight: 700 }}>{runningReceiptPrintAction ? 'กำลังดำเนินการ...' : 'PDF'}</span>
-              </button>
-
-              <button
-                className="btn btn-g"
-                type="button"
-                onClick={() => runReceiptPrintAction('image')}
-                disabled={runningReceiptPrintAction}
-                style={{ justifyContent: 'space-between', padding: '12px 14px', fontFamily: 'inherit', letterSpacing: 0, fontStretch: 'normal' }}
-              >
-                <span style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', lineHeight: 1.25 }}>
-                  <span style={{ fontSize: 15, fontWeight: 700 }}>Save เป็น Image</span>
-                  <span style={{ fontSize: 12, fontWeight: 500, opacity: 0.88 }}>บันทึกเป็นรูปภาพ PNG แยกตามหน้าเอกสาร</span>
-                </span>
-                <span style={{ fontSize: 12, fontWeight: 700 }}>{runningReceiptPrintAction ? 'กำลังดำเนินการ...' : 'PNG'}</span>
-              </button>
+            <div className="house-md-body" style={{ padding: 10, background: '#eef2f7' }}>
+              <div style={{ border: '1px solid var(--bo)', borderRadius: 10, overflow: 'hidden', background: '#fff', height: 'calc(100dvh - 220px)', minHeight: 420 }}>
+                <iframe
+                  ref={receiptPrintPreviewIframeRef}
+                  title={receiptPrintPreviewTitle}
+                  srcDoc={receiptPrintPreviewHtml}
+                  style={{ width: '100%', height: '100%', border: 'none' }}
+                />
+              </div>
             </div>
             <div className="house-md-foot">
+              <button className="btn btn-o" type="button" onClick={downloadReceiptPreviewAsPdf} disabled={receiptPrintPreviewExporting}>{receiptPrintPreviewExporting ? 'กำลังสร้างไฟล์...' : '⬇ PDF'}</button>
+              <button className="btn btn-o" type="button" onClick={downloadReceiptPreviewAsImage} disabled={receiptPrintPreviewExporting}>{receiptPrintPreviewExporting ? 'กำลังสร้างไฟล์...' : '⬇ Image'}</button>
+              <button className="btn btn-a" type="button" onClick={handlePrintReceiptFromPreview} disabled={receiptPrintPreviewExporting}>🖨 พิมพ์</button>
               <button
                 className="btn btn-g"
                 type="button"
-                onClick={() => {
-                  if (runningReceiptPrintAction) return
-                  setShowReceiptPrintActionModal(false)
-                }}
+                onClick={closeReceiptPrintPreviewModal}
+                disabled={receiptPrintPreviewExporting}
               >
                 ปิด
               </button>
