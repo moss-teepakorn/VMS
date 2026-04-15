@@ -51,6 +51,7 @@ const MAX_ATTACHMENTS = 5
 const MAX_IMAGE_SIZE_BYTES = 100 * 1024
 const MAX_IMAGE_TARGET_BYTES = 95 * 1024
 const REJECT_PREFIX = '[REJECT] '
+const PAYMENT_META_PREFIX = '[PAYMENT_ITEMS_JSON]'
 const ISSUE_CATEGORY_OPTIONS = ['ทั่วไป', 'ไฟฟ้า', 'ประปา', 'ความปลอดภัย', 'ความสะอาด', 'โครงสร้าง', 'ถนน', 'อื่นๆ']
 const MARKETPLACE_MAX_ATTACHMENTS = 2
 const MARKET_CATEGORY_OPTIONS = [
@@ -860,6 +861,20 @@ export default function ResidentLayout() {
     return itemTotal > 0 ? itemTotal : Number(row?.amount || 0)
   }
 
+  function getPaymentOutstandingBreakdown(row) {
+    return getPaymentItemRows(row)
+      .map((item) => {
+        const rawOutstanding = Number(item?.outstandingAmount)
+        const fallbackOutstanding = Math.max(0, Number(item?.dueAmount || 0) - Number(item?.paidAmount || 0))
+        const amount = Number.isFinite(rawOutstanding) && rawOutstanding > 0 ? rawOutstanding : fallbackOutstanding
+        return {
+          label: item?.label || 'รายการค้างชำระ',
+          amount,
+        }
+      })
+      .filter((item) => item.amount > 0)
+  }
+
   const feeItemDefs = [
     { key: 'fee_common', label: 'ค่าส่วนกลาง' },
     { key: 'fee_parking', label: 'ค่าจอดรถ' },
@@ -872,6 +887,188 @@ export default function ResidentLayout() {
     { key: 'fee_violation', label: 'ค่ากระทำผิด' },
     { key: 'fee_other', label: 'ค่าอื่นๆ' },
   ]
+
+  function parsePaymentMeta(note) {
+    const raw = String(note || '')
+    const markerIndex = raw.indexOf(PAYMENT_META_PREFIX)
+    if (markerIndex < 0) return null
+    const jsonText = raw.slice(markerIndex + PAYMENT_META_PREFIX.length).trim()
+    if (!jsonText) return null
+    try {
+      const parsed = JSON.parse(jsonText)
+      if (!Array.isArray(parsed?.items)) return null
+      return parsed
+    } catch {
+      return null
+    }
+  }
+
+  function parseItemizedRowsFromNote(note) {
+    const raw = String(note || '')
+    if (!raw) return []
+    const noMeta = raw.includes(PAYMENT_META_PREFIX)
+      ? raw.slice(0, raw.indexOf(PAYMENT_META_PREFIX)).trim()
+      : raw
+    const match = noMeta.match(/ชำระรายการ:\s*([^|\n]+)/)
+    if (!match?.[1]) return []
+
+    const section = String(match[1] || '').trim()
+    if (!section) return []
+
+    const rows = []
+    const consumedRanges = []
+    const overlaps = (start, end) => consumedRanges.some((r) => !(end <= r.start || start >= r.end))
+    const pushRange = (start, end) => consumedRanges.push({ start, end })
+
+    for (const def of feeItemDefs) {
+      const escapedLabel = def.label.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+      const regex = new RegExp(`${escapedLabel}\\s*฿?\\s*([\\d,]+(?:\\.\\d{1,2})?)`, 'g')
+      let m = regex.exec(section)
+      while (m) {
+        const full = String(m[0] || '')
+        const amountRaw = String(m[1] || '0')
+        const start = m.index
+        const end = m.index + full.length
+        if (!overlaps(start, end)) {
+          const amount = Number(amountRaw.replace(/,/g, ''))
+          rows.push({
+            key: def.key,
+            label: def.label,
+            paidAmount: Number.isFinite(amount) ? amount : 0,
+          })
+          pushRange(start, end)
+        }
+        m = regex.exec(section)
+      }
+    }
+
+    const genericRegex = /([^|]+?)\s*฿?\s*([\d,]+(?:\.\d{1,2})?)(?=\s*,\s*|$)/g
+    let g = genericRegex.exec(section)
+    while (g) {
+      const full = String(g[0] || '')
+      const label = String(g[1] || '').trim()
+      const amountRaw = String(g[2] || '0')
+      const start = g.index
+      const end = g.index + full.length
+      if (label && !overlaps(start, end)) {
+        const amount = Number(amountRaw.replace(/,/g, ''))
+        rows.push({
+          label,
+          paidAmount: Number.isFinite(amount) ? amount : 0,
+        })
+        pushRange(start, end)
+      }
+      g = genericRegex.exec(section)
+    }
+
+    return rows
+  }
+
+  function getPaymentItemRows(row) {
+    if (Array.isArray(row?.payment_items) && row.payment_items.length > 0) {
+      return row.payment_items.map((item, index) => ({
+        key: item.item_key || `item_${index + 1}`,
+        label: item.item_label || '-',
+        dueAmount: Number(item.due_amount || 0),
+        paidAmount: Number(item.paid_amount || 0),
+        outstandingAmount: Number(item.outstanding_amount || 0),
+      }))
+    }
+
+    const parsedMeta = parsePaymentMeta(row?.note)
+    if (parsedMeta?.items?.length) {
+      return parsedMeta.items.map((item, index) => ({
+        key: item?.key || `meta_${index + 1}`,
+        label: item?.label || '-',
+        dueAmount: Number(item?.dueAmount || 0),
+        paidAmount: Number(item?.paidAmount || 0),
+        outstandingAmount: Number(item?.outstandingAmount || 0),
+      }))
+    }
+
+    const itemizedFromNote = parseItemizedRowsFromNote(row?.note)
+    if (itemizedFromNote.length > 0) {
+      return itemizedFromNote.map((item, index) => ({
+        key: item?.key || `legacy_${index + 1}`,
+        label: item?.label || '-',
+        dueAmount: Number(item?.dueAmount || item?.paidAmount || 0),
+        paidAmount: Number(item?.paidAmount || 0),
+        outstandingAmount: Number(item?.outstandingAmount || 0),
+      }))
+    }
+
+    const paidAmount = Number(row?.amount || 0)
+    const dueAmount = Number(row?.fees?.total_amount || paidAmount)
+    return [{
+      key: 'paid_total',
+      label: 'ยอดชำระที่บันทึก',
+      dueAmount,
+      paidAmount,
+      outstandingAmount: Math.max(0, dueAmount - paidAmount),
+    }]
+  }
+
+  function getApprovedFeePayments(feeId, { excludePaymentId = null } = {}) {
+    if (!feeId) return []
+    return payments.filter((row) => {
+      if (excludePaymentId && row?.id === excludePaymentId) return false
+      if (row?.fee_id !== feeId) return false
+      if (!row?.verified_at) return false
+      if (getRejectedReason(row?.note)) return false
+      return true
+    })
+  }
+
+  function getOutstandingItemsForFee(fee, { excludePaymentId = null } = {}) {
+    if (!fee?.id) return []
+
+    const paidByKey = {}
+    let unclassifiedPaid = 0
+
+    const approvedPayments = getApprovedFeePayments(fee.id, { excludePaymentId })
+    for (const payment of approvedPayments) {
+      const rows = getPaymentItemRows(payment)
+      let recognized = false
+      for (const item of rows) {
+        const keyFromLabel = feeItemDefs.find((def) => def.label === item?.label)?.key
+        const key = item?.key || keyFromLabel
+        if (!feeItemDefs.some((def) => def.key === key)) continue
+        recognized = true
+        paidByKey[key] = Number(paidByKey[key] || 0) + Number(item?.paidAmount || 0)
+      }
+
+      if (!recognized) {
+        unclassifiedPaid += Number(payment?.amount || 0)
+      }
+    }
+
+    let remainingUnclassified = Math.max(0, unclassifiedPaid)
+    return feeItemDefs
+      .map((item) => {
+        const dueAmount = Number(fee?.[item.key] || 0)
+        if (dueAmount <= 0) return null
+
+        const paidByDetail = Number(paidByKey[item.key] || 0)
+        const availableForFallback = Math.max(0, dueAmount - paidByDetail)
+        const paidByFallback = Math.min(availableForFallback, remainingUnclassified)
+        remainingUnclassified = Math.max(0, remainingUnclassified - paidByFallback)
+
+        const paidToDate = paidByDetail + paidByFallback
+        const outstanding = Math.max(0, dueAmount - paidToDate)
+        return {
+          key: item.key,
+          label: item.label,
+          dueAmount,
+          paidToDate,
+          amount: outstanding,
+        }
+      })
+      .filter((item) => item && item.amount > 0)
+  }
+
+  function getFeeOutstandingTotal(fee) {
+    return getOutstandingItemsForFee(fee).reduce((sum, item) => sum + Number(item.amount || 0), 0)
+  }
 
   function getInvoiceFeeItemRows(fee) {
     return feeItemDefs
@@ -980,6 +1177,8 @@ export default function ResidentLayout() {
     const fmtMoney = (v) => Number(v || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
     const totalAmount = Number(fee.total_amount || 0)
     const invoiceRows = getInvoiceFeeItemRows(fee)
+    const outstandingRows = getOutstandingItemsForFee(fee)
+    const outstandingTotal = outstandingRows.reduce((sum, item) => sum + Number(item.amount || 0), 0)
     const renderRows = () => {
       if (invoiceRows.length === 0) {
         return `
@@ -1042,6 +1241,35 @@ export default function ResidentLayout() {
           </table>
           <div class="amount-text">(${toThaiBahtText(totalAmount)})</div>
         </section>
+        ${outstandingRows.length > 0 ? `
+          <section class="box">
+            <div class="payment-title">ยอดค้างชำระปัจจุบัน</div>
+            <table>
+              <thead>
+                <tr>
+                  <th class="c" style="width:56px;">ลำดับ</th>
+                  <th>รายการ</th>
+                  <th class="r" style="width:180px;">ยอดค้างชำระ (บาท)</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${outstandingRows.map((item, index) => `
+                  <tr>
+                    <td class="c">${index + 1}</td>
+                    <td>${item.label}</td>
+                    <td class="r">${fmtMoney(item.amount)}</td>
+                  </tr>
+                `).join('')}
+              </tbody>
+              <tfoot>
+                <tr>
+                  <td colspan="2" class="r"><strong>รวมยอดค้างชำระ</strong></td>
+                  <td class="r"><strong>${fmtMoney(outstandingTotal)}</strong></td>
+                </tr>
+              </tfoot>
+            </table>
+          </section>
+        ` : ''}
         <section class="box payment-box">
           <div class="payment-title">รายละเอียดการชำระเงิน</div>
           <div class="payment-grid">
@@ -1085,18 +1313,32 @@ export default function ResidentLayout() {
     const ownerName = houseDetail?.owner_name || profile?.full_name || '-'
     const fmtDate = (v) => v ? new Date(v).toLocaleDateString('th-TH', { year: 'numeric', month: 'short', day: 'numeric' }) : '-'
     const fmtMoney = (v) => Number(v || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
-    const breakdown = getPaymentBreakdown(payment)
-    const totalPaid = getPaymentAmount(payment)
+    const itemRows = getPaymentItemRows(payment)
+    const totalPaid = itemRows.reduce((sum, item) => sum + Number(item.paidAmount || 0), 0) || getPaymentAmount(payment)
+    const totalDue = Number(payment?.fees?.total_amount || itemRows.reduce((sum, item) => sum + Number(item.dueAmount || 0), 0))
+    const outstandingRows = itemRows
+      .map((item) => {
+        const rawOutstanding = Number(item.outstandingAmount)
+        const fallbackOutstanding = Math.max(0, Number(item.dueAmount || 0) - Number(item.paidAmount || 0))
+        const amount = Number.isFinite(rawOutstanding) && rawOutstanding > 0 ? rawOutstanding : fallbackOutstanding
+        return {
+          label: item.label || 'รายการค้างชำระ',
+          amount,
+        }
+      })
+      .filter((item) => item.amount > 0)
+    const totalOutstanding = Math.max(0, outstandingRows.reduce((sum, item) => sum + Number(item.amount || 0), 0) || (totalDue - totalPaid))
     const periodLabel = payment.fees ? `งวด ${formatFeePeriodLabel(payment.fees)}` : 'รับชำระทั่วไป'
     const paymentType = getPaymentTypeLabel(payment)
     const receiptDocTitle = paymentType === 'ค่าส่วนกลาง' ? 'ใบเสร็จรับเงินค่าส่วนกลาง' : 'ใบเสร็จรับเงินค่าอื่นๆ'
     const renderRows = () => {
-      if (breakdown.length > 0) {
-        return breakdown.map((item, idx) => `
+      if (itemRows.length > 0) {
+        return itemRows.map((item, idx) => `
           <tr>
             <td class="c">${idx + 1}</td>
             <td>${item.label}</td>
-            <td class="r">${fmtMoney(item.amount)}</td>
+            <td class="r">${fmtMoney(item.dueAmount)}</td>
+            <td class="r">${fmtMoney(item.paidAmount)}</td>
           </tr>
         `).join('')
       }
@@ -1104,6 +1346,7 @@ export default function ResidentLayout() {
         <tr>
           <td class="c">1</td>
           <td>${paymentType} ${periodLabel}</td>
+          <td class="r">${fmtMoney(totalDue || totalPaid)}</td>
           <td class="r">${fmtMoney(totalPaid)}</td>
         </tr>
       `
@@ -1141,18 +1384,29 @@ export default function ResidentLayout() {
               <tr>
                 <th class="c" style="width:56px;">ลำดับ</th>
                 <th>รายการ</th>
-                <th class="r" style="width:170px;">ยอดชำระ (บาท)</th>
+                <th class="r" style="width:170px;">ยอดที่ต้องชำระ (บาท)</th>
+                <th class="r" style="width:170px;">ยอดชำระจริง (บาท)</th>
               </tr>
             </thead>
             <tbody>${renderRows()}</tbody>
             <tfoot>
               <tr>
-                <td colspan="2" class="r"><strong>รวมยอดชำระ</strong></td>
+                <td colspan="2" class="r"><strong>ยอดรวมที่ต้องชำระ</strong></td>
+                <td class="r"><strong>${fmtMoney(totalDue)}</strong></td>
                 <td class="r"><strong>${fmtMoney(totalPaid)}</strong></td>
+              </tr>
+              <tr>
+                <td colspan="3" class="r"><strong>ยอดคงค้างหลังชำระ</strong></td>
+                <td class="r"><strong>${fmtMoney(totalOutstanding)}</strong></td>
               </tr>
             </tfoot>
           </table>
           <div class="amount-text">(${toThaiBahtText(totalPaid)})</div>
+          ${outstandingRows.length > 0 ? `
+            <div class="payment-note">
+              ${outstandingRows.map((item) => `<div>${item.label}: ${fmtMoney(item.amount)} บาท</div>`).join('')}
+            </div>
+          ` : ''}
         </section>
         <section class="foot">
           <div class="note">
@@ -1335,8 +1589,9 @@ export default function ResidentLayout() {
     })
   }
 
-  const unresolvedFees = fees.filter((f) => f.status === 'unpaid' || f.status === 'overdue')
-  const overdueAmount = unresolvedFees.reduce((sum, f) => sum + Number(f.total_amount || 0), 0)
+  const feeRowsForSummary = allFees.length > 0 ? allFees : fees
+  const unresolvedFees = feeRowsForSummary.filter((fee) => getFeeOutstandingTotal(fee) > 0)
+  const overdueAmount = unresolvedFees.reduce((sum, fee) => sum + getFeeOutstandingTotal(fee), 0)
   const nextDueFee = [...unresolvedFees].sort((left, right) => new Date(left.due_date || 0) - new Date(right.due_date || 0))[0] || null
   const approvedPaymentCount = payments.filter((row) => row.verified_at && !getRejectedReason(row.note)).length
   const feeStatusSummary = getFeeStatusSummary()
@@ -2996,6 +3251,8 @@ export default function ResidentLayout() {
                   const badge = getFeeStatusBadge(fee.status)
                   const canSubmitSlip = fee.status === 'unpaid' || fee.status === 'overdue'
                   const tone = fee.status === 'paid' ? 'success' : fee.status === 'pending' ? 'primary' : fee.status === 'overdue' ? 'error' : 'warning'
+                  const outstandingItems = getOutstandingItemsForFee(fee)
+                  const outstandingTotal = outstandingItems.reduce((sum, item) => sum + Number(item.amount || 0), 0)
                   return (
                     <div key={fee.id} className={`fee-invoice-row tone-${tone}`}>
                       <div className="fee-invoice-cell">
@@ -3013,6 +3270,11 @@ export default function ResidentLayout() {
                       <div className="fee-invoice-cell">
                         <div className="fee-cell-kicker">ยอดรวม</div>
                         <div className="fee-cell-main fee-amount-strong">฿{formatMoney(fee.total_amount)}</div>
+                        {outstandingTotal > 0 && (
+                          <div className="fee-cell-sub" style={{ color: 'var(--dg)', fontWeight: 600 }}>
+                            ค้างชำระ ฿{formatMoney(outstandingTotal)}
+                          </div>
+                        )}
                       </div>
                       <div className="fee-invoice-cell">
                         <div className="fee-cell-kicker">สถานะและการจัดการ</div>
@@ -3025,6 +3287,16 @@ export default function ResidentLayout() {
                             <button className="btn btn-xs btn-g" onClick={() => handlePrintInvoice(fee)}>🖨 ใบแจ้งหนี้</button>
                           </div>
                         </div>
+                        {outstandingItems.length > 0 && (
+                          <div className="fee-breakdown-list" style={{ marginTop: 8 }}>
+                            {outstandingItems.map((item) => (
+                              <div key={`${fee.id}-outstanding-${item.key}`} className="fee-breakdown-row">
+                                <span>{item.label}</span>
+                                <strong>฿{formatMoney(item.amount)}</strong>
+                              </div>
+                            ))}
+                          </div>
+                        )}
                       </div>
                     </div>
                   )
@@ -3048,10 +3320,11 @@ export default function ResidentLayout() {
                 ) : payments.map((row) => {
                   const badge = getPaymentStatusBadge(row)
                   const breakdown = getPaymentBreakdown(row)
+                  const outstandingBreakdown = getPaymentOutstandingBreakdown(row)
                   const amount = getPaymentAmount(row)
                   const paymentType = getPaymentTypeLabel(row)
                   const rejectedReason = getRejectedReason(row.note)
-                  const hasDetails = breakdown.length > 0 || row.slip_url || rejectedReason
+                  const hasDetails = breakdown.length > 0 || outstandingBreakdown.length > 0 || row.slip_url || rejectedReason
                   const canPrintReceipt = !!row.verified_at
                   return (
                     <details key={row.id} className="fee-payment-item" open={false}>
@@ -3089,6 +3362,20 @@ export default function ResidentLayout() {
                               <div className="fee-breakdown-list">
                                 {breakdown.map((item, index) => (
                                   <div key={`${row.id}-${item.label}-${index}`} className="fee-breakdown-row">
+                                    <span>{item.label}</span>
+                                    <strong>฿{formatMoney(item.amount)}</strong>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+
+                          {row.verified_at && outstandingBreakdown.length > 0 && (
+                            <div className="fee-breakdown-block" style={{ marginTop: 8 }}>
+                              <div className="fee-cell-kicker" style={{ marginBottom: 6 }}>ยอดค้างชำระหลังรายการนี้</div>
+                              <div className="fee-breakdown-list">
+                                {outstandingBreakdown.map((item, index) => (
+                                  <div key={`${row.id}-outstanding-${item.label}-${index}`} className="fee-breakdown-row">
                                     <span>{item.label}</span>
                                     <strong>฿{formatMoney(item.amount)}</strong>
                                   </div>
