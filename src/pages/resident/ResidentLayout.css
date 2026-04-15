@@ -399,6 +399,22 @@
   color: #f8fafc;
 }
 
+.notif-nav-badge {
+  margin-left: auto;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 7px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #ef4444;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1;
+}
+
 /* ── FEE STYLES ── */
 .fee-summary-bar {
   display: grid;

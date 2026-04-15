@@ -325,6 +325,7 @@ export default function ResidentLayout() {
   const [statusFilter, setStatusFilter] = useState('all')
   const [searchTerm, setSearchTerm] = useState('')
   const [notifDateFilter, setNotifDateFilter] = useState('all')
+  const [notifyPaymentVisibleCount, setNotifyPaymentVisibleCount] = useState(12)
   const [loading, setLoading] = useState(false)
   const [showViolationModal, setShowViolationModal] = useState(false)
   const [saving, setSaving] = useState(false)
@@ -707,6 +708,10 @@ export default function ResidentLayout() {
     loadViolations({ status: statusFilter, search: searchTerm })
     loadFeeData({ status: feeStatusFilter, year: feeYearFilter })
   }, [activeSection, statusFilter, searchTerm, feeStatusFilter, feeYearFilter, loadViolations, loadFeeData])
+
+  useEffect(() => {
+    setNotifyPaymentVisibleCount(12)
+  }, [searchTerm, notifDateFilter, statusFilter])
 
   function getFeeStatusBadge(status) {
     if (status === 'paid') return { className: 'bd b-ok', label: 'ชำระแล้ว' }
@@ -1368,6 +1373,13 @@ export default function ResidentLayout() {
       return haystack.includes(kw)
     })
     .sort((left, right) => new Date(right.verified_at || right.paid_at || 0) - new Date(left.verified_at || left.paid_at || 0))
+  const visibleNotifyApprovedPayments = filteredNotifyApprovedPayments.slice(0, notifyPaymentVisibleCount)
+  const hasMoreNotifyApprovedPayments = visibleNotifyApprovedPayments.length < filteredNotifyApprovedPayments.length
+  const notifyViolationCount = filteredNotifViolations.length
+  const notifyPaymentCount = filteredNotifyApprovedPayments.length
+  const notifyTotalCount = notifyViolationCount + notifyPaymentCount
+  const notifyNavCount = violations.filter((row) => ['new', 'pending', 'in_progress', 'not_fixed'].includes(row.status)).length
+    + payments.filter((row) => row.verified_at && !getRejectedReason(row.note)).length
   const latestAnnouncements = announcements.slice(0, 3)
   const houseAreaSqw = Number(houseDetail?.area_sqw ?? houseDetail?.area ?? 0)
   const houseAnnualFee = Number(houseDetail?.annual_fee || (houseAreaSqw > 0 ? houseAreaSqw * 12 * Number(houseDetail?.fee_rate || 0) : 0))
@@ -1413,6 +1425,11 @@ export default function ResidentLayout() {
   function navTo(key) {
     setActiveSection(key)
     setSidebarOpen(false)
+  }
+
+  function getNavBadgeCount(itemKey) {
+    if (itemKey === 'notif') return notifyNavCount
+    return 0
   }
 
   function openTechModal(item) {
@@ -2482,6 +2499,7 @@ export default function ResidentLayout() {
                       >
                         <span className="sb-ico">{item.icon}</span>
                         <span className="sb-label">{item.label}</span>
+                        {getNavBadgeCount(item.key) > 0 && <span className="notif-nav-badge">{getNavBadgeCount(item.key)}</span>}
                       </div>
                     ))}
                   </div>
@@ -3276,7 +3294,7 @@ export default function ResidentLayout() {
                 <div className="ph-in">
                   <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                     <div className="ph-ico">⚠️</div>
-                    <div><div className="ph-h1">การแจ้งเตือนจากนิติ</div><div className="ph-sub">การกระทำผิดและข้อมูลสำคัญ</div></div>
+                    <div><div className="ph-h1">การแจ้งเตือนจากนิติ ({notifyTotalCount})</div><div className="ph-sub">การกระทำผิด {notifyViolationCount} · อนุมัติชำระเงิน {notifyPaymentCount}</div></div>
                   </div>
                   <div className="ph-acts" />
                 </div>
@@ -3326,7 +3344,7 @@ export default function ResidentLayout() {
                     <div style={{ color: 'var(--mu)', fontSize: 13 }}>ยังไม่มีรายการอนุมัติการชำระ</div>
                   ) : (
                     <div className="notif-payment-list">
-                      {filteredNotifyApprovedPayments.slice(0, 12).map((row) => (
+                      {visibleNotifyApprovedPayments.map((row) => (
                         <div key={`np-${row.id}`} className="notif-payment-item">
                           <div>
                             <div style={{ fontWeight: 700, color: 'var(--tx)', fontSize: 13 }}>✅ อนุมัติแล้ว · ฿{formatMoney(getPaymentAmount(row))}</div>
@@ -3340,6 +3358,11 @@ export default function ResidentLayout() {
                           </div>
                         </div>
                       ))}
+                      {hasMoreNotifyApprovedPayments && (
+                        <div style={{ display: 'flex', justifyContent: 'center', marginTop: 4 }}>
+                          <button className="btn btn-sm btn-o" onClick={() => setNotifyPaymentVisibleCount((prev) => prev + 12)}>ดูเพิ่มเติม</button>
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
