@@ -840,6 +840,33 @@ export default function ResidentLayout() {
     return [fee.year, fee.period].filter(Boolean).join(' / ') || '-'
   }
 
+  function periodLabel(period) {
+    if (period === 'first_half') return 'ครึ่งปีแรก'
+    if (period === 'second_half') return 'ครึ่งปีหลัง'
+    if (period === 'full_year') return 'เต็มปี'
+    return period || '-'
+  }
+
+  function toBE(yearCE) {
+    const year = Number(yearCE)
+    if (!Number.isFinite(year)) return '-'
+    return year + 543
+  }
+
+  function buildInvoiceDocumentNo(fee) {
+    return `INV-${String(fee?.year || '').slice(-2)}-${String(fee?.id || '').slice(0, 8).toUpperCase()}`
+  }
+
+  function formatDateDMY(value) {
+    if (!value) return '-'
+    const date = new Date(value)
+    if (Number.isNaN(date.getTime())) return '-'
+    const d = String(date.getDate()).padStart(2, '0')
+    const m = String(date.getMonth() + 1).padStart(2, '0')
+    const y = date.getFullYear()
+    return `${d}/${m}/${y}`
+  }
+
   function getFeeStatusSummary() {
     if (overdueAmount > 0) return { label: 'ค้างชำระ', tone: 'error' }
     if (fees.some((fee) => fee.status === 'pending')) return { label: 'รอตรวจสอบ', tone: 'warning' }
@@ -1169,59 +1196,72 @@ export default function ResidentLayout() {
   `
 
   function buildResidentInvoiceHtml(fee) {
-    const logoSrc = setup.loginCircleLogoUrl || setup.villageLogoUrl || ''
-    const invoiceNo = `INV-${String(fee?.year || '').slice(-2)}-${String(fee?.id || '').slice(0, 8).toUpperCase()}`
-    const periodText = formatFeePeriodLabel(fee)
-    const ownerName = houseDetail?.owner_name || profile?.full_name || '-'
-    const fmtDate = (v) => v ? new Date(v).toLocaleDateString('th-TH', { year: 'numeric', month: 'short', day: 'numeric' }) : '-'
-    const fmtMoney = (v) => Number(v || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
-    const totalAmount = Number(fee.total_amount || 0)
-    const invoiceRows = getInvoiceFeeItemRows(fee)
+    const printLogoUrl = setup.loginCircleLogoUrl || setup.villageLogoUrl || villageLogo
+    const printSignatureUrl = setup.juristicSignatureUrl || ''
+    const title = `ใบแจ้งหนี้ ${fee?.houses?.house_no || '-'} ${periodLabel(fee?.period)} ปี ${toBE(fee?.year)}`
+    const invoiceNo = buildInvoiceDocumentNo(fee)
+    const periodText = `${periodLabel(fee?.period)} ปี ${toBE(fee?.year)}`
     const outstandingRows = getOutstandingItemsForFee(fee)
-    const outstandingTotal = outstandingRows.reduce((sum, item) => sum + Number(item.amount || 0), 0)
-    const renderRows = () => {
-      if (invoiceRows.length === 0) {
+    const fmtMoney = (value) => Number(value || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+
+    const itemRows = () => {
+      if (outstandingRows.length === 0) {
         return `
           <tr>
             <td class="c">1</td>
-            <td>ไม่มีรายการเรียกเก็บ</td>
+            <td>ไม่มีรายการค้างชำระ</td>
             <td class="r">0.00</td>
           </tr>
         `
       }
-      return invoiceRows.map((item, index) => `
-        <tr>
-          <td class="c">${index + 1}</td>
-          <td>${item.label}</td>
-          <td class="r">${fmtMoney(item.amount)}</td>
-        </tr>
-      `).join('')
+
+      return outstandingRows
+        .map((item, idx) => `
+          <tr>
+            <td class="c">${idx + 1}</td>
+            <td>${item.label}</td>
+            <td class="r">${fmtMoney(item.amount)}</td>
+          </tr>
+        `)
+        .join('')
     }
-    const renderSheet = (copyLabel) => `
-      <div class="sheet">
-        <div class="head">
+
+    const totalOutstandingForPrint = outstandingRows.reduce((sum, item) => sum + Number(item.amount || 0), 0)
+
+    const renderSheet = (copyLabel, isLastCopy) => `
+      <section class="sheet${isLastCopy ? '' : ' page-break'}">
+        <header class="head">
           <div class="brand">
-            ${logoSrc ? `<div class="logo-wrap"><img src="${logoSrc}" alt="logo" /></div>` : ''}
+            <div class="logo-wrap"><img src="${printLogoUrl}" alt="village-logo" /></div>
             <div>
               <div class="doc">ใบแจ้งหนี้ค่าส่วนกลาง</div>
               <div class="village">${setup.villageName || 'The Greenfield'}</div>
-              <div class="sub">${setup.address || '-'}</div>
+              <div class="sub">${setup.juristicName || 'นิติบุคคลหมู่บ้านเดอะกรีนฟิลด์'}</div>
+              <div class="sub">${setup.juristicAddress || '-'}</div>
+              <div class="sub">${title}</div>
             </div>
           </div>
           <div class="doc-meta">
             <div><span>เลขที่เอกสาร:</span> <strong>${invoiceNo}</strong></div>
-            <div><span>วันที่ออกเอกสาร:</span> <strong>${fmtDate(fee.invoice_date)}</strong></div>
-            <div><span>ครบกำหนดชำระ:</span> <strong>${fmtDate(fee.due_date)}</strong></div>
-            <div class="copy-mark-row"><div class="copy-mark">${copyLabel}</div></div>
+            <div><span>วันที่ออกเอกสาร:</span> <strong>${formatDateDMY(fee?.invoice_date)}</strong></div>
+            <div><span>ครบกำหนดชำระ:</span> <strong>${formatDateDMY(fee?.due_date)}</strong></div>
+            <div class="copy-mark-row">
+              <div class="copy-mark copy-mark--active">${copyLabel}</div>
+            </div>
           </div>
-        </div>
+        </header>
+
         <section class="box">
           <div class="grid">
-            <div><span>บ้านเลขที่</span><strong>${houseNo || '-'}</strong></div>
-            <div><span>ชื่อเจ้าของบ้าน</span><strong>${ownerName}</strong></div>
+            <div><span>บ้านเลขที่</span><strong>${fee?.houses?.house_no || houseNo || '-'}</strong></div>
+            <div><span>ชื่อเจ้าของบ้าน</span><strong>${fee?.houses?.owner_name || houseDetail?.owner_name || profile?.full_name || '-'}</strong></div>
             <div><span>งวดเรียกเก็บ</span><strong>${periodText}</strong></div>
+            <div><span>ซอย</span><strong>${fee?.houses?.soi || houseDetail?.soi || '-'}</strong></div>
+            <div><span>พื้นที่ (ตร.วา)</span><strong>${Number(fee?.houses?.area_sqw || houseDetail?.area_sqw || 0).toLocaleString('en-US')}</strong></div>
+            <div><span>อัตราค่าส่วนกลาง</span><strong>${Number(setup.feeRatePerSqw || 0).toLocaleString('en-US')} บาท/ตร.วา/ปี</strong></div>
           </div>
         </section>
+
         <section class="box">
           <table>
             <thead>
@@ -1231,77 +1271,160 @@ export default function ResidentLayout() {
                 <th class="r" style="width:180px;">จำนวนเงิน (บาท)</th>
               </tr>
             </thead>
-            <tbody>${renderRows()}</tbody>
+            <tbody>
+              ${itemRows()}
+            </tbody>
             <tfoot>
               <tr>
                 <td colspan="2" class="r"><strong>รวมทั้งสิ้น</strong></td>
-                <td class="r"><strong>${fmtMoney(totalAmount)}</strong></td>
+                <td class="r"><strong>${fmtMoney(totalOutstandingForPrint)}</strong></td>
               </tr>
             </tfoot>
           </table>
-          <div class="amount-text">(${toThaiBahtText(totalAmount)})</div>
+          <div class="amount-text">(${toThaiBahtText(totalOutstandingForPrint)})</div>
         </section>
-        ${outstandingRows.length > 0 ? `
-          <section class="box">
-            <div class="payment-title">ยอดค้างชำระปัจจุบัน</div>
-            <table>
-              <thead>
-                <tr>
-                  <th class="c" style="width:56px;">ลำดับ</th>
-                  <th>รายการ</th>
-                  <th class="r" style="width:180px;">ยอดค้างชำระ (บาท)</th>
-                </tr>
-              </thead>
-              <tbody>
-                ${outstandingRows.map((item, index) => `
-                  <tr>
-                    <td class="c">${index + 1}</td>
-                    <td>${item.label}</td>
-                    <td class="r">${fmtMoney(item.amount)}</td>
-                  </tr>
-                `).join('')}
-              </tbody>
-              <tfoot>
-                <tr>
-                  <td colspan="2" class="r"><strong>รวมยอดค้างชำระ</strong></td>
-                  <td class="r"><strong>${fmtMoney(outstandingTotal)}</strong></td>
-                </tr>
-              </tfoot>
-            </table>
-          </section>
-        ` : ''}
+
         <section class="box payment-box">
           <div class="payment-title">รายละเอียดการชำระเงิน</div>
           <div class="payment-grid">
             <div><span>ธนาคาร</span><strong>${setup.bankName || '-'}</strong></div>
             <div><span>เลขที่บัญชี</span><strong>${setup.bankAccountNo || '-'}</strong></div>
             <div><span>ชื่อบัญชี</span><strong>${setup.bankAccountName || '-'}</strong></div>
-            <div><span>กำหนดชำระ</span><strong>${fmtDate(fee.due_date)}</strong></div>
+            <div><span>กำหนดชำระ</span><strong>${formatDateDMY(fee?.due_date)}</strong></div>
           </div>
-          <div class="payment-note">กรุณาชำระภายในวันที่ครบกำหนด หากพ้นกำหนดจะมีค่าปรับตามประกาศนิติบุคคล</div>
+          <div class="payment-note">${setup.invoiceMessage || 'กรุณาแนบหลักฐานการโอนทุกครั้งหลังชำระ'}</div>
         </section>
+
         <section class="foot">
-          <div class="note">หมายเหตุ: กรุณาชำระภายในวันที่ครบกำหนด เพื่อหลีกเลี่ยงค่าปรับเพิ่มเติม</div>
+          <div class="note">
+            หมายเหตุ: กรุณาชำระภายในวันที่ครบกำหนด เพื่อหลีกเลี่ยงค่าปรับ/ค่าทวงถามเพิ่มเติม
+          </div>
           <div class="sign-wrap">
-            ${setup.juristicSignatureUrl ? `<img src="${setup.juristicSignatureUrl}" alt="signature" />` : ''}
+            ${printSignatureUrl ? `<img src="${printSignatureUrl}" alt="juristic-signature" />` : ''}
             <div class="sign-line"></div>
             <div>ผู้มีอำนาจลงนาม</div>
           </div>
         </section>
-      </div>
+      </section>
     `
+
     return `
       <html>
         <head>
-          <title>ใบแจ้งหนี้ ${invoiceNo}</title>
+          <title>${title}</title>
           <link rel="preconnect" href="https://fonts.googleapis.com">
           <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
           <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;700&display=swap" rel="stylesheet">
-          <style>${PRINT_SHARED_CSS}</style>
+          <style>
+            @page { size: A4; margin: 0; }
+            * { box-sizing: border-box; }
+            html, body { font-family: 'Sarabun', 'TH Sarabun New', Tahoma, sans-serif; margin: 0; padding: 0; color: #111827; background: #fff; }
+            .sheet {
+              position: relative;
+              width: 100%;
+              page-break-after: always; break-after: page; break-inside: avoid;
+              background: #fff;
+              padding: 24px 28px;
+              display: flex;
+              flex-direction: column;
+              gap: 8px;
+            }
+            .page-break {}
+            .head {
+              display: flex;
+              justify-content: space-between;
+              gap: 12px;
+              border: 1px solid #cbd5e1;
+              border-radius: 4px;
+              padding: 10px 12px;
+              background: #ffffff;
+              margin-bottom: 4px;
+            }
+            .brand { display: flex; align-items: flex-start; gap: 10px; flex: 1; min-width: 0; }
+            .logo-wrap { width: 64px; height: 64px; border-radius: 12px; background: #f1f5f9; border: 1.5px solid #cbd5e1; padding: 6px; box-sizing: border-box; display: flex; align-items: center; justify-content: center; }
+            .logo-wrap img { width: 100%; height: 100%; display: block; object-fit: contain; border-radius: 8px; }
+            .doc { font-size: 16px; font-weight: 700; line-height: 1.3; }
+            .village { font-size: 11px; margin-top: 3px; font-weight: 600; }
+            .sub { font-size: 9px; color: #6b7280; margin-top: 2px; }
+            .doc-meta { font-size: 10px; min-width: 180px; display: flex; flex-direction: column; gap: 2px; word-break: break-word; }
+            .doc-meta span { color: #6b7280; font-weight: 500; }
+            .copy-mark-row {
+              display: flex;
+              gap: 6px;
+              justify-content: flex-end;
+              margin-top: 10px;
+              margin-right: -4px;
+            }
+            .copy-mark {
+              border: none;
+              border-radius: 4px;
+              padding: 3px 10px;
+              text-align: center;
+              font-size: 14px;
+              font-weight: 700;
+              line-height: 1.3;
+              color: #94a3b8;
+              background: transparent;
+            }
+            .copy-mark--active {
+              color: #0c4a6e;
+              background: transparent;
+            }
+            .box { border: 1px solid #cbd5e1; border-radius: 4px; padding: 10px 12px; }
+            .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 10px; word-break: break-word; }
+            .grid > div { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+            .grid span { font-size: 9px; color: #6b7280; font-weight: 500; }
+            .grid strong { font-size: 11px; font-weight: 600; }
+            table { width: 100%; border-collapse: collapse; table-layout: auto; }
+            th, td { border: 1px solid #cbd5e1; padding: 6px 8px; font-size: 10px; word-wrap: break-word; overflow-wrap: break-word; }
+            th { background: #f1f5f9; text-align: left; font-weight: 600; }
+            .c { text-align: center; }
+            .r { text-align: right; }
+            tfoot td { background: #f1f5f9; font-weight: 600; }
+            .amount-text {
+              margin-top: 4px;
+              font-size: 10px;
+              color: #374151;
+              font-weight: 500;
+              text-align: right;
+            }
+            .payment-box { display: flex; flex-direction: column; gap: 6px; margin-top: 4px; }
+            .payment-title { font-size: 11px; font-weight: 700; color: #111827; }
+            .payment-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 10px; word-break: break-word; }
+            .payment-grid > div { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+            .payment-grid span { font-size: 9px; color: #6b7280; font-weight: 500; }
+            .payment-grid strong { font-size: 11px; font-weight: 600; }
+            .payment-note {
+              border-top: 1px dashed #d1d5db;
+              padding-top: 4px;
+              font-size: 10px;
+              color: #4b5563;
+            }
+            .foot {
+              margin-top: 8px;
+              border: 1px solid #cbd5e1;
+              border-radius: 4px;
+              padding: 10px 12px;
+              display: flex;
+              align-items: flex-end;
+              justify-content: space-between;
+              gap: 12px;
+              background: #f9fafb;
+            }
+            .note { font-size: 9px; color: #64748b; line-height: 1.4; }
+            .sign-wrap { min-width: 140px; text-align: center; font-size: 9px; color: #64748b; }
+            .sign-wrap img { max-width: 100px; max-height: 36px; object-fit: contain; margin-bottom: 4px; }
+            .sign-line { border-top: 1px solid #cbd5e1; margin: 4px 0; }
+            @media print {
+              html, body { background: #fff; }
+              .sheet { page-break-after: always; break-after: page; break-inside: avoid; }
+              .sheet:last-child { page-break-after: avoid; break-after: avoid; }
+            }
+          </style>
         </head>
         <body>
-          ${renderSheet('ต้นฉบับ')}
-          ${renderSheet('สำเนา')}
+          ${renderSheet('ต้นฉบับ', false)}
+          ${renderSheet('สำเนา', true)}
         </body>
       </html>
     `
@@ -1309,10 +1432,6 @@ export default function ResidentLayout() {
 
   function buildResidentReceiptHtml(payment) {
     const receiptNo = payment?.receipt_no || `REC-${String(payment?.id || '').slice(0, 8).toUpperCase()}`
-    const logoSrc = setup.loginCircleLogoUrl || setup.villageLogoUrl || ''
-    const ownerName = houseDetail?.owner_name || profile?.full_name || '-'
-    const fmtDate = (v) => v ? new Date(v).toLocaleDateString('th-TH', { year: 'numeric', month: 'short', day: 'numeric' }) : '-'
-    const fmtMoney = (v) => Number(v || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
     const itemRows = getPaymentItemRows(payment)
     const totalPaid = itemRows.reduce((sum, item) => sum + Number(item.paidAmount || 0), 0) || getPaymentAmount(payment)
     const totalDue = Number(payment?.fees?.total_amount || itemRows.reduce((sum, item) => sum + Number(item.dueAmount || 0), 0))
@@ -1331,6 +1450,18 @@ export default function ResidentLayout() {
     const periodLabel = payment.fees ? `งวด ${formatFeePeriodLabel(payment.fees)}` : 'รับชำระทั่วไป'
     const paymentType = getPaymentTypeLabel(payment)
     const receiptDocTitle = paymentType === 'ค่าส่วนกลาง' ? 'ใบเสร็จรับเงินค่าส่วนกลาง' : 'ใบเสร็จรับเงินค่าอื่นๆ'
+    const ownerName = payment?.houses?.owner_name || houseDetail?.owner_name || profile?.full_name || '-'
+    const fmtMoney = (value) => Number(value || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+    const fmtDate = (value) => {
+      if (!value) return '-'
+      return new Date(value).toLocaleString('th-TH', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+      })
+    }
     const renderRows = () => {
       if (itemRows.length > 0) {
         return itemRows.map((item, idx) => `
@@ -1355,11 +1486,12 @@ export default function ResidentLayout() {
       <div class="sheet">
         <div class="head">
           <div class="brand">
-            ${logoSrc ? `<div class="logo-wrap"><img src="${logoSrc}" alt="logo" /></div>` : ''}
+            <img src="${setup.loginCircleLogoUrl || setup.villageLogoUrl || villageLogo}" alt="logo" />
             <div>
               <div class="doc">${receiptDocTitle}</div>
-              <div class="village">${setup.villageName || 'The Greenfield'}</div>
+              <div class="village">${setup.villageName || 'Village Management System'}</div>
               <div class="sub">${setup.address || '-'}</div>
+              <div class="sub">อ้างอิงใบแจ้งหนี้ ${payment.fees ? buildInvoiceDocumentNo(payment.fees) : '-'}</div>
             </div>
           </div>
           <div class="doc-meta">
@@ -1403,7 +1535,7 @@ export default function ResidentLayout() {
           </table>
           <div class="amount-text">(${toThaiBahtText(totalPaid)})</div>
           ${outstandingRows.length > 0 ? `
-            <div class="payment-note">
+            <div class="note-box">
               ${outstandingRows.map((item) => `<div>${item.label}: ${fmtMoney(item.amount)} บาท</div>`).join('')}
             </div>
           ` : ''}
@@ -1414,7 +1546,7 @@ export default function ResidentLayout() {
             บัญชีอ้างอิง ${setup.bankAccountName || '-'} ${setup.bankAccountNo || ''}
           </div>
           <div class="sign-wrap">
-            ${setup.juristicSignatureUrl ? `<img src="${setup.juristicSignatureUrl}" alt="signature" />` : ''}
+            ${setup.juristicSignatureUrl ? `<img src="${setup.juristicSignatureUrl}" alt="signature" class="sign-img" />` : ''}
             <div class="sign-line"></div>
             <div>ผู้ตรวจสอบ / ผู้ออกใบเสร็จ</div>
           </div>
@@ -1428,7 +1560,97 @@ export default function ResidentLayout() {
           <link rel="preconnect" href="https://fonts.googleapis.com">
           <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
           <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;700&display=swap" rel="stylesheet">
-          <style>${PRINT_SHARED_CSS}</style>
+          <style>
+            @page { size: A4; margin: 0; }
+            * { box-sizing: border-box; }
+            html, body { font-family: 'Sarabun', 'TH Sarabun New', Tahoma, sans-serif; margin: 0; padding: 0; color: #111827; background: #fff; }
+            .sheet {
+              position: relative;
+              width: 100%;
+              page-break-after: always; break-after: page; break-inside: avoid;
+              background: #fff;
+              padding: 24px 28px;
+              display: flex;
+              flex-direction: column;
+              gap: 8px;
+            }
+            .head {
+              display: flex;
+              justify-content: space-between;
+              gap: 12px;
+              border: 1px solid #cbd5e1;
+              border-radius: 4px;
+              padding: 10px 12px;
+              background: #ffffff;
+            }
+            .brand { display: flex; align-items: flex-start; gap: 10px; flex: 1; min-width: 0; }
+            .brand img {
+              width: 48px;
+              height: 48px;
+              border-radius: 6px;
+              object-fit: cover;
+              border: 1px solid #cbd5e1;
+            }
+            .doc { font-size: 16px; font-weight: 700; line-height: 1.3; }
+            .village { font-size: 11px; margin-top: 3px; font-weight: 600; }
+            .sub { font-size: 9px; color: #6b7280; margin-top: 2px; }
+            .doc-meta { font-size: 10px; min-width: 200px; display: flex; flex-direction: column; gap: 2px; word-break: break-word; }
+            .doc-meta span { color: #6b7280; font-weight: 500; }
+            .copy-mark-row {
+              display: flex;
+              justify-content: flex-end;
+              margin-top: 10px;
+            }
+            .copy-mark {
+              border: none;
+              border-radius: 4px;
+              padding: 3px 10px;
+              text-align: center;
+              font-size: 14px;
+              font-weight: 700;
+              line-height: 1.3;
+              color: #0c4a6e;
+              background: transparent;
+            }
+            .box { border: 1px solid #cbd5e1; border-radius: 4px; padding: 10px 12px; }
+            .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 10px; word-break: break-word; }
+            .grid > div { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+            .grid span { font-size: 9px; color: #6b7280; font-weight: 500; }
+            .grid strong { font-size: 11px; font-weight: 600; }
+            table { width: 100%; border-collapse: collapse; table-layout: auto; }
+            th, td { border: 1px solid #cbd5e1; padding: 6px 8px; font-size: 10px; word-wrap: break-word; overflow-wrap: break-word; }
+            th { background: #f1f5f9; text-align: left; font-weight: 600; }
+            .c { text-align: center; }
+            .r { text-align: right; }
+            tfoot td { background: #f8fafc; font-weight: 700; }
+            .note-box {
+              border-top: 1px dashed #d1d5db;
+              padding-top: 4px;
+              font-size: 10px;
+              color: #4b5563;
+              margin-top: 4px;
+            }
+            .foot {
+              margin-top: 8px;
+              border: 1px solid #cbd5e1;
+              border-radius: 4px;
+              padding: 10px 12px;
+              display: flex;
+              align-items: flex-end;
+              justify-content: space-between;
+              gap: 12px;
+              background: #f9fafb;
+            }
+            .note { font-size: 9px; color: #64748b; line-height: 1.4; }
+            .sign-wrap { min-width: 180px; text-align: center; font-size: 9px; color: #64748b; }
+            .sign-img { max-width: 160px; max-height: 52px; width: auto; height: auto; display: block; margin: 0 auto 6px; object-fit: contain; }
+            .sign-line { border-top: 1px solid #cbd5e1; margin: 36px 0 4px; }
+            @media print {
+              html, body { background: #fff; }
+              .sheet { page-break-after: always; break-after: page; break-inside: avoid; }
+              .sheet:last-child { page-break-after: avoid; break-after: avoid; }
+            }
+          </style>
         </head>
         <body>
           ${renderSheet('ต้นฉบับ')}
