@@ -68,11 +68,7 @@ function normalizeMultilineText(input, fallback = '') {
   const lines = noTags
     .split(/\r?\n/)
     .map((line) => line.trim())
-    .filter((line, index, arr) => {
-      if (line) return true
-      const prev = arr[index - 1]
-      return Boolean(prev)
-    })
+    .filter((line) => line.length > 0)
   return lines.join('\n').trim()
 }
 
