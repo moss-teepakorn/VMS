@@ -15,6 +15,7 @@ import {
   updatePayment,
 } from '../../lib/fees'
 import { getSetupConfig } from '../../lib/setup'
+import { buildReceiptHtmlAdminStyle } from '../../lib/printTemplates'
 import villageLogo from '../../assets/village-logo.svg'
 
 const REJECT_PREFIX = '[REJECT] '
@@ -981,209 +982,17 @@ export default function AdminPayments() {
 
   const buildReceiptHtml = (payment, { autoPrint = false, forCapture = false } = {}) => {
     if (!payment?.verified_at) return ''
-
-    const receiptNo = buildReceiptNo(payment, receiptNoById)
-    const issueDate = formatDateTime(payment.verified_at)
-    const houseNo = payment.houses?.house_no || '-'
-    const ownerName = payment.houses?.owner_name || '-'
-    const invoiceLabel = payment.fees ? `${formatPeriod(payment.fees.period)} ปี ${Number(payment.fees.year || 0) + 543}` : '-'
-    const invoiceNo = payment.fees ? `INV-${String(payment.fees.year || '').slice(-2)}-${String(payment.fees.id || '').slice(0, 8).toUpperCase()}` : '-'
-    const amount = Number(payment.amount || 0)
-    const paymentDate = formatDateTime(payment.paid_at)
-    const displayNote = getDisplayNote(payment.note)
-    const itemRows = getPaymentItemRows(payment)
-    const totalPaid = itemRows.reduce((sum, row) => sum + Number(row.paidAmount || 0), 0) || amount
-    const totalDue = Number(payment?.fees?.total_amount || itemRows.reduce((sum, row) => sum + Number(row.dueAmount || 0), 0))
-    const totalOutstanding = Math.max(0, totalDue - totalPaid)
-    const signatureSource = setup.juristicSignatureUrl || ''
-    const renderTableRows = () => itemRows.map((row, index) => (`
-      <tr>
-        <td class="c">${index + 1}</td>
-        <td>${row.label}</td>
-        <td class="r">${Number(row.dueAmount || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-        <td class="r">${Number(row.paidAmount || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-      </tr>
-    `)).join('')
-
-    const renderSheet = (copyLabel) => (`
-      <div class="sheet page-break">
-        <div class="head">
-          <div class="brand">
-            <img src="${setup.loginCircleLogoUrl || villageLogo}" alt="logo" />
-            <div>
-              <div class="doc">ใบเสร็จรับเงินค่าส่วนกลาง</div>
-              <div class="village">${setup.villageName || 'Village Management System'}</div>
-              <div class="sub">${setup.address || '-'}</div>
-              <div class="sub">อ้างอิงใบแจ้งหนี้ ${invoiceNo}</div>
-            </div>
-          </div>
-          <div class="doc-meta">
-            <div><span>เลขที่ใบเสร็จ:</span> <strong>${receiptNo}</strong></div>
-            <div><span>วันที่รับชำระ:</span> <strong>${paymentDate}</strong></div>
-            <div><span>วันที่อนุมัติ:</span> <strong>${issueDate}</strong></div>
-            <div class="copy-mark-row"><div class="copy-mark">${copyLabel}</div></div>
-          </div>
-        </div>
-
-        <section class="box">
-          <div class="grid">
-            <div><span>บ้านเลขที่</span><strong>${houseNo}</strong></div>
-            <div><span>ชื่อเจ้าของบ้าน</span><strong>${ownerName}</strong></div>
-            <div><span>รอบใบแจ้งหนี้</span><strong>${invoiceLabel}</strong></div>
-            <div><span>วิธีชำระ</span><strong>${formatMethod(payment.payment_method)}</strong></div>
-          </div>
-        </section>
-
-        <section class="box">
-          <table>
-            <thead>
-              <tr>
-                <th class="c" style="width:56px;">ลำดับ</th>
-                <th>รายการ</th>
-                <th class="r" style="width:170px;">ยอดที่ต้องชำระ (บาท)</th>
-                <th class="r" style="width:170px;">ยอดชำระจริง (บาท)</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${renderTableRows()}
-            </tbody>
-            <tfoot>
-              <tr>
-                <td colspan="2" class="r"><strong>ยอดรวมที่ต้องชำระ</strong></td>
-                <td class="r"><strong>${totalDue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong></td>
-                <td class="r"><strong>${totalPaid.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong></td>
-              </tr>
-              <tr>
-                <td colspan="3" class="r"><strong>ยอดคงค้างหลังชำระ</strong></td>
-                <td class="r"><strong>${totalOutstanding.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong></td>
-              </tr>
-            </tfoot>
-          </table>
-          <div class="note-box">ยอดชำระรวม ${totalPaid.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} บาท (${toThaiBahtText(totalPaid)})</div>
-          ${displayNote ? `<div class="note-box">${displayNote}</div>` : ''}
-        </section>
-
-        <section class="foot">
-          <div class="note">
-            ออกใบเสร็จหลังจากตรวจสอบการชำระเรียบร้อยแล้ว<br />
-            บัญชีอ้างอิง ${setup.bankAccountName || '-'} ${setup.bankAccountNo || ''}
-          </div>
-          <div class="sign-wrap">
-            ${signatureSource ? `<img src="${signatureSource}" alt="juristic-signature" class="sign-img" />` : ''}
-            <div class="sign-line"></div>
-            <div>ผู้ตรวจสอบ / ผู้ออกใบเสร็จ</div>
-          </div>
-        </section>
-      </div>
-    `)
-
-    return `
-      <html>
-        <head>
-          <title>ใบเสร็จรับเงิน ${receiptNo}</title>
-          <link rel="preconnect" href="https://fonts.googleapis.com">
-          <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-          <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;700&display=swap" rel="stylesheet">
-          <style>
-            @page { size: A4; margin: 0; }
-            * { box-sizing: border-box; }
-            html, body { font-family: 'Sarabun', 'TH Sarabun New', Tahoma, sans-serif; margin: 0; padding: 0; color: #111827; background: #fff; }
-            .sheet {
-              position: relative;
-              width: ${forCapture ? '794px' : '100%'};
-              ${forCapture ? 'height: 1122px; overflow: hidden;' : 'page-break-after: always; break-after: page; break-inside: avoid;'}
-              background: #fff;
-              padding: 24px 28px;
-              display: flex;
-              flex-direction: column;
-              gap: 8px;
-            }
-            .page-break {}
-            .head {
-              display: flex;
-              justify-content: space-between;
-              gap: 12px;
-              border: 1px solid #cbd5e1;
-              border-radius: 4px;
-              padding: 10px 12px;
-              background: #ffffff;
-            }
-            .brand { display: flex; align-items: flex-start; gap: 10px; flex: 1; min-width: 0; }
-            .brand img {
-              width: 48px;
-              height: 48px;
-              border-radius: 6px;
-              object-fit: cover;
-              border: 1px solid #cbd5e1;
-            }
-            .doc { font-size: 16px; font-weight: 700; line-height: 1.3; }
-            .village { font-size: 11px; margin-top: 3px; font-weight: 600; }
-            .sub { font-size: 9px; color: #6b7280; margin-top: 2px; }
-            .doc-meta { font-size: 10px; min-width: 200px; display: flex; flex-direction: column; gap: 2px; word-break: break-word; }
-            .doc-meta span { color: #6b7280; font-weight: 500; }
-            .copy-mark-row {
-              display: flex;
-              justify-content: flex-end;
-              margin-top: 10px;
-            }
-            .copy-mark {
-              border: none;
-              border-radius: 4px;
-              padding: 3px 10px;
-              text-align: center;
-              font-size: 14px;
-              font-weight: 700;
-              line-height: 1.3;
-              color: #0c4a6e;
-              background: transparent;
-            }
-            .box { border: 1px solid #cbd5e1; border-radius: 4px; padding: 10px 12px; }
-            .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 10px; word-break: break-word; }
-            .grid > div { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
-            .grid span { font-size: 9px; color: #6b7280; font-weight: 500; }
-            .grid strong { font-size: 11px; font-weight: 600; }
-            table { width: 100%; border-collapse: collapse; table-layout: auto; }
-            th, td { border: 1px solid #cbd5e1; padding: 6px 8px; font-size: 10px; word-wrap: break-word; overflow-wrap: break-word; }
-            th { background: #f1f5f9; text-align: left; font-weight: 600; }
-            .c { text-align: center; }
-            .r { text-align: right; }
-            tfoot td { background: #f8fafc; font-weight: 700; }
-            .note-box {
-              border-top: 1px dashed #d1d5db;
-              padding-top: 4px;
-              font-size: 10px;
-              color: #4b5563;
-              margin-top: 4px;
-            }
-            .foot {
-              margin-top: 8px;
-              border: 1px solid #cbd5e1;
-              border-radius: 4px;
-              padding: 10px 12px;
-              display: flex;
-              align-items: flex-end;
-              justify-content: space-between;
-              gap: 12px;
-              background: #f9fafb;
-            }
-            .note { font-size: 9px; color: #64748b; line-height: 1.4; }
-            .sign-wrap { min-width: 180px; text-align: center; font-size: 9px; color: #64748b; }
-            .sign-img { max-width: 160px; max-height: 52px; width: auto; height: auto; display: block; margin: 0 auto 6px; object-fit: contain; }
-            .sign-line { border-top: 1px solid #cbd5e1; margin: 36px 0 4px; }
-            @media print {
-              html, body { background: #fff; }
-              .sheet { page-break-after: always; break-after: page; break-inside: avoid; }
-              .sheet:last-child { page-break-after: avoid; break-after: avoid; }
-            }
-          </style>
-        </head>
-        <body>
-          ${renderSheet('ต้นฉบับ')}
-          ${renderSheet('สำเนา')}
-            ${autoPrint ? '<script>window.onload = () => window.print();</script>' : ''}
-        </body>
-      </html>
-    `
+    return buildReceiptHtmlAdminStyle({
+      payment,
+      setup,
+      receiptNo: buildReceiptNo(payment, receiptNoById),
+      logoUrl: setup.loginCircleLogoUrl || villageLogo,
+      signatureUrl: setup.juristicSignatureUrl || '',
+      itemRows: getPaymentItemRows(payment),
+      autoPrint,
+      forCapture,
+      displayNote: getDisplayNote(payment.note),
+    })
   }
 
   const renderReceiptsInIframe = async (html, sheetCount = 2) => {
