@@ -552,7 +552,7 @@ export default function AdminFeatureExpensePayment() {
 
       {showModal && (
         modalMode === 'create' ? (
-          <div className="card houses-main-card">
+          <div className="card houses-main-card disbursement-create-card">
             <div className="ch houses-list-head houses-main-head">
               <div>
                 <div className="ct">สร้างรายการจ่ายเงิน</div>

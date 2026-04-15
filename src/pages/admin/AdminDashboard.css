@@ -1419,6 +1419,14 @@
   padding-right: 16px;
 }
 
+.pane.on.disbursements-compact .disbursement-create-card,
+.pane.on.disbursements-compact .disbursement-create-card > .houses-main-body,
+.pane.on.disbursements-compact .disbursement-create-card .house-sec,
+.pane.on.disbursements-compact .disbursement-create-card .house-grid,
+.pane.on.disbursements-compact .disbursement-create-card .house-field {
+  overflow: visible !important;
+}
+
 .request-filter-grid {
   display: flex;
   flex-direction: column;
