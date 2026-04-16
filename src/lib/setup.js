@@ -2,12 +2,12 @@ import { supabase } from './supabase'
 import { buildSystemAssetPublicUrl } from './systemConfig'
 
 const DEFAULT_SETUP = {
-  villageName: 'The Greenfield',
-  appLineMain: 'Village Management',
+  villageName: 'Village Management System',
+  appLineMain: 'Village Management System',
   appLineTail: 'System',
   version: 'v12.3',
   address: 'Gusto Suksawat 26 -1',
-  juristicName: 'นิติบุคคลหมู่บ้านเดอะกรีนฟิลด์',
+  juristicName: 'นิติบุคคลหมู่บ้านจัดสรร',
   juristicAddress: 'Gusto Suksawat 26 -1',
   loginCircleLogoUrl: '',
   villageLogoUrl: '',
