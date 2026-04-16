@@ -185,7 +185,7 @@ export default function AdminFeatureReceivePayment() {
     try {
       const [paymentRows, itemRows, houseRows, partnerRows, setupConfig] = await Promise.all([
         listPayments({ generalOnly: true }),
-        listPaymentItemTypes({ onlyActive: true }),
+        listPaymentItemTypes({ onlyActive: true, type: 'receive' }),
         listHouses(),
         listPartners({ onlyActive: true }),
         getSetupConfig().catch(() => ({})),
@@ -287,7 +287,7 @@ export default function AdminFeatureReceivePayment() {
 
   const openReceiveModal = async () => {
     try {
-      const itemRows = await listPaymentItemTypes({ onlyActive: true })
+      const itemRows = await listPaymentItemTypes({ onlyActive: true, type: 'receive' })
       setItems(itemRows || [])
     } catch {
       // Keep current options if setup fetch fails.

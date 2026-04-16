@@ -32,7 +32,6 @@ import AdminReportOutstanding from './pages/admin/AdminReportOutstanding'
 import AdminFeatureReceivePayment from './pages/admin/AdminFeatureReceivePayment'
 import AdminFeatureExpensePayment from './pages/admin/AdminFeatureExpensePayment'
 import AdminPaymentsSetup from './pages/admin/AdminPaymentsSetup'
-import AdminDisbursementsSetup from './pages/admin/AdminDisbursementsSetup'
 import AdminBoardSets from './pages/admin/AdminBoardSets'
 import AdminReportOverdue from './pages/admin/AdminReportOverdue'
 import AdminReportViolationsSummary from './pages/admin/AdminReportViolationsSummary'
@@ -117,7 +116,6 @@ function AppRoutes() {
         <Route path="receive-payments" element={<AdminFeatureReceivePayment />} />
         <Route path="disbursements" element={<AdminFeatureExpensePayment />} />
         <Route path="payments/setup" element={<AdminPaymentsSetup />} />
-        <Route path="disbursements/setup" element={<AdminDisbursementsSetup />} />
         <Route path="reports/overdue" element={<AdminReportOverdue />} />
         <Route path="reports/violations-summary" element={<AdminReportViolationsSummary />} />
         <Route path="reports/expense-payments" element={<AdminReportExpensePayments />} />

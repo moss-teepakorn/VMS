@@ -176,9 +176,7 @@ export default function AdminFeatureExpensePayment() {
   }
 
   const refreshItemTypesFromSetup = async () => {
-    // Use the full list first and then normalize active status so old rows with null/undefined
-    // is_active are still visible in form dropdowns.
-    const latest = await listPaymentItemTypes()
+    const latest = await listPaymentItemTypes({ type: 'disburse' })
     const normalized = normalizeActiveItemTypes(latest)
     setItemTypes(normalized)
     return normalized
@@ -186,7 +184,7 @@ export default function AdminFeatureExpensePayment() {
 
   useEffect(() => {
     load()
-    Promise.all([listPartners({ onlyActive: true }), listPaymentItemTypes(), getActiveBoardMembers(), getSetupConfig(), listHouses()])
+    Promise.all([listPartners({ onlyActive: true }), listPaymentItemTypes({ type: 'disburse' }), getActiveBoardMembers(), getSetupConfig(), listHouses()])
       .then(([p, it, bm, cfg, h]) => {
         setPartners(p || [])
         setItemTypes(normalizeActiveItemTypes(it))
@@ -566,7 +564,7 @@ export default function AdminFeatureExpensePayment() {
               <section className="house-sec">
                 <div style={{ fontWeight: 700, fontSize: 11, color: 'var(--mu)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.05em' }}>ผู้รับเงินและข้อมูลชำระ</div>
 
-                <div className="house-grid" style={{ gridTemplateColumns: '1fr 1.6fr 1.4fr 1fr', gap: 10, marginBottom: 12 }}>
+                <div className="house-grid" style={{ gridTemplateColumns: 'repeat(4, 1fr)', gap: 10, marginBottom: 12 }}>
                   <label className="house-field">
                     <span>ประเภท</span>
                     <StyledSelect value={form.recipient_type} onChange={(e) => setForm((p) => ({ ...p, recipient_type: e.target.value, recipient_name: '', partner_id: '', house_id: '' }))}>
@@ -594,12 +592,8 @@ export default function AdminFeatureExpensePayment() {
                   )}
 
                   <label className="house-field">
-                    <span>วิธีชำระ</span>
-                    <StyledSelect value={form.payment_method} onChange={(e) => setForm((p) => ({ ...p, payment_method: e.target.value }))}>
-                      <option value="transfer">โอนเงิน</option>
-                      <option value="cash">เงินสด</option>
-                      <option value="cheque">เช็ค</option>
-                    </StyledSelect>
+                    <span>ชื่อผู้รับเงิน *</span>
+                    <input value={form.recipient_name} onChange={(e) => setForm((p) => ({ ...p, recipient_name: e.target.value }))} placeholder="ชื่อผู้รับเงินจริง" />
                   </label>
 
                   <label className="house-field">
@@ -608,14 +602,15 @@ export default function AdminFeatureExpensePayment() {
                   </label>
                 </div>
 
-                <div className="house-grid" style={{ gridTemplateColumns: '1fr', gap: 10, marginBottom: 12 }}>
+                <div className="house-grid" style={{ gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: 10, marginBottom: 12 }}>
                   <label className="house-field">
-                    <span>ชื่อผู้รับเงิน *</span>
-                    <input value={form.recipient_name} onChange={(e) => setForm((p) => ({ ...p, recipient_name: e.target.value }))} placeholder="ชื่อผู้รับเงินจริง (แก้ไขได้)" />
+                    <span>วิธีชำระ</span>
+                    <StyledSelect value={form.payment_method} onChange={(e) => setForm((p) => ({ ...p, payment_method: e.target.value }))}>
+                      <option value="transfer">โอนเงิน</option>
+                      <option value="cash">เงินสด</option>
+                      <option value="cheque">เช็ค</option>
+                    </StyledSelect>
                   </label>
-                </div>
-
-                <div className="house-grid" style={{ gridTemplateColumns: '1.2fr 1fr 1fr', gap: 10, marginBottom: 12 }}>
                   <label className="house-field">
                     <span>ธนาคาร</span>
                     <StyledSelect value={form.bank_name} onChange={(e) => setForm((p) => ({ ...p, bank_name: e.target.value }))}>
@@ -633,7 +628,7 @@ export default function AdminFeatureExpensePayment() {
                   </label>
                 </div>
 
-                <div className="house-grid" style={{ gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 12 }}>
+                <div className="house-grid" style={{ gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: 10, marginBottom: 12 }}>
                   <label className="house-field">
                     <span>ผู้อนุมัติ (กรรมการ) *</span>
                     <StyledSelect value={form.approver_id} onChange={(e) => setForm((p) => ({ ...p, approver_id: e.target.value }))}>
@@ -648,30 +643,27 @@ export default function AdminFeatureExpensePayment() {
                       {boardMembers.map((m) => <option key={m.id} value={m.id}>{m.full_name} ({m.position})</option>)}
                     </StyledSelect>
                   </label>
-                </div>
-
-                <div className="house-grid" style={{ gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 12 }}>
                   <label className="house-field">
-                    <span>วันที่อนุมัติ (กรอกเมื่อปิดรายการ)</span>
+                    <span>วันที่อนุมัติ</span>
                     <input type="datetime-local" value={form.approved_at} onChange={(e) => setForm((p) => ({ ...p, approved_at: e.target.value }))} />
                   </label>
                   <label className="house-field">
-                    <span>วันที่จ่าย (กรอกเมื่อปิดรายการ)</span>
+                    <span>วันที่จ่าย</span>
                     <input type="datetime-local" value={form.paid_at} onChange={(e) => setForm((p) => ({ ...p, paid_at: e.target.value }))} />
                   </label>
                 </div>
 
                 <div style={{ fontWeight: 700, fontSize: 11, color: 'var(--mu)', margin: '4px 0 8px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>รายการ</div>
                 <div style={{ overflowX: 'auto', marginBottom: 8 }}>
-                  <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 560 }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 600 }}>
                     <thead>
                       <tr>
-                        <th style={{ width: 32, textAlign: 'center', padding: '5px 4px', border: '1px solid var(--bo)', background: 'var(--bgl)', fontSize: 11 }}>#</th>
-                        <th style={{ width: 150, padding: '5px 6px', border: '1px solid var(--bo)', background: 'var(--bgl)', fontSize: 11 }}>ประเภท</th>
+                        <th style={{ width: 36, textAlign: 'center', padding: '5px 4px', border: '1px solid var(--bo)', background: 'var(--bgl)', fontSize: 11 }}>#</th>
+                        <th style={{ width: '25%', padding: '5px 6px', border: '1px solid var(--bo)', background: 'var(--bgl)', fontSize: 11 }}>ประเภท</th>
                         <th style={{ padding: '5px 6px', border: '1px solid var(--bo)', background: 'var(--bgl)', fontSize: 11 }}>รายการ *</th>
-                        <th style={{ width: 100, padding: '5px 6px', border: '1px solid var(--bo)', background: 'var(--bgl)', fontSize: 11 }}>จำนวนเงิน *</th>
-                        <th style={{ width: 100, padding: '5px 6px', border: '1px solid var(--bo)', background: 'var(--bgl)', fontSize: 11 }}>หมายเหตุ</th>
-                        <th style={{ width: 28, border: '1px solid var(--bo)', background: 'var(--bgl)' }}></th>
+                        <th style={{ width: 120, padding: '5px 6px', border: '1px solid var(--bo)', background: 'var(--bgl)', fontSize: 11, textAlign: 'right' }}>จำนวนเงิน *</th>
+                        <th style={{ width: '15%', padding: '5px 6px', border: '1px solid var(--bo)', background: 'var(--bgl)', fontSize: 11 }}>หมายเหตุ</th>
+                        <th style={{ width: 32, border: '1px solid var(--bo)', background: 'var(--bgl)' }}></th>
                       </tr>
                     </thead>
                     <tbody>

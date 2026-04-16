@@ -1,8 +1,9 @@
 import { supabase } from './supabase'
 
-export async function listPaymentItemTypes({ onlyActive = false } = {}) {
+export async function listPaymentItemTypes({ onlyActive = false, type } = {}) {
   let q = supabase.from('payment_item_types').select('*').order('code', { ascending: true })
   if (onlyActive) q = q.eq('is_active', true)
+  if (type) q = q.eq('type', type)
   const { data, error } = await q
   if (error) throw error
   return data || []
@@ -16,6 +17,7 @@ export async function createPaymentItemType(payload = {}) {
     default_amount: Number(payload.default_amount || 0),
     category: payload.category || null,
     is_active: payload.is_active === false ? false : true,
+    type: payload.type || 'receive',
   }
   const { data, error } = await supabase.from('payment_item_types').insert([row]).select('*').single()
   if (error) throw error
@@ -23,7 +25,7 @@ export async function createPaymentItemType(payload = {}) {
 }
 
 export async function updatePaymentItemType(id, patch = {}) {
-  const allowed = ['code', 'label', 'description', 'default_amount', 'category', 'is_active']
+  const allowed = ['code', 'label', 'description', 'default_amount', 'category', 'is_active', 'type']
   const payload = {}
   for (const k of allowed) {
     if (k in patch) payload[k] = patch[k]

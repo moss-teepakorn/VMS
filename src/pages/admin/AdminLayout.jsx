@@ -204,8 +204,7 @@ const AdminLayout = () => {
     { section: 'ตั้งค่า', tone: 'system', sectionIcon: '⚙️', items: [
       { id: 'cfg', label: 'ตั้งค่าระบบ', icon: '⚙️', path: '/admin/config' },
       { id: 'payment-cycles', label: 'กำหนดรอบการชำระ', icon: '🗓️', path: '/admin/config/payment-cycles' },
-      { id: 'payments-setup', label: 'ตั้งค่ารายการรับชำระ', icon: '⚙️', path: '/admin/payments/setup' },
-      { id: 'disbursements-setup', label: 'ตั้งค่ารายการจ่ายเงิน', icon: '⚙️', path: '/admin/disbursements/setup' },
+      { id: 'payments-setup', label: 'ตั้งค่ารายการรับ/จ่าย', icon: '⚙️', path: '/admin/payments/setup' },
       { id: 'board-sets', label: 'ทะเบียนกรรมการ', icon: '👥', path: '/admin/board-sets' },
       { id: 'usr', label: 'ผู้ใช้งาน', icon: '👥', path: '/admin/users' },
       { id: 'login-logs', label: 'ประวัติการใช้ระบบ', icon: '🔐', path: '/admin/login-logs' },

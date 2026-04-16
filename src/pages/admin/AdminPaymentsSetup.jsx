@@ -11,6 +11,7 @@ const EMPTY_ITEM_FORM = {
   category: '',
   description: '',
   is_active: true,
+  type: 'receive',
 }
 
 const EMPTY_PARTNER_FORM = {
@@ -26,6 +27,7 @@ export default function AdminPaymentsSetup() {
   const [rows, setRows] = useState([])
   const [partners, setPartners] = useState([])
   const [loading, setLoading] = useState(false)
+  const [itemTypeTab, setItemTypeTab] = useState('receive')
 
   const [showItemModal, setShowItemModal] = useState(false)
   const [itemMode, setItemMode] = useState('create')
@@ -40,8 +42,9 @@ export default function AdminPaymentsSetup() {
   const [savingPartner, setSavingPartner] = useState(false)
 
   const sortedRows = useMemo(() => {
-    return [...rows].sort((a, b) => String(a.code || '').localeCompare(String(b.code || ''), 'th', { numeric: true, sensitivity: 'base' }))
-  }, [rows])
+    const filtered = rows.filter((r) => (r.type || 'receive') === itemTypeTab)
+    return filtered.sort((a, b) => String(a.code || '').localeCompare(String(b.code || ''), 'th', { numeric: true, sensitivity: 'base' }))
+  }, [rows, itemTypeTab])
 
   const sortedPartners = useMemo(() => {
     return [...partners].sort((a, b) => String(a.name || '').localeCompare(String(b.name || ''), 'th', { numeric: true, sensitivity: 'base' }))
@@ -67,7 +70,7 @@ export default function AdminPaymentsSetup() {
   const openCreateItemModal = () => {
     setItemMode('create')
     setItemTargetId('')
-    setItemForm(EMPTY_ITEM_FORM)
+    setItemForm({ ...EMPTY_ITEM_FORM, type: itemTypeTab })
     setShowItemModal(true)
   }
 
@@ -81,6 +84,7 @@ export default function AdminPaymentsSetup() {
       category: row.category || '',
       description: row.description || '',
       is_active: !!row.is_active,
+      type: row.type || 'receive',
     })
     setShowItemModal(true)
   }
@@ -107,6 +111,7 @@ export default function AdminPaymentsSetup() {
         default_amount: Number(itemForm.default_amount || 0),
         category: itemForm.category,
         is_active: !!itemForm.is_active,
+        type: itemForm.type || 'receive',
       }
 
       if (itemMode === 'edit' && itemTargetId) {
@@ -217,8 +222,8 @@ export default function AdminPaymentsSetup() {
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
             <div className="ph-ico">⚙️</div>
             <div>
-              <div className="ph-h1">ตั้งค่ารายการรับชำระ</div>
-              <div className="ph-sub">จัดการรายการประเภทรับชำระและคู่ค้านิติบุคคล</div>
+              <div className="ph-h1">ตั้งค่ารายการรับ/จ่าย</div>
+              <div className="ph-sub">จัดการรายการประเภทรับชำระ / จ่ายเงิน และคู่ค้านิติบุคคล</div>
             </div>
           </div>
         </div>
@@ -226,7 +231,21 @@ export default function AdminPaymentsSetup() {
 
       <div className="card houses-main-card">
         <div className="ch houses-list-head houses-main-head">
-          <div className="ct">รายการประเภทรับชำระ</div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <div className="ct">รายการประเภท{itemTypeTab === 'receive' ? 'รับชำระ' : 'จ่ายเงิน'}</div>
+            <div style={{ display: 'flex', gap: 4 }}>
+              <button
+                className={`btn btn-xs ${itemTypeTab === 'receive' ? 'btn-p' : 'btn-g'}`}
+                onClick={() => setItemTypeTab('receive')}
+                style={{ fontSize: 11 }}
+              >รับชำระ</button>
+              <button
+                className={`btn btn-xs ${itemTypeTab === 'disburse' ? 'btn-p' : 'btn-g'}`}
+                onClick={() => setItemTypeTab('disburse')}
+                style={{ fontSize: 11 }}
+              >จ่ายเงิน</button>
+            </div>
+          </div>
           <div className="houses-list-actions">
             <button className="btn btn-p btn-sm" onClick={openCreateItemModal}>+ เพิ่มรายการ</button>
           </div>
@@ -375,8 +394,8 @@ export default function AdminPaymentsSetup() {
           <div className="house-md house-md--sm" style={{ height: 'auto', maxHeight: 'min(560px, 88vh)' }}>
             <div className="house-md-head">
               <div>
-                <div className="house-md-title">{itemMode === 'edit' ? 'แก้ไขรายการรับชำระ' : 'เพิ่มรายการรับชำระ'}</div>
-                <div className="house-md-sub">กรอกข้อมูลรายการประเภทชำระ</div>
+                <div className="house-md-title">{itemMode === 'edit' ? 'แก้ไขรายการ' : 'เพิ่มรายการ'}{itemForm.type === 'disburse' ? 'จ่ายเงิน' : 'รับชำระ'}</div>
+                <div className="house-md-sub">กรอกข้อมูลรายการประเภท{itemForm.type === 'disburse' ? 'จ่ายเงิน' : 'รับชำระ'}</div>
               </div>
             </div>
             <div className="house-md-body" style={{ overflowY: 'auto' }}>
