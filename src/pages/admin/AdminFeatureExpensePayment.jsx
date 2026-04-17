@@ -83,6 +83,12 @@ function normalizeActiveItemTypes(rows = []) {
   return (rows || []).filter((row) => row?.is_active !== false)
 }
 
+async function loadDisbursementItemTypes() {
+  const typedRows = normalizeActiveItemTypes(await listPaymentItemTypes({ type: 'disburse' }))
+  if (typedRows.length > 0) return typedRows
+  return normalizeActiveItemTypes(await listPaymentItemTypes({ onlyActive: true }))
+}
+
 export default function AdminFeatureExpensePayment() {
   const [disbursements, setDisbursements] = useState([])
   const [loading, setLoading] = useState(false)
@@ -176,18 +182,17 @@ export default function AdminFeatureExpensePayment() {
   }
 
   const refreshItemTypesFromSetup = async () => {
-    const latest = await listPaymentItemTypes({ type: 'disburse' })
-    const normalized = normalizeActiveItemTypes(latest)
+    const normalized = await loadDisbursementItemTypes()
     setItemTypes(normalized)
     return normalized
   }
 
   useEffect(() => {
     load()
-    Promise.all([listPartners({ onlyActive: true }), listPaymentItemTypes({ type: 'disburse' }), getActiveBoardMembers(), getSetupConfig(), listHouses()])
+    Promise.all([listPartners({ onlyActive: true }), loadDisbursementItemTypes(), getActiveBoardMembers(), getSetupConfig(), listHouses()])
       .then(([p, it, bm, cfg, h]) => {
         setPartners(p || [])
-        setItemTypes(normalizeActiveItemTypes(it))
+        setItemTypes(it || [])
         setBoardMembers(bm || [])
         setSetup(cfg || {})
         setHouses(h || [])
@@ -671,10 +676,10 @@ export default function AdminFeatureExpensePayment() {
                         <tr key={idx}>
                           <td style={{ textAlign: 'center', padding: '4px', border: '1px solid var(--bo)', fontSize: 11, color: 'var(--mu)' }}>{idx + 1}</td>
                           <td style={{ padding: '3px', border: '1px solid var(--bo)' }}>
-                            <StyledSelect style={{ width: '100%', border: 'none', outline: 'none', background: 'transparent', fontSize: 11, padding: '2px' }} value={item.item_type_id} onChange={(e) => updateItem(idx, 'item_type_id', e.target.value)}>
+                            <select style={{ width: '100%', border: 'none', outline: 'none', background: 'transparent', fontSize: 11, padding: '2px' }} value={item.item_type_id} onChange={(e) => updateItem(idx, 'item_type_id', e.target.value)}>
                               <option value="">— ประเภท —</option>
-                              {itemTypes.map((t) => <option key={t.id} value={t.id}>{t.code} — {t.label}</option>)}
-                            </StyledSelect>
+                              {itemTypes.map((t) => <option key={t.id} value={t.id}>{t.code ? `${t.code} — ` : ''}{t.label || t.description || '-'}</option>)}
+                            </select>
                           </td>
                           <td style={{ padding: '3px', border: '1px solid var(--bo)' }}>
                             <input style={{ width: '100%', border: 'none', outline: 'none', background: 'transparent', fontSize: 11, padding: '2px 3px' }} value={item.item_label} onChange={(e) => updateItem(idx, 'item_label', e.target.value)} placeholder="ชื่อรายการ" />
@@ -876,10 +881,10 @@ export default function AdminFeatureExpensePayment() {
                         <tr key={idx}>
                           <td style={{ textAlign: 'center', padding: '4px', border: '1px solid var(--bo)', fontSize: 11, color: 'var(--mu)' }}>{idx + 1}</td>
                           <td style={{ padding: '3px', border: '1px solid var(--bo)' }}>
-                            <StyledSelect style={{ width: '100%', border: 'none', outline: 'none', background: 'transparent', fontSize: 11, padding: '2px' }} value={item.item_type_id} onChange={(e) => updateItem(idx, 'item_type_id', e.target.value)}>
+                            <select style={{ width: '100%', border: 'none', outline: 'none', background: 'transparent', fontSize: 11, padding: '2px' }} value={item.item_type_id} onChange={(e) => updateItem(idx, 'item_type_id', e.target.value)}>
                               <option value="">— ประเภท —</option>
-                              {itemTypes.map((t) => <option key={t.id} value={t.id}>{t.code} — {t.label}</option>)}
-                            </StyledSelect>
+                              {itemTypes.map((t) => <option key={t.id} value={t.id}>{t.code ? `${t.code} — ` : ''}{t.label || t.description || '-'}</option>)}
+                            </select>
                           </td>
                           <td style={{ padding: '3px', border: '1px solid var(--bo)' }}>
                             <input style={{ width: '100%', border: 'none', outline: 'none', background: 'transparent', fontSize: 11, padding: '2px 3px' }} value={item.item_label} onChange={(e) => updateItem(idx, 'item_label', e.target.value)} placeholder="ชื่อรายการ" />

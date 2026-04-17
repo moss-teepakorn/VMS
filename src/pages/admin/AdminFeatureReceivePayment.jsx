@@ -168,6 +168,12 @@ function mapPaymentToEditForm(payment) {
   }
 }
 
+async function loadReceiveItemTypes() {
+  const typedRows = await listPaymentItemTypes({ onlyActive: true, type: 'receive' })
+  if ((typedRows || []).length > 0) return typedRows || []
+  return (await listPaymentItemTypes({ onlyActive: true })) || []
+}
+
 export default function AdminFeatureReceivePayment() {
   const { profile } = useAuth()
   const [setup, setSetup] = useState({ villageName: 'The Greenfield' })
@@ -195,7 +201,7 @@ export default function AdminFeatureReceivePayment() {
     try {
       const [paymentRows, itemRows, houseRows, partnerRows, setupConfig] = await Promise.all([
         listPayments({ generalOnly: true }),
-        listPaymentItemTypes({ onlyActive: true, type: 'receive' }),
+        loadReceiveItemTypes(),
         listHouses(),
         listPartners({ onlyActive: true }),
         getSetupConfig().catch(() => ({})),
@@ -297,7 +303,7 @@ export default function AdminFeatureReceivePayment() {
 
   const openReceiveModal = async () => {
     try {
-      const itemRows = await listPaymentItemTypes({ onlyActive: true, type: 'receive' })
+      const itemRows = await loadReceiveItemTypes()
       setItems(itemRows || [])
     } catch {
       // Keep current options if setup fetch fails.
@@ -1026,12 +1032,12 @@ export default function AdminFeatureReceivePayment() {
                               <tr key={`${item.item_key}-${index}`}>
                                 <td style={{ textAlign: 'center' }}>{index + 1}</td>
                                 <td>
-                                  <StyledSelect value={item.item_type_id || ''} onChange={(event) => updateReceiveItemType(index, event.target.value)}>
+                                  <select value={item.item_type_id || ''} onChange={(event) => updateReceiveItemType(index, event.target.value)} style={{ width: '100%' }}>
                                     <option value="">เลือกรายการจาก setup</option>
                                     {items.map((row) => (
-                                      <option key={row.id} value={row.id}>{row.code ? `${row.code} - ` : ''}{row.label} · ฿{formatMoney(row.default_amount)}</option>
+                                      <option key={row.id} value={row.id}>{row.code ? `${row.code} - ` : ''}{row.label || row.description || '-'} · ฿{formatMoney(row.default_amount)}</option>
                                     ))}
-                                  </StyledSelect>
+                                  </select>
                                 </td>
                                 <td>
                                   <input type="text" value={item.item_label || ''} onChange={(event) => updateReceiveItem(index, { item_label: event.target.value })} placeholder="ชื่อรายการ" style={{ width: '100%' }} />
