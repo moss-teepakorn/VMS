@@ -151,15 +151,18 @@ export default function AdminFeesPrintNotices() {
       .map((item) => {
         const dueAmount = Number(fee?.[item.key] || 0)
         const approvedAmount = Number(approvedByItem[item.key] || 0)
-        const outstandingAmount = Math.max(0, dueAmount - approvedAmount)
+        const outstandingAmount = dueAmount < 0
+          ? dueAmount
+          : Math.max(0, dueAmount - approvedAmount)
         return {
           ...item,
+          label: item.key === 'fee_other' && outstandingAmount < 0 ? 'ส่วนลด' : item.label,
           dueAmount,
           approvedAmount,
           outstandingAmount,
         }
       })
-      .filter((row) => row.outstandingAmount > 0)
+      .filter((row) => row.outstandingAmount !== 0)
   }
 
   const getOutstandingAmountForFee = (fee) => {

@@ -1078,7 +1078,17 @@ export default function ResidentLayout() {
     return feeItemDefs
       .map((item) => {
         const dueAmount = Number(fee?.[item.key] || 0)
-        if (dueAmount <= 0) return null
+        if (dueAmount === 0) return null
+
+        if (dueAmount < 0) {
+          return {
+            key: item.key,
+            label: item.key === 'fee_other' ? 'ส่วนลด' : item.label,
+            dueAmount,
+            paidToDate: 0,
+            amount: dueAmount,
+          }
+        }
 
         const paidByDetail = Number(paidByKey[item.key] || 0)
         const availableForFallback = Math.max(0, dueAmount - paidByDetail)
@@ -1095,7 +1105,7 @@ export default function ResidentLayout() {
           amount: outstanding,
         }
       })
-      .filter((item) => item && item.amount > 0)
+      .filter((item) => item && item.amount !== 0)
   }
 
   function getFeeOutstandingTotal(fee) {
