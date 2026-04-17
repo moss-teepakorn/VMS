@@ -1026,7 +1026,7 @@ export async function cancelFullYearFeeByHouse({ houseId, year, setup }) {
   if (!houseId) throw new Error('ไม่พบบ้าน')
   if (!yearCE) throw new Error('ปีไม่ถูกต้อง')
 
-  const [yearFeesResp, houseResp, parkingByHouse] = await Promise.all([
+  const [yearFeesResp, houseResp, parkingByHouse, violationByHouse] = await Promise.all([
     supabase
       .from('fees')
       .select('id, period, status')
@@ -1035,6 +1035,7 @@ export async function cancelFullYearFeeByHouse({ houseId, year, setup }) {
       .in('period', ['first_half', 'second_half', 'full_year']),
     supabase.from('houses').select('id, area_sqw').eq('id', houseId).single(),
     getParkingMonthlyByHouse(),
+    getClosedViolationsByHouseIds([houseId]),
   ])
 
   if (yearFeesResp.error) throw yearFeesResp.error
@@ -1089,17 +1090,36 @@ export async function cancelFullYearFeeByHouse({ houseId, year, setup }) {
     note: 'ยกเลิกคำนวณทั้งปี: กลับมาเป็นครึ่งปีแรก',
   }
 
+  const violationSummary = summarizeViolationCharge(violationByHouse.get(String(houseId)) || [], {
+    targetFeeId: existingFirstHalf?.id || null,
+    transferFromFeeIds: [fullYearFee.id],
+  })
+  firstHalfPayload.fee_violation = violationSummary.amount
+
+  let firstHalfFeeId = existingFirstHalf?.id || null
+
   if (existingFirstHalf?.id) {
-    const { error: updateFirstError } = await supabase
+    const { data: updatedFirstHalf, error: updateFirstError } = await supabase
       .from('fees')
       .update(firstHalfPayload)
       .eq('id', existingFirstHalf.id)
+      .select('id')
+      .single()
     if (updateFirstError) throw updateFirstError
+    firstHalfFeeId = updatedFirstHalf?.id || existingFirstHalf.id
   } else {
-    const { error: insertFirstError } = await supabase
+    const { data: insertedFirstHalf, error: insertFirstError } = await supabase
       .from('fees')
       .insert([firstHalfPayload])
+      .select('id')
+      .single()
     if (insertFirstError) throw insertFirstError
+    firstHalfFeeId = insertedFirstHalf?.id || null
+  }
+
+  if (firstHalfFeeId) {
+    await assignViolationFineToFee(violationSummary.claimIds, firstHalfFeeId)
+    await assignViolationFineToFee(violationSummary.transferIds, firstHalfFeeId, { transfer: true })
   }
 
   if (existingSecondHalf?.id) {
