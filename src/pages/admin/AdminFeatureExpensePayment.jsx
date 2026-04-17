@@ -1,5 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import StyledSelect from '../../components/StyledSelect'
+import html2canvas from 'html2canvas'
+import { jsPDF } from 'jspdf'
 import Swal from 'sweetalert2'
 import { listDisbursements, createDisbursement, updateDisbursement, deleteDisbursement } from '../../lib/disbursements'
 import { listPartners } from '../../lib/partners'
@@ -23,6 +25,15 @@ function fmtMethod(m) {
   if (m === 'cash') return 'เงินสด'
   if (m === 'cheque') return 'เช็ค'
   return m || '-'
+}
+
+function openHtmlInWindow(html) {
+  const popup = window.open('', '_blank', 'width=1200,height=900')
+  if (!popup) return null
+  popup.document.open()
+  popup.document.write(html)
+  popup.document.close()
+  return popup
 }
 
 const STATUS_MAP = {
@@ -107,6 +118,11 @@ export default function AdminFeatureExpensePayment() {
   const [editingId, setEditingId] = useState('')
   const [form, setForm] = useState(EMPTY_FORM())
   const [saving, setSaving] = useState(false)
+  const [disbursementPrintTarget, setDisbursementPrintTarget] = useState(null)
+  const [showDisbursementPrintModal, setShowDisbursementPrintModal] = useState(false)
+  const [disbursementPrintPreviewHtml, setDisbursementPrintPreviewHtml] = useState('')
+  const [disbursementPrintPreviewTitle, setDisbursementPrintPreviewTitle] = useState('ตัวอย่างใบสั่งจ่าย')
+  const [runningDisbursementPrintAction, setRunningDisbursementPrintAction] = useState(false)
 
   const formSubTotal = useMemo(() => form.items.reduce((s, i) => s + Number(i.amount || 0), 0), [form.items])
   const formVatAmount = form.vat_enabled ? +Number(form.vat_amount || 0).toFixed(2) : 0
@@ -356,7 +372,7 @@ export default function AdminFeatureExpensePayment() {
     }
   }
 
-  const handlePrint = (d) => {
+  const buildDisbursementPrintHtml = (d, { autoPrint = false, forCapture = false } = {}) => {
     const disburseNo = disburseNoById[d.id] || 'EXP-??????'
     const recipient = recipientLabel(d)
     const approvedDateText = d.approved_at ? fmtDate(d.approved_at) : ''
@@ -364,24 +380,110 @@ export default function AdminFeatureExpensePayment() {
     const items = d.disbursement_items || []
     const itemRows = items.map((item, idx) => `<tr><td style="text-align:center">${idx + 1}</td><td>${item.item_label}</td><td style="text-align:right">${fmt2(item.amount)}</td><td>${item.note || '-'}</td></tr>`).join('')
 
-    const html = `<!DOCTYPE html><html><head><title>ใบสั่งจ่าย ${disburseNo}</title>
+    return `<!DOCTYPE html><html><head><title>ใบสั่งจ่าย ${disburseNo}</title>
 <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap" rel="stylesheet">
-<style>@page{size:A4;margin:0}*{box-sizing:border-box}html,body{font-family:'Sarabun','TH Sarabun New',Tahoma,sans-serif;margin:0;padding:0;color:#111827;background:#fff}.sheet{width:100%;padding:24px 28px;display:flex;flex-direction:column;gap:10px}.head{display:flex;justify-content:space-between;gap:12px;border:1px solid #cbd5e1;border-radius:4px;padding:10px 12px}.brand{display:flex;align-items:flex-start;gap:10px}.brand img{width:48px;height:48px;border-radius:6px;object-fit:cover;border:1px solid #cbd5e1}.doc{font-size:16px;font-weight:700}.village{font-size:11px;font-weight:600;margin-top:3px}.sub{font-size:9px;color:#6b7280;margin-top:2px}.doc-meta{font-size:10px;min-width:200px;display:flex;flex-direction:column;gap:3px}.doc-meta span{color:#6b7280;font-weight:500}.box{border:1px solid #cbd5e1;border-radius:4px;padding:10px 12px}.grid2{display:grid;grid-template-columns:1fr 1fr;gap:6px 10px}.grid2>div{display:flex;flex-direction:column;gap:2px}.grid2 span{font-size:9px;color:#6b7280}.grid2 strong{font-size:11px;font-weight:600}table{width:100%;border-collapse:collapse}th,td{border:1px solid #cbd5e1;padding:6px 8px;font-size:10px}th{background:#f1f5f9;font-weight:600;text-align:left}tfoot td{background:#f8fafc;font-weight:700;font-size:10px}.sign-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-top:4px}.sign-box{border:1px solid #cbd5e1;border-radius:4px;padding:8px 10px;text-align:center;font-size:9px;color:#6b7280;min-height:106px}.sign-slot{height:36px;display:flex;align-items:center;justify-content:center}.sign-line{border-top:1px solid #94a3b8;margin:2px 8px 6px}.sign-label{font-size:10px;font-weight:600;color:#1e293b;margin-bottom:5px}.sign-pos{font-size:9px;color:#64748b;line-height:1.25}.sign-date{font-size:9px;color:#334155;min-height:14px;margin-top:2px}</style>
+<style>@page{size:A4;margin:0}*{box-sizing:border-box}html,body{font-family:'Sarabun','TH Sarabun New',Tahoma,sans-serif;margin:0;padding:0;color:#111827;background:#fff}.sheet{width:${forCapture ? '794px' : '100%'};${forCapture ? 'height:1122px;overflow:hidden;' : ''}padding:24px 28px;display:flex;flex-direction:column;gap:10px}.head{display:flex;justify-content:space-between;gap:12px;border:1px solid #cbd5e1;border-radius:4px;padding:10px 12px}.brand{display:flex;align-items:flex-start;gap:10px}.brand img{width:48px;height:48px;border-radius:6px;object-fit:cover;border:1px solid #cbd5e1}.doc{font-size:16px;font-weight:700}.village{font-size:11px;font-weight:600;margin-top:3px}.sub{font-size:9px;color:#6b7280;margin-top:2px}.doc-meta{font-size:10px;min-width:200px;display:flex;flex-direction:column;gap:3px}.doc-meta span{color:#6b7280;font-weight:500}.box{border:1px solid #cbd5e1;border-radius:4px;padding:10px 12px}.grid2{display:grid;grid-template-columns:1fr 1fr;gap:6px 10px}.grid2>div{display:flex;flex-direction:column;gap:2px}.grid2 span{font-size:9px;color:#6b7280}.grid2 strong{font-size:11px;font-weight:600}table{width:100%;border-collapse:collapse}th,td{border:1px solid #cbd5e1;padding:6px 8px;font-size:10px}th{background:#f1f5f9;font-weight:600;text-align:left}tfoot td{background:#f8fafc;font-weight:700;font-size:10px}.sign-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-top:4px}.sign-box{border:1px solid #cbd5e1;border-radius:4px;padding:8px 10px;text-align:center;font-size:9px;color:#6b7280;min-height:106px}.sign-slot{height:36px;display:flex;align-items:center;justify-content:center}.sign-line{border-top:1px solid #94a3b8;margin:2px 8px 6px}.sign-label{font-size:10px;font-weight:600;color:#1e293b;margin-bottom:5px}.sign-pos{font-size:9px;color:#64748b;line-height:1.25}.sign-date{font-size:9px;color:#334155;min-height:14px;margin-top:2px}</style>
 </head><body><div class="sheet">
 <div class="head"><div class="brand">${setup.loginCircleLogoUrl ? `<img src="${setup.loginCircleLogoUrl}" alt="logo">` : ''}<div><div class="doc">ใบสั่งจ่าย / ใบสำคัญจ่าย</div><div class="village">${setup.villageName || 'Village Management System'}</div><div class="sub">${setup.address || ''}</div></div></div>
 <div class="doc-meta"><div><span>เลขที่:</span> <strong>${disburseNo}</strong></div><div><span>วันที่ทำรายการ:</span> <strong>${fmtDate(d.disbursement_date)}</strong></div><div><span>สถานะ:</span> <strong>${STATUS_MAP[d.status]?.label || d.status}</strong></div></div></div>
 <div class="box"><div class="grid2"><div><span>ชื่อผู้รับเงิน</span><strong>${recipient || '-'}</strong></div><div><span>วิธีชำระ</span><strong>${fmtMethod(d.payment_method)}</strong></div><div><span>ธนาคาร</span><strong>${d.bank_name || '-'}</strong></div><div><span>เลขที่บัญชี</span><strong>${d.bank_account_no || '-'}</strong></div>${d.recipient_type === 'partner' && d.partners?.tax_id ? `<div><span>เลขที่ผู้เสียภาษี</span><strong>${d.partners.tax_id}</strong></div>` : '<div></div>'}</div></div>
 <div class="box"><table><thead><tr><th style="width:36px;text-align:center">ลำดับ</th><th>รายการ</th><th style="width:130px;text-align:right">จำนวนเงิน (บาท)</th><th style="width:120px">หมายเหตุ</th></tr></thead><tbody>${itemRows}</tbody><tfoot><tr><td colspan="2" style="text-align:right">ยอดก่อนภาษี</td><td style="text-align:right">${fmt2(d.sub_total)}</td><td></td></tr>${d.vat_enabled ? `<tr><td colspan="2" style="text-align:right">ภาษีมูลค่าเพิ่ม ${d.vat_rate}%</td><td style="text-align:right">${fmt2(d.vat_amount)}</td><td></td></tr>` : ''}${d.wht_enabled ? `<tr><td colspan="2" style="text-align:right">หัก ณ ที่จ่าย ${d.wht_rate}%</td><td style="text-align:right">(${fmt2(d.wht_amount)})</td><td></td></tr>` : ''}<tr><td colspan="2" style="text-align:right"><strong>ยอดสุทธิ</strong></td><td style="text-align:right"><strong>${fmt2(d.total_amount)}</strong></td><td></td></tr></tfoot></table>${d.note ? `<div style="padding-top:6px;font-size:10px;color:#4b5563;border-top:1px dashed #d1d5db;margin-top:4px">หมายเหตุ: ${d.note}</div>` : ''}</div>
 <div class="sign-row"><div class="sign-box"><div class="sign-slot">${setup.juristicSignatureUrl ? `<img src="${setup.juristicSignatureUrl}" alt="" style="max-height:30px;display:block;margin:0 auto;object-fit:contain">` : ''}</div><div class="sign-line"></div><div class="sign-label">ผู้จัดทำ</div><div class="sign-pos">ลงชื่อผู้จัดทำรายการ</div></div><div class="sign-box"><div class="sign-slot"></div><div class="sign-line"></div><div class="sign-label">ประธานกรรมการ</div><div class="sign-pos">วันที่อนุมัติ:</div><div class="sign-date">${approvedDateText || ''}</div></div><div class="sign-box"><div class="sign-slot"></div><div class="sign-line"></div><div class="sign-label">กรรมการการเงิน</div><div class="sign-pos">วันที่จ่าย:</div><div class="sign-date">${paidDateText || ''}</div></div></div>
-</div><script>window.onload=()=>window.print()</script></body></html>`
+</div>${autoPrint ? '<script>window.onload=()=>window.print()</script>' : ''}</body></html>`
+  }
 
-    const popup = window.open('', '_blank', 'width=900,height=800')
-    if (!popup) {
-      Swal.fire({ icon: 'warning', title: 'ไม่สามารถเปิดหน้าพิมพ์ได้', text: 'กรุณาอนุญาต popup ของเบราว์เซอร์' })
-      return
+  const renderDisbursementInIframe = async (html) => {
+    const iframe = document.createElement('iframe')
+    iframe.style.cssText = 'position:fixed;left:-9999px;top:0;border:none;'
+    iframe.style.width = '794px'
+    iframe.style.height = '1200px'
+    document.body.appendChild(iframe)
+    const doc = iframe.contentDocument
+    doc.open()
+    doc.write(html)
+    doc.close()
+    await new Promise((resolve) => setTimeout(resolve, 900))
+    return { iframe, sheet: doc.querySelector('.sheet') }
+  }
+
+  const openDisbursementPrintPreviewModal = async (d) => {
+    if (!d) return
+    try {
+      setRunningDisbursementPrintAction(true)
+      const html = buildDisbursementPrintHtml(d, { autoPrint: false })
+      setDisbursementPrintTarget(d)
+      setDisbursementPrintPreviewTitle(`ใบสั่งจ่าย ${disburseNoById[d.id] || 'EXP-??????'}`)
+      setDisbursementPrintPreviewHtml(html)
+      setShowDisbursementPrintModal(true)
+    } finally {
+      setRunningDisbursementPrintAction(false)
     }
-    popup.document.write(html)
-    popup.document.close()
+  }
+
+  const closeDisbursementPrintPreviewModal = () => {
+    if (runningDisbursementPrintAction) return
+    setShowDisbursementPrintModal(false)
+    setDisbursementPrintTarget(null)
+    setDisbursementPrintPreviewHtml('')
+    setDisbursementPrintPreviewTitle('ตัวอย่างใบสั่งจ่าย')
+  }
+
+  const runDisbursementPrintAction = async (mode) => {
+    if (!disbursementPrintTarget) return
+    try {
+      setRunningDisbursementPrintAction(true)
+      const target = disbursementPrintTarget
+      const fileLabel = disburseNoById[target.id] || `EXP-${String(target.id || '').slice(0, 8).toUpperCase()}`
+
+      if (mode === 'paper') {
+        const html = buildDisbursementPrintHtml(target, { autoPrint: true })
+        const popup = openHtmlInWindow(html)
+        if (!popup) {
+          await Swal.fire({ icon: 'warning', title: 'ไม่สามารถเปิดหน้าพิมพ์ได้', text: 'กรุณาอนุญาต popup ของเบราว์เซอร์' })
+        } else {
+          closeDisbursementPrintPreviewModal()
+        }
+        return
+      }
+
+      const html = buildDisbursementPrintHtml(target, { autoPrint: false, forCapture: true })
+      const { iframe, sheet } = await renderDisbursementInIframe(html)
+      if (!sheet) {
+        document.body.removeChild(iframe)
+        throw new Error('ไม่พบหน้าสำหรับพิมพ์ใบสั่งจ่าย')
+      }
+
+      const canvas = await html2canvas(sheet, {
+        scale: 2,
+        useCORS: true,
+        backgroundColor: '#ffffff',
+        width: 794,
+        height: 1122,
+      })
+
+      if (mode === 'image') {
+        const link = document.createElement('a')
+        link.href = canvas.toDataURL('image/png')
+        link.download = `${fileLabel}.png`
+        link.click()
+      } else {
+        const pdf = new jsPDF('p', 'mm', 'a4')
+        const imgData = canvas.toDataURL('image/jpeg', 0.95)
+        pdf.addImage(imgData, 'JPEG', 0, 0, 210, 297)
+        pdf.save(`${fileLabel}.pdf`)
+      }
+
+      document.body.removeChild(iframe)
+      closeDisbursementPrintPreviewModal()
+    } catch (error) {
+      await Swal.fire({ icon: 'error', title: 'พิมพ์ใบสั่งจ่ายไม่สำเร็จ', text: error.message })
+    } finally {
+      setRunningDisbursementPrintAction(false)
+    }
+  }
+
+  const handlePrint = async (d) => {
+    await openDisbursementPrintPreviewModal(d)
   }
 
   const addItem = () => setForm((p) => ({ ...p, items: [...p.items, { item_type_id: '', item_label: '', amount: '', note: '' }] }))
@@ -961,6 +1063,34 @@ export default function AdminFeatureExpensePayment() {
           </div>
         </div>
         )
+      )}
+
+      {showDisbursementPrintModal && disbursementPrintTarget && (
+        <div className="house-mo">
+          <div className="house-md house-md--xl" style={{ '--house-md-max-w': '1120px', '--house-md-max-h': 'calc(100dvh - 36px)' }}>
+            <div className="house-md-head">
+              <div>
+                <div className="house-md-title">🖨 {disbursementPrintPreviewTitle}</div>
+                <div className="house-md-sub">แสดงตัวอย่างก่อนพิมพ์และดาวน์โหลดเอกสาร</div>
+              </div>
+            </div>
+            <div className="house-md-body" style={{ padding: 10, background: '#eef2f7' }}>
+              <div style={{ border: '1px solid var(--bo)', borderRadius: 10, overflow: 'hidden', background: '#fff', height: 'calc(100dvh - 220px)', minHeight: 420 }}>
+                <iframe
+                  title={disbursementPrintPreviewTitle}
+                  srcDoc={disbursementPrintPreviewHtml}
+                  style={{ width: '100%', height: '100%', border: 'none' }}
+                />
+              </div>
+            </div>
+            <div className="house-md-foot">
+              <button className="btn btn-o" type="button" onClick={() => runDisbursementPrintAction('pdf')} disabled={runningDisbursementPrintAction}>{runningDisbursementPrintAction ? 'กำลังสร้างไฟล์...' : '⬇ PDF'}</button>
+              <button className="btn btn-o" type="button" onClick={() => runDisbursementPrintAction('image')} disabled={runningDisbursementPrintAction}>{runningDisbursementPrintAction ? 'กำลังสร้างไฟล์...' : '⬇ Image'}</button>
+              <button className="btn btn-a" type="button" onClick={() => runDisbursementPrintAction('paper')} disabled={runningDisbursementPrintAction}>🖨 พิมพ์</button>
+              <button className="btn btn-g" type="button" onClick={closeDisbursementPrintPreviewModal} disabled={runningDisbursementPrintAction}>ปิด</button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   )

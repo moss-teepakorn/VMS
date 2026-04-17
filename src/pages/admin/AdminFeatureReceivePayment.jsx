@@ -152,6 +152,7 @@ function emptyForm() {
 
 function mapPaymentToEditForm(payment) {
   const rows = getPaymentItemRows(payment).map((row) => ({
+    item_type_id: '',
     item_key: row.key,
     item_label: row.label,
     note: '',
@@ -425,6 +426,58 @@ export default function AdminFeatureReceivePayment() {
 
   const removeReceiveItemRow = (index) => {
     setReceiveForm((prev) => {
+      const nextRows = prev.selectedItems.filter((_, rowIndex) => rowIndex !== index)
+      return {
+        ...prev,
+        selectedItems: nextRows.length > 0 ? nextRows : [createEmptyReceiveItem(0)],
+      }
+    })
+  }
+
+  const addDetailItemRow = () => {
+    setDetailForm((prev) => ({
+      ...prev,
+      selectedItems: [...prev.selectedItems, createEmptyReceiveItem(prev.selectedItems.length)],
+    }))
+  }
+
+  const updateDetailItem = (index, patch) => {
+    setDetailForm((prev) => ({
+      ...prev,
+      selectedItems: prev.selectedItems.map((row, rowIndex) => (rowIndex === index ? { ...row, ...patch } : row)),
+    }))
+  }
+
+  const updateDetailItemType = (index, itemTypeId) => {
+    const selected = items.find((row) => String(row.id) === String(itemTypeId))
+    if (!selected) {
+      updateDetailItem(index, {
+        item_type_id: '',
+        item_key: `item_${index + 1}`,
+      })
+      return
+    }
+
+    updateDetailItem(index, {
+      item_type_id: itemTypeId,
+      item_key: selected.code || `item_${index + 1}`,
+      item_label: selected.label || '',
+      note: selected.description || '',
+      due_amount: Number(selected.default_amount || 0),
+      paid_amount: Number(selected.default_amount || 0),
+    })
+  }
+
+  const handleDetailAmountChange = (index, value) => {
+    const amount = Number(value || 0)
+    updateDetailItem(index, {
+      due_amount: amount,
+      paid_amount: amount,
+    })
+  }
+
+  const removeDetailItemRow = (index) => {
+    setDetailForm((prev) => {
       const nextRows = prev.selectedItems.filter((_, rowIndex) => rowIndex !== index)
       return {
         ...prev,
@@ -809,6 +862,7 @@ export default function AdminFeatureReceivePayment() {
         payment_items: detailForm.selectedItems.map((item, index) => ({
           item_key: item.item_key || `item_${index + 1}`,
           item_label: item.item_label,
+          note: item.note || '',
           due_amount: Number(item.due_amount || 0),
           paid_amount: Number(item.paid_amount || 0),
         })),
@@ -1135,41 +1189,58 @@ export default function AdminFeatureReceivePayment() {
               <section className="house-sec">
                 <div className="house-field" style={{ gap: 8 }}>
                   <span>รายการชำระ</span>
-                  {isDetailEditable && (
-                    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                      <StyledSelect value={detailForm.pendingItemId} onChange={(event) => setDetailForm((prev) => ({ ...prev, pendingItemId: event.target.value }))} style={{ flex: '1 1 280px' }}>
-                        <option value="">เลือกรายการจาก setup</option>
-                        {items.map((item) => (
-                          <option key={item.id} value={item.id}>{item.label} · ฿{formatMoney(item.default_amount)}</option>
-                        ))}
-                      </StyledSelect>
-                      <button type="button" className="btn btn-xs btn-a" onClick={() => addSelectedItem(setDetailForm, detailForm)}>เพิ่มรายการ</button>
-                    </div>
-                  )}
-                  <div className="houses-table-wrap" style={{ maxHeight: 260, overflow: 'auto' }}>
-                    <table className="tw" style={{ width: '100%', minWidth: 560 }}>
+                  <div style={{ overflowX: 'auto', marginBottom: 8 }}>
+                    <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 600 }}>
                       <thead>
                         <tr>
-                          <th style={{ width: 60, textAlign: 'center' }}>ลำดับ</th>
-                          <th>รายการ</th>
-                          <th style={{ width: 170 }}>ยอดที่ต้องชำระ</th>
-                          <th style={{ width: 170 }}>ยอดชำระจริง</th>
-                          {isDetailEditable && <th style={{ width: 72 }}></th>}
+                          <th style={{ width: 36, textAlign: 'center', padding: '5px 4px', border: '1px solid var(--bo)', background: 'var(--bgl)', fontSize: 11 }}>#</th>
+                          <th style={{ width: '25%', padding: '5px 6px', border: '1px solid var(--bo)', background: 'var(--bgl)', fontSize: 11 }}>ประเภท</th>
+                          <th style={{ padding: '5px 6px', border: '1px solid var(--bo)', background: 'var(--bgl)', fontSize: 11 }}>รายการ *</th>
+                          <th style={{ width: 120, padding: '5px 6px', border: '1px solid var(--bo)', background: 'var(--bgl)', fontSize: 11, textAlign: 'right' }}>จำนวนเงิน *</th>
+                          <th style={{ width: '15%', padding: '5px 6px', border: '1px solid var(--bo)', background: 'var(--bgl)', fontSize: 11 }}>หมายเหตุ</th>
+                          <th style={{ width: 32, border: '1px solid var(--bo)', background: 'var(--bgl)' }}></th>
                         </tr>
                       </thead>
                       <tbody>
                         {detailForm.selectedItems.map((row, index) => (
                           <tr key={`${detailTarget.id}-${row.item_key}-${index}`}>
-                            <td style={{ textAlign: 'center' }}>{index + 1}</td>
-                            <td>{isDetailEditable ? <input value={row.item_label} onChange={(event) => handleItemLabelChange(setDetailForm, index, event.target.value)} style={{ width: '100%' }} /> : row.item_label}</td>
-                            <td>{isDetailEditable ? <input type="number" min="0" step="0.01" value={row.due_amount} onChange={(event) => handleItemAmountChange(setDetailForm, index, 'due_amount', event.target.value)} style={{ width: '100%' }} /> : `฿${formatMoney(row.due_amount)}`}</td>
-                            <td>{isDetailEditable ? <input type="number" min="0" step="0.01" value={row.paid_amount} onChange={(event) => handleItemAmountChange(setDetailForm, index, 'paid_amount', event.target.value)} style={{ width: '100%' }} /> : `฿${formatMoney(row.paid_amount)}`}</td>
-                            {isDetailEditable && <td><button type="button" className="btn btn-xs btn-dg" onClick={() => removeSelectedItem(setDetailForm, index)}>ลบ</button></td>}
+                            <td style={{ textAlign: 'center', padding: '4px', border: '1px solid var(--bo)', fontSize: 11, color: 'var(--mu)' }}>{index + 1}</td>
+                            <td style={{ padding: '3px', border: '1px solid var(--bo)' }}>
+                              {isDetailEditable ? (
+                                <select style={{ width: '100%', border: 'none', outline: 'none', background: 'transparent', fontSize: 11, padding: '2px' }} value={row.item_type_id || ''} onChange={(event) => updateDetailItemType(index, event.target.value)}>
+                                  <option value="">— ประเภท —</option>
+                                  {items.map((item) => (
+                                    <option key={item.id} value={item.id}>{item.code ? `${item.code} — ` : ''}{item.label || item.description || '-'}</option>
+                                  ))}
+                                </select>
+                              ) : (
+                                items.find((item) => String(item.id) === String(row.item_type_id))?.label || '-'
+                              )}
+                            </td>
+                            <td style={{ padding: '3px', border: '1px solid var(--bo)' }}>
+                              {isDetailEditable
+                                ? <input style={{ width: '100%', border: 'none', outline: 'none', background: 'transparent', fontSize: 11, padding: '2px 3px' }} value={row.item_label} onChange={(event) => handleItemLabelChange(setDetailForm, index, event.target.value)} placeholder="ชื่อรายการ" />
+                                : row.item_label}
+                            </td>
+                            <td style={{ padding: '3px', border: '1px solid var(--bo)' }}>
+                              {isDetailEditable
+                                ? <input type="number" min="0" step="0.01" style={{ width: '100%', border: 'none', outline: 'none', background: 'transparent', fontSize: 11, padding: '2px 3px', textAlign: 'right' }} value={row.paid_amount} onChange={(event) => handleDetailAmountChange(index, event.target.value)} />
+                                : `฿${formatMoney(row.paid_amount)}`}
+                            </td>
+                            <td style={{ padding: '3px', border: '1px solid var(--bo)' }}>
+                              {isDetailEditable
+                                ? <input style={{ width: '100%', border: 'none', outline: 'none', background: 'transparent', fontSize: 11, padding: '2px 3px' }} value={row.note || ''} onChange={(event) => updateDetailItem(index, { note: event.target.value })} />
+                                : (row.note || '-')}
+                            </td>
+                            <td style={{ textAlign: 'center', padding: '3px 2px', border: '1px solid var(--bo)' }}>
+                              {isDetailEditable && detailForm.selectedItems.length > 1 && <button type="button" onClick={() => removeDetailItemRow(index)} style={{ background: 'none', border: 'none', color: '#dc2626', cursor: 'pointer', fontSize: 13, lineHeight: 1 }}>✕</button>}
+                            </td>
                           </tr>
                         ))}
                       </tbody>
                     </table>
                   </div>
+                  {isDetailEditable && <button type="button" className="btn btn-xs btn-o" onClick={addDetailItemRow}>+ เพิ่มรายการ</button>}
                 </div>
               </section>
 
