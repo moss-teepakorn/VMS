@@ -346,6 +346,89 @@ function buildInvoiceDocumentNo(fee) {
   return `INV-${yearSuffix}-${idPrefix}`
 }
 
+async function getClosedViolationsByHouseIds(houseIds = []) {
+  const targets = [...new Set((Array.isArray(houseIds) ? houseIds : []).filter(Boolean))]
+  if (targets.length === 0) return new Map()
+
+  const { data, error } = await supabase
+    .from('violations')
+    .select('id, house_id, status, fine_amount, fee_billed_id, fee_billed_at')
+    .in('house_id', targets)
+    .eq('status', 'closed')
+
+  if (error) throw error
+
+  return (data || []).reduce((acc, row) => {
+    if (!row?.house_id) return acc
+    if (toAmount(row.fine_amount) <= 0) return acc
+    const key = String(row.house_id)
+    const current = acc.get(key) || []
+    current.push(row)
+    acc.set(key, current)
+    return acc
+  }, new Map())
+}
+
+function summarizeViolationCharge(rows = [], { targetFeeId = null, transferFromFeeIds = [] } = {}) {
+  const targetKey = targetFeeId ? String(targetFeeId) : ''
+  const transferSet = new Set((Array.isArray(transferFromFeeIds) ? transferFromFeeIds : []).filter(Boolean).map((id) => String(id)))
+
+  const claimRows = []
+  const transferRows = []
+  let amount = 0
+
+  for (const row of rows || []) {
+    const fine = toAmount(row?.fine_amount)
+    if (fine <= 0) continue
+
+    const billedAt = row?.fee_billed_at ? String(row.fee_billed_at) : ''
+    const billedFeeId = row?.fee_billed_id ? String(row.fee_billed_id) : ''
+
+    if (!billedAt && !billedFeeId) {
+      claimRows.push(row)
+      amount += fine
+      continue
+    }
+
+    if (targetKey && billedFeeId === targetKey) {
+      amount += fine
+      continue
+    }
+
+    if (transferSet.has(billedFeeId)) {
+      transferRows.push(row)
+      amount += fine
+    }
+  }
+
+  return {
+    amount: round2(amount),
+    claimIds: claimRows.map((row) => row.id).filter(Boolean),
+    transferIds: transferRows.map((row) => row.id).filter(Boolean),
+  }
+}
+
+async function assignViolationFineToFee(violationIds = [], feeId = null, { transfer = false } = {}) {
+  const ids = [...new Set((Array.isArray(violationIds) ? violationIds : []).filter(Boolean))]
+  if (ids.length === 0 || !feeId) return
+
+  let query = supabase
+    .from('violations')
+    .update({
+      fee_billed_id: feeId,
+      fee_billed_at: new Date().toISOString(),
+      status: 'closed',
+    })
+    .in('id', ids)
+
+  if (!transfer) {
+    query = query.is('fee_billed_at', null).is('fee_billed_id', null)
+  }
+
+  const { error } = await query
+  if (error) throw error
+}
+
 async function getParkingMonthlyByHouse() {
   const { data, error } = await supabase
     .from('vehicles')
@@ -584,6 +667,7 @@ export async function processHalfYearFeesAllHouses({ yearBE, period, setup, over
     [...(sameYearPrevResp.data || []), ...(prevYearResp.data || [])].map((row) => [row.house_id, row]),
   )
   const houses = housesResp.data || []
+  const violationByHouse = await getClosedViolationsByHouseIds(houses.map((house) => house.id))
 
   const prevFeeIds = [...prevFeeByHouse.values()].map((f) => f.id)
   const prevPaymentFeeIds = new Set()
@@ -656,9 +740,16 @@ export async function processHalfYearFeesAllHouses({ yearBE, period, setup, over
     }
 
     const existing = existingByHouse.get(house.id)
+    const violationSummary = summarizeViolationCharge(violationByHouse.get(String(house.id)) || [], {
+      targetFeeId: existing?.id || null,
+    })
+    payload.fee_violation = violationSummary.amount
+
     if (!existing) {
       const { data: insertedFee, error } = await supabase.from('fees').insert([{ house_id: house.id, ...payload }]).select('id').single()
       if (error) throw error
+
+      await assignViolationFineToFee(violationSummary.claimIds, insertedFee?.id)
 
       if (canCarry) {
         const insertedDocNo = buildInvoiceDocumentNo({ year: yearCE, id: insertedFee?.id })
@@ -692,6 +783,8 @@ export async function processHalfYearFeesAllHouses({ yearBE, period, setup, over
       .update(payload)
       .eq('id', existing.id)
     if (error) throw error
+
+    await assignViolationFineToFee(violationSummary.claimIds, existing.id)
 
     if (canCarry) {
       const existingDocNo = buildInvoiceDocumentNo({ year: yearCE, id: existing.id })
@@ -735,7 +828,7 @@ export async function calculateFullYearFeeByHouse({ houseId, year, setup }) {
     ? 0
     : toAmount(fullYearPolicy.discountPct)
 
-  const [houseResp, parkingByHouseResp, yearFeesResp] = await Promise.all([
+  const [houseResp, parkingByHouseResp, yearFeesResp, violationByHouse] = await Promise.all([
     supabase.from('houses').select('id, area_sqw').eq('id', houseId).single(),
     getParkingMonthlyByHouse(),
     supabase
@@ -744,6 +837,7 @@ export async function calculateFullYearFeeByHouse({ houseId, year, setup }) {
       .eq('house_id', houseId)
       .eq('year', yearCE)
       .in('period', ['first_half', 'second_half', 'full_year']),
+    getClosedViolationsByHouseIds([houseId]),
   ])
 
   if (houseResp.error) throw houseResp.error
@@ -805,6 +899,11 @@ export async function calculateFullYearFeeByHouse({ houseId, year, setup }) {
     note: discountNote,
   }
 
+  const violationSummaryBase = summarizeViolationCharge(violationByHouse.get(String(houseId)) || [], {
+    targetFeeId: existingFullYear?.id || null,
+  })
+  payload.fee_violation = violationSummaryBase.amount
+
   if (hasSecondHalf) {
     const sumField = (field) => halfYearRows.reduce((sum, row) => sum + toAmount(row[field]), 0)
     payload.fee_common = round2(sumField('fee_common'))
@@ -818,9 +917,22 @@ export async function calculateFullYearFeeByHouse({ houseId, year, setup }) {
     payload.fee_violation = round2(sumField('fee_violation'))
     payload.fee_other = round2(sumField('fee_other'))
     payload.note = 'รวมรายการจากใบแจ้งหนี้ครึ่งปีเป็นใบแจ้งหนี้เต็มปี (ไม่ใช้ส่วนลด)'
+
+    const transferSummary = summarizeViolationCharge(violationByHouse.get(String(houseId)) || [], {
+      targetFeeId: existingFullYear?.id || null,
+      transferFromFeeIds: halfYearRows.map((row) => row.id),
+    })
+    payload.fee_violation = transferSummary.amount
   }
 
   if (existingFullYear?.id) {
+    const transferSummary = summarizeViolationCharge(violationByHouse.get(String(houseId)) || [], {
+      targetFeeId: existingFullYear.id,
+      transferFromFeeIds: hasSecondHalf ? halfYearRows.map((row) => row.id) : [],
+    })
+
+    payload.fee_violation = transferSummary.amount
+
     const { data, error } = await supabase
       .from('fees')
       .update(payload)
@@ -828,6 +940,9 @@ export async function calculateFullYearFeeByHouse({ houseId, year, setup }) {
       .select('id, house_id, year, period, invoice_date, due_date, status, fee_common, fee_parking, fee_waste, fee_overdue_common, fee_overdue_fine, fee_overdue_notice, fee_fine, fee_notice, fee_violation, fee_other, total_amount, note, created_at, houses(id, house_no, owner_name)')
       .single()
     if (error) throw error
+
+    await assignViolationFineToFee(transferSummary.claimIds, existingFullYear.id)
+    await assignViolationFineToFee(transferSummary.transferIds, existingFullYear.id, { transfer: true })
 
     if (halfYearRows.length > 0) {
       const { error: deleteHalfError } = await supabase
@@ -846,6 +961,14 @@ export async function calculateFullYearFeeByHouse({ houseId, year, setup }) {
     .select('id, house_id, year, period, invoice_date, due_date, status, fee_common, fee_parking, fee_waste, fee_overdue_common, fee_overdue_fine, fee_overdue_notice, fee_fine, fee_notice, fee_violation, fee_other, total_amount, note, created_at, houses(id, house_no, owner_name)')
     .single()
   if (error) throw error
+
+  const transferSummary = summarizeViolationCharge(violationByHouse.get(String(houseId)) || [], {
+    targetFeeId: data?.id || null,
+    transferFromFeeIds: hasSecondHalf ? halfYearRows.map((row) => row.id) : [],
+  })
+
+  await assignViolationFineToFee(transferSummary.claimIds, data?.id)
+  await assignViolationFineToFee(transferSummary.transferIds, data?.id, { transfer: true })
 
   if (halfYearRows.length > 0) {
     const { error: deleteHalfError } = await supabase
@@ -1006,7 +1129,7 @@ export async function cancelFullYearFeeByHouse({ houseId, year, setup }) {
 export async function calculateOverdueFeeCharges(feeId, setup) {
   const { data: fee, error: feeError } = await supabase
     .from('fees')
-    .select('id, year, period, status, due_date, fee_common, fee_overdue_common')
+    .select('id, house_id, year, period, status, due_date, fee_common, fee_overdue_common')
     .eq('id', feeId)
     .single()
 
@@ -1020,9 +1143,17 @@ export async function calculateOverdueFeeCharges(feeId, setup) {
     throw new Error('ใบแจ้งหนี้ถูกยกเลิกโดยระบบ ไม่สามารถคำนวณค่าปรับได้')
   }
 
-  const cycleConfigByYear = await preloadCycleConfigByYears([fee?.year], {})
+  const [cycleConfigByYear, violationByHouse] = await Promise.all([
+    preloadCycleConfigByYears([fee?.year], {}),
+    getClosedViolationsByHouseIds([fee?.house_id]),
+  ])
+
+  const violationSummary = summarizeViolationCharge(violationByHouse.get(String(fee?.house_id || '')) || [], {
+    targetFeeId: fee.id,
+  })
+
   const penaltyPolicy = resolvePenaltyPolicyForFee(fee, cycleConfigByYear)
-  const updatePayload = buildOverdueUpdatePayload(fee, setup, penaltyPolicy)
+  const updatePayload = buildOverdueUpdatePayload(fee, setup, penaltyPolicy, { violationAmount: violationSummary.amount })
 
   if (!updatePayload) {
     throw new Error('ยังไม่ถึงเงื่อนไขการคำนวณค่าปรับ')
@@ -1036,13 +1167,14 @@ export async function calculateOverdueFeeCharges(feeId, setup) {
     .single()
 
   if (error) throw error
+  await assignViolationFineToFee(violationSummary.claimIds, fee.id)
   return data
 }
 
 export async function calculateOverdueFeesBulk({ year, setup } = {}) {
   let query = supabase
     .from('fees')
-    .select('id, year, period, status, due_date, fee_common, fee_overdue_common')
+    .select('id, house_id, year, period, status, due_date, fee_common, fee_overdue_common')
 
   if (year && year !== 'all') {
     query = query.eq('year', Number(year))
@@ -1051,7 +1183,10 @@ export async function calculateOverdueFeesBulk({ year, setup } = {}) {
   const { data, error } = await query
   if (error) throw error
 
-  const cycleConfigByYear = await preloadCycleConfigByYears((data || []).map((row) => row?.year), {})
+  const [cycleConfigByYear, violationByHouse] = await Promise.all([
+    preloadCycleConfigByYears((data || []).map((row) => row?.year), {}),
+    getClosedViolationsByHouseIds((data || []).map((row) => row?.house_id)),
+  ])
 
   let updated = 0
   let skippedPaid = 0
@@ -1068,8 +1203,12 @@ export async function calculateOverdueFeesBulk({ year, setup } = {}) {
       continue
     }
 
+    const violationSummary = summarizeViolationCharge(violationByHouse.get(String(fee?.house_id || '')) || [], {
+      targetFeeId: fee.id,
+    })
+
     const penaltyPolicy = resolvePenaltyPolicyForFee(fee, cycleConfigByYear)
-    const updatePayload = buildOverdueUpdatePayload(fee, setup, penaltyPolicy)
+    const updatePayload = buildOverdueUpdatePayload(fee, setup, penaltyPolicy, { violationAmount: violationSummary.amount })
     if (!updatePayload) {
       skippedNotDue += 1
       continue
@@ -1081,6 +1220,7 @@ export async function calculateOverdueFeesBulk({ year, setup } = {}) {
       .eq('id', fee.id)
 
     if (updateError) throw updateError
+    await assignViolationFineToFee(violationSummary.claimIds, fee.id)
     updated += 1
   }
 
@@ -1100,12 +1240,15 @@ export async function calculateOverdueFeesByIds({ feeIds, setup } = {}) {
 
   const { data, error } = await supabase
     .from('fees')
-    .select('id, year, period, status, due_date, fee_common, fee_overdue_common')
+    .select('id, house_id, year, period, status, due_date, fee_common, fee_overdue_common')
     .in('id', ids)
 
   if (error) throw error
 
-  const cycleConfigByYear = await preloadCycleConfigByYears((data || []).map((row) => row?.year), {})
+  const [cycleConfigByYear, violationByHouse] = await Promise.all([
+    preloadCycleConfigByYears((data || []).map((row) => row?.year), {}),
+    getClosedViolationsByHouseIds((data || []).map((row) => row?.house_id)),
+  ])
 
   let updated = 0
   let skippedPaid = 0
@@ -1122,8 +1265,12 @@ export async function calculateOverdueFeesByIds({ feeIds, setup } = {}) {
       continue
     }
 
+    const violationSummary = summarizeViolationCharge(violationByHouse.get(String(fee?.house_id || '')) || [], {
+      targetFeeId: fee.id,
+    })
+
     const penaltyPolicy = resolvePenaltyPolicyForFee(fee, cycleConfigByYear)
-    const updatePayload = buildOverdueUpdatePayload(fee, setup, penaltyPolicy)
+    const updatePayload = buildOverdueUpdatePayload(fee, setup, penaltyPolicy, { violationAmount: violationSummary.amount })
     if (!updatePayload) {
       skippedNotDue += 1
       continue
@@ -1135,6 +1282,7 @@ export async function calculateOverdueFeesByIds({ feeIds, setup } = {}) {
       .eq('id', fee.id)
 
     if (updateError) throw updateError
+    await assignViolationFineToFee(violationSummary.claimIds, fee.id)
     updated += 1
   }
 
@@ -1771,7 +1919,12 @@ export function summarizeFees(fees, payments) {
   }
 }
 
-function buildOverdueUpdatePayload(fee, setup, penaltyPolicy = { enabled: null, penaltyStartDate: null }) {
+function buildOverdueUpdatePayload(
+  fee,
+  setup,
+  penaltyPolicy = { enabled: null, penaltyStartDate: null },
+  { violationAmount = 0 } = {},
+) {
   const finePct = toAmount(setup?.overdue_fine_pct)
   const noticeFee = round2(toAmount(setup?.notice_fee))
 
@@ -1794,7 +1947,8 @@ function buildOverdueUpdatePayload(fee, setup, penaltyPolicy = { enabled: null, 
   const overdueFineCurrent = penaltyOver && currentBase > 0 ? round2(currentBase * (finePct / 100)) : 0
   const overdueNoticeCurrent = penaltyOver && currentBase > 0 ? noticeFee : 0
 
-  const hasAnyCharge = overdueFineCarry > 0 || overdueNoticeCarry > 0 || overdueFineCurrent > 0 || overdueNoticeCurrent > 0
+  const violationCharge = round2(toAmount(violationAmount))
+  const hasAnyCharge = overdueFineCarry > 0 || overdueNoticeCarry > 0 || overdueFineCurrent > 0 || overdueNoticeCurrent > 0 || violationCharge > 0
   if (!hasAnyCharge) return null
 
   return {
@@ -1803,5 +1957,6 @@ function buildOverdueUpdatePayload(fee, setup, penaltyPolicy = { enabled: null, 
     fee_overdue_notice: overdueNoticeCarry,
     fee_fine: overdueFineCurrent,
     fee_notice: overdueNoticeCurrent,
+    fee_violation: violationCharge,
   }
 }
