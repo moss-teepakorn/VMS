@@ -920,18 +920,18 @@ export async function calculateFullYearFeeByHouse({ houseId, year, setup }) {
     payload.fee_violation = round2(sumField('fee_violation'))
     payload.fee_other = round2(sumField('fee_other'))
     payload.note = 'รวมรายการจากใบแจ้งหนี้ครึ่งปีเป็นใบแจ้งหนี้เต็มปี (ไม่ใช้ส่วนลด)'
-
-    const transferSummary = summarizeViolationCharge(violationByHouse.get(String(houseId)) || [], {
-      targetFeeId: existingFullYear?.id || null,
-      transferFromFeeIds: halfYearRows.map((row) => row.id),
-    })
-    payload.fee_violation = transferSummary.amount
   }
+
+  const transferSummaryForFullYear = summarizeViolationCharge(violationByHouse.get(String(houseId)) || [], {
+    targetFeeId: existingFullYear?.id || null,
+    transferFromFeeIds: halfYearRows.map((row) => row.id),
+  })
+  payload.fee_violation = transferSummaryForFullYear.amount
 
   if (existingFullYear?.id) {
     const transferSummary = summarizeViolationCharge(violationByHouse.get(String(houseId)) || [], {
       targetFeeId: existingFullYear.id,
-      transferFromFeeIds: hasSecondHalf ? halfYearRows.map((row) => row.id) : [],
+      transferFromFeeIds: halfYearRows.map((row) => row.id),
     })
 
     payload.fee_violation = transferSummary.amount
@@ -967,7 +967,7 @@ export async function calculateFullYearFeeByHouse({ houseId, year, setup }) {
 
   const transferSummary = summarizeViolationCharge(violationByHouse.get(String(houseId)) || [], {
     targetFeeId: data?.id || null,
-    transferFromFeeIds: hasSecondHalf ? halfYearRows.map((row) => row.id) : [],
+    transferFromFeeIds: halfYearRows.map((row) => row.id),
   })
 
   await assignViolationFineToFee(transferSummary.claimIds, data?.id)
