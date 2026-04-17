@@ -1,5 +1,6 @@
 
 import React, { useState } from 'react';
+import { createPortal } from 'react-dom';
 import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
 import Swal from 'sweetalert2';
@@ -31,6 +32,31 @@ export default function ReportExportButtons({ columns, rows, filter, reportTitle
     popup.document.close()
     return popup
   }
+
+  const previewModal = showPreviewModal ? (
+    <div className="house-mo" style={{ zIndex: 130000 }}>
+      <div className="house-md house-md--xl" style={{ '--house-md-max-w': '1120px', '--house-md-max-h': 'calc(100dvh - 36px)' }}>
+        <div className="house-md-head">
+          <div>
+            <div className="house-md-title">🖨 {reportTitle}</div>
+            <div className="house-md-sub">ตรวจสอบตัวอย่างก่อนส่งออกหรือพิมพ์</div>
+          </div>
+        </div>
+        <div className="house-md-body" style={{ padding: 10, background: '#eef2f7' }}>
+          <div style={{ border: '1px solid var(--bo)', borderRadius: 10, overflow: 'hidden', background: '#fff', height: 'calc(100dvh - 220px)', minHeight: 420 }}>
+            <iframe title={reportTitle} srcDoc={previewHtml} style={{ width: '100%', height: '100%', border: 'none' }} />
+          </div>
+        </div>
+        <div className="house-md-foot">
+          <button className="btn btn-o" type="button" onClick={() => runPreviewAction('pdf')} disabled={runningAction}>{runningAction ? 'กำลังสร้างไฟล์...' : '⬇ PDF'}</button>
+          <button className="btn btn-o" type="button" onClick={() => runPreviewAction('image')} disabled={runningAction}>{runningAction ? 'กำลังสร้างไฟล์...' : '⬇ Image'}</button>
+          <button className="btn btn-p" type="button" onClick={() => runPreviewAction('excel')} disabled={runningAction}>📗 Excel</button>
+          <button className="btn btn-a" type="button" onClick={() => runPreviewAction('paper')} disabled={runningAction}>🖨 พิมพ์</button>
+          <button className="btn btn-g" type="button" onClick={() => { if (!runningAction) { setShowPreviewModal(false); setPreviewHtml('') } }} disabled={runningAction}>ปิด</button>
+        </div>
+      </div>
+    </div>
+  ) : null
 
   const renderReportInIframe = async (html) => {
     const iframe = document.createElement('iframe')
@@ -154,30 +180,7 @@ export default function ReportExportButtons({ columns, rows, filter, reportTitle
         🖨
       </button>
     </div>
-    {showPreviewModal && (
-      <div className="house-mo">
-        <div className="house-md house-md--xl" style={{ '--house-md-max-w': '1120px', '--house-md-max-h': 'calc(100dvh - 36px)' }}>
-          <div className="house-md-head">
-            <div>
-              <div className="house-md-title">🖨 {reportTitle}</div>
-              <div className="house-md-sub">ตรวจสอบตัวอย่างก่อนส่งออกหรือพิมพ์</div>
-            </div>
-          </div>
-          <div className="house-md-body" style={{ padding: 10, background: '#eef2f7' }}>
-            <div style={{ border: '1px solid var(--bo)', borderRadius: 10, overflow: 'hidden', background: '#fff', height: 'calc(100dvh - 220px)', minHeight: 420 }}>
-              <iframe title={reportTitle} srcDoc={previewHtml} style={{ width: '100%', height: '100%', border: 'none' }} />
-            </div>
-          </div>
-          <div className="house-md-foot">
-            <button className="btn btn-o" type="button" onClick={() => runPreviewAction('pdf')} disabled={runningAction}>{runningAction ? 'กำลังสร้างไฟล์...' : '⬇ PDF'}</button>
-            <button className="btn btn-o" type="button" onClick={() => runPreviewAction('image')} disabled={runningAction}>{runningAction ? 'กำลังสร้างไฟล์...' : '⬇ Image'}</button>
-            <button className="btn btn-p" type="button" onClick={() => runPreviewAction('excel')} disabled={runningAction}>📗 Excel</button>
-            <button className="btn btn-a" type="button" onClick={() => runPreviewAction('paper')} disabled={runningAction}>🖨 พิมพ์</button>
-            <button className="btn btn-g" type="button" onClick={() => { if (!runningAction) { setShowPreviewModal(false); setPreviewHtml('') } }} disabled={runningAction}>ปิด</button>
-          </div>
-        </div>
-      </div>
-    )}
+    {previewModal && (typeof document !== 'undefined' ? createPortal(previewModal, document.body) : previewModal)}
     </>
   );
 }
