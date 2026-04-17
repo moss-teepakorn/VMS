@@ -381,10 +381,11 @@ function summarizeViolationCharge(rows = [], { targetFeeId = null, transferFromF
     const fine = toAmount(row?.fine_amount)
     if (fine <= 0) continue
 
-    const billedAt = row?.fee_billed_at ? String(row.fee_billed_at) : ''
     const billedFeeId = row?.fee_billed_id ? String(row.fee_billed_id) : ''
 
-    if (!billedAt && !billedFeeId) {
+    // If fee_billed_id is missing, treat as unclaimed.
+    // This also covers rows that were previously linked to a fee that got deleted (ON DELETE SET NULL).
+    if (!billedFeeId) {
       claimRows.push(row)
       amount += fine
       continue
