@@ -664,7 +664,7 @@ export default function ResidentLayout() {
     const years = Object.keys(yearMap).sort((a, b) => Number(a) - Number(b)).slice(-5)
     if (years.length === 0) return
 
-    const labels = years.map((yr) => `ปี ${yr}`)
+    const labels = years.map((yr) => `ปี ${toBE(yr)}`)
     const dueData = years.map((yr) => yearMap[yr].billed)
     const paidData = years.map((yr) => yearMap[yr].paid)
 
@@ -838,10 +838,11 @@ export default function ResidentLayout() {
 
   function formatFeePeriodLabel(fee) {
     if (!fee) return '-'
-    if (fee.period === 'first_half') return `${fee.year || '-'} / 1`
-    if (fee.period === 'second_half') return `${fee.year || '-'} / 2`
-    if (fee.period === 'full_year') return `${fee.year || '-'} / ทั้งปี`
-    return [fee.year, fee.period].filter(Boolean).join(' / ') || '-'
+    const yearLabel = toBE(fee.year)
+    if (fee.period === 'first_half') return `${yearLabel} / 1`
+    if (fee.period === 'second_half') return `${yearLabel} / 2`
+    if (fee.period === 'full_year') return `${yearLabel} / ทั้งปี`
+    return [yearLabel, fee.period].filter(Boolean).join(' / ') || '-'
   }
 
   function periodLabel(period) {
@@ -867,7 +868,7 @@ export default function ResidentLayout() {
     if (Number.isNaN(date.getTime())) return '-'
     const d = String(date.getDate()).padStart(2, '0')
     const m = String(date.getMonth() + 1).padStart(2, '0')
-    const y = date.getFullYear()
+    const y = date.getFullYear() + 543
     return `${d}/${m}/${y}`
   }
 
@@ -3028,7 +3029,7 @@ export default function ResidentLayout() {
                 </StyledSelect>
                 <StyledSelect className="fee-toolbar-select" value={feeYearFilter} onChange={(e) => setFeeYearFilter(e.target.value)}>
                   <option value="all">ทุกปี</option>
-                  {feeYearOptions.map((year) => <option key={year} value={year}>{year}</option>)}
+                  {feeYearOptions.map((year) => <option key={year} value={year}>{toBE(year)}</option>)}
                 </StyledSelect>
                 <button className="btn btn-a btn-sm fee-toolbar-button" onClick={() => loadFeeData({ status: feeStatusFilter, year: feeYearFilter })}>🔍 ค้นหา</button>
               </div>
@@ -3626,7 +3627,7 @@ export default function ResidentLayout() {
                       <div key={rp.id} className="ann">
                         <div className="ann-dot ad-evt" />
                         <div style={{ flex: 1 }}>
-                          <div className="ann-t">รายงาน {monthName} {rp.year}</div>
+                          <div className="ann-t">รายงาน {monthName} {toBE(rp.year)}</div>
                           {rp.summary && <div className="ann-b">{rp.summary}</div>}
                           {attachments.length > 0 && (
                             <div className="ann-attachments">

@@ -1393,7 +1393,7 @@ export default function AdminPayments() {
                       <StyledSelect value={receiveForm.fee_id} onChange={(e) => handleChangeReceiveFee(e.target.value)}>
                         {feeOptions.map((fee) => (
                           <option key={fee.id} value={fee.id}>
-                            {fee.houses?.house_no || '-'} · {formatPeriod(fee.period)} {fee.year} · ยอดรวม ฿{Number(fee.total_amount || 0).toLocaleString('th-TH')}
+                            {fee.houses?.house_no || '-'} · {formatPeriod(fee.period)} {toBE(fee.year)} · ยอดรวม ฿{Number(fee.total_amount || 0).toLocaleString('th-TH')}
                           </option>
                         ))}
                       </StyledSelect>
