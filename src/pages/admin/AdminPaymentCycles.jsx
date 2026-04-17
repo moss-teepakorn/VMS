@@ -146,6 +146,8 @@ export default function AdminPaymentCycles() {
   const [frequency, setFrequency] = useState('half_yearly')
   const [yearBE, setYearBE] = useState(String(new Date().getFullYear() + 543))
   const [periods, setPeriods] = useState(() => templateFromFrequency('half_yearly', new Date().getFullYear()))
+  const [earlyFullYearDiscountPct, setEarlyFullYearDiscountPct] = useState('0')
+  const [earlyFullYearDiscountDeadline, setEarlyFullYearDiscountDeadline] = useState('')
 
   const yearCE = useMemo(() => toCE(yearBE), [yearBE])
 
@@ -169,11 +171,15 @@ export default function AdminPaymentCycles() {
       const config = await getPaymentCycleConfigByYear(yearCE)
       if (!config) {
         regenerateRows()
+        setEarlyFullYearDiscountPct('0')
+        setEarlyFullYearDiscountDeadline('')
         await Swal.fire({ icon: 'info', title: 'ยังไม่มีข้อมูลปีนี้', text: 'ระบบสร้างรายการตามรอบที่เลือกให้แล้ว' })
         return
       }
 
       setFrequency(config.frequency || 'half_yearly')
+      setEarlyFullYearDiscountPct(String(Number(config.early_full_year_discount_pct || 0)))
+      setEarlyFullYearDiscountDeadline(config.early_full_year_discount_deadline || '')
       setPeriods((config.periods || []).map((row) => ({
         seq_no: row.seq_no,
         period_label: row.period_label,
@@ -212,6 +218,11 @@ export default function AdminPaymentCycles() {
     if (!yearCE) return 'ปีไม่ถูกต้อง'
     if (!Array.isArray(periods) || periods.length === 0) return 'ไม่มีรายการรอบให้บันทึก'
 
+    const discountPct = Number(earlyFullYearDiscountPct || 0)
+    if (!Number.isFinite(discountPct) || discountPct < 0 || discountPct > 100) {
+      return 'เปอร์เซ็นต์ส่วนลดเต็มปีต้องอยู่ระหว่าง 0 ถึง 100'
+    }
+
     for (const row of periods) {
       if (!row.start_date || !row.end_date || !row.due_date) {
         return `กรุณากรอกวันที่ให้ครบใน ${row.period_label || `รอบที่ ${row.seq_no}`}`
@@ -241,6 +252,8 @@ export default function AdminPaymentCycles() {
         frequency,
         periods,
         profileId: profile?.id || null,
+        earlyFullYearDiscountPct: Number(earlyFullYearDiscountPct || 0),
+        earlyFullYearDiscountDeadline: earlyFullYearDiscountDeadline || null,
       })
       await Swal.fire({ icon: 'success', title: 'บันทึกสำเร็จ', text: 'บันทึกกำหนดรอบการชำระเรียบร้อยแล้ว', timer: 1300, showConfirmButton: false })
     } catch (error) {
@@ -281,6 +294,29 @@ export default function AdminPaymentCycles() {
             <button className="btn btn-a btn-sm" type="button" onClick={regenerateRows} disabled={loading || saving}>สร้างรายการตามรอบ</button>
             <button className="btn btn-g btn-sm" type="button" onClick={loadByYear} disabled={loading || saving}>{loading ? 'กำลังโหลด...' : 'โหลดจากปีนี้'}</button>
             <button className="btn btn-p btn-sm" type="button" onClick={handleSave} disabled={loading || saving}>{saving ? 'กำลังบันทึก...' : 'บันทึกกำหนดรอบ'}</button>
+          </div>
+          <div className="payment-cycles-filter-row" style={{ marginTop: 8 }}>
+            <label className="house-field" style={{ minWidth: 220 }}>
+              <span>ส่วนลดเต็มปี (%)</span>
+              <input
+                className="fi"
+                type="number"
+                min="0"
+                max="100"
+                step="0.01"
+                value={earlyFullYearDiscountPct}
+                onChange={(event) => setEarlyFullYearDiscountPct(event.target.value)}
+              />
+            </label>
+            <label className="house-field" style={{ minWidth: 240 }}>
+              <span>ชำระเต็มปีก่อนวันที่</span>
+              <input
+                className="fi"
+                type="date"
+                value={earlyFullYearDiscountDeadline}
+                onChange={(event) => setEarlyFullYearDiscountDeadline(event.target.value)}
+              />
+            </label>
           </div>
         </div>
       </div>

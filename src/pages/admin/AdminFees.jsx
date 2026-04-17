@@ -9,6 +9,7 @@ import { buildPeriodLabelMapFromCycle, getPaymentCycleConfigByYear } from '../..
 import villageLogo from '../../assets/village-logo.svg'
 import { resolveImageToDataUrl, DEFAULT_LOGO_DATAURL } from '../../lib/logoUtils'
 import {
+  cancelFullYearFeeByHouse,
   calculateFullYearFeeByHouse,
   calculateOverdueFeesByIds,
   calculateOverdueFeeCharges,
@@ -141,6 +142,10 @@ const AdminFees = () => {
   const [feeSubmittedTotals, setFeeSubmittedTotals] = useState({})
   const [feeApprovedTotals, setFeeApprovedTotals] = useState({})
   const [feeApprovedItemTotals, setFeeApprovedItemTotals] = useState({})
+  const [activeRowsPerPage, setActiveRowsPerPage] = useState('30')
+  const [activePage, setActivePage] = useState(1)
+  const [archiveRowsPerPage, setArchiveRowsPerPage] = useState('30')
+  const [archivePage, setArchivePage] = useState(1)
   const [paymentForm, setPaymentForm] = useState({
     payment_method: 'transfer',
     paid_at: new Date().toISOString().slice(0, 16),
@@ -407,10 +412,24 @@ const AdminFees = () => {
     && Number(feeApprovedTotals[item.id] || 0) > 0
   ))
 
+  const hasAnySubmittedPaymentInYearForHouse = (fee) => fees.some((item) => (
+    item.house_id === fee.house_id
+    && item.year === fee.year
+    && Number(feeSubmittedTotals[item.id] || 0) > 0
+  ))
+
   const canCalculateAnnualFee = (fee) => (
     fee?.period !== 'full_year'
     && fee?.status !== 'cancelled'
     && !isFeeFullyPaid(fee)
+    && !hasAnySubmittedPaymentInYearForHouse(fee)
+    && !hasAnyApprovedPaymentInYearForHouse(fee)
+  )
+
+  const canCancelAnnualFee = (fee) => (
+    fee?.period === 'full_year'
+    && fee?.status !== 'cancelled'
+    && !hasAnySubmittedPaymentInYearForHouse(fee)
     && !hasAnyApprovedPaymentInYearForHouse(fee)
   )
 
@@ -454,6 +473,48 @@ const AdminFees = () => {
     if (archiveFilter === 'cancelled') return fee.status === 'cancelled'
     return isFeeFullyPaid(fee) || fee.status === 'paid'
   }), [filteredFees, archiveFilter, feeApprovedTotals])
+
+  const pagedActiveFees = useMemo(() => {
+    if (activeRowsPerPage === 'all') return activeFees
+    const limit = Math.max(1, Number(activeRowsPerPage || 30))
+    const start = (activePage - 1) * limit
+    return activeFees.slice(start, start + limit)
+  }, [activeFees, activeRowsPerPage, activePage])
+
+  const activeTotalPages = useMemo(() => {
+    if (activeRowsPerPage === 'all') return 1
+    const limit = Math.max(1, Number(activeRowsPerPage || 30))
+    return Math.max(1, Math.ceil(activeFees.length / limit))
+  }, [activeFees.length, activeRowsPerPage])
+
+  const pagedArchiveFees = useMemo(() => {
+    if (archiveRowsPerPage === 'all') return archiveFees
+    const limit = Math.max(1, Number(archiveRowsPerPage || 30))
+    const start = (archivePage - 1) * limit
+    return archiveFees.slice(start, start + limit)
+  }, [archiveFees, archiveRowsPerPage, archivePage])
+
+  const archiveTotalPages = useMemo(() => {
+    if (archiveRowsPerPage === 'all') return 1
+    const limit = Math.max(1, Number(archiveRowsPerPage || 30))
+    return Math.max(1, Math.ceil(archiveFees.length / limit))
+  }, [archiveFees.length, archiveRowsPerPage])
+
+  useEffect(() => {
+    setActivePage(1)
+  }, [activeRowsPerPage, activeFees.length])
+
+  useEffect(() => {
+    setArchivePage(1)
+  }, [archiveRowsPerPage, archiveFees.length])
+
+  useEffect(() => {
+    setActivePage((prev) => Math.min(prev, activeTotalPages))
+  }, [activeTotalPages])
+
+  useEffect(() => {
+    setArchivePage((prev) => Math.min(prev, archiveTotalPages))
+  }, [archiveTotalPages])
 
   const handleOpenProcessModal = () => {
     setProcessForm({
@@ -610,6 +671,46 @@ const AdminFees = () => {
     } catch (error) {
       Swal.close()
       await Swal.fire({ icon: 'error', title: 'คำนวณทั้งปีไม่สำเร็จ', text: error.message })
+    }
+  }
+
+  const handleCancelAnnualCalculation = async (fee) => {
+    const confirm = await Swal.fire({
+      icon: 'warning',
+      title: 'ยกเลิกคำนวณทั้งปี?',
+      text: 'ระบบจะย้อนกลับเป็นครึ่งปีแรก และลบครึ่งปีหลังของปีเดียวกัน',
+      showCancelButton: true,
+      confirmButtonText: 'ยืนยันยกเลิก',
+      cancelButtonText: 'ปิด',
+      confirmButtonColor: '#b45309',
+    })
+    if (!confirm.isConfirmed) return
+
+    try {
+      Swal.fire({
+        title: 'กำลังยกเลิกคำนวณทั้งปี',
+        text: 'กรุณารอสักครู่',
+        allowOutsideClick: false,
+        allowEscapeKey: false,
+        didOpen: () => Swal.showLoading(),
+        showConfirmButton: false,
+      })
+      await cancelFullYearFeeByHouse({
+        houseId: fee.house_id,
+        year: fee.year,
+        setup,
+      })
+      Swal.close()
+      await Swal.fire({
+        icon: 'success',
+        title: 'ยกเลิกคำนวณทั้งปีแล้ว',
+        timer: 1300,
+        showConfirmButton: false,
+      })
+      await loadFeeData({ status: statusFilter, year: yearFilter })
+    } catch (error) {
+      Swal.close()
+      await Swal.fire({ icon: 'error', title: 'ยกเลิกไม่สำเร็จ', text: error.message })
     }
   }
 
@@ -1645,6 +1746,22 @@ const AdminFees = () => {
             </div>
           </div>
         </div>
+        <div className="cb" style={{ paddingTop: 0 }}>
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+            <span style={{ fontSize: 12, color: 'var(--mu)' }}>แสดง</span>
+            <StyledSelect value={activeRowsPerPage} onChange={(e) => setActiveRowsPerPage(e.target.value)}>
+              <option value="30">30 รายการ</option>
+              <option value="60">60 รายการ</option>
+              <option value="100">100 รายการ</option>
+              <option value="all">แสดงทั้งหมด</option>
+            </StyledSelect>
+            <div style={{ marginLeft: 'auto', display: 'flex', gap: 6, alignItems: 'center' }}>
+              <button className="btn btn-g btn-xs" type="button" onClick={() => setActivePage((prev) => Math.max(1, prev - 1))} disabled={activeRowsPerPage === 'all' || activePage <= 1}>ก่อนหน้า</button>
+              <span style={{ fontSize: 12, color: 'var(--mu)' }}>หน้า {activePage}/{activeTotalPages}</span>
+              <button className="btn btn-g btn-xs" type="button" onClick={() => setActivePage((prev) => Math.min(activeTotalPages, prev + 1))} disabled={activeRowsPerPage === 'all' || activePage >= activeTotalPages}>ถัดไป</button>
+            </div>
+          </div>
+        </div>
         <div className="cb houses-table-card-body houses-main-body">
           <div className="desktop-only">
             <div style={{ overflowX: 'auto' }}>
@@ -1668,7 +1785,7 @@ const AdminFees = () => {
                   ) : activeFees.length === 0 ? (
                     <tr><td colSpan="9" style={{ textAlign: 'center', color: 'var(--mu)', padding: '20px' }}>ไม่พบข้อมูลตามเงื่อนไขค้นหา</td></tr>
                   ) : (
-                    activeFees.map((fee) => {
+                    pagedActiveFees.map((fee) => {
                       const badge = getFeeStatusBadge(fee)
                       const outstanding = getOutstandingAmountForFee(fee)
                       return (
@@ -1687,6 +1804,7 @@ const AdminFees = () => {
                               {showLegacyBillingActions && <button className="btn btn-xs btn-g" onClick={() => handlePrintInvoiceByHouse(fee)}>พิมพ์</button>}
                               {showLegacyBillingActions && isNoticePrintable(fee) && <button className="btn btn-xs btn-o" onClick={() => handlePrintNoticeByHouse(fee)}>พิมพ์ใบเตือน</button>}
                               {canCalculateAnnualFee(fee) && <button className="btn btn-xs btn-o" onClick={() => handleCalculateAnnual(fee)}>คำนวณทั้งปี</button>}
+                              {canCancelAnnualFee(fee) && <button className="btn btn-xs btn-g" onClick={() => handleCancelAnnualCalculation(fee)}>ยกเลิกทั้งปี</button>}
                               {showLegacyBillingActions && !isFeeFullyPaid(fee) && <button className="btn btn-xs btn-dg" onClick={() => handleCalculateOverdue(fee)}>คำนวณค่าปรับ</button>}
                               <button className="btn btn-xs btn-dg" onClick={() => handleDeleteFee(fee)}>ลบ</button>
                             </div>
@@ -1704,7 +1822,7 @@ const AdminFees = () => {
               <div className="mcard-empty">กำลังโหลดข้อมูล...</div>
             ) : activeFees.length === 0 ? (
               <div className="mcard-empty">ยังไม่มีใบแจ้งหนี้</div>
-            ) : activeFees.map((fee) => {
+            ) : pagedActiveFees.map((fee) => {
               const badge = getFeeStatusBadge(fee)
               const outstanding = getOutstandingAmountForFee(fee)
               return (
@@ -1725,6 +1843,7 @@ const AdminFees = () => {
                     {showLegacyBillingActions && <button className="btn btn-xs btn-g" onClick={() => handlePrintInvoiceByHouse(fee)}>พิมพ์</button>}
                     {showLegacyBillingActions && isNoticePrintable(fee) && <button className="btn btn-xs btn-o" onClick={() => handlePrintNoticeByHouse(fee)}>ใบเตือน</button>}
                     {canCalculateAnnualFee(fee) && <button className="btn btn-xs btn-o" onClick={() => handleCalculateAnnual(fee)}>ทั้งปี</button>}
+                    {canCancelAnnualFee(fee) && <button className="btn btn-xs btn-g" onClick={() => handleCancelAnnualCalculation(fee)}>ยกเลิกทั้งปี</button>}
                     {showLegacyBillingActions && !isFeeFullyPaid(fee) && <button className="btn btn-xs btn-dg" onClick={() => handleCalculateOverdue(fee)}>ค่าปรับ</button>}
                     <button className="btn btn-xs btn-dg" onClick={() => handleDeleteFee(fee)}>ลบ</button>
                   </div>
@@ -1754,6 +1873,22 @@ const AdminFees = () => {
             })}
           </div>
         </div>
+        <div className="cb" style={{ paddingTop: 0 }}>
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+            <span style={{ fontSize: 12, color: 'var(--mu)' }}>แสดง</span>
+            <StyledSelect value={archiveRowsPerPage} onChange={(e) => setArchiveRowsPerPage(e.target.value)}>
+              <option value="30">30 รายการ</option>
+              <option value="60">60 รายการ</option>
+              <option value="100">100 รายการ</option>
+              <option value="all">แสดงทั้งหมด</option>
+            </StyledSelect>
+            <div style={{ marginLeft: 'auto', display: 'flex', gap: 6, alignItems: 'center' }}>
+              <button className="btn btn-g btn-xs" type="button" onClick={() => setArchivePage((prev) => Math.max(1, prev - 1))} disabled={archiveRowsPerPage === 'all' || archivePage <= 1}>ก่อนหน้า</button>
+              <span style={{ fontSize: 12, color: 'var(--mu)' }}>หน้า {archivePage}/{archiveTotalPages}</span>
+              <button className="btn btn-g btn-xs" type="button" onClick={() => setArchivePage((prev) => Math.min(archiveTotalPages, prev + 1))} disabled={archiveRowsPerPage === 'all' || archivePage >= archiveTotalPages}>ถัดไป</button>
+            </div>
+          </div>
+        </div>
         <div className="cb houses-table-card-body houses-main-body">
           <div className="desktop-only">
             <div style={{ overflowX: 'auto' }}>
@@ -1774,7 +1909,7 @@ const AdminFees = () => {
                   {archiveFees.length === 0 ? (
                     <tr><td colSpan="8" style={{ textAlign: 'center', color: 'var(--mu)', padding: '20px' }}>ยังไม่มีรายการ</td></tr>
                   ) : (
-                    archiveFees.map((fee) => {
+                    pagedArchiveFees.map((fee) => {
                       const badge = getFeeStatusBadge(fee)
                       return (
                       <tr key={fee.id}>
@@ -1801,7 +1936,7 @@ const AdminFees = () => {
           <div className="mobile-only">
             {archiveFees.length === 0 ? (
               <div className="mcard-empty">ยังไม่มีรายการ</div>
-            ) : archiveFees.map((fee) => {
+            ) : pagedArchiveFees.map((fee) => {
               const badge = getFeeStatusBadge(fee)
               return (
               <div key={fee.id} className="mcard">

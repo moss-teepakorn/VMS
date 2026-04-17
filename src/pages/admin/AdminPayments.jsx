@@ -337,6 +337,8 @@ export default function AdminPayments() {
   const [search, setSearch] = useState('')
   const [yearFilter, setYearFilter] = useState('all')
   const [periodFilter, setPeriodFilter] = useState('all')
+  const [rowsPerPage, setRowsPerPage] = useState('30')
+  const [page, setPage] = useState(1)
   const [showReceiveModal, setShowReceiveModal] = useState(false)
   const [savingReceive, setSavingReceive] = useState(false)
   const [uploadingSlip, setUploadingSlip] = useState(false)
@@ -547,6 +549,27 @@ export default function AdminPayments() {
       return compareHouseNo(a.houses?.house_no, b.houses?.house_no)
     })
   }, [filteredByYearPeriod, search])
+
+  const pagedPayments = useMemo(() => {
+    if (rowsPerPage === 'all') return filtered
+    const limit = Math.max(1, Number(rowsPerPage || 30))
+    const start = (page - 1) * limit
+    return filtered.slice(start, start + limit)
+  }, [filtered, rowsPerPage, page])
+
+  const totalPages = useMemo(() => {
+    if (rowsPerPage === 'all') return 1
+    const limit = Math.max(1, Number(rowsPerPage || 30))
+    return Math.max(1, Math.ceil(filtered.length / limit))
+  }, [filtered.length, rowsPerPage])
+
+  useEffect(() => {
+    setPage(1)
+  }, [rowsPerPage, filtered.length])
+
+  useEffect(() => {
+    setPage((prev) => Math.min(prev, totalPages))
+  }, [totalPages])
 
   const loadPayments = async () => {
     try {
@@ -1252,6 +1275,22 @@ export default function AdminPayments() {
             </div>
           </div>
         </div>
+        <div className="cb" style={{ paddingTop: 0 }}>
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+            <span style={{ fontSize: 12, color: 'var(--mu)' }}>แสดง</span>
+            <StyledSelect value={rowsPerPage} onChange={(e) => setRowsPerPage(e.target.value)}>
+              <option value="30">30 รายการ</option>
+              <option value="60">60 รายการ</option>
+              <option value="100">100 รายการ</option>
+              <option value="all">แสดงทั้งหมด</option>
+            </StyledSelect>
+            <div style={{ marginLeft: 'auto', display: 'flex', gap: 6, alignItems: 'center' }}>
+              <button className="btn btn-g btn-xs" type="button" onClick={() => setPage((prev) => Math.max(1, prev - 1))} disabled={rowsPerPage === 'all' || page <= 1}>ก่อนหน้า</button>
+              <span style={{ fontSize: 12, color: 'var(--mu)' }}>หน้า {page}/{totalPages}</span>
+              <button className="btn btn-g btn-xs" type="button" onClick={() => setPage((prev) => Math.min(totalPages, prev + 1))} disabled={rowsPerPage === 'all' || page >= totalPages}>ถัดไป</button>
+            </div>
+          </div>
+        </div>
         <div className="cb houses-table-card-body houses-main-body">
             <div className="houses-table-wrap houses-desktop-only payments-main-wrap">
               <table className="tw houses-table houses-main-table" style={{ width: '100%', tableLayout: 'fixed' }}>
@@ -1274,7 +1313,7 @@ export default function AdminPayments() {
                   ) : filtered.length === 0 ? (
                     <tr><td colSpan="9" style={{ textAlign: 'center', color: 'var(--mu)', padding: '20px' }}>ยังไม่มีรายการชำระเงิน</td></tr>
                   ) : (
-                    filtered.map((payment) => {
+                    pagedPayments.map((payment) => {
                       const badge = getStatusBadge(payment)
                       return (
                       <tr key={payment.id}>
@@ -1306,7 +1345,7 @@ export default function AdminPayments() {
               <div className="mcard-empty">กำลังโหลดข้อมูล...</div>
             ) : filtered.length === 0 ? (
               <div className="mcard-empty">ยังไม่มีรายการชำระเงิน</div>
-            ) : filtered.map((payment) => {
+            ) : pagedPayments.map((payment) => {
               const badge = getStatusBadge(payment)
               return (
               <div key={payment.id} className="houses-mcard">

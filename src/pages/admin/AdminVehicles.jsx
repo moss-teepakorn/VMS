@@ -167,6 +167,29 @@ const AdminVehicles = () => {
   const [form, setForm] = useState(EMPTY_FORM)
   const [attachments, setAttachments] = useState([])
   const [removedImagePaths, setRemovedImagePaths] = useState([])
+  const [rowsPerPage, setRowsPerPage] = useState('30')
+  const [page, setPage] = useState(1)
+
+  const pagedVehicles = useMemo(() => {
+    if (rowsPerPage === 'all') return vehicles
+    const limit = Math.max(1, Number(rowsPerPage || 30))
+    const start = (page - 1) * limit
+    return vehicles.slice(start, start + limit)
+  }, [vehicles, rowsPerPage, page])
+
+  const totalPages = useMemo(() => {
+    if (rowsPerPage === 'all') return 1
+    const limit = Math.max(1, Number(rowsPerPage || 30))
+    return Math.max(1, Math.ceil(vehicles.length / limit))
+  }, [vehicles.length, rowsPerPage])
+
+  useEffect(() => {
+    setPage(1)
+  }, [rowsPerPage, vehicles.length])
+
+  useEffect(() => {
+    setPage((prev) => Math.min(prev, totalPages))
+  }, [totalPages])
 
   const parsePlate = (plate) => {
     const [prefix = '', number = ''] = String(plate || '').split('-')
@@ -883,6 +906,28 @@ const AdminVehicles = () => {
             <button className="btn btn-g btn-sm" onClick={() => loadVehicles({ status: statusFilter, search: searchTerm, soi: soiFilter, vehicleType: vehicleTypeFilter })}>🔄 รีเฟรช</button>
           </div>
         </div>
+        <div className="cb" style={{ paddingTop: 0 }}>
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+            <span style={{ fontSize: 12, color: 'var(--mu)' }}>แสดง</span>
+            <DropdownList
+              compact
+              value={rowsPerPage}
+              options={[
+                { value: '30', label: '30 รายการ' },
+                { value: '60', label: '60 รายการ' },
+                { value: '100', label: '100 รายการ' },
+                { value: 'all', label: 'แสดงทั้งหมด' },
+              ]}
+              onChange={setRowsPerPage}
+              placeholder="จำนวนรายการ"
+            />
+            <div style={{ marginLeft: 'auto', display: 'flex', gap: 6, alignItems: 'center' }}>
+              <button className="btn btn-g btn-xs" type="button" onClick={() => setPage((prev) => Math.max(1, prev - 1))} disabled={rowsPerPage === 'all' || page <= 1}>ก่อนหน้า</button>
+              <span style={{ fontSize: 12, color: 'var(--mu)' }}>หน้า {page}/{totalPages}</span>
+              <button className="btn btn-g btn-xs" type="button" onClick={() => setPage((prev) => Math.min(totalPages, prev + 1))} disabled={rowsPerPage === 'all' || page >= totalPages}>ถัดไป</button>
+            </div>
+          </div>
+        </div>
         <div className="cb houses-table-card-body houses-main-body vehicles-page-table-body">
           <div className="desktop-only">
             <div className="houses-main-wrap" style={{ overflowX: 'auto' }}>
@@ -905,7 +950,7 @@ const AdminVehicles = () => {
                   ) : vehicles.length === 0 ? (
                     <tr><td colSpan="10" style={{ textAlign: 'center', color: 'var(--mu)', padding: '20px' }}>ไม่พบข้อมูลรถ</td></tr>
                   ) : (
-                    vehicles.map((vehicle) => {
+                    pagedVehicles.map((vehicle) => {
                       const badge = getStatusBadge(vehicle.status)
                       return (
                         <tr key={vehicle.id}>
@@ -938,7 +983,7 @@ const AdminVehicles = () => {
               <div className="mcard-empty">กำลังโหลดข้อมูล...</div>
             ) : vehicles.length === 0 ? (
               <div className="mcard-empty">ไม่พบข้อมูลรถ</div>
-            ) : vehicles.map((vehicle) => {
+            ) : pagedVehicles.map((vehicle) => {
               const badge = getStatusBadge(vehicle.status)
               return (
                 <div key={vehicle.id} className="mcard vehicles-mcard">

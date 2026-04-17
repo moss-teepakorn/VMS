@@ -93,7 +93,14 @@ export function buildPeriodOptionsFromCycle(cycleConfig, {
   return options
 }
 
-export async function savePaymentCycleConfig({ yearCE, frequency, periods, profileId = null }) {
+export async function savePaymentCycleConfig({
+  yearCE,
+  frequency,
+  periods,
+  profileId = null,
+  earlyFullYearDiscountPct = 0,
+  earlyFullYearDiscountDeadline = null,
+}) {
   const targetYear = toNumber(yearCE, 0)
   if (!targetYear) throw new Error('ปีไม่ถูกต้อง')
   if (!Array.isArray(periods) || periods.length === 0) {
@@ -104,6 +111,8 @@ export async function savePaymentCycleConfig({ yearCE, frequency, periods, profi
     year_ce: targetYear,
     frequency,
     is_active: true,
+    early_full_year_discount_pct: Math.max(0, toNumber(earlyFullYearDiscountPct, 0)),
+    early_full_year_discount_deadline: toIsoDate(earlyFullYearDiscountDeadline),
     updated_by_id: profileId || null,
     updated_at: new Date().toISOString(),
   }

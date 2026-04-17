@@ -156,6 +156,42 @@ function round2(value) {
   return Math.round(toAmount(value) * 100) / 100
 }
 
+function extractDiscountFromNote(note) {
+  const raw = String(note || '')
+  const match = raw.match(/^\[DISCOUNT:([0-9]+(?:\.[0-9]+)?)\]\s*/)
+  return match ? toAmount(match[1]) : 0
+}
+
+function stripDiscountTag(note) {
+  return String(note || '').replace(/^\[DISCOUNT:[0-9]+(?:\.[0-9]+)?\]\s*/, '').trim()
+}
+
+function isAfterDateOnly(dateText, now = new Date()) {
+  if (!dateText) return false
+  const endOfDay = new Date(`${dateText}T23:59:59`)
+  if (Number.isNaN(endOfDay.getTime())) return false
+  return now > endOfDay
+}
+
+function resolveFullYearDiscountPolicy(cycleConfig, setup) {
+  const configPct = toAmount(cycleConfig?.early_full_year_discount_pct)
+  const setupPct = toAmount(setup?.early_pay_discount_pct)
+  const pct = configPct > 0 ? configPct : setupPct
+  return {
+    discountPct: pct,
+    deadlineDate: String(cycleConfig?.early_full_year_discount_deadline || '').trim() || null,
+  }
+}
+
+function shouldInvalidateFullYearDiscount(fee, cycleConfig, { now = new Date() } = {}) {
+  if (!fee || fee.period !== 'full_year') return false
+  const discountAmount = extractDiscountFromNote(fee.note)
+  if (discountAmount <= 0) return false
+  const deadlineDate = String(cycleConfig?.early_full_year_discount_deadline || '').trim()
+  if (!deadlineDate) return false
+  return isAfterDateOnly(deadlineDate, now)
+}
+
 function halfYearDates(yearCE, period) {
   if (period === 'first_half') {
     return {
@@ -175,7 +211,7 @@ async function getPaymentCycleConfigByYearCE(yearCE) {
 
   const { data: config, error: configError } = await supabase
     .from('payment_cycle_configs')
-    .select('id, year_ce, frequency, is_active')
+    .select('id, year_ce, frequency, is_active, early_full_year_discount_pct, early_full_year_discount_deadline')
     .eq('year_ce', targetYear)
     .maybeSingle()
 
@@ -228,7 +264,7 @@ async function preloadCycleConfigByYears(years = [], cycleConfigByYear = {}) {
 
   const { data: configs, error: configError } = await supabase
     .from('payment_cycle_configs')
-    .select('id, year_ce, frequency, is_active')
+    .select('id, year_ce, frequency, is_active, early_full_year_discount_pct, early_full_year_discount_deadline')
     .in('year_ce', missingYears)
 
   if (configError) throw configError
@@ -693,7 +729,11 @@ export async function calculateFullYearFeeByHouse({ houseId, year, setup }) {
 
   const ratePerSqw = toAmount(setup?.fee_rate_per_sqw)
   const wastePerPeriod = toAmount(setup?.waste_fee_per_period)
-  const discountPct = toAmount(setup?.early_pay_discount_pct)
+  const cycleConfig = await getPaymentCycleConfigByYearCE(yearCE)
+  const fullYearPolicy = resolveFullYearDiscountPolicy(cycleConfig, setup)
+  const discountPct = isAfterDateOnly(fullYearPolicy.deadlineDate)
+    ? 0
+    : toAmount(fullYearPolicy.discountPct)
 
   const [houseResp, parkingByHouseResp, yearFeesResp] = await Promise.all([
     supabase.from('houses').select('id, area_sqw').eq('id', houseId).single(),
@@ -739,6 +779,12 @@ export async function calculateFullYearFeeByHouse({ houseId, year, setup }) {
   // Store fee_common as the FULL (pre-discount) amount and put the discount as a negative fee_other.
   // This follows the same [DISCOUNT:x] note pattern used by the edit modal, so when the admin
   // opens the edit form they see the discount properly in the "ส่วนลด" field.
+  const discountNote = discountAmount > 0
+    ? `[DISCOUNT:${discountAmount}] คำนวณทั้งปี ลดเฉพาะค่าส่วนกลาง ${discountPct}%`
+    : fullYearPolicy.deadlineDate
+      ? `คำนวณทั้งปี (ไม่ใช้ส่วนลด: เกินกำหนด ${fullYearPolicy.deadlineDate})`
+      : 'คำนวณทั้งปี (ไม่ใช้ส่วนลด)'
+
   const payload = {
     house_id: houseId,
     year: yearCE,
@@ -756,7 +802,7 @@ export async function calculateFullYearFeeByHouse({ houseId, year, setup }) {
     fee_notice: 0,
     fee_violation: 0,
     fee_other: round2(-discountAmount),
-    note: `[DISCOUNT:${discountAmount}] คำนวณทั้งปี ลดเฉพาะค่าส่วนกลาง ${discountPct}%`,
+    note: discountNote,
   }
 
   if (hasSecondHalf) {
@@ -810,6 +856,151 @@ export async function calculateFullYearFeeByHouse({ houseId, year, setup }) {
   }
 
   return data
+}
+
+export async function expireDiscountForFeesBeforePrint(fees = []) {
+  const targetFees = Array.isArray(fees) ? fees : []
+  const fullYearRows = targetFees.filter((row) => row?.period === 'full_year')
+  if (fullYearRows.length === 0) return { updatedIds: [], updatedById: {} }
+
+  const years = [...new Set(fullYearRows.map((row) => Number(row?.year || 0)).filter((year) => year > 0))]
+  const cycleConfigByYear = await preloadCycleConfigByYears(years, {})
+
+  const updatedIds = []
+  const updatedById = {}
+  const now = new Date()
+
+  for (const fee of fullYearRows) {
+    const cycleConfig = cycleConfigByYear[String(fee.year)]
+    if (!shouldInvalidateFullYearDiscount(fee, cycleConfig, { now })) continue
+
+    const discountAmount = extractDiscountFromNote(fee.note)
+    if (discountAmount <= 0) continue
+
+    const nextFeeOther = round2(toAmount(fee.fee_other) + discountAmount)
+    const nextNote = stripDiscountTag(fee.note) || null
+
+    const { data: updated, error } = await supabase
+      .from('fees')
+      .update({
+        fee_other: nextFeeOther,
+        note: nextNote,
+      })
+      .eq('id', fee.id)
+      .select('id, house_id, year, period, invoice_date, due_date, status, fee_common, fee_parking, fee_waste, fee_overdue_common, fee_overdue_fine, fee_overdue_notice, fee_fine, fee_notice, fee_violation, fee_other, total_amount, note, created_at, houses(id, house_no, soi, owner_name, area_sqw, fee_rate)')
+      .single()
+
+    if (error) throw error
+    updatedIds.push(fee.id)
+    updatedById[fee.id] = updated
+  }
+
+  return { updatedIds, updatedById }
+}
+
+export async function cancelFullYearFeeByHouse({ houseId, year, setup }) {
+  const yearCE = toGregorianYear(year)
+  if (!houseId) throw new Error('ไม่พบบ้าน')
+  if (!yearCE) throw new Error('ปีไม่ถูกต้อง')
+
+  const [yearFeesResp, houseResp, parkingByHouse] = await Promise.all([
+    supabase
+      .from('fees')
+      .select('id, period, status')
+      .eq('house_id', houseId)
+      .eq('year', yearCE)
+      .in('period', ['first_half', 'second_half', 'full_year']),
+    supabase.from('houses').select('id, area_sqw').eq('id', houseId).single(),
+    getParkingMonthlyByHouse(),
+  ])
+
+  if (yearFeesResp.error) throw yearFeesResp.error
+  if (houseResp.error) throw houseResp.error
+
+  const yearFees = yearFeesResp.data || []
+  const fullYearFee = yearFees.find((row) => row.period === 'full_year')
+  if (!fullYearFee) throw new Error('ไม่พบใบแจ้งหนี้เต็มปีสำหรับบ้านนี้')
+
+  const feeIdsToCheck = yearFees.map((row) => row.id)
+  if (feeIdsToCheck.length > 0) {
+    const { data: payments, error: paymentError } = await supabase
+      .from('payments')
+      .select('id')
+      .in('fee_id', feeIdsToCheck)
+      .gt('amount', 0)
+      .limit(1)
+
+    if (paymentError) throw paymentError
+    if ((payments || []).length > 0) {
+      throw new Error('มีรายการชำระแล้วหรือชำระบางส่วน ไม่สามารถยกเลิกคำนวณทั้งปีได้')
+    }
+  }
+
+  const existingFirstHalf = yearFees.find((row) => row.period === 'first_half')
+  const existingSecondHalf = yearFees.find((row) => row.period === 'second_half')
+  const cycleConfig = await getPaymentCycleConfigByYearCE(yearCE)
+  const firstHalfDates = resolveHalfYearDatesFromCycle(yearCE, 'first_half', cycleConfig)
+
+  const area = toAmount(houseResp.data?.area_sqw)
+  const parkingMonthly = toAmount(parkingByHouse.get(houseId))
+  const feeRatePerSqw = toAmount(setup?.fee_rate_per_sqw)
+  const wastePerPeriod = toAmount(setup?.waste_fee_per_period)
+
+  const firstHalfPayload = {
+    house_id: houseId,
+    year: yearCE,
+    period: 'first_half',
+    invoice_date: firstHalfDates.invoice_date,
+    due_date: firstHalfDates.due_date,
+    status: 'unpaid',
+    fee_common: round2(area * 6 * feeRatePerSqw),
+    fee_parking: round2(parkingMonthly * 6),
+    fee_waste: round2(wastePerPeriod),
+    fee_overdue_common: 0,
+    fee_overdue_fine: 0,
+    fee_overdue_notice: 0,
+    fee_fine: 0,
+    fee_notice: 0,
+    fee_violation: 0,
+    fee_other: 0,
+    note: 'ยกเลิกคำนวณทั้งปี: กลับมาเป็นครึ่งปีแรก',
+  }
+
+  if (existingFirstHalf?.id) {
+    const { error: updateFirstError } = await supabase
+      .from('fees')
+      .update(firstHalfPayload)
+      .eq('id', existingFirstHalf.id)
+    if (updateFirstError) throw updateFirstError
+  } else {
+    const { error: insertFirstError } = await supabase
+      .from('fees')
+      .insert([firstHalfPayload])
+    if (insertFirstError) throw insertFirstError
+  }
+
+  if (existingSecondHalf?.id) {
+    const { error: deleteSecondError } = await supabase
+      .from('fees')
+      .delete()
+      .eq('id', existingSecondHalf.id)
+    if (deleteSecondError) throw deleteSecondError
+  }
+
+  const { error: deleteFullYearError } = await supabase
+    .from('fees')
+    .delete()
+    .eq('id', fullYearFee.id)
+
+  if (deleteFullYearError) throw deleteFullYearError
+
+  return {
+    yearCE,
+    houseId,
+    removedFullYearFeeId: fullYearFee.id,
+    removedSecondHalfFeeId: existingSecondHalf?.id || null,
+    reusedFirstHalfFeeId: existingFirstHalf?.id || null,
+  }
 }
 
 export async function calculateOverdueFeeCharges(feeId, setup) {

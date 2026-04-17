@@ -12,7 +12,7 @@ import {
   residentUpdateViolation,
   uploadViolationImages,
 } from '../../lib/violations'
-import { createPayment, listHouseFees, listHousePayments, uploadPaymentSlip } from '../../lib/fees'
+import { createPayment, expireDiscountForFeesBeforePrint, listHouseFees, listHousePayments, uploadPaymentSlip } from '../../lib/fees'
 import { listAnnouncements } from '../../lib/announcements'
 import { listWorkReports } from '../../lib/workReports'
 import { listTechnicians } from '../../lib/technicians'
@@ -1363,9 +1363,15 @@ export default function ResidentLayout() {
     }
   }
 
-  function handlePrintInvoice(fee) {
+  async function handlePrintInvoice(fee) {
+    const { updatedById } = await expireDiscountForFeesBeforePrint([fee]).catch(() => ({ updatedById: {} }))
+    const effectiveFee = updatedById?.[fee?.id] || fee
+    if (updatedById?.[fee?.id]) {
+      setFees((prev) => prev.map((row) => (row.id === effectiveFee.id ? effectiveFee : row)))
+      setAllFees((prev) => prev.map((row) => (row.id === effectiveFee.id ? effectiveFee : row)))
+    }
     const invoiceNo = `INV-${String(fee?.year || '').slice(-2)}-${String(fee?.id || '').slice(0, 8).toUpperCase()}`
-    const html = buildResidentInvoiceHtml(fee)
+    const html = buildResidentInvoiceHtml(effectiveFee)
     openPrintPreviewModal({
       html,
       title: `ใบแจ้งหนี้ ${invoiceNo}`,

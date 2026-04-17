@@ -5,7 +5,7 @@ import { jsPDF } from 'jspdf'
 import Swal from 'sweetalert2'
 import { getSystemConfig } from '../../lib/systemConfig'
 import { buildPeriodLabelMapFromCycle, buildPeriodOptionsFromCycle, getPaymentCycleConfigByYear } from '../../lib/paymentCycles'
-import { listApprovedPaymentItemTotalsByFeeIds, listPaymentTotalsByFeeIds, listFees } from '../../lib/fees'
+import { expireDiscountForFeesBeforePrint, listApprovedPaymentItemTotalsByFeeIds, listPaymentTotalsByFeeIds, listFees } from '../../lib/fees'
 import { resolveImageToDataUrl, DEFAULT_LOGO_DATAURL } from '../../lib/logoUtils'
 
 function periodLabel(period) {
@@ -84,6 +84,8 @@ export default function AdminFeesPrintInvoices() {
   const [showPrintPreviewModal, setShowPrintPreviewModal] = useState(false)
   const [printPreviewHtml, setPrintPreviewHtml] = useState('')
   const [printPreviewTitle, setPrintPreviewTitle] = useState('เอกสารสำหรับพิมพ์')
+  const [rowsPerPage, setRowsPerPage] = useState('30')
+  const [page, setPage] = useState(1)
   const [filters, setFilters] = useState({
     yearBE: String(new Date().getFullYear() + 543),
     period: 'first_half',
@@ -167,6 +169,27 @@ export default function AdminFeesPrintInvoices() {
     const selectedSet = new Set(selectedIds)
     return fees.filter((fee) => selectedSet.has(fee.id))
   }, [fees, selectedIds])
+
+  const pagedFees = useMemo(() => {
+    if (rowsPerPage === 'all') return fees
+    const limit = Math.max(1, Number(rowsPerPage || 30))
+    const start = (page - 1) * limit
+    return fees.slice(start, start + limit)
+  }, [fees, rowsPerPage, page])
+
+  const totalPages = useMemo(() => {
+    if (rowsPerPage === 'all') return 1
+    const limit = Math.max(1, Number(rowsPerPage || 30))
+    return Math.max(1, Math.ceil(fees.length / limit))
+  }, [fees.length, rowsPerPage])
+
+  useEffect(() => {
+    setPage(1)
+  }, [rowsPerPage, fees.length])
+
+  useEffect(() => {
+    setPage((prev) => Math.min(prev, totalPages))
+  }, [totalPages])
 
   const allChecked = fees.length > 0 && selectedIds.length === fees.length
 
@@ -622,11 +645,16 @@ export default function AdminFeesPrintInvoices() {
 
     try {
       setRunningPrintAction(true)
+      const { updatedById } = await expireDiscountForFeesBeforePrint(selectedFees)
+      const effectiveFees = selectedFees.map((fee) => updatedById[fee.id] || fee)
+      if (Object.keys(updatedById || {}).length > 0) {
+        setFees((prev) => prev.map((fee) => updatedById[fee.id] || fee))
+      }
       const title = printPreviewTitle || `ใบแจ้งหนี้ค่าส่วนกลาง ${filters.yearBE} ${resolvePeriodLabel(filters.period)}`
 
       if (mode === 'image' || mode === 'pdf') {
-        const expectedSheets = selectedFees.length * 2
-        const html = await buildInvoiceHtml(selectedFees, title, {
+        const expectedSheets = effectiveFees.length * 2
+        const html = await buildInvoiceHtml(effectiveFees, title, {
           autoPrint: false,
           forCapture: true,
         })
@@ -670,7 +698,7 @@ export default function AdminFeesPrintInvoices() {
         return
       }
 
-      const html = await buildInvoiceHtml(selectedFees, title, {
+      const html = await buildInvoiceHtml(effectiveFees, title, {
         autoPrint: true,
       })
       const w = openHtmlInWindow(html)
@@ -694,8 +722,13 @@ export default function AdminFeesPrintInvoices() {
 
     try {
       setRunningPrintAction(true)
+      const { updatedById } = await expireDiscountForFeesBeforePrint(selectedFees)
+      const effectiveFees = selectedFees.map((fee) => updatedById[fee.id] || fee)
+      if (Object.keys(updatedById || {}).length > 0) {
+        setFees((prev) => prev.map((fee) => updatedById[fee.id] || fee))
+      }
       const title = `ใบแจ้งหนี้ค่าส่วนกลาง ${filters.yearBE} ${resolvePeriodLabel(filters.period)}`
-      const html = await buildInvoiceHtml(selectedFees, title, {
+      const html = await buildInvoiceHtml(effectiveFees, title, {
         autoPrint: false,
       })
       setPrintPreviewTitle(title)
@@ -777,6 +810,22 @@ export default function AdminFeesPrintInvoices() {
         <div className="ch houses-list-head houses-main-head">
           <div className="ct">ผลลัพธ์ ({fees.length}) | เลือกแล้ว {selectedFees.length}</div>
         </div>
+        <div className="cb" style={{ paddingTop: 0 }}>
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+            <span style={{ fontSize: 12, color: 'var(--mu)' }}>แสดง</span>
+            <StyledSelect value={rowsPerPage} onChange={(e) => setRowsPerPage(e.target.value)}>
+              <option value="30">30 รายการ</option>
+              <option value="60">60 รายการ</option>
+              <option value="100">100 รายการ</option>
+              <option value="all">แสดงทั้งหมด</option>
+            </StyledSelect>
+            <div style={{ marginLeft: 'auto', display: 'flex', gap: 6, alignItems: 'center' }}>
+              <button className="btn btn-g btn-xs" type="button" onClick={() => setPage((prev) => Math.max(1, prev - 1))} disabled={rowsPerPage === 'all' || page <= 1}>ก่อนหน้า</button>
+              <span style={{ fontSize: 12, color: 'var(--mu)' }}>หน้า {page}/{totalPages}</span>
+              <button className="btn btn-g btn-xs" type="button" onClick={() => setPage((prev) => Math.min(totalPages, prev + 1))} disabled={rowsPerPage === 'all' || page >= totalPages}>ถัดไป</button>
+            </div>
+          </div>
+        </div>
         <div className="cb houses-table-card-body houses-main-body">
           <div className="houses-desktop-only" style={{ overflowX: 'auto' }}>
             <table className="tw houses-table houses-main-table" style={{ width: '100%' }}>
@@ -800,7 +849,7 @@ export default function AdminFeesPrintInvoices() {
                   <tr><td colSpan="9" style={{ textAlign: 'center', color: 'var(--mu)', padding: '20px' }}>กำลังโหลดข้อมูล...</td></tr>
                 ) : fees.length === 0 ? (
                   <tr><td colSpan="9" style={{ textAlign: 'center', color: 'var(--mu)', padding: '20px' }}>ไม่พบข้อมูลตามเงื่อนไข</td></tr>
-                ) : fees.map((fee) => {
+                ) : pagedFees.map((fee) => {
                   const selected = selectedIds.includes(fee.id)
                   const statusBadge = getFeeStatusBadge(fee)
                   return (
@@ -830,7 +879,7 @@ export default function AdminFeesPrintInvoices() {
               <div className="houses-card-empty">กำลังโหลดข้อมูล...</div>
             ) : fees.length === 0 ? (
               <div className="houses-card-empty">ไม่พบข้อมูลตามเงื่อนไข</div>
-            ) : fees.map((fee) => {
+            ) : pagedFees.map((fee) => {
               const selected = selectedIds.includes(fee.id)
               const statusBadge = getFeeStatusBadge(fee)
               return (

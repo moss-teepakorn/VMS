@@ -137,6 +137,29 @@ const AdminHouses = () => {
   const [editingHouse, setEditingHouse] = useState(null)
   const [form, setForm] = useState(EMPTY_FORM)
   const [setup, setSetup] = useState({ feeRatePerSqw: 85, villageName: 'The Greenfield' })
+  const [rowsPerPage, setRowsPerPage] = useState('30')
+  const [page, setPage] = useState(1)
+
+  const pagedHouses = useMemo(() => {
+    if (rowsPerPage === 'all') return houses
+    const limit = Math.max(1, Number(rowsPerPage || 30))
+    const start = (page - 1) * limit
+    return houses.slice(start, start + limit)
+  }, [houses, rowsPerPage, page])
+
+  const totalPages = useMemo(() => {
+    if (rowsPerPage === 'all') return 1
+    const limit = Math.max(1, Number(rowsPerPage || 30))
+    return Math.max(1, Math.ceil(houses.length / limit))
+  }, [houses.length, rowsPerPage])
+
+  useEffect(() => {
+    setPage(1)
+  }, [rowsPerPage, houses.length])
+
+  useEffect(() => {
+    setPage((prev) => Math.min(prev, totalPages))
+  }, [totalPages])
 
   const normalizeKey = (value) => String(value || '').trim().toLowerCase().replace(/[_\-]/g, ' ').replace(/\s+/g, ' ')
 
@@ -571,6 +594,28 @@ const AdminHouses = () => {
             <button className="btn btn-g btn-sm" onClick={() => loadHouses()}>🔄 รีเฟรช</button>
           </div>
         </div>
+        <div className="cb" style={{ paddingTop: 0 }}>
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+            <span style={{ fontSize: 12, color: 'var(--mu)' }}>แสดง</span>
+            <DropdownList
+              compact
+              value={rowsPerPage}
+              options={[
+                { value: '30', label: '30 รายการ' },
+                { value: '60', label: '60 รายการ' },
+                { value: '100', label: '100 รายการ' },
+                { value: 'all', label: 'แสดงทั้งหมด' },
+              ]}
+              onChange={setRowsPerPage}
+              placeholder="จำนวนรายการ"
+            />
+            <div style={{ marginLeft: 'auto', display: 'flex', gap: 6, alignItems: 'center' }}>
+              <button className="btn btn-g btn-xs" type="button" onClick={() => setPage((prev) => Math.max(1, prev - 1))} disabled={rowsPerPage === 'all' || page <= 1}>ก่อนหน้า</button>
+              <span style={{ fontSize: 12, color: 'var(--mu)' }}>หน้า {page}/{totalPages}</span>
+              <button className="btn btn-g btn-xs" type="button" onClick={() => setPage((prev) => Math.min(totalPages, prev + 1))} disabled={rowsPerPage === 'all' || page >= totalPages}>ถัดไป</button>
+            </div>
+          </div>
+        </div>
         <div className="cb houses-table-card-body houses-main-body">
           {/* Desktop Table */}
           <div className="houses-table-wrap houses-desktop-only houses-main-wrap">
@@ -596,7 +641,7 @@ const AdminHouses = () => {
                 ) : houses.length === 0 ? (
                   <tr><td colSpan="11" style={{ textAlign: 'center', color: 'var(--mu)', padding: '20px' }}>ไม่พบข้อมูลบ้าน</td></tr>
                 ) : (
-                  houses.map((house) => {
+                  pagedHouses.map((house) => {
                     const badge = getStatusBadge(house.status)
                     const annualFee = formatDecimal(house.annual_fee)
                     return (
@@ -632,7 +677,7 @@ const AdminHouses = () => {
             ) : houses.length === 0 ? (
               <div className="houses-card-empty">ไม่พบข้อมูลบ้าน</div>
             ) : (
-              houses.map((house) => {
+              pagedHouses.map((house) => {
                 const badge = getStatusBadge(house.status)
                 const annualFee = formatDecimal(house.annual_fee)
                 return (
