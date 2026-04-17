@@ -126,6 +126,16 @@ function getPaymentItemRows(payment) {
   return [{ key: 'paid_total', label: 'ยอดชำระที่บันทึก', dueAmount: paidAmount, paidAmount }]
 }
 
+function createEmptyReceiveItem(index = 0) {
+  return {
+    item_type_id: '',
+    item_key: `item_${index + 1}`,
+    item_label: '',
+    due_amount: 0,
+    paid_amount: 0,
+  }
+}
+
 function emptyForm() {
   return {
     payerType: 'resident',
@@ -134,7 +144,7 @@ function emptyForm() {
     paymentMethod: 'transfer',
     paidAt: buildLocalDateTimeValue(),
     note: '',
-    selectedItems: [],
+    selectedItems: [createEmptyReceiveItem(0)],
     pendingItemId: '',
   }
 }
@@ -359,6 +369,49 @@ export default function AdminFeatureReceivePayment() {
       ...prev,
       selectedItems: prev.selectedItems.filter((_, itemIndex) => itemIndex !== index),
     }))
+  }
+
+  const addReceiveItemRow = () => {
+    setReceiveForm((prev) => ({
+      ...prev,
+      selectedItems: [...prev.selectedItems, createEmptyReceiveItem(prev.selectedItems.length)],
+    }))
+  }
+
+  const updateReceiveItem = (index, patch) => {
+    setReceiveForm((prev) => ({
+      ...prev,
+      selectedItems: prev.selectedItems.map((row, rowIndex) => (rowIndex === index ? { ...row, ...patch } : row)),
+    }))
+  }
+
+  const updateReceiveItemType = (index, itemTypeId) => {
+    const selected = items.find((row) => String(row.id) === String(itemTypeId))
+    if (!selected) {
+      updateReceiveItem(index, {
+        item_type_id: '',
+        item_key: `item_${index + 1}`,
+      })
+      return
+    }
+
+    updateReceiveItem(index, {
+      item_type_id: itemTypeId,
+      item_key: selected.code || `item_${index + 1}`,
+      item_label: selected.label || '',
+      due_amount: Number(selected.default_amount || 0),
+      paid_amount: Number(selected.default_amount || 0),
+    })
+  }
+
+  const removeReceiveItemRow = (index) => {
+    setReceiveForm((prev) => {
+      const nextRows = prev.selectedItems.filter((_, rowIndex) => rowIndex !== index)
+      return {
+        ...prev,
+        selectedItems: nextRows.length > 0 ? nextRows : [createEmptyReceiveItem(0)],
+      }
+    })
   }
 
   const buildReceiptHtml = (payment, { autoPrint = false, forCapture = false } = {}) => {
@@ -603,8 +656,22 @@ export default function AdminFeatureReceivePayment() {
   const handleSubmitReceive = async (event) => {
     event.preventDefault()
 
-    if (receiveForm.selectedItems.length === 0) {
+    const normalizedReceiveItems = receiveForm.selectedItems
+      .map((item, index) => ({
+        item_key: item.item_key || `item_${index + 1}`,
+        item_label: String(item.item_label || '').trim(),
+        due_amount: Number(item.due_amount || 0),
+        paid_amount: Number(item.paid_amount || 0),
+      }))
+      .filter((item) => item.item_label || item.due_amount > 0 || item.paid_amount > 0)
+
+    if (normalizedReceiveItems.length === 0) {
       await Swal.fire({ icon: 'warning', title: 'ยังไม่มีรายการรับชำระ', text: 'กรุณาเลือกรายการอย่างน้อย 1 รายการ' })
+      return
+    }
+
+    if (normalizedReceiveItems.some((item) => !item.item_label)) {
+      await Swal.fire({ icon: 'warning', title: 'ข้อมูลรายการไม่ครบ', text: 'กรุณาระบุชื่อรายการให้ครบทุกแถวที่กรอกจำนวนเงิน' })
       return
     }
 
@@ -634,12 +701,7 @@ export default function AdminFeatureReceivePayment() {
       partner_id: receiveForm.payerType === 'external' ? selectedPartner?.id : null,
       verified_by: profile?.id || null,
       verified_at: new Date().toISOString(),
-      payment_items: receiveForm.selectedItems.map((item, index) => ({
-        item_key: item.item_key || `item_${index + 1}`,
-        item_label: item.item_label,
-        due_amount: Number(item.due_amount || 0),
-        paid_amount: Number(item.paid_amount || 0),
-      })),
+      payment_items: normalizedReceiveItems,
     }
 
     setSavingReceive(true)
@@ -946,42 +1008,43 @@ export default function AdminFeatureReceivePayment() {
                     </label>
 
                     <div className="house-field" style={{ gap: 10, gridColumn: '1 / -1' }}>
-                      <span>เลือกรายการรับชำระ</span>
-                      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                        <StyledSelect value={receiveForm.pendingItemId} onChange={(event) => setReceiveForm((prev) => ({ ...prev, pendingItemId: event.target.value }))} style={{ flex: '1 1 280px' }}>
-                          <option value="">เลือกรายการจาก setup</option>
-                          {items.map((item) => (
-                            <option key={item.id} value={item.id}>{item.label} · ฿{formatMoney(item.default_amount)}</option>
-                          ))}
-                        </StyledSelect>
-                        <button type="button" className="btn btn-xs btn-a" onClick={() => addSelectedItem(setReceiveForm, receiveForm)}>เพิ่มรายการ</button>
-                      </div>
-                      <div className="houses-table-wrap payments-receive-wrap" style={{ maxHeight: '280px', overflow: 'auto' }}>
+                      <span>รายการรับชำระ</span>
+                      <div className="houses-table-wrap payments-receive-wrap" style={{ maxHeight: '320px', overflow: 'auto' }}>
                         <table className="tw receive-items-table" style={{ width: '100%', tableLayout: 'fixed' }}>
                           <thead>
                             <tr>
                               <th style={{ width: '44px', textAlign: 'center' }}>#</th>
+                              <th style={{ width: '220px' }}>ประเภท</th>
                               <th>รายการ</th>
-                              <th style={{ width: '170px' }}>ยอดที่ต้องชำระ</th>
-                              <th style={{ width: '170px' }}>ยอดชำระจริง</th>
+                              <th style={{ width: '150px' }}>ยอดที่ต้องชำระ</th>
+                              <th style={{ width: '150px' }}>ยอดชำระจริง</th>
                               <th style={{ width: '72px' }}></th>
                             </tr>
                           </thead>
                           <tbody>
-                            {receiveForm.selectedItems.length === 0 ? (
-                              <tr><td colSpan="5" style={{ textAlign: 'center', color: 'var(--mu)', padding: '14px' }}>ยังไม่มีรายการรับชำระ</td></tr>
-                            ) : receiveForm.selectedItems.map((item, index) => (
+                            {receiveForm.selectedItems.map((item, index) => (
                               <tr key={`${item.item_key}-${index}`}>
                                 <td style={{ textAlign: 'center' }}>{index + 1}</td>
-                                <td>{item.item_label}</td>
+                                <td>
+                                  <StyledSelect value={item.item_type_id || ''} onChange={(event) => updateReceiveItemType(index, event.target.value)}>
+                                    <option value="">เลือกรายการจาก setup</option>
+                                    {items.map((row) => (
+                                      <option key={row.id} value={row.id}>{row.code ? `${row.code} - ` : ''}{row.label} · ฿{formatMoney(row.default_amount)}</option>
+                                    ))}
+                                  </StyledSelect>
+                                </td>
+                                <td>
+                                  <input type="text" value={item.item_label || ''} onChange={(event) => updateReceiveItem(index, { item_label: event.target.value })} placeholder="ชื่อรายการ" style={{ width: '100%' }} />
+                                </td>
                                 <td><input type="number" min="0" step="0.01" value={item.due_amount} onChange={(event) => handleItemAmountChange(setReceiveForm, index, 'due_amount', event.target.value)} style={{ width: '100%' }} /></td>
                                 <td><input type="number" min="0" step="0.01" value={item.paid_amount} onChange={(event) => handleItemAmountChange(setReceiveForm, index, 'paid_amount', event.target.value)} style={{ width: '100%' }} /></td>
-                                <td><button type="button" className="btn btn-xs btn-dg" onClick={() => removeSelectedItem(setReceiveForm, index)}>ลบ</button></td>
+                                <td><button type="button" className="btn btn-xs btn-dg" onClick={() => removeReceiveItemRow(index)}>ลบ</button></td>
                               </tr>
                             ))}
                           </tbody>
                         </table>
                       </div>
+                      <button type="button" className="btn btn-xs btn-o" onClick={addReceiveItemRow}>+ เพิ่มรายการ</button>
                       <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap', color: 'var(--mu)', fontSize: 13 }}>
                         <span>จำนวนรายการ {receiveForm.selectedItems.length} รายการ</span>
                         <span style={{ fontWeight: 700, color: 'var(--tx)' }}>ยอดรับชำระรวม: ฿{formatMoney(receiveTotal)}</span>

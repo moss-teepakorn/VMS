@@ -1,10 +1,26 @@
 import { supabase } from './supabase'
 
+function isMissingTypeColumnError(error) {
+  if (!error) return false
+  if (error.code === '42703') return true
+  const message = String(error.message || '').toLowerCase()
+  return message.includes('payment_item_types.type') && message.includes('does not exist')
+}
+
 export async function listPaymentItemTypes({ onlyActive = false, type } = {}) {
-  let q = supabase.from('payment_item_types').select('*').order('code', { ascending: true })
-  if (onlyActive) q = q.eq('is_active', true)
-  if (type) q = q.eq('type', type)
-  const { data, error } = await q
+  const buildBaseQuery = () => {
+    let q = supabase.from('payment_item_types').select('*').order('code', { ascending: true })
+    if (onlyActive) q = q.eq('is_active', true)
+    return q
+  }
+
+  if (type) {
+    const { data, error } = await buildBaseQuery().eq('type', type)
+    if (!error) return data || []
+    if (!isMissingTypeColumnError(error)) throw error
+  }
+
+  const { data, error } = await buildBaseQuery()
   if (error) throw error
   return data || []
 }
