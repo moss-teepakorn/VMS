@@ -423,7 +423,9 @@ async function assignViolationFineToFee(violationIds = [], feeId = null, { trans
     .in('id', ids)
 
   if (!transfer) {
-    query = query.is('fee_billed_at', null).is('fee_billed_id', null)
+    // Reclaim is allowed whenever fee_billed_id is null (including rows that were
+    // previously linked to a deleted fee and still keep historical fee_billed_at).
+    query = query.is('fee_billed_id', null)
   }
 
   const { error } = await query
