@@ -3947,7 +3947,7 @@ export default function ResidentLayout() {
               <div className="house-md-head">
                 <div>
                   <div className="house-md-title">💳 ส่งหลักฐานการชำระ</div>
-                  <div className="house-md-sub">งวด {selectedFee?.period || '-'} {selectedFee?.year || ''}</div>
+                  <div className="house-md-sub">งวด {selectedFee ? formatFeePeriodLabel(selectedFee) : '-'}</div>
                 </div>
               </div>
               <form onSubmit={handleSubmitPayment}>
