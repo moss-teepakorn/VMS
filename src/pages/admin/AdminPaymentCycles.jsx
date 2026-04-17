@@ -28,6 +28,32 @@ function twoDigits(value) {
   return String(value).padStart(2, '0')
 }
 
+function formatDateBE(isoValue) {
+  if (!isoValue) return ''
+  const date = new Date(isoValue)
+  if (Number.isNaN(date.getTime())) return ''
+  const day = twoDigits(date.getDate())
+  const month = twoDigits(date.getMonth() + 1)
+  const yearBE = date.getFullYear() + 543
+  return `${day}/${month}/${yearBE}`
+}
+
+function DateInputBE({ value, onChange, disabled = false, className = '' }) {
+  return (
+    <label className="fi-date-wrap">
+      <input
+        className={`${className} fi-date-native`.trim()}
+        type="date"
+        lang="th-TH-u-ca-buddhist"
+        value={value || ''}
+        onChange={onChange}
+        disabled={disabled}
+      />
+      {value ? <span className={`fi-date-be ${disabled ? 'is-disabled' : ''}`}>{formatDateBE(value)}</span> : null}
+    </label>
+  )
+}
+
 function isoDate(year, month, day) {
   return `${year}-${twoDigits(month)}-${twoDigits(day)}`
 }
@@ -310,9 +336,8 @@ export default function AdminPaymentCycles() {
             </label>
             <label className="house-field" style={{ minWidth: 240 }}>
               <span>ชำระเต็มปีก่อนวันที่</span>
-              <input
+              <DateInputBE
                 className="fi"
-                type="date"
                 value={earlyFullYearDiscountDeadline}
                 onChange={(event) => setEarlyFullYearDiscountDeadline(event.target.value)}
               />
@@ -346,9 +371,9 @@ export default function AdminPaymentCycles() {
                 {periods.map((row, index) => (
                   <tr key={`period-${row.seq_no}`}>
                     <td>{row.period_label}</td>
-                    <td><input className="fi" type="date" value={row.start_date || ''} onChange={(event) => updatePeriod(index, 'start_date', event.target.value)} /></td>
-                    <td><input className="fi" type="date" value={row.end_date || ''} onChange={(event) => updatePeriod(index, 'end_date', event.target.value)} /></td>
-                    <td><input className="fi" type="date" value={row.due_date || ''} onChange={(event) => updatePeriod(index, 'due_date', event.target.value)} /></td>
+                    <td><DateInputBE className="fi" value={row.start_date || ''} onChange={(event) => updatePeriod(index, 'start_date', event.target.value)} /></td>
+                    <td><DateInputBE className="fi" value={row.end_date || ''} onChange={(event) => updatePeriod(index, 'end_date', event.target.value)} /></td>
+                    <td><DateInputBE className="fi" value={row.due_date || ''} onChange={(event) => updatePeriod(index, 'due_date', event.target.value)} /></td>
                     <td>
                       <StyledSelect value={String(row.due_year_offset || 0)} onChange={(event) => updatePeriod(index, 'due_year_offset', Number(event.target.value))}>
                         <option value="0">ภายในปี</option>
@@ -362,9 +387,8 @@ export default function AdminPaymentCycles() {
                       </label>
                     </td>
                     <td>
-                      <input
+                      <DateInputBE
                         className="fi"
-                        type="date"
                         value={row.penalty_start_date || ''}
                         onChange={(event) => updatePeriod(index, 'penalty_start_date', event.target.value)}
                         disabled={!row.enable_penalty}

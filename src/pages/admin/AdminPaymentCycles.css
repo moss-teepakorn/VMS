@@ -25,6 +25,49 @@
   min-height: 34px;
 }
 
+.fi-date-wrap {
+  position: relative;
+  display: block;
+  width: 100%;
+}
+
+.fi-date-native {
+  position: relative;
+  color: transparent;
+}
+
+.fi-date-native::-webkit-datetime-edit,
+.fi-date-native::-webkit-datetime-edit-year-field,
+.fi-date-native::-webkit-datetime-edit-month-field,
+.fi-date-native::-webkit-datetime-edit-day-field,
+.fi-date-native::-webkit-datetime-edit-text {
+  color: transparent;
+}
+
+.fi-date-native::-webkit-calendar-picker-indicator {
+  opacity: 1;
+  cursor: pointer;
+}
+
+.fi-date-be {
+  position: absolute;
+  left: 10px;
+  right: 34px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--tx);
+  font-size: 13px;
+  line-height: 1.2;
+  pointer-events: none;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.fi-date-be.is-disabled {
+  color: var(--mu);
+}
+
 .payment-cycles-checkbox {
   display: inline-flex;
   align-items: center;
