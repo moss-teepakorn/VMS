@@ -849,6 +849,7 @@ export async function calculateFullYearFeeByHouse({ houseId, year, setup }) {
   const yearFees = yearFeesResp.data || []
   const existingFullYear = yearFees.find((row) => row.period === 'full_year')
   const halfYearRows = yearFees.filter((row) => row.period === 'first_half' || row.period === 'second_half')
+  const halfYearViolationCarry = round2(halfYearRows.reduce((sum, row) => sum + toAmount(row?.fee_violation), 0))
 
   if (halfYearRows.length > 0) {
     const halfYearIds = halfYearRows.map((row) => row.id)
@@ -926,7 +927,7 @@ export async function calculateFullYearFeeByHouse({ houseId, year, setup }) {
     targetFeeId: existingFullYear?.id || null,
     transferFromFeeIds: halfYearRows.map((row) => row.id),
   })
-  payload.fee_violation = transferSummaryForFullYear.amount
+  payload.fee_violation = halfYearViolationCarry > 0 ? halfYearViolationCarry : transferSummaryForFullYear.amount
 
   if (existingFullYear?.id) {
     const transferSummary = summarizeViolationCharge(violationByHouse.get(String(houseId)) || [], {
@@ -934,7 +935,7 @@ export async function calculateFullYearFeeByHouse({ houseId, year, setup }) {
       transferFromFeeIds: halfYearRows.map((row) => row.id),
     })
 
-    payload.fee_violation = transferSummary.amount
+    payload.fee_violation = halfYearViolationCarry > 0 ? halfYearViolationCarry : transferSummary.amount
 
     const { data, error } = await supabase
       .from('fees')
@@ -969,6 +970,14 @@ export async function calculateFullYearFeeByHouse({ houseId, year, setup }) {
     targetFeeId: data?.id || null,
     transferFromFeeIds: halfYearRows.map((row) => row.id),
   })
+
+  if (halfYearViolationCarry > 0 && data?.id) {
+    const { error: enforceViolationError } = await supabase
+      .from('fees')
+      .update({ fee_violation: halfYearViolationCarry })
+      .eq('id', data.id)
+    if (enforceViolationError) throw enforceViolationError
+  }
 
   await assignViolationFineToFee(transferSummary.claimIds, data?.id)
   await assignViolationFineToFee(transferSummary.transferIds, data?.id, { transfer: true })
