@@ -131,6 +131,7 @@ function createEmptyReceiveItem(index = 0) {
     item_type_id: '',
     item_key: `item_${index + 1}`,
     item_label: '',
+    note: '',
     due_amount: 0,
     paid_amount: 0,
   }
@@ -153,6 +154,7 @@ function mapPaymentToEditForm(payment) {
   const rows = getPaymentItemRows(payment).map((row) => ({
     item_key: row.key,
     item_label: row.label,
+    note: '',
     due_amount: Number(row.dueAmount || 0),
     paid_amount: Number(row.paidAmount || 0),
   }))
@@ -195,6 +197,8 @@ export default function AdminFeatureReceivePayment() {
   const [receiptPrintTarget, setReceiptPrintTarget] = useState(null)
   const [showReceiptPrintActionModal, setShowReceiptPrintActionModal] = useState(false)
   const [runningReceiptPrintAction, setRunningReceiptPrintAction] = useState(false)
+  const [receiptPrintPreviewHtml, setReceiptPrintPreviewHtml] = useState('')
+  const [receiptPrintPreviewTitle, setReceiptPrintPreviewTitle] = useState('ตัวอย่างใบเสร็จ')
 
   const loadPageData = async () => {
     setLoading(true)
@@ -405,8 +409,17 @@ export default function AdminFeatureReceivePayment() {
       item_type_id: itemTypeId,
       item_key: selected.code || `item_${index + 1}`,
       item_label: selected.label || '',
+      note: selected.description || '',
       due_amount: Number(selected.default_amount || 0),
       paid_amount: Number(selected.default_amount || 0),
+    })
+  }
+
+  const handleReceiveAmountChange = (index, value) => {
+    const amount = Number(value || 0)
+    updateReceiveItem(index, {
+      due_amount: amount,
+      paid_amount: amount,
     })
   }
 
@@ -590,9 +603,30 @@ export default function AdminFeatureReceivePayment() {
     }
   }
 
-  const handlePrintReceipt = (payment) => {
-    setReceiptPrintTarget(payment)
-    setShowReceiptPrintActionModal(true)
+  const openReceiptPrintPreviewModal = async (payment) => {
+    if (!payment) return
+    try {
+      setRunningReceiptPrintAction(true)
+      const previewHtml = buildReceiptHtml(payment, { autoPrint: false })
+      setReceiptPrintTarget(payment)
+      setReceiptPrintPreviewTitle(`ใบเสร็จ ${getReceiptNo(payment)}`)
+      setReceiptPrintPreviewHtml(previewHtml)
+      setShowReceiptPrintActionModal(true)
+    } finally {
+      setRunningReceiptPrintAction(false)
+    }
+  }
+
+  const closeReceiptPrintPreviewModal = () => {
+    if (runningReceiptPrintAction) return
+    setShowReceiptPrintActionModal(false)
+    setReceiptPrintTarget(null)
+    setReceiptPrintPreviewHtml('')
+    setReceiptPrintPreviewTitle('ตัวอย่างใบเสร็จ')
+  }
+
+  const handlePrintReceipt = async (payment) => {
+    await openReceiptPrintPreviewModal(payment)
   }
 
   const runReceiptPrintAction = async (mode) => {
@@ -607,8 +641,9 @@ export default function AdminFeatureReceivePayment() {
         const popup = openHtmlInWindow(html)
         if (!popup) {
           await Swal.fire({ icon: 'warning', title: 'ไม่สามารถเปิดหน้าต่างพิมพ์ได้', text: 'กรุณาอนุญาต popup ของเบราว์เซอร์' })
+        } else {
+          closeReceiptPrintPreviewModal()
         }
-        setShowReceiptPrintActionModal(false)
         return
       }
 
@@ -651,7 +686,7 @@ export default function AdminFeatureReceivePayment() {
       }
 
       document.body.removeChild(iframe)
-      setShowReceiptPrintActionModal(false)
+      closeReceiptPrintPreviewModal()
     } catch (error) {
       await Swal.fire({ icon: 'error', title: 'พิมพ์ใบเสร็จไม่สำเร็จ', text: error.message })
     } finally {
@@ -718,8 +753,7 @@ export default function AdminFeatureReceivePayment() {
       setMonthFilter(String(paidDate.getMonth() + 1))
       await loadPageData()
       setReceiveForm(emptyForm())
-      setReceiptPrintTarget(created)
-      setShowReceiptPrintActionModal(true)
+      await openReceiptPrintPreviewModal(created)
       await Swal.fire({ icon: 'success', title: 'บันทึกรับชำระเรียบร้อย (อนุมัติอัตโนมัติ)', timer: 1400, showConfirmButton: false })
     } catch (error) {
       await Swal.fire({ icon: 'error', title: 'บันทึกรับชำระไม่สำเร็จ', text: error.message })
@@ -1015,36 +1049,42 @@ export default function AdminFeatureReceivePayment() {
 
                     <div className="house-field" style={{ gap: 10, gridColumn: '1 / -1' }}>
                       <span>รายการรับชำระ</span>
-                      <div className="houses-table-wrap payments-receive-wrap" style={{ maxHeight: '320px', overflow: 'auto' }}>
-                        <table className="tw receive-items-table" style={{ width: '100%', tableLayout: 'fixed' }}>
+                      <div style={{ overflowX: 'auto', marginBottom: 8 }}>
+                        <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 600 }}>
                           <thead>
                             <tr>
-                              <th style={{ width: '44px', textAlign: 'center' }}>#</th>
-                              <th style={{ width: '220px' }}>ประเภท</th>
-                              <th>รายการ</th>
-                              <th style={{ width: '150px' }}>ยอดที่ต้องชำระ</th>
-                              <th style={{ width: '150px' }}>ยอดชำระจริง</th>
-                              <th style={{ width: '72px' }}></th>
+                              <th style={{ width: 36, textAlign: 'center', padding: '5px 4px', border: '1px solid var(--bo)', background: 'var(--bgl)', fontSize: 11 }}>#</th>
+                              <th style={{ width: '25%', padding: '5px 6px', border: '1px solid var(--bo)', background: 'var(--bgl)', fontSize: 11 }}>ประเภท</th>
+                              <th style={{ padding: '5px 6px', border: '1px solid var(--bo)', background: 'var(--bgl)', fontSize: 11 }}>รายการ *</th>
+                              <th style={{ width: 120, padding: '5px 6px', border: '1px solid var(--bo)', background: 'var(--bgl)', fontSize: 11, textAlign: 'right' }}>จำนวนเงิน *</th>
+                              <th style={{ width: '15%', padding: '5px 6px', border: '1px solid var(--bo)', background: 'var(--bgl)', fontSize: 11 }}>หมายเหตุ</th>
+                              <th style={{ width: 32, border: '1px solid var(--bo)', background: 'var(--bgl)' }}></th>
                             </tr>
                           </thead>
                           <tbody>
                             {receiveForm.selectedItems.map((item, index) => (
                               <tr key={`${item.item_key}-${index}`}>
-                                <td style={{ textAlign: 'center' }}>{index + 1}</td>
-                                <td>
-                                  <select value={item.item_type_id || ''} onChange={(event) => updateReceiveItemType(index, event.target.value)} style={{ width: '100%' }}>
-                                    <option value="">เลือกรายการจาก setup</option>
+                                <td style={{ textAlign: 'center', padding: '4px', border: '1px solid var(--bo)', fontSize: 11, color: 'var(--mu)' }}>{index + 1}</td>
+                                <td style={{ padding: '3px', border: '1px solid var(--bo)' }}>
+                                  <select style={{ width: '100%', border: 'none', outline: 'none', background: 'transparent', fontSize: 11, padding: '2px' }} value={item.item_type_id || ''} onChange={(event) => updateReceiveItemType(index, event.target.value)}>
+                                    <option value="">— ประเภท —</option>
                                     {items.map((row) => (
-                                      <option key={row.id} value={row.id}>{row.code ? `${row.code} - ` : ''}{row.label || row.description || '-'} · ฿{formatMoney(row.default_amount)}</option>
+                                      <option key={row.id} value={row.id}>{row.code ? `${row.code} — ` : ''}{row.label || row.description || '-'}</option>
                                     ))}
                                   </select>
                                 </td>
-                                <td>
-                                  <input type="text" value={item.item_label || ''} onChange={(event) => updateReceiveItem(index, { item_label: event.target.value })} placeholder="ชื่อรายการ" style={{ width: '100%' }} />
+                                <td style={{ padding: '3px', border: '1px solid var(--bo)' }}>
+                                  <input type="text" style={{ width: '100%', border: 'none', outline: 'none', background: 'transparent', fontSize: 11, padding: '2px 3px' }} value={item.item_label || ''} onChange={(event) => updateReceiveItem(index, { item_label: event.target.value })} placeholder="ชื่อรายการ" />
                                 </td>
-                                <td><input type="number" min="0" step="0.01" value={item.due_amount} onChange={(event) => handleItemAmountChange(setReceiveForm, index, 'due_amount', event.target.value)} style={{ width: '100%' }} /></td>
-                                <td><input type="number" min="0" step="0.01" value={item.paid_amount} onChange={(event) => handleItemAmountChange(setReceiveForm, index, 'paid_amount', event.target.value)} style={{ width: '100%' }} /></td>
-                                <td><button type="button" className="btn btn-xs btn-dg" onClick={() => removeReceiveItemRow(index)}>ลบ</button></td>
+                                <td style={{ padding: '3px', border: '1px solid var(--bo)' }}>
+                                  <input type="number" min="0" step="0.01" style={{ width: '100%', border: 'none', outline: 'none', background: 'transparent', fontSize: 11, padding: '2px 3px', textAlign: 'right' }} value={item.paid_amount} onChange={(event) => handleReceiveAmountChange(index, event.target.value)} />
+                                </td>
+                                <td style={{ padding: '3px', border: '1px solid var(--bo)' }}>
+                                  <input type="text" style={{ width: '100%', border: 'none', outline: 'none', background: 'transparent', fontSize: 11, padding: '2px 3px' }} value={item.note || ''} onChange={(event) => updateReceiveItem(index, { note: event.target.value })} />
+                                </td>
+                                <td style={{ textAlign: 'center', padding: '3px 2px', border: '1px solid var(--bo)' }}>
+                                  {receiveForm.selectedItems.length > 1 && <button type="button" onClick={() => removeReceiveItemRow(index)} style={{ background: 'none', border: 'none', color: '#dc2626', cursor: 'pointer', fontSize: 13, lineHeight: 1 }}>✕</button>}
+                                </td>
                               </tr>
                             ))}
                           </tbody>
@@ -1152,20 +1192,27 @@ export default function AdminFeatureReceivePayment() {
 
       {showReceiptPrintActionModal && receiptPrintTarget && (
         <div className="house-mo">
-          <div className="house-md house-md--xs">
+          <div className="house-md house-md--xl" style={{ '--house-md-max-w': '1120px', '--house-md-max-h': 'calc(100dvh - 36px)' }}>
             <div className="house-md-head">
               <div>
-                <div className="house-md-title">ตัวเลือกการพิมพ์</div>
-                <div className="house-md-sub">ใบเสร็จ {getReceiptNo(receiptPrintTarget)}</div>
+                <div className="house-md-title">🖨 {receiptPrintPreviewTitle}</div>
+                <div className="house-md-sub">แสดงตัวอย่างก่อนพิมพ์และดาวน์โหลดเอกสาร</div>
               </div>
             </div>
-            <div className="house-md-body" style={{ display: 'grid', gap: 10 }}>
-              <button className="btn btn-p" type="button" onClick={() => runReceiptPrintAction('paper')} disabled={runningReceiptPrintAction}>พิมพ์เอกสาร</button>
-              <button className="btn btn-a" type="button" onClick={() => runReceiptPrintAction('pdf')} disabled={runningReceiptPrintAction}>Save เป็น PDF</button>
-              <button className="btn btn-g" type="button" onClick={() => runReceiptPrintAction('image')} disabled={runningReceiptPrintAction}>Save เป็น Image</button>
+            <div className="house-md-body" style={{ padding: 10, background: '#eef2f7' }}>
+              <div style={{ border: '1px solid var(--bo)', borderRadius: 10, overflow: 'hidden', background: '#fff', height: 'calc(100dvh - 220px)', minHeight: 420 }}>
+                <iframe
+                  title={receiptPrintPreviewTitle}
+                  srcDoc={receiptPrintPreviewHtml}
+                  style={{ width: '100%', height: '100%', border: 'none' }}
+                />
+              </div>
             </div>
             <div className="house-md-foot">
-              <button className="btn btn-g" type="button" onClick={() => setShowReceiptPrintActionModal(false)} disabled={runningReceiptPrintAction}>ปิด</button>
+              <button className="btn btn-o" type="button" onClick={() => runReceiptPrintAction('pdf')} disabled={runningReceiptPrintAction}>{runningReceiptPrintAction ? 'กำลังสร้างไฟล์...' : '⬇ PDF'}</button>
+              <button className="btn btn-o" type="button" onClick={() => runReceiptPrintAction('image')} disabled={runningReceiptPrintAction}>{runningReceiptPrintAction ? 'กำลังสร้างไฟล์...' : '⬇ Image'}</button>
+              <button className="btn btn-a" type="button" onClick={() => runReceiptPrintAction('paper')} disabled={runningReceiptPrintAction}>🖨 พิมพ์</button>
+              <button className="btn btn-g" type="button" onClick={closeReceiptPrintPreviewModal} disabled={runningReceiptPrintAction}>ปิด</button>
             </div>
           </div>
         </div>

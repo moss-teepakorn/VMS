@@ -10,21 +10,33 @@ import { getSystemConfig } from '../../../lib/systemConfig';
 
 // use shared `resolveImageToDataUrl` from lib/logoUtils
 
-export async function exportPaymentReportPdf({ title, fileName, columns, rows, filter, sumAmount, logoUrl, footerLabel }) {
-  // 1. แปลงโลโก้เป็น Data URL ก่อน (เหมือนใบแจ้งหนี้)
-  // prefer latest setup logo (like fees): try fetching fresh system config first
+export async function buildPaymentReportPrintableHtml({ title, columns, rows, filter, sumAmount, logoUrl, footerLabel, autoPrint = false }) {
   const freshConfig = await getSystemConfig().catch(() => null);
-  // Prefer the login-circle logo if configured, then fall back to village logo.
   const rawLogoUrl = freshConfig?.login_circle_logo_url || freshConfig?.village_logo_url || logoUrl || localStorage.getItem('vms-login-circle-logo-url') || '';
   const fallbackLogo = `${window.location.origin}${villageLogo}`;
   let printLogoUrl = await resolveImageToDataUrl(rawLogoUrl, fallbackLogo);
-  // Normalize accidental concatenation like "<origin>data:image..." -> keep only data URL portion
   if (typeof printLogoUrl === 'string') {
     const idx = printLogoUrl.indexOf('data:image');
     if (idx > 0) printLogoUrl = printLogoUrl.slice(idx);
   }
-  // 2. สร้าง HTML
+
   const html = buildPaymentReportHtml({ title, columns, rows, filter, sumAmount, logoUrl: printLogoUrl, footerLabel });
+  if (!autoPrint) return html;
+
+  return html.replace('</body>', '<script>window.onload = () => window.print();</script></body>');
+}
+
+export async function exportPaymentReportPdf({ title, fileName, columns, rows, filter, sumAmount, logoUrl, footerLabel }) {
+  // 1. สร้าง HTML ที่ resolve โลโก้และพร้อมพิมพ์
+  const html = await buildPaymentReportPrintableHtml({
+    title,
+    columns,
+    rows,
+    filter,
+    sumAmount,
+    logoUrl,
+    footerLabel,
+  });
   // 3. สร้าง iframe ซ่อน
   const iframe = document.createElement('iframe');
   iframe.style.cssText = 'position:fixed;left:-9999px;top:0;border:none;width:1122px;height:793px;'; // A4 landscape
