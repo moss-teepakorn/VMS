@@ -1026,7 +1026,7 @@ export async function cancelFullYearFeeByHouse({ houseId, year, setup }) {
   if (!houseId) throw new Error('ไม่พบบ้าน')
   if (!yearCE) throw new Error('ปีไม่ถูกต้อง')
 
-  const [yearFeesResp, houseResp, parkingByHouse, violationByHouse] = await Promise.all([
+  const [yearFeesResp, houseResp, parkingByHouse] = await Promise.all([
     supabase
       .from('fees')
       .select('id, period, status')
@@ -1035,7 +1035,6 @@ export async function cancelFullYearFeeByHouse({ houseId, year, setup }) {
       .in('period', ['first_half', 'second_half', 'full_year']),
     supabase.from('houses').select('id, area_sqw').eq('id', houseId).single(),
     getParkingMonthlyByHouse(),
-    getClosedViolationsByHouseIds([houseId]),
   ])
 
   if (yearFeesResp.error) throw yearFeesResp.error
@@ -1090,12 +1089,6 @@ export async function cancelFullYearFeeByHouse({ houseId, year, setup }) {
     note: 'ยกเลิกคำนวณทั้งปี: กลับมาเป็นครึ่งปีแรก',
   }
 
-  const violationSummary = summarizeViolationCharge(violationByHouse.get(String(houseId)) || [], {
-    targetFeeId: existingFirstHalf?.id || null,
-    transferFromFeeIds: [fullYearFee.id],
-  })
-  firstHalfPayload.fee_violation = violationSummary.amount
-
   let firstHalfFeeId = existingFirstHalf?.id || null
 
   if (existingFirstHalf?.id) {
@@ -1117,11 +1110,6 @@ export async function cancelFullYearFeeByHouse({ houseId, year, setup }) {
     firstHalfFeeId = insertedFirstHalf?.id || null
   }
 
-  if (firstHalfFeeId) {
-    await assignViolationFineToFee(violationSummary.claimIds, firstHalfFeeId)
-    await assignViolationFineToFee(violationSummary.transferIds, firstHalfFeeId, { transfer: true })
-  }
-
   if (existingSecondHalf?.id) {
     const { error: deleteSecondError } = await supabase
       .from('fees')
@@ -1136,6 +1124,22 @@ export async function cancelFullYearFeeByHouse({ houseId, year, setup }) {
     .eq('id', fullYearFee.id)
 
   if (deleteFullYearError) throw deleteFullYearError
+
+  if (firstHalfFeeId) {
+    const refreshedViolationByHouse = await getClosedViolationsByHouseIds([houseId])
+    const postCancelSummary = summarizeViolationCharge(
+      refreshedViolationByHouse.get(String(houseId)) || [],
+      { targetFeeId: firstHalfFeeId },
+    )
+
+    const { error: firstHalfViolationError } = await supabase
+      .from('fees')
+      .update({ fee_violation: postCancelSummary.amount })
+      .eq('id', firstHalfFeeId)
+
+    if (firstHalfViolationError) throw firstHalfViolationError
+    await assignViolationFineToFee(postCancelSummary.claimIds, firstHalfFeeId)
+  }
 
   return {
     yearCE,
