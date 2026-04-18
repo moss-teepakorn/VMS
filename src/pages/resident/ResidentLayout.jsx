@@ -147,8 +147,6 @@ const EMPTY_VR_FORM = {
   note: '',
 }
 
-const THEMES = ['normal', 'dark', 'rose', 'sage', 'sand', 'violet', 'teal', 'coral', 'mauve', 'dustyrose']
-
 const NAV_GROUPS = [
   {
     section: 'กฎระเบียบ',
@@ -302,13 +300,18 @@ export default function ResidentLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [sidebarCollapsed] = useState(false)
   const [menuSearch, setMenuSearch] = useState('')
+  const [universalSearch, setUniversalSearch] = useState('')
+  const [universalSearchOpen, setUniversalSearchOpen] = useState(false)
   const [sectionOpen, setSectionOpen] = useState({
     กฎระเบียบ: false,
     หน้าหลัก: true,
     ข้อมูล: false,
     บัญชี: false,
   })
-  const [theme, setTheme] = useState(() => localStorage.getItem('vms-theme') || 'normal')
+  const [theme, setTheme] = useState(() => {
+    const saved = localStorage.getItem('vms-theme')
+    return saved === 'night' ? 'night' : 'clean'
+  })
   const [setupOpen, setSetupOpen] = useState(false)
   const [houseNo, setHouseNo] = useState('-')
   const [setup, setSetup] = useState({ villageName: 'The Greenfield', appLineMain: 'Village Management', version: 'v12.3' })
@@ -532,6 +535,18 @@ export default function ResidentLayout() {
     document.addEventListener('mousedown', handle)
     return () => document.removeEventListener('mousedown', handle)
   }, [setupOpen])
+
+  useEffect(() => {
+    if (!universalSearchOpen) return
+    const handleOutside = (event) => {
+      const wrap = document.getElementById('resident-universal-search')
+      if (wrap && !wrap.contains(event.target)) {
+        setUniversalSearchOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handleOutside)
+    return () => document.removeEventListener('mousedown', handleOutside)
+  }, [universalSearchOpen])
 
   useEffect(() => () => {
     marketPostAttachments.forEach((item) => {
@@ -1702,6 +1717,27 @@ export default function ResidentLayout() {
     })
     .filter(Boolean)
 
+  const globalSearchKeyword = universalSearch.trim().toLowerCase()
+  const globalSearchItems = NAV_GROUPS
+    .flatMap((section) => section.items.map((item) => ({
+      ...item,
+      sectionName: section.section,
+    })))
+    .filter((item) => {
+      if (!globalSearchKeyword) return false
+      const haystack = [item.label, item.key, item.sectionName].join(' ').toLowerCase()
+      return haystack.includes(globalSearchKeyword)
+    })
+    .slice(0, 8)
+
+  function handleUniversalSelect(key) {
+    if (!key) return
+    setActiveSection(key)
+    setUniversalSearch('')
+    setUniversalSearchOpen(false)
+    setSidebarOpen(false)
+  }
+
   function openPaymentModal(fee) {
     setSelectedFee(fee)
     setPaymentForm({ amount: String(Number(fee.total_amount || 0)), payment_method: 'transfer', note: '' })
@@ -2596,8 +2632,53 @@ export default function ResidentLayout() {
             {titleData.main} — <span className="hl">{titleData.sub}</span>
           </div>
           <div className="tb-title tb-title-mobile">สวัสดี บ้าน {houseNo || '-'}</div>
+          <div className="tb-universal-wrap" id="resident-universal-search">
+            <span className="tb-universal-icon">🔎</span>
+            <input
+              className="tb-universal-input"
+              type="text"
+              placeholder="ค้นหาเมนู, หน้า, ฟังก์ชัน..."
+              value={universalSearch}
+              onFocus={() => setUniversalSearchOpen(true)}
+              onChange={(e) => {
+                setUniversalSearch(e.target.value)
+                setUniversalSearchOpen(true)
+              }}
+              onKeyDown={(e) => {
+                if (e.key === 'Escape') setUniversalSearchOpen(false)
+                if (e.key === 'Enter' && globalSearchItems[0]?.key) {
+                  handleUniversalSelect(globalSearchItems[0].key)
+                }
+              }}
+            />
+            {universalSearchOpen && globalSearchKeyword && (
+              <div className="tb-universal-dropdown">
+                {globalSearchItems.length > 0 ? globalSearchItems.map((item) => (
+                  <button
+                    key={item.key}
+                    type="button"
+                    className="tb-universal-item"
+                    onClick={() => handleUniversalSelect(item.key)}
+                  >
+                    <span className="tb-universal-item-label">{item.label}</span>
+                    <span className="tb-universal-item-meta">{item.sectionName}</span>
+                  </button>
+                )) : (
+                  <div className="tb-universal-empty">ไม่พบเมนูที่ตรงกับการค้นหา</div>
+                )}
+              </div>
+            )}
+          </div>
           <div className="tb-right">
-            <span className="tb-user-name" style={{ fontSize: '13px', fontWeight: 500, color: 'var(--tx)', whiteSpace: 'nowrap', marginRight: '4px' }}>
+            <button
+              type="button"
+              className="tb-theme-toggle"
+              onClick={() => setTheme((prev) => (prev === 'night' ? 'clean' : 'night'))}
+              title={theme === 'night' ? 'สลับเป็นโหมดสะอาด' : 'สลับ Night header/menu'}
+            >
+              {theme === 'night' ? '🌙 Night' : '☀️ Clean'}
+            </button>
+            <span className="tb-user-name" style={{ fontSize: '13px', fontWeight: 500, whiteSpace: 'nowrap', marginRight: '4px' }}>
               {profile?.full_name || profile?.username || ''}
             </span>
 
@@ -2629,15 +2710,6 @@ export default function ResidentLayout() {
                     <div className="r-setup-row"><span>ชื่อ</span><strong>{profile?.full_name || '-'}</strong></div>
                     <div className="r-setup-row"><span>Username</span><strong>{profile?.username || '-'}</strong></div>
                     <div className="r-setup-row"><span>บ้าน</span><strong>{houseNo}</strong></div>
-                  </div>
-
-                  <div style={{ marginBottom: 12, paddingBottom: 12, borderBottom: '1px solid var(--bo)' }}>
-                    <div className="r-setup-title" style={{ marginBottom: 8 }}>ธีม</div>
-                    <div className="theme-strip">
-                      {THEMES.map((t) => (
-                        <div key={t} className={`th-dot ${theme === t ? 'on' : ''}`} data-t={t} onClick={() => setTheme(t)} title={t} />
-                      ))}
-                    </div>
                   </div>
 
                   {profile?.role === 'admin' && (

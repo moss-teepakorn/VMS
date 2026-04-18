@@ -31,9 +31,14 @@ const AdminLayout = () => {
   const { profile, logout } = useAuth()
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [sidebarCollapsed] = useState(false)
-  const [theme, setTheme] = useState(localStorage.getItem('vms-theme') || 'normal')
+  const [theme, setTheme] = useState(() => {
+    const saved = localStorage.getItem('vms-theme')
+    return saved === 'night' ? 'night' : 'clean'
+  })
   const [setupOpen, setSetupOpen] = useState(false)
   const [menuSearch, setMenuSearch] = useState('')
+  const [universalSearch, setUniversalSearch] = useState('')
+  const [universalSearchOpen, setUniversalSearchOpen] = useState(false)
   const [notifyOpen, setNotifyOpen] = useState(false)
   const [notifyCounts, setNotifyCounts] = useState({ requests: 0, issues: 0, payments: 0 })
   const [sectionOpen, setSectionOpen] = useState({
@@ -149,6 +154,18 @@ const AdminLayout = () => {
     document.addEventListener('mousedown', handleOutside)
     return () => document.removeEventListener('mousedown', handleOutside)
   }, [notifyOpen])
+
+  useEffect(() => {
+    if (!universalSearchOpen) return
+    const handleOutside = (event) => {
+      const wrap = document.getElementById('admin-universal-search')
+      if (wrap && !wrap.contains(event.target)) {
+        setUniversalSearchOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handleOutside)
+    return () => document.removeEventListener('mousedown', handleOutside)
+  }, [universalSearchOpen])
 
   // Close sidebar on larger screens
   useEffect(() => {
@@ -316,6 +333,26 @@ const AdminLayout = () => {
     return location.pathname === path
   }
 
+  const globalSearchKeyword = universalSearch.trim().toLowerCase()
+  const globalSearchItems = navItems
+    .flatMap((section) => (Array.isArray(section.items)
+      ? section.items.map((item) => ({ ...item, sectionName: section.section }))
+      : []))
+    .filter((item) => {
+      if (!globalSearchKeyword) return false
+      const haystack = [item.label, item.path, item.sectionName].join(' ').toLowerCase()
+      return haystack.includes(globalSearchKeyword)
+    })
+    .slice(0, 8)
+
+  const handleUniversalSelect = (path) => {
+    if (!path) return
+    navigate(path)
+    setUniversalSearch('')
+    setUniversalSearchOpen(false)
+    setSidebarOpen(false)
+  }
+
   const getTopbarTitle = () => {
     for (const section of navItems) {
       if (section.skipToggle && section.dashboardLink === location.pathname) {
@@ -476,7 +513,52 @@ const AdminLayout = () => {
             {topbarTitle.main} — <span className="hl">{topbarTitle.sub}</span>
           </div>
           <div className="tb-title tb-title-mobile">สวัสดี ผู้ดูแลระบบ</div>
+          <div className="tb-universal-wrap" id="admin-universal-search">
+            <span className="tb-universal-icon">🔎</span>
+            <input
+              className="tb-universal-input"
+              type="text"
+              placeholder="ค้นหาเมนู, หน้า, ฟังก์ชัน..."
+              value={universalSearch}
+              onFocus={() => setUniversalSearchOpen(true)}
+              onChange={(e) => {
+                setUniversalSearch(e.target.value)
+                setUniversalSearchOpen(true)
+              }}
+              onKeyDown={(e) => {
+                if (e.key === 'Escape') setUniversalSearchOpen(false)
+                if (e.key === 'Enter' && globalSearchItems[0]?.path) {
+                  handleUniversalSelect(globalSearchItems[0].path)
+                }
+              }}
+            />
+            {universalSearchOpen && globalSearchKeyword && (
+              <div className="tb-universal-dropdown">
+                {globalSearchItems.length > 0 ? globalSearchItems.map((item) => (
+                  <button
+                    key={item.id}
+                    type="button"
+                    className="tb-universal-item"
+                    onClick={() => handleUniversalSelect(item.path)}
+                  >
+                    <span className="tb-universal-item-label">{item.label}</span>
+                    <span className="tb-universal-item-meta">{item.sectionName}</span>
+                  </button>
+                )) : (
+                  <div className="tb-universal-empty">ไม่พบเมนูที่ตรงกับการค้นหา</div>
+                )}
+              </div>
+            )}
+          </div>
           <div className="tb-right">
+            <button
+              type="button"
+              className="tb-theme-toggle"
+              onClick={() => setTheme((prev) => (prev === 'night' ? 'clean' : 'night'))}
+              title={theme === 'night' ? 'สลับเป็นโหมดสะอาด' : 'สลับ Night header/menu'}
+            >
+              {theme === 'night' ? '🌙 Night' : '☀️ Clean'}
+            </button>
             <div style={{ position: 'relative' }}>
               <div className="tb-ico" id="admin-notify-btn" onClick={() => setNotifyOpen((prev) => !prev)} title="การแจ้งเตือน">🔔</div>
               {(notifyCounts.requests + notifyCounts.issues + notifyCounts.payments) > 0 && (
@@ -537,20 +619,6 @@ const AdminLayout = () => {
                     <div className="setup-profile-row"><span>Username</span><strong>{profile?.username || '-'}</strong></div>
                     <div className="setup-profile-row"><span>บทบาท</span><strong>{roleLabel(profile?.role)}</strong></div>
                     <div className="setup-profile-row"><span>บ้าน</span><strong>{houseNo}</strong></div>
-                  </div>
-
-                  <div className="setup-section">
-                    <div className="setup-label">Theme</div>
-                    <div className="theme-strip">
-                      {['normal', 'dark', 'rose', 'sage', 'sand', 'violet', 'teal', 'coral', 'mauve', 'dustyrose'].map((t) => (
-                        <div
-                          key={t}
-                          className={`th-dot ${theme === t ? 'on' : ''}`}
-                          onClick={() => setTheme(t)}
-                          title={t}
-                        />
-                      ))}
-                    </div>
                   </div>
 
                   <div className="setup-section">
