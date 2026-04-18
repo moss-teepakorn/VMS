@@ -478,7 +478,7 @@ const AdminLayout = () => {
                     onClick={() => handleNavClick(item.path)}
                     title={item.label}
                   >
-                    <span className="sb-ico">{item.icon}</span>
+                    <span className="sb-sub-dot" />
                     <span className="sb-label">{item.label}</span>
                     {item.badge && <span className="sb-badge">{item.badge}</span>}
                   </div>
@@ -555,9 +555,12 @@ const AdminLayout = () => {
               type="button"
               className="tb-theme-toggle"
               onClick={() => setTheme((prev) => (prev === 'night' ? 'clean' : 'night'))}
-              title={theme === 'night' ? 'สลับเป็นโหมดสะอาด' : 'สลับ Night header/menu'}
+              title={theme === 'night' ? 'Switch to light mode' : 'Switch to night mode'}
             >
-              {theme === 'night' ? '🌙 Night' : '☀️ Clean'}
+              <span className="tb-theme-text">{theme === 'night' ? 'night' : 'light'}</span>
+              <span className={`tb-theme-switch ${theme === 'night' ? 'on' : ''}`}>
+                <span className="tb-theme-thumb" />
+              </span>
             </button>
             <div style={{ position: 'relative' }}>
               <div className="tb-ico" id="admin-notify-btn" onClick={() => setNotifyOpen((prev) => !prev)} title="การแจ้งเตือน">🔔</div>

@@ -2599,7 +2599,7 @@ export default function ResidentLayout() {
                         className={`sb-item ${activeSection === item.key ? 'act' : ''} ${group.tone === 'core' ? 'core-item' : ''}`}
                         onClick={() => navTo(item.key)}
                       >
-                        <span className="sb-ico">{item.icon}</span>
+                        <span className="sb-sub-dot" />
                         <span className="sb-label">{item.label}</span>
                         {getNavBadgeCount(item.key) > 0 && <span className="notif-nav-badge">{getNavBadgeCount(item.key)}</span>}
                       </div>
@@ -2674,9 +2674,12 @@ export default function ResidentLayout() {
               type="button"
               className="tb-theme-toggle"
               onClick={() => setTheme((prev) => (prev === 'night' ? 'clean' : 'night'))}
-              title={theme === 'night' ? 'สลับเป็นโหมดสะอาด' : 'สลับ Night header/menu'}
+              title={theme === 'night' ? 'Switch to light mode' : 'Switch to night mode'}
             >
-              {theme === 'night' ? '🌙 Night' : '☀️ Clean'}
+              <span className="tb-theme-text">{theme === 'night' ? 'night' : 'light'}</span>
+              <span className={`tb-theme-switch ${theme === 'night' ? 'on' : ''}`}>
+                <span className="tb-theme-thumb" />
+              </span>
             </button>
             <span className="tb-user-name" style={{ fontSize: '13px', fontWeight: 500, whiteSpace: 'nowrap', marginRight: '4px' }}>
               {profile?.full_name || profile?.username || ''}
