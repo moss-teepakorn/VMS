@@ -2415,6 +2415,11 @@ button, input, select, textarea {
   font-weight: 400 !important;
 }
 
+/* main menu only: bold */
+.app .sb-sec-title {
+  font-weight: 700 !important;
+}
+
 .app .sb-sec-btn {
   min-height: 34px;
 }
@@ -2434,7 +2439,8 @@ button, input, select, textarea {
 
 .app .sb-item {
   gap: 8px !important;
-  padding: 8px 10px !important;
+  padding: 7px 10px !important;
+  margin-bottom: 1px;
 }
 
 .app .sb-item .sb-ico {
@@ -2446,8 +2452,19 @@ button, input, select, textarea {
   height: 5px;
   border-radius: 50%;
   background: #94a3b8;
-  margin-left: 4px;
+  margin-left: 2px;
   flex-shrink: 0;
+}
+
+.app .sb-submenu-wrap {
+  border-left: 2px solid #e6ecf8 !important;
+  margin-left: 10px !important;
+  padding-left: 8px !important;
+  gap: 2px !important;
+}
+
+.app .sb-nav {
+  scrollbar-color: #d1d9f0 #f0f3fa;
 }
 
 .app .sb-item.act .sb-sub-dot {
@@ -2553,6 +2570,10 @@ button, input, select, textarea {
 
 [data-theme="night"] .app .sb-sub-dot {
   background: #7f8ba8 !important;
+}
+
+[data-theme="night"] .app .sb-submenu-wrap {
+  border-left-color: #2a3249 !important;
 }
 
 [data-theme="night"] .app .sb-item.act .sb-sub-dot {
