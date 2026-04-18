@@ -496,7 +496,7 @@ const AdminLayout = () => {
           <div className="sb-foot">
             <div className="sb-account-card">
               <div className="sb-logout sb-logout-danger" onClick={handleLogout} title="ออกจากระบบ">
-                <span style={{ fontSize: '18px' }}>🚪</span>
+                <span style={{ fontSize: '16px' }}>⎋</span>
                 <span className="sb-logout-label">ออกจากระบบ</span>
               </div>
             </div>

@@ -2619,7 +2619,7 @@ export default function ResidentLayout() {
             </div>
           )}
           <div className="sb-res-logout" onClick={handleLogout}>
-            <span style={{ fontSize: '18px' }}>🚪</span>
+            <span style={{ fontSize: '16px' }}>⎋</span>
             <span>ออกจากระบบ</span>
           </div>
         </div>
