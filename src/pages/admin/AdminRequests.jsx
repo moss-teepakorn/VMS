@@ -1,7 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react'
 import StyledSelect from '../../components/StyledSelect'
 import DropdownList from '../../components/DropdownList'
-import VmsPagination from '../../components/VmsPagination'
 import Swal from 'sweetalert2'
 import {
   listVehicleRequests,
@@ -67,8 +66,7 @@ const AdminRequests = () => {
   const [searchTerm, setSearchTerm] = useState('')
   const [saving, setSaving] = useState(false)
   const [approvalDrafts, setApprovalDrafts] = useState({})
-  const [page, setPage] = useState(1)
-  const [rowsPerPage, setRowsPerPage] = useState('25')
+    // pagination removed: show all filtered requests
 
   const loadRequests = useCallback(async (override = {}) => {
     try {
@@ -186,7 +184,7 @@ const AdminRequests = () => {
   ]
 
   const totalReqPages = rowsPerPage === 'all' ? 1 : Math.ceil(filteredRequests.length / Number(rowsPerPage))
-  const pagedRequests = rowsPerPage === 'all' ? filteredRequests : filteredRequests.slice((page - 1) * Number(rowsPerPage), page * Number(rowsPerPage))
+  const pagedRequests = filteredRequests
 
   function getApprovalDraft(req) {
     return approvalDrafts[req.id] || {
@@ -380,12 +378,12 @@ const AdminRequests = () => {
       <div className="card houses-main-card" style={{ marginBottom: 16 }}>
         <div className="vms-panel-toolbar">
           <div className="vms-toolbar-left">
-            <DropdownList compact value={statusFilter} options={reqStatusOptions} onChange={(v) => { setStatusFilter(v); setPage(1); loadRequests({ status: v }) }} placeholder="รอดำเนินการ" />
+            <DropdownList compact value={statusFilter} options={reqStatusOptions} onChange={(v) => { setStatusFilter(v); loadRequests({ status: v }) }} placeholder="รอดำเนินการ" />
             <div className="vms-inline-search">
               <svg width="12" height="12" viewBox="0 0 20 20" fill="currentColor">
                 <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd" />
               </svg>
-              <input type="text" value={searchTerm} onChange={(e) => { setSearchTerm(e.target.value); setPage(1) }} placeholder="ค้นหา ทะเบียน / บ้าน / ชื่อ" />
+              <input type="text" value={searchTerm} onChange={(e) => { setSearchTerm(e.target.value) }} placeholder="ค้นหา ทะเบียน / บ้าน / ชื่อ" />
             </div>
           </div>
           <div className="vms-toolbar-right">
@@ -447,7 +445,7 @@ const AdminRequests = () => {
             <div className="card"><div className="cb" style={{ textAlign: 'center', color: 'var(--mu)', padding: '24px 0' }}>ไม่พบคำขอ</div></div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-              {pagedRequests.map((req) => {
+                {filteredRequests.map((req) => {
                 const badge = getRequestStatusBadge(req.status)
                 const lockAfter = req.status === 'approved' || req.status === 'cancelled'
                 const isAccountRequest = req.__kind === 'account'
@@ -628,7 +626,6 @@ const AdminRequests = () => {
             </div>
           )}
         </div>
-        <VmsPagination page={page} totalPages={totalReqPages} rowsPerPage={rowsPerPage} setRowsPerPage={(v) => { setRowsPerPage(v); setPage(1) }} totalRows={filteredRequests.length} onPage={setPage} />
       </div>
     </div>
   )
