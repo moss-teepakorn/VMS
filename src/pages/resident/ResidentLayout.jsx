@@ -1903,7 +1903,7 @@ export default function ResidentLayout() {
     const outstandingAmount = Math.max(0, getFeeOutstandingTotal(fee))
     const initialAmount = outstandingAmount > 0 ? outstandingAmount : Number(fee.total_amount || 0)
     setSelectedFee(fee)
-    setPaymentForm({ amount: String(initialAmount), payment_method: 'transfer', note: '' })
+    setPaymentForm({ amount: Number(initialAmount || 0).toFixed(2), payment_method: 'transfer', note: '' })
     if (paymentSlipPreview) URL.revokeObjectURL(paymentSlipPreview)
     setPaymentSlipPreview('')
     setPaymentSlipFile(null)
@@ -2932,7 +2932,7 @@ export default function ResidentLayout() {
 
           {activeSection === 'rules' && (
             <>
-              <div className="card" style={{ marginBottom: 12 }}>
+              <div className="card card-light-head" style={{ marginBottom: 12 }}>
                 <div className="ch"><div className="ch-ico">🏘️</div><div className="ct">กฎระเบียบหมู่บ้าน ({villageRuleDocs.length} เรื่อง)</div></div>
                 <div className="cb" style={{ padding: 14 }}>
                   {villageRuleDocs.length === 0 ? (
@@ -2953,7 +2953,7 @@ export default function ResidentLayout() {
                 </div>
               </div>
 
-              <div className="card">
+              <div className="card card-light-head">
                 <div className="ch"><div className="ch-ico">🏠</div><div className="ct">ระเบียบการอยู่อาศัย ({livingRuleDocs.length} เรื่อง)</div></div>
                 <div className="cb" style={{ padding: 14 }}>
                   {livingRuleDocs.length === 0 ? (
@@ -3016,7 +3016,7 @@ export default function ResidentLayout() {
               )}
 
               <div className="g2">
-                <div className="card">
+                <div className="card card-light-head">
                   <div className="ch"><div className="ch-ico">📢</div><div className="ct">ประกาศล่าสุด</div></div>
                   <div className="cb" style={{ padding: 14 }}>
                     {latestAnnouncements.length === 0 ? (
@@ -3033,7 +3033,7 @@ export default function ResidentLayout() {
                     ))}
                   </div>
                 </div>
-                <div className="card">
+                <div className="card card-light-head">
                   <div className="ch"><div className="ch-ico">⚠️</div><div className="ct">การแจ้งเตือนล่าสุด</div></div>
                   <div className="cb" style={{ padding: 14 }}>
                     {latestViolation ? (
@@ -4185,7 +4185,7 @@ export default function ResidentLayout() {
                         <span>ยอดชำระ *</span>
                         <input type="number" min="0" max={selectedFeeOutstandingAmount > 0 ? selectedFeeOutstandingAmount : undefined} step="0.01" value={paymentForm.amount} onChange={(e) => setPaymentForm((p) => ({ ...p, amount: e.target.value }))} />
                         {selectedFeeOutstandingAmount > 0 && (
-                          <div style={{ fontSize: 12, color: 'var(--mu)' }}>ยอดค้างที่ต้องชำระ: ฿{formatMoney(selectedFeeOutstandingAmount)}</div>
+                          <div style={{ fontSize: 12, color: 'var(--mu)' }}>ยอดค้างที่ต้องชำระ: ฿{formatMoney2(selectedFeeOutstandingAmount)}</div>
                         )}
                       </label>
                       <label className="house-field">
