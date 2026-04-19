@@ -1,0 +1,1435 @@
+<!DOCTYPE html>
+<html lang="th" data-theme="light">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>GubsSukhasai 24 — สำนักงบประมาณ</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<style>
+/* ════════════════════════════════════════════════
+   TOKENS — Light (Pastel)
+════════════════════════════════════════════════ */
+:root {
+  /* Surfaces */
+  --bg:          #f4f6fb;
+  --surface:     #ffffff;
+  --surface-2:   #f0f3fa;
+  --surface-3:   #e4e9f5;
+
+  /* Sidebar */
+  --sb-bg:       #ffffff;
+  --sb-border:   #e8edf6;
+  --sb-text:     #5c6882;
+  --sb-active-bg:#eef2ff;
+  --sb-active:   #4f6ef7;
+
+  /* Text */
+  --txt-1:       #1e2537;
+  --txt-2:       #5c6882;
+  --txt-3:       #9aa3bb;
+
+  /* Brand / Accent */
+  --accent:      #4f6ef7;
+  --accent-light:#eef2ff;
+  --accent-glow: rgba(79,110,247,.15);
+
+  /* Semantic */
+  --green:       #22c55e;  --green-bg:  #dcfce7;  --green-txt: #15803d;
+  --amber:       #f59e0b;  --amber-bg:  #fef3c7;  --amber-txt: #92400e;
+  --red:         #ef4444;  --red-bg:    #fee2e2;   --red-txt:   #991b1b;
+  --blue:        #3b82f6;  --blue-bg:   #dbeafe;   --blue-txt:  #1d4ed8;
+  --violet:      #8b5cf6;  --violet-bg: #ede9fe;   --violet-txt:#5b21b6;
+
+  /* KPI pastel cards */
+  --kpi-1-bg: #eef2ff; --kpi-1-bar: #4f6ef7;
+  --kpi-2-bg: #dcfce7; --kpi-2-bar: #22c55e;
+  --kpi-3-bg: #fef3c7; --kpi-3-bar: #f59e0b;
+  --kpi-4-bg: #fce7f3; --kpi-4-bar: #ec4899;
+
+  /* Border / Shadow */
+  --border:      #e4e9f5;
+  --shadow-sm:   0 1px 3px rgba(30,37,55,.06), 0 1px 2px rgba(30,37,55,.04);
+  --shadow:      0 4px 12px rgba(30,37,55,.08);
+  --shadow-lg:   0 8px 30px rgba(30,37,55,.12);
+
+  /* Misc */
+  --radius-sm:   6px;
+  --radius:      10px;
+  --radius-lg:   14px;
+  --radius-xl:   20px;
+  --trans:       .2s ease;
+  --font: 'Sarabun', 'Helvetica Neue', sans-serif;
+  --mono: 'IBM Plex Mono', monospace;
+
+  /* Topbar */
+  --topbar-bg: rgba(255,255,255,.85);
+  --topbar-border: #e8edf6;
+
+  /* Scrollbar */
+  --scroll-track: #f0f3fa;
+  --scroll-thumb: #d1d9f0;
+}
+
+/* ════════════════════════════════════════════════
+   TOKENS — Night Mode
+════════════════════════════════════════════════ */
+[data-theme="dark"] {
+  --bg:          #0f1117;
+  --surface:     #181b25;
+  --surface-2:   #1e2234;
+  --surface-3:   #252b3f;
+
+  --sb-bg:       #181b25;
+  --sb-border:   #252b3f;
+  --sb-text:     #7c88a8;
+  --sb-active-bg:#1e2a5e;
+  --sb-active:   #7b9fff;
+
+  --txt-1:       #e8ecf5;
+  --txt-2:       #8894b4;
+  --txt-3:       #4f5a78;
+
+  --accent:      #7b9fff;
+  --accent-light:#1a2347;
+  --accent-glow: rgba(123,159,255,.2);
+
+  --green:       #4ade80;  --green-bg:  #052e16;  --green-txt: #86efac;
+  --amber:       #fbbf24;  --amber-bg:  #291800;  --amber-txt: #fde68a;
+  --red:         #f87171;  --red-bg:    #2d0a0a;   --red-txt:   #fca5a5;
+  --blue:        #60a5fa;  --blue-bg:   #0c1a3a;   --blue-txt:  #93c5fd;
+  --violet:      #a78bfa;  --violet-bg: #200b50;   --violet-txt:#c4b5fd;
+
+  --kpi-1-bg: #1a2347; --kpi-1-bar: #7b9fff;
+  --kpi-2-bg: #052e16; --kpi-2-bar: #4ade80;
+  --kpi-3-bg: #291800; --kpi-3-bar: #fbbf24;
+  --kpi-4-bg: #2d0a20; --kpi-4-bar: #f472b6;
+
+  --border:      #252b3f;
+  --shadow-sm:   0 1px 3px rgba(0,0,0,.3);
+  --shadow:      0 4px 16px rgba(0,0,0,.4);
+  --shadow-lg:   0 8px 32px rgba(0,0,0,.5);
+
+  --topbar-bg:   rgba(24,27,37,.9);
+  --topbar-border: #252b3f;
+
+  --scroll-track: #1e2234;
+  --scroll-thumb: #2e3755;
+}
+
+/* ════════════════════════════════════════════════
+   RESET & BASE
+════════════════════════════════════════════════ */
+*, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+
+html { scroll-behavior:smooth; }
+
+body {
+  font-family: var(--font);
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--txt-1);
+  background: var(--bg);
+  -webkit-font-smoothing: antialiased;
+  transition: background .3s ease, color .3s ease;
+  overflow-x: hidden;
+}
+
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: var(--scroll-track); }
+::-webkit-scrollbar-thumb { background: var(--scroll-thumb); border-radius: 3px; }
+
+/* ════════════════════════════════════════════════
+   SHELL
+════════════════════════════════════════════════ */
+.shell {
+  display: flex;
+  min-height: 100vh;
+}
+
+/* ════════════════════════════════════════════════
+   SIDEBAR
+════════════════════════════════════════════════ */
+.sidebar {
+  width: 230px;
+  flex-shrink: 0;
+  background: var(--sb-bg);
+  border-right: 1px solid var(--sb-border);
+  display: flex;
+  flex-direction: column;
+  position: fixed;
+  left: 0; top: 0; bottom: 0;
+  z-index: 300;
+  transition: width .25s ease, transform .25s ease, background .3s;
+  overflow: hidden;
+}
+
+.sidebar.collapsed { width: 64px; }
+
+/* Brand */
+.sb-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 18px 16px;
+  border-bottom: 1px solid var(--sb-border);
+  min-height: 64px;
+  transition: padding .25s;
+}
+
+.sidebar.collapsed .sb-brand { padding: 18px 0; justify-content: center; }
+
+.brand-logo {
+  width: 34px; height: 34px;
+  background: linear-gradient(135deg, var(--accent) 0%, #818cf8 100%);
+  border-radius: var(--radius);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 14px; font-weight: 700; color: white;
+  flex-shrink: 0;
+  box-shadow: 0 4px 12px var(--accent-glow);
+}
+
+.brand-texts { overflow: hidden; transition: opacity .2s, width .25s; }
+.sidebar.collapsed .brand-texts { opacity: 0; width: 0; }
+
+.brand-name { font-size: 13.5px; font-weight: 700; color: var(--txt-1); white-space: nowrap; }
+.brand-sub  { font-size: 10.5px; color: var(--txt-3); margin-top: 1px; white-space: nowrap; }
+
+/* Nav */
+.sb-nav { flex: 1; padding: 12px 10px; overflow-y: auto; }
+
+.nav-group { margin-bottom: 4px; }
+
+.nav-group-label {
+  font-size: 9px;
+  font-weight: 700;
+  color: var(--txt-3);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  padding: 10px 8px 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  transition: opacity .2s;
+}
+.sidebar.collapsed .nav-group-label { opacity: 0; }
+
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 10px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all var(--trans);
+  color: var(--sb-text);
+  font-size: 13px;
+  font-weight: 500;
+  text-decoration: none;
+  position: relative;
+  white-space: nowrap;
+  overflow: hidden;
+  user-select: none;
+  margin-bottom: 2px;
+}
+
+.nav-item:hover { background: var(--surface-2); color: var(--txt-1); }
+
+.nav-item.active {
+  background: var(--sb-active-bg);
+  color: var(--sb-active);
+  font-weight: 600;
+}
+
+.nav-item.active .nav-icon { color: var(--sb-active); }
+
+.sidebar.collapsed .nav-item { justify-content: center; padding: 9px; }
+
+.nav-icon {
+  width: 18px; height: 18px;
+  flex-shrink: 0;
+  color: var(--txt-3);
+  transition: color var(--trans);
+}
+
+.nav-item:hover .nav-icon { color: var(--txt-1); }
+
+.nav-label { flex: 1; transition: opacity .2s, width .25s; }
+.sidebar.collapsed .nav-label { opacity: 0; width: 0; overflow: hidden; }
+
+.nav-badge {
+  background: var(--accent);
+  color: white;
+  font-size: 9.5px;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 20px;
+  transition: opacity .2s;
+  flex-shrink: 0;
+}
+.sidebar.collapsed .nav-badge { opacity: 0; }
+
+/* Tooltip on collapsed */
+.sidebar.collapsed .nav-item::after {
+  content: attr(data-label);
+  position: absolute;
+  left: calc(100% + 10px);
+  top: 50%;
+  transform: translateY(-50%);
+  background: var(--txt-1);
+  color: var(--surface);
+  font-size: 12px;
+  font-weight: 500;
+  padding: 5px 10px;
+  border-radius: var(--radius-sm);
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .15s;
+  z-index: 999;
+}
+.sidebar.collapsed .nav-item:hover::after { opacity: 1; }
+
+/* Submenu */
+.nav-item.has-sub .chevron {
+  margin-left: auto;
+  width: 12px; height: 12px;
+  color: var(--txt-3);
+  transition: transform .2s;
+  flex-shrink: 0;
+}
+.sidebar.collapsed .chevron { display: none; }
+.nav-item.has-sub.open .chevron { transform: rotate(90deg); }
+
+.subnav {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height .25s ease;
+  padding-left: 18px;
+}
+.subnav.open { max-height: 300px; }
+.sidebar.collapsed .subnav { display: none; }
+
+.sub-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 10px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  color: var(--sb-text);
+  font-size: 12.5px;
+  transition: all var(--trans);
+  text-decoration: none;
+  margin-bottom: 2px;
+  border-left: 2px solid var(--border);
+}
+.sub-item:hover { background: var(--surface-2); color: var(--txt-1); border-left-color: var(--accent); }
+.sub-item.active { color: var(--sb-active); border-left-color: var(--sb-active); background: var(--sb-active-bg); }
+
+.sub-dot { width: 5px; height: 5px; border-radius: 50%; background: currentColor; flex-shrink: 0; }
+
+/* Sidebar Footer */
+.sb-footer {
+  padding: 12px 10px;
+  border-top: 1px solid var(--sb-border);
+}
+
+.user-card {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: background var(--trans);
+  overflow: hidden;
+}
+.user-card:hover { background: var(--surface-2); }
+.sidebar.collapsed .user-card { justify-content: center; padding: 8px; }
+
+.avatar {
+  width: 30px; height: 30px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #818cf8 0%, #a78bfa 100%);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 12px; font-weight: 700; color: white;
+  flex-shrink: 0;
+}
+
+.user-texts { overflow: hidden; transition: opacity .2s; }
+.sidebar.collapsed .user-texts { opacity: 0; width: 0; }
+.user-name { font-size: 12px; font-weight: 600; color: var(--txt-1); white-space: nowrap; }
+.user-role { font-size: 10px; color: var(--txt-3); white-space: nowrap; }
+
+/* ════════════════════════════════════════════════
+   MAIN AREA
+════════════════════════════════════════════════ */
+.main {
+  flex: 1;
+  margin-left: 230px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  transition: margin-left .25s ease;
+}
+.sidebar.collapsed ~ .main { margin-left: 64px; }
+
+/* ════════════════════════════════════════════════
+   TOPBAR
+════════════════════════════════════════════════ */
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 200;
+  background: var(--topbar-bg);
+  border-bottom: 1px solid var(--topbar-border);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  height: 56px;
+  display: flex;
+  align-items: center;
+  padding: 0 20px;
+  gap: 12px;
+  transition: background .3s;
+}
+
+.toggle-sb {
+  width: 34px; height: 34px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--surface);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  color: var(--txt-2);
+  transition: all var(--trans);
+  flex-shrink: 0;
+}
+.toggle-sb:hover { background: var(--surface-2); color: var(--txt-1); }
+
+/* Breadcrumb / page info */
+.topbar-info { flex: 0 0 auto; }
+.topbar-page { font-size: 14px; font-weight: 600; color: var(--txt-1); }
+.topbar-crumb {
+  font-size: 11px;
+  color: var(--txt-3);
+  display: flex; align-items: center; gap: 4px;
+}
+.crumb-sep { opacity: .4; }
+
+/* Search */
+.topbar-search { flex: 1; max-width: 380px; position: relative; }
+.search-ico {
+  position: absolute; left: 11px; top: 50%;
+  transform: translateY(-50%);
+  color: var(--txt-3); pointer-events: none;
+}
+.tb-search {
+  width: 100%; height: 34px;
+  padding: 0 12px 0 34px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface-2);
+  font-family: var(--font); font-size: 13px; color: var(--txt-1);
+  outline: none; transition: all var(--trans);
+}
+.tb-search::placeholder { color: var(--txt-3); }
+.tb-search:focus { border-color: var(--accent); background: var(--surface); box-shadow: 0 0 0 3px var(--accent-glow); }
+
+/* Search dropdown */
+.search-drop {
+  display: none; position: absolute; top: calc(100% + 6px); left: 0; right: 0;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius-lg); box-shadow: var(--shadow-lg);
+  overflow: hidden; z-index: 400;
+}
+.search-drop.open { display: block; animation: fadeSlide .15s ease; }
+@keyframes fadeSlide { from { opacity:0; transform:translateY(-6px); } to { opacity:1; transform:translateY(0); } }
+
+.sd-item { padding: 10px 14px; cursor: pointer; transition: background var(--trans); border-bottom: 1px solid var(--surface-2); }
+.sd-item:last-child { border-bottom: none; }
+.sd-item:hover { background: var(--surface-2); }
+.sd-title { font-size: 13px; font-weight: 500; color: var(--txt-1); }
+.sd-meta  { font-size: 11px; color: var(--txt-3); margin-top: 2px; }
+
+/* Topbar right */
+.topbar-right { display: flex; align-items: center; gap: 6px; margin-left: auto; }
+
+.tb-btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  height: 34px; padding: 0 14px;
+  border-radius: var(--radius); border: 1px solid var(--border);
+  background: var(--surface); font-family: var(--font);
+  font-size: 12.5px; font-weight: 500; color: var(--txt-2);
+  cursor: pointer; transition: all var(--trans); white-space: nowrap; outline: none;
+}
+.tb-btn:hover { background: var(--surface-2); color: var(--txt-1); }
+.tb-btn.primary { background: var(--accent); border-color: var(--accent); color: white; }
+.tb-btn.primary:hover { opacity: .9; box-shadow: 0 4px 12px var(--accent-glow); }
+.tb-btn.icon { width: 34px; padding: 0; }
+.tb-btn.icon.has-dot { position: relative; }
+.tb-btn.icon.has-dot::after {
+  content: ''; position: absolute; top: 7px; right: 7px;
+  width: 6px; height: 6px; background: var(--red); border-radius: 50%; border: 1.5px solid var(--surface);
+}
+
+/* Night toggle */
+.night-toggle {
+  display: flex; align-items: center; gap: 6px;
+  height: 34px; padding: 0 12px;
+  border-radius: var(--radius); border: 1px solid var(--border);
+  background: var(--surface); cursor: pointer; transition: all var(--trans);
+  color: var(--txt-2); font-size: 12.5px; font-weight: 500; font-family: var(--font);
+}
+.night-toggle:hover { background: var(--surface-2); }
+.toggle-track {
+  width: 32px; height: 18px;
+  background: var(--surface-3); border-radius: 10px;
+  position: relative; transition: background .3s;
+  flex-shrink: 0;
+}
+[data-theme="dark"] .toggle-track { background: var(--accent); }
+.toggle-thumb {
+  position: absolute; top: 2px; left: 2px;
+  width: 14px; height: 14px; border-radius: 50%;
+  background: white; box-shadow: 0 1px 3px rgba(0,0,0,.2);
+  transition: left .25s ease;
+}
+[data-theme="dark"] .toggle-thumb { left: 16px; }
+
+/* ════════════════════════════════════════════════
+   SECOND NAV (Tab Bar)
+════════════════════════════════════════════════ */
+.secondary-nav {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 0 20px;
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 42px;
+  overflow-x: auto;
+  transition: background .3s;
+}
+.secondary-nav::-webkit-scrollbar { height: 0; }
+
+.snav-tab {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 0 14px;
+  height: 42px;
+  font-size: 12.5px; font-weight: 500; color: var(--txt-3);
+  cursor: pointer; border: none; background: transparent;
+  border-bottom: 2px solid transparent;
+  font-family: var(--font); white-space: nowrap;
+  transition: all var(--trans);
+  position: relative; flex-shrink: 0;
+}
+.snav-tab:hover { color: var(--txt-1); background: var(--surface-2); border-radius: 8px 8px 0 0; }
+.snav-tab.active { color: var(--accent); border-bottom-color: var(--accent); font-weight: 600; }
+.snav-count {
+  background: var(--surface-2); color: var(--txt-3);
+  font-size: 9.5px; font-weight: 700;
+  padding: 1px 5px; border-radius: 10px;
+  font-family: var(--mono);
+}
+.snav-tab.active .snav-count { background: var(--accent-light); color: var(--accent); }
+
+/* ════════════════════════════════════════════════
+   PAGE CONTENT
+════════════════════════════════════════════════ */
+.page-content {
+  flex: 1; padding: 20px;
+  display: flex; flex-direction: column; gap: 16px;
+}
+
+/* Page header — compact */
+.page-header {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+}
+.page-title { font-size: 16px; font-weight: 700; color: var(--txt-1); }
+.page-sub   { font-size: 12px; color: var(--txt-3); margin-top: 2px; }
+.page-actions { display: flex; gap: 8px; flex-shrink: 0; }
+
+/* ════════════════════════════════════════════════
+   KPI STRIP — compact horizontal
+════════════════════════════════════════════════ */
+.kpi-strip {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+}
+
+.kpi-card {
+  background: var(--kpi-bg);
+  border-radius: var(--radius-lg);
+  padding: 14px 16px;
+  display: flex; align-items: center; gap: 14px;
+  transition: box-shadow var(--trans), transform var(--trans);
+  animation: fadeUp .35s ease both;
+  position: relative; overflow: hidden;
+}
+
+.kpi-card:nth-child(1) { --kpi-bg: var(--kpi-1-bg); animation-delay:.0s; }
+.kpi-card:nth-child(2) { --kpi-bg: var(--kpi-2-bg); animation-delay:.05s; }
+.kpi-card:nth-child(3) { --kpi-bg: var(--kpi-3-bg); animation-delay:.1s; }
+.kpi-card:nth-child(4) { --kpi-bg: var(--kpi-4-bg); animation-delay:.15s; }
+
+.kpi-card:hover { box-shadow: var(--shadow); transform: translateY(-1px); }
+
+.kpi-icon-wrap {
+  width: 40px; height: 40px; border-radius: var(--radius);
+  background: rgba(255,255,255,.6); display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; font-size: 18px;
+}
+[data-theme="dark"] .kpi-icon-wrap { background: rgba(255,255,255,.08); }
+
+.kpi-texts { flex: 1; min-width: 0; }
+.kpi-label { font-size: 10.5px; font-weight: 600; color: var(--txt-2); text-transform: uppercase; letter-spacing: .4px; }
+.kpi-value { font-size: 20px; font-weight: 700; color: var(--txt-1); letter-spacing: -0.5px; font-variant-numeric: tabular-nums; line-height: 1.2; }
+
+.kpi-right { flex-shrink: 0; text-align: right; }
+.kpi-delta {
+  display: inline-flex; align-items: center; gap: 2px;
+  font-size: 11px; font-weight: 600; padding: 2px 7px; border-radius: 20px;
+  background: rgba(255,255,255,.5);
+}
+[data-theme="dark"] .kpi-delta { background: rgba(255,255,255,.1); }
+.kpi-delta.up { color: var(--green-txt); }
+.kpi-delta.down { color: var(--amber-txt); }
+.kpi-sub { font-size: 10px; color: var(--txt-3); margin-top: 3px; }
+
+/* mini spark bar */
+.kpi-spark {
+  position: absolute; bottom: 0; left: 0; right: 0; height: 3px;
+  background: rgba(255,255,255,.3); border-radius: 0 0 var(--radius-lg) var(--radius-lg); overflow: hidden;
+}
+.kpi-spark-fill {
+  height: 100%;
+  background: rgba(0,0,0,.15);
+  border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+  transition: width .8s ease;
+}
+[data-theme="dark"] .kpi-spark-fill { background: rgba(255,255,255,.2); }
+
+@keyframes fadeUp { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
+
+/* ════════════════════════════════════════════════
+   MAIN PANEL — Table
+════════════════════════════════════════════════ */
+.panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  flex: 1; display: flex; flex-direction: column;
+  animation: fadeUp .35s .2s ease both;
+  min-height: 0;
+  transition: background .3s, border-color .3s;
+}
+
+.panel-toolbar {
+  padding: 12px 16px;
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  border-bottom: 1px solid var(--border);
+  flex-wrap: wrap;
+}
+
+.toolbar-left { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.toolbar-right { display: flex; gap: 6px; }
+
+/* Filter pills */
+.pill-group { display: flex; gap: 4px; }
+.pill {
+  padding: 4px 12px; border-radius: 20px;
+  font-size: 12px; font-weight: 500; cursor: pointer;
+  border: 1px solid var(--border); background: transparent;
+  color: var(--txt-2); font-family: var(--font); transition: all var(--trans);
+}
+.pill:hover { border-color: var(--accent); color: var(--accent); }
+.pill.active { background: var(--accent); border-color: var(--accent); color: white; }
+
+/* Inline search */
+.inline-search { position: relative; }
+.inline-search svg { position: absolute; left: 9px; top: 50%; transform: translateY(-50%); color: var(--txt-3); pointer-events: none; }
+.inline-search input {
+  height: 32px; width: 200px; padding: 0 10px 0 30px;
+  border: 1px solid var(--border); border-radius: var(--radius);
+  background: var(--surface-2); font-family: var(--font); font-size: 12.5px; color: var(--txt-1);
+  outline: none; transition: all var(--trans);
+}
+.inline-search input::placeholder { color: var(--txt-3); }
+.inline-search input:focus { border-color: var(--accent); background: var(--surface); box-shadow: 0 0 0 3px var(--accent-glow); }
+
+/* Select */
+.sel {
+  height: 32px; padding: 0 24px 0 10px;
+  border: 1px solid var(--border); border-radius: var(--radius);
+  background: var(--surface-2) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%239aa3bb'/%3E%3C/svg%3E") no-repeat right 8px center;
+  font-family: var(--font); font-size: 12.5px; color: var(--txt-1);
+  appearance: none; -webkit-appearance: none; cursor: pointer; outline: none; transition: all var(--trans);
+}
+.sel:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-glow); background-color: var(--surface); }
+
+/* small btn */
+.sm-btn {
+  height: 32px; padding: 0 12px;
+  border: 1px solid var(--border); border-radius: var(--radius);
+  background: var(--surface-2); font-family: var(--font);
+  font-size: 12px; font-weight: 500; color: var(--txt-2);
+  cursor: pointer; display: inline-flex; align-items: center; gap: 5px; transition: all var(--trans);
+}
+.sm-btn:hover { background: var(--surface-3); color: var(--txt-1); }
+
+/* ════════════════════════════════════════════════
+   TABLE
+════════════════════════════════════════════════ */
+.tbl-wrap { overflow-x: auto; flex: 1; }
+
+table { width: 100%; border-collapse: collapse; }
+
+thead th {
+  padding: 10px 14px;
+  text-align: left;
+  font-size: 10.5px; font-weight: 700; color: var(--txt-3);
+  text-transform: uppercase; letter-spacing: .5px;
+  background: var(--surface-2);
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap; user-select: none; cursor: pointer;
+  transition: color var(--trans), background var(--trans);
+  position: sticky; top: 0;
+}
+thead th:hover { color: var(--txt-1); background: var(--surface-3); }
+
+.th-inner { display: inline-flex; align-items: center; gap: 4px; }
+.sort-arrow { opacity: .3; font-size: 9px; transition: opacity var(--trans); }
+thead th:hover .sort-arrow { opacity: .7; }
+
+tbody td {
+  padding: 11px 14px;
+  font-size: 13px; color: var(--txt-1);
+  border-bottom: 1px solid var(--surface-2);
+  vertical-align: middle;
+  transition: background var(--trans);
+}
+tbody tr:last-child td { border-bottom: none; }
+tbody tr:hover td { background: var(--accent-light); }
+
+/* Cols */
+.col-cb { width: 40px; padding-left: 16px !important; }
+.cb { width: 14px; height: 14px; border: 1.5px solid var(--txt-3); border-radius: 3px; cursor: pointer; appearance: none; transition: all var(--trans); }
+.cb:checked { background: var(--accent); border-color: var(--accent); }
+.cb:checked::after { content:'✓'; display:flex; align-items:center; justify-content:center; color:white; font-size:9px; font-weight:700; line-height:1; margin-top:1px; }
+
+.row-num { font-family: var(--mono); font-size: 11px; color: var(--txt-3); }
+
+.proj-cell { display: flex; align-items: center; gap: 9px; }
+.proj-dot  { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.proj-name { font-weight: 500; color: var(--txt-1); }
+
+.amount { font-family: var(--mono); font-size: 12.5px; font-weight: 500; }
+.date-cell { font-family: var(--mono); font-size: 11.5px; color: var(--txt-2); }
+
+/* Badges */
+.badge {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 3px 9px; border-radius: 20px;
+  font-size: 11px; font-weight: 600; letter-spacing: .1px;
+}
+.badge::before { content:''; width:5px; height:5px; border-radius:50%; background:currentColor; flex-shrink:0; }
+.b-green  { background:var(--green-bg);  color:var(--green-txt); }
+.b-amber  { background:var(--amber-bg);  color:var(--amber-txt); }
+.b-blue   { background:var(--blue-bg);   color:var(--blue-txt);  }
+.b-violet { background:var(--violet-bg); color:var(--violet-txt);}
+.b-gray   { background:var(--surface-3); color:var(--txt-2);     }
+
+/* Row actions */
+.row-acts { display: flex; gap: 4px; }
+.ra-btn {
+  height: 26px; padding: 0 9px;
+  border-radius: var(--radius-sm); border: 1px solid transparent;
+  font-family: var(--font); font-size: 11.5px; font-weight: 500;
+  cursor: pointer; display: inline-flex; align-items: center; gap: 3px; transition: all var(--trans);
+}
+.ra-view { background:var(--blue-bg); color:var(--blue-txt); }
+.ra-view:hover { filter:brightness(.95); }
+.ra-edit { background:var(--surface-2); color:var(--txt-2); border-color:var(--border); }
+.ra-edit:hover { background:var(--surface-3); color:var(--txt-1); }
+.ra-del  { background:transparent; color:var(--txt-3); }
+.ra-del:hover  { background:var(--red-bg); color:var(--red-txt); }
+
+/* ════════════════════════════════════════════════
+   PANEL FOOTER
+════════════════════════════════════════════════ */
+.panel-footer {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 16px; border-top: 1px solid var(--border);
+  background: var(--surface-2); flex-wrap: wrap; gap: 8px;
+  border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+}
+
+.pf-info { font-size: 12px; color: var(--txt-3); display:flex; align-items:center; gap:8px; }
+
+.psize {
+  height: 28px; padding: 0 20px 0 8px;
+  border: 1px solid var(--border); border-radius: var(--radius-sm);
+  background: var(--surface) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='5'%3E%3Cpath d='M0 0l4 5 4-5z' fill='%239aa3bb'/%3E%3C/svg%3E") no-repeat right 6px center;
+  font-size: 12px; font-family: var(--font); color: var(--txt-1);
+  appearance: none; cursor: pointer; outline:none;
+}
+
+.pages { display: flex; gap: 3px; }
+.pg {
+  width: 30px; height: 30px;
+  display:inline-flex; align-items:center; justify-content:center;
+  border-radius: var(--radius-sm); border: 1px solid transparent;
+  font-size:12.5px; font-weight:500; cursor:pointer; font-family:var(--mono);
+  color:var(--txt-2); background:transparent; transition:all var(--trans);
+}
+.pg:hover:not(.active):not(:disabled) { background:var(--surface); border-color:var(--border); color:var(--txt-1); }
+.pg.active { background:var(--accent); color:white; border-color:var(--accent); }
+.pg:disabled { opacity:.35; cursor:default; }
+.pg-ellipsis { width:30px; text-align:center; color:var(--txt-3); font-size:12px; line-height:30px; }
+
+/* ════════════════════════════════════════════════
+   MOBILE CARDS
+════════════════════════════════════════════════ */
+.m-cards { display: none; padding: 12px; gap: 10px; flex-direction: column; }
+.m-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius-lg); padding: 14px 16px;
+}
+.m-card-head { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:10px; }
+.m-card-name { font-size:13.5px; font-weight:600; color:var(--txt-1); }
+.m-row { display:flex; justify-content:space-between; align-items:center; padding:5px 0; font-size:12px; border-bottom:1px solid var(--surface-2); }
+.m-row:last-of-type { border:none; }
+.m-lbl { color:var(--txt-3); font-weight:500; }
+.m-val { color:var(--txt-1); font-weight:500; }
+.m-actions { display:flex; gap:6px; margin-top:10px; }
+.m-actions .ra-btn { flex:1; justify-content:center; }
+
+/* ════════════════════════════════════════════════
+   TOAST
+════════════════════════════════════════════════ */
+.toast-area { position:fixed; bottom:20px; right:20px; z-index:9999; display:flex; flex-direction:column; gap:8px; }
+.toast {
+  background:var(--txt-1); color:var(--surface);
+  padding:10px 16px; border-radius:var(--radius-lg);
+  font-size:13px; box-shadow:var(--shadow-lg);
+  display:flex; align-items:center; gap:8px;
+  animation:toastIn .2s ease; max-width:280px;
+}
+@keyframes toastIn { from{opacity:0;transform:translateY(10px);} to{opacity:1;transform:translateY(0);} }
+
+/* ════════════════════════════════════════════════
+   RESPONSIVE
+════════════════════════════════════════════════ */
+@media (max-width: 1100px) { .kpi-strip { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 900px)  {
+  .sidebar { transform: translateX(-100%); width: 230px !important; }
+  .sidebar.mobile-open { transform: translateX(0); }
+  .main { margin-left: 0 !important; }
+  .sb-overlay { display: block !important; }
+}
+@media (max-width: 680px)  {
+  .kpi-strip { grid-template-columns: 1fr 1fr; }
+  .tbl-wrap table { display:none; }
+  .m-cards { display: flex; }
+  .topbar { padding: 0 12px; }
+  .topbar-search { display: none; }
+  .page-content { padding: 14px; }
+}
+@media (max-width: 420px) { .kpi-strip { grid-template-columns: 1fr; } }
+
+/* Sidebar overlay on mobile */
+.sb-overlay {
+  display: none; position: fixed; inset: 0;
+  background: rgba(0,0,0,.4); z-index: 290;
+}
+</style>
+</head>
+<body>
+
+<!-- Sidebar Overlay (mobile) -->
+<div class="sb-overlay" id="sbOverlay" onclick="closeSidebar()"></div>
+
+<div class="shell">
+
+<!-- ══ SIDEBAR ══════════════════════════════════════ -->
+<aside class="sidebar" id="sidebar">
+
+  <!-- Brand -->
+  <div class="sb-brand">
+    <div class="brand-logo">GS</div>
+    <div class="brand-texts">
+      <div class="brand-name">Gubs Sukhasai 24</div>
+      <div class="brand-sub">สำนักงบประมาณ</div>
+    </div>
+  </div>
+
+  <!-- Nav -->
+  <nav class="sb-nav">
+
+    <div class="nav-group">
+      <div class="nav-group-label">ภาพรวม</div>
+      <a class="nav-item active" data-label="แดชบอร์ด" onclick="setPage('dashboard','แดชบอร์ด')">
+        <svg class="nav-icon" viewBox="0 0 20 20" fill="currentColor"><path d="M2 11a1 1 0 011-1h2a1 1 0 011 1v5a1 1 0 01-1 1H3a1 1 0 01-1-1v-5zm6-4a1 1 0 011-1h2a1 1 0 011 1v9a1 1 0 01-1 1H9a1 1 0 01-1-1V7zm6-3a1 1 0 011-1h2a1 1 0 011 1v12a1 1 0 01-1 1h-2a1 1 0 01-1-1V4z"/></svg>
+        <span class="nav-label">แดชบอร์ด</span>
+      </a>
+      <a class="nav-item" data-label="สรุปรายปี" onclick="setPage('yearly','สรุปรายปี')">
+        <svg class="nav-icon" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clip-rule="evenodd"/></svg>
+        <span class="nav-label">สรุปรายปี</span>
+      </a>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-group-label">โครงการ</div>
+
+      <!-- Menu with submenu -->
+      <a class="nav-item has-sub" data-label="รายการโครงการ" onclick="toggleSub(this)">
+        <svg class="nav-icon" viewBox="0 0 20 20" fill="currentColor"><path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z"/><path fill-rule="evenodd" d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z" clip-rule="evenodd"/></svg>
+        <span class="nav-label">รายการโครงการ</span>
+        <span class="nav-badge">30</span>
+        <svg class="chevron" viewBox="0 0 16 16" fill="currentColor"><path d="M6.22 3.22a.75.75 0 011.06 0l4.25 4.25a.75.75 0 010 1.06l-4.25 4.25a.75.75 0 01-1.06-1.06L9.94 8 6.22 4.28a.75.75 0 010-1.06z"/></svg>
+      </a>
+      <div class="subnav" id="sub-proj">
+        <a class="sub-item active" onclick="setSubPage('ทั้งหมด')"><span class="sub-dot"></span>ทั้งหมด</a>
+        <a class="sub-item" onclick="setSubPage('อนุมัติแล้ว')"><span class="sub-dot"></span>อนุมัติแล้ว</a>
+        <a class="sub-item" onclick="setSubPage('รอดำเนิน')"><span class="sub-dot"></span>รอดำเนิน</a>
+        <a class="sub-item" onclick="setSubPage('ร่าง')"><span class="sub-dot"></span>ร่าง</a>
+      </div>
+
+      <a class="nav-item has-sub" data-label="คำขออนุมัติ" onclick="toggleSub(this)">
+        <svg class="nav-icon" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/></svg>
+        <span class="nav-label">คำขออนุมัติ</span>
+        <svg class="chevron" viewBox="0 0 16 16" fill="currentColor"><path d="M6.22 3.22a.75.75 0 011.06 0l4.25 4.25a.75.75 0 010 1.06l-4.25 4.25a.75.75 0 01-1.06-1.06L9.94 8 6.22 4.28a.75.75 0 010-1.06z"/></svg>
+      </a>
+      <div class="subnav" id="sub-req">
+        <a class="sub-item" onclick="setSubPage('รอตรวจสอบ')"><span class="sub-dot"></span>รอตรวจสอบ</a>
+        <a class="sub-item" onclick="setSubPage('อยู่ระหว่าง')"><span class="sub-dot"></span>อยู่ระหว่างพิจารณา</a>
+        <a class="sub-item" onclick="setSubPage('ส่งคืน')"><span class="sub-dot"></span>ส่งคืนแก้ไข</a>
+      </div>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-group-label">รายงาน</div>
+      <a class="nav-item" data-label="สรุปงบประมาณ" onclick="setPage('report','สรุปงบประมาณ')">
+        <svg class="nav-icon" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h4a1 1 0 110 2H4a1 1 0 01-1-1z" clip-rule="evenodd"/></svg>
+        <span class="nav-label">สรุปงบประมาณ</span>
+      </a>
+      <a class="nav-item" data-label="ส่งออกข้อมูล" onclick="setPage('export','ส่งออกข้อมูล')">
+        <svg class="nav-icon" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clip-rule="evenodd"/></svg>
+        <span class="nav-label">ส่งออกข้อมูล</span>
+      </a>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-group-label">ระบบ</div>
+      <a class="nav-item" data-label="ผู้ใช้งาน" onclick="setPage('users','ผู้ใช้งาน')">
+        <svg class="nav-icon" viewBox="0 0 20 20" fill="currentColor"><path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z"/></svg>
+        <span class="nav-label">ผู้ใช้งาน</span>
+      </a>
+      <a class="nav-item" data-label="ตั้งค่าระบบ" onclick="setPage('settings','ตั้งค่าระบบ')">
+        <svg class="nav-icon" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z" clip-rule="evenodd"/></svg>
+        <span class="nav-label">ตั้งค่าระบบ</span>
+      </a>
+    </div>
+  </nav>
+
+  <div class="sb-footer">
+    <div class="user-card">
+      <div class="avatar">อ</div>
+      <div class="user-texts">
+        <div class="user-name">ผู้ดูแลระบบ</div>
+        <div class="user-role">Administrator</div>
+      </div>
+    </div>
+  </div>
+</aside>
+
+<!-- ══ MAIN ══════════════════════════════════════════ -->
+<div class="main">
+
+  <!-- Topbar -->
+  <header class="topbar">
+    <button class="toggle-sb" onclick="toggleSidebar()" title="Toggle sidebar">
+      <svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor">
+        <path fill-rule="evenodd" d="M3 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 5a1 1 0 011-1h6a1 1 0 110 2H4a1 1 0 01-1-1z" clip-rule="evenodd"/>
+      </svg>
+    </button>
+
+    <div class="topbar-info">
+      <div class="topbar-page" id="topbarPage">รายการโครงการ</div>
+      <div class="topbar-crumb">
+        <span>หน้าหลัก</span><span class="crumb-sep">›</span>
+        <span id="crumbPage" style="color:var(--txt-1)">รายการโครงการ</span>
+      </div>
+    </div>
+
+    <div class="topbar-search">
+      <svg class="search-ico" width="14" height="14" viewBox="0 0 20 20" fill="currentColor">
+        <path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd"/>
+      </svg>
+      <input class="tb-search" type="text" id="globalSearch" placeholder="ค้นหาโครงการ, ประเภท, สถานะ…" autocomplete="off"/>
+      <div class="search-drop" id="searchDrop"></div>
+    </div>
+
+    <div class="topbar-right">
+      <!-- Night toggle -->
+      <button class="night-toggle" onclick="toggleNight()" title="สลับ Night Mode">
+        <span id="nightLabel">☀️</span>
+        <div class="toggle-track">
+          <div class="toggle-thumb"></div>
+        </div>
+        <span style="font-size:11.5px;color:var(--txt-3)" id="nightText">Light</span>
+      </button>
+
+      <button class="tb-btn icon has-dot" title="การแจ้งเตือน">
+        <svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor">
+          <path d="M10 2a6 6 0 00-6 6v3.586l-.707.707A1 1 0 004 14h12a1 1 0 00.707-1.707L16 11.586V8a6 6 0 00-6-6zm0 16a2 2 0 01-2-2h4a2 2 0 01-2 2z"/>
+        </svg>
+      </button>
+
+      <button class="tb-btn" onclick="toast('⬇ กำลังส่งออกข้อมูล…')">
+        <svg width="13" height="13" viewBox="0 0 20 20" fill="currentColor">
+          <path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clip-rule="evenodd"/>
+        </svg>
+        ส่งออก
+      </button>
+      <button class="tb-btn primary" onclick="toast('✦ เปิดฟอร์มเพิ่มโครงการ')">
+        <svg width="13" height="13" viewBox="0 0 20 20" fill="currentColor">
+          <path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd"/>
+        </svg>
+        เพิ่มโครงการ
+      </button>
+    </div>
+  </header>
+
+  <!-- Secondary Nav (Tab Bar) -->
+  <nav class="secondary-nav" id="secondaryNav">
+    <button class="snav-tab active" data-spage="overview" onclick="switchTab(this)">
+      ภาพรวมงบ
+    </button>
+    <button class="snav-tab" data-spage="list" onclick="switchTab(this)">
+      รายการทั้งหมด <span class="snav-count">30</span>
+    </button>
+    <button class="snav-tab" data-spage="approved" onclick="switchTab(this)">
+      อนุมัติแล้ว <span class="snav-count">18</span>
+    </button>
+    <button class="snav-tab" data-spage="pending" onclick="switchTab(this)">
+      รอดำเนิน <span class="snav-count">12</span>
+    </button>
+    <button class="snav-tab" data-spage="report" onclick="switchTab(this)">
+      รายงานสรุป
+    </button>
+    <button class="snav-tab" data-spage="timeline" onclick="switchTab(this)">
+      ไทม์ไลน์
+    </button>
+  </nav>
+
+  <!-- Page Content -->
+  <main class="page-content">
+
+    <!-- Page Header — minimal -->
+    <div class="page-header">
+      <div>
+        <div class="page-title" id="pageTitle">รายการโครงการ · ปีงบประมาณ 2568</div>
+        <div class="page-sub">อัปเดตล่าสุด: 18 เมษายน 2568 · แสดงข้อมูลทั้งหมด 30 รายการ</div>
+      </div>
+      <div class="page-actions">
+        <button class="tb-btn" onclick="toast('🖨 กำลังพิมพ์…')">
+          <svg width="13" height="13" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5 4v3H4a2 2 0 00-2 2v6a2 2 0 002 2h1v2a1 1 0 001 1h8a1 1 0 001-1v-2h1a2 2 0 002-2V9a2 2 0 00-2-2h-1V4a2 2 0 00-2-2H7a2 2 0 00-2 2zm8 0H7v3h6V4zm0 8H7v4h6v-4z" clip-rule="evenodd"/></svg>
+          พิมพ์
+        </button>
+      </div>
+    </div>
+
+    <!-- KPI Strip — compact -->
+    <div class="kpi-strip">
+      <div class="kpi-card">
+        <div class="kpi-icon-wrap">💰</div>
+        <div class="kpi-texts">
+          <div class="kpi-label">งบประมาณรวม</div>
+          <div class="kpi-value">฿1.70M</div>
+        </div>
+        <div class="kpi-right">
+          <div class="kpi-delta up">↑ 5.4%</div>
+          <div class="kpi-sub">1,245 รายการ</div>
+        </div>
+        <div class="kpi-spark"><div class="kpi-spark-fill" style="width:68%"></div></div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-icon-wrap">✅</div>
+        <div class="kpi-texts">
+          <div class="kpi-label">อนุมัติแล้ว</div>
+          <div class="kpi-value">฿8,040</div>
+        </div>
+        <div class="kpi-right">
+          <div class="kpi-delta up">↑ 12.5%</div>
+          <div class="kpi-sub">18 รายการ</div>
+        </div>
+        <div class="kpi-spark"><div class="kpi-spark-fill" style="width:82%"></div></div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-icon-wrap">⏳</div>
+        <div class="kpi-texts">
+          <div class="kpi-label">รอการอนุมัติ</div>
+          <div class="kpi-value">฿1.70M</div>
+        </div>
+        <div class="kpi-right">
+          <div class="kpi-delta down">↓ 8.2%</div>
+          <div class="kpi-sub">12 รายการ</div>
+        </div>
+        <div class="kpi-spark"><div class="kpi-spark-fill" style="width:43%"></div></div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-icon-wrap">📈</div>
+        <div class="kpi-texts">
+          <div class="kpi-label">ความคืบหน้า</div>
+          <div class="kpi-value">0.5%</div>
+        </div>
+        <div class="kpi-right">
+          <div class="kpi-delta down">เดือนนี้</div>
+          <div class="kpi-sub">ต้องเร่ง</div>
+        </div>
+        <div class="kpi-spark"><div class="kpi-spark-fill" style="width:2%"></div></div>
+      </div>
+    </div>
+
+    <!-- Main Panel -->
+    <div class="panel">
+      <!-- Toolbar -->
+      <div class="panel-toolbar">
+        <div class="toolbar-left">
+          <!-- Status pills -->
+          <div class="pill-group" id="pillGroup">
+            <button class="pill active" data-filter="all" onclick="filterPill(this)">ทั้งหมด</button>
+            <button class="pill" data-filter="อนุมัติแล้ว" onclick="filterPill(this)">อนุมัติ</button>
+            <button class="pill" data-filter="รอทำรายการ" onclick="filterPill(this)">รอดำเนิน</button>
+          </div>
+          <!-- Type select -->
+          <select class="sel" id="typeFilter" onchange="applyFilters()">
+            <option value="">ประเภททั้งหมด</option>
+            <option value="ระบบ">ระบบ</option>
+            <option value="บริการ">บริการ</option>
+            <option value="ค่าใช้สอย">ค่าใช้สอย</option>
+            <option value="อื่นๆ">อื่นๆ</option>
+          </select>
+          <!-- Inline search -->
+          <div class="inline-search">
+            <svg width="12" height="12" viewBox="0 0 20 20" fill="currentColor">
+              <path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd"/>
+            </svg>
+            <input type="text" id="tableSearch" placeholder="ค้นหาในตาราง…" oninput="applyFilters()" autocomplete="off"/>
+          </div>
+        </div>
+        <div class="toolbar-right">
+          <button class="sm-btn" onclick="toast('⬇ กำลังส่งออก Excel…')">
+            <svg width="12" height="12" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clip-rule="evenodd"/></svg>
+            Excel
+          </button>
+        </div>
+      </div>
+
+      <!-- Table -->
+      <div class="tbl-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th class="col-cb"><input type="checkbox" class="cb" id="checkAll" onchange="toggleAll(this)"/></th>
+              <th style="width:4%"><div class="th-inner"># <span class="sort-arrow">↕</span></div></th>
+              <th style="width:33%"><div class="th-inner">ชื่อโครงการ <span class="sort-arrow">↕</span></div></th>
+              <th style="width:12%"><div class="th-inner">ประเภท <span class="sort-arrow">↕</span></div></th>
+              <th style="width:12%"><div class="th-inner">วันที่เริ่ม <span class="sort-arrow">↕</span></div></th>
+              <th style="width:11%;text-align:right"><div class="th-inner" style="justify-content:flex-end">วงเงิน (฿) <span class="sort-arrow">↕</span></div></th>
+              <th style="width:13%"><div class="th-inner">สถานะ <span class="sort-arrow">↕</span></div></th>
+              <th style="width:15%">การดำเนิน</th>
+            </tr>
+          </thead>
+          <tbody id="tblBody"></tbody>
+        </table>
+        <!-- Mobile cards -->
+        <div class="m-cards" id="mCards"></div>
+      </div>
+
+      <!-- Footer -->
+      <div class="panel-footer">
+        <div class="pf-info">
+          <span>แสดง</span>
+          <select class="psize" id="psize" onchange="setPageSize(this.value)">
+            <option value="10">10</option>
+            <option value="25">25</option>
+            <option value="50">50</option>
+          </select>
+          <span>รายการ</span>
+        </div>
+        <div class="pf-info" id="pageInfo">1–10 จาก 30 รายการ</div>
+        <div class="pages" id="pages"></div>
+      </div>
+    </div>
+
+  </main>
+</div><!-- /main -->
+</div><!-- /shell -->
+
+<!-- Toast -->
+<div class="toast-area" id="toastArea"></div>
+
+<script>
+/* ─── Data ──────────────────────────── */
+const DATA = [
+  {id:1,  name:'ระบบวางแผนการจัดซื้อ',       type:'ระบบ',      date:'11/01/69', amount:19092, status:'อนุมัติแล้ว'},
+  {id:2,  name:'ระบบรายงานการเบิกจ่าย',       type:'ระบบ',      date:'11/07/69', amount:7036,  status:'อนุมัติแล้ว'},
+  {id:3,  name:'การพัฒนาเว็บไซต์บริหาร',      type:'บริการ',    date:'11/07/69', amount:7064,  status:'รอทำรายการ'},
+  {id:4,  name:'ค่าซ่อมแซมอาคาร',             type:'ค่าใช้สอย', date:'11/07/69', amount:9318,  status:'อนุมัติแล้ว'},
+  {id:5,  name:'ระบบประเมินคุณภาพ',           type:'ระบบ',      date:'11/07/69', amount:9546,  status:'อนุมัติแล้ว'},
+  {id:6,  name:'ระบบสารสนเทศ',                type:'ระบบ',      date:'11/07/69', amount:7064,  status:'รอทำรายการ'},
+  {id:7,  name:'รายวิทยาลัยหลัก',             type:'บริการ',    date:'11/07/69', amount:7093,  status:'อนุมัติแล้ว'},
+  {id:8,  name:'ค่าบำรุงรักษาโครงการ',        type:'ค่าใช้สอย', date:'11/07/69', amount:7149,  status:'รอทำรายการ'},
+  {id:9,  name:'ระบบติดตามผล',                type:'ระบบ',      date:'11/07/69', amount:7149,  status:'อนุมัติแล้ว'},
+  {id:10, name:'ค่าอื่นๆ',                    type:'อื่นๆ',     date:'11/07/69', amount:7064,  status:'รอทำรายการ'},
+  {id:11, name:'ระบบบัญชีองค์กร',             type:'ระบบ',      date:'15/02/69', amount:12500, status:'อนุมัติแล้ว'},
+  {id:12, name:'โครงการพัฒนาบุคลากร',         type:'บริการ',    date:'20/02/69', amount:8800,  status:'อนุมัติแล้ว'},
+  {id:13, name:'ค่าจัดซื้อครุภัณฑ์',          type:'ค่าใช้สอย', date:'01/03/69', amount:15400, status:'รอทำรายการ'},
+  {id:14, name:'ระบบการเงินดิจิทัล',          type:'ระบบ',      date:'05/03/69', amount:18000, status:'อนุมัติแล้ว'},
+  {id:15, name:'บริการตรวจสอบภายใน',          type:'บริการ',    date:'10/03/69', amount:6500,  status:'อนุมัติแล้ว'},
+  {id:16, name:'ระบบ ERP หน่วยงาน',           type:'ระบบ',      date:'12/03/69', amount:25000, status:'รอทำรายการ'},
+  {id:17, name:'ค่าซ่อมแซมระบบไฟฟ้า',        type:'ค่าใช้สอย', date:'14/03/69', amount:4200,  status:'อนุมัติแล้ว'},
+  {id:18, name:'โครงการ Smart Office',        type:'ระบบ',      date:'18/03/69', amount:32000, status:'รอทำรายการ'},
+  {id:19, name:'ค่าประกันอาคาร',              type:'ค่าใช้สอย', date:'20/03/69', amount:3800,  status:'อนุมัติแล้ว'},
+  {id:20, name:'ระบบ HR ดิจิทัล',             type:'ระบบ',      date:'25/03/69', amount:14700, status:'อนุมัติแล้ว'},
+  {id:21, name:'บริการที่ปรึกษา ICT',         type:'บริการ',    date:'01/04/69', amount:9200,  status:'รอทำรายการ'},
+  {id:22, name:'โครงการ Cloud Migration',     type:'ระบบ',      date:'03/04/69', amount:41000, status:'รอทำรายการ'},
+  {id:23, name:'ค่าสาธารณูปโภค Q2',           type:'ค่าใช้สอย', date:'05/04/69', amount:6100,  status:'อนุมัติแล้ว'},
+  {id:24, name:'ระบบ Document Management',    type:'ระบบ',      date:'08/04/69', amount:11300, status:'อนุมัติแล้ว'},
+  {id:25, name:'โครงการความปลอดภัยข้อมูล',   type:'ระบบ',      date:'10/04/69', amount:17600, status:'รอทำรายการ'},
+  {id:26, name:'บริการฝึกอบรมบุคลากร',        type:'บริการ',    date:'12/04/69', amount:5400,  status:'อนุมัติแล้ว'},
+  {id:27, name:'ค่าบำรุงรักษาเครื่องพิมพ์',  type:'ค่าใช้สอย', date:'14/04/69', amount:2900,  status:'อนุมัติแล้ว'},
+  {id:28, name:'ระบบ Workflow อัตโนมัติ',     type:'ระบบ',      date:'15/04/69', amount:22400, status:'รอทำรายการ'},
+  {id:29, name:'โครงการ Digital Signature',   type:'ระบบ',      date:'16/04/69', amount:8700,  status:'อนุมัติแล้ว'},
+  {id:30, name:'ค่าใช้จ่ายบริหารทั่วไป',      type:'อื่นๆ',     date:'17/04/69', amount:4600,  status:'รอทำรายการ'},
+];
+
+const TYPE_DOT  = {ระบบ:'#4f6ef7', บริการ:'#22c55e', 'ค่าใช้สอย':'#f59e0b', อื่นๆ:'#8b5cf6'};
+const TYPE_BADGE= {ระบบ:'b-blue', บริการ:'b-green', 'ค่าใช้สอย':'b-amber', อื่นๆ:'b-violet'};
+
+/* ─── State ─────────────────────────── */
+let page=1, pageSize=10, statusFilter='all', typeFilter='', searchQ='';
+
+/* ─── Render ─────────────────────────── */
+function filtered(){
+  return DATA.filter(r=>{
+    const q=searchQ.toLowerCase();
+    const mQ=!q||r.name.toLowerCase().includes(q)||r.type.toLowerCase().includes(q)||r.status.toLowerCase().includes(q)||String(r.amount).includes(q);
+    const mS=statusFilter==='all'||r.status===statusFilter;
+    const mT=!typeFilter||r.type===typeFilter;
+    return mQ&&mS&&mT;
+  });
+}
+
+function render(){
+  const rows=filtered();
+  const total=rows.length;
+  const pages=Math.ceil(total/pageSize)||1;
+  if(page>pages) page=pages;
+  const s=(page-1)*pageSize;
+  const slice=rows.slice(s, s+pageSize);
+
+  // Desktop table
+  const tb=document.getElementById('tblBody');
+  if(!slice.length){
+    tb.innerHTML=`<tr><td colspan="8" style="text-align:center;padding:40px 16px;color:var(--txt-3);font-size:13px;">ไม่พบรายการที่ตรงกับเงื่อนไข</td></tr>`;
+  } else {
+    tb.innerHTML=slice.map((r,i)=>`
+      <tr>
+        <td class="col-cb"><input type="checkbox" class="cb"/></td>
+        <td><span class="row-num">${s+i+1}</span></td>
+        <td><div class="proj-cell">
+          <div class="proj-dot" style="background:${TYPE_DOT[r.type]||'#9aa3bb'}"></div>
+          <span class="proj-name">${r.name}</span>
+        </div></td>
+        <td><span class="badge ${TYPE_BADGE[r.type]||'b-gray'}">${r.type}</span></td>
+        <td><span class="date-cell">${r.date}</span></td>
+        <td style="text-align:right"><span class="amount">${r.amount.toLocaleString('th-TH')}</span></td>
+        <td><span class="badge ${r.status==='อนุมัติแล้ว'?'b-green':'b-amber'}">${r.status}</span></td>
+        <td><div class="row-acts">
+          <button class="ra-btn ra-view" onclick="toast('👁 ดูรายละเอียด: ${r.name}')">ดู</button>
+          <button class="ra-btn ra-edit" onclick="toast('✏️ แก้ไข: ${r.name}')">แก้ไข</button>
+          <button class="ra-btn ra-del"  onclick="toast('🗑 ลบ: ${r.name}')">ลบ</button>
+        </div></td>
+      </tr>`).join('');
+  }
+
+  // Mobile cards
+  const mc=document.getElementById('mCards');
+  mc.innerHTML=slice.map(r=>`
+    <div class="m-card">
+      <div class="m-card-head">
+        <div class="m-card-name">${r.name}</div>
+        <span class="badge ${r.status==='อนุมัติแล้ว'?'b-green':'b-amber'}">${r.status}</span>
+      </div>
+      <div class="m-row"><span class="m-lbl">ประเภท</span><span class="badge ${TYPE_BADGE[r.type]||'b-gray'}">${r.type}</span></div>
+      <div class="m-row"><span class="m-lbl">วันที่</span><span class="m-val">${r.date}</span></div>
+      <div class="m-row"><span class="m-lbl">วงเงิน</span><span class="m-val">฿${r.amount.toLocaleString('th-TH')}</span></div>
+      <div class="m-actions">
+        <button class="ra-btn ra-view" onclick="toast('ดูรายละเอียด')">ดู</button>
+        <button class="ra-btn ra-edit" onclick="toast('แก้ไข')">แก้ไข</button>
+        <button class="ra-btn ra-del"  onclick="toast('ลบรายการ')">ลบ</button>
+      </div>
+    </div>`).join('');
+
+  // Info
+  document.getElementById('pageInfo').textContent=total?`${s+1}–${Math.min(s+pageSize,total)} จาก ${total} รายการ`:'0 รายการ';
+
+  // Pagination
+  const pEl=document.getElementById('pages');
+  const pg=(p)=>`<button class="pg ${p===page?'active':''}" onclick="goPage(${p})">${p}</button>`;
+  let html=`<button class="pg" ${page<=1?'disabled':''} onclick="goPage(${page-1})">‹</button>`;
+  const r2=smartRange(page,pages);
+  r2.forEach(p=>{
+    if(p==='…') html+=`<span class="pg-ellipsis">…</span>`;
+    else html+=pg(p);
+  });
+  html+=`<button class="pg" ${page>=pages?'disabled':''} onclick="goPage(${page+1})">›</button>`;
+  pEl.innerHTML=html;
+}
+
+function smartRange(cur,total){
+  if(total<=7) return Array.from({length:total},(_,i)=>i+1);
+  if(cur<=4)   return [1,2,3,4,5,'…',total];
+  if(cur>=total-3) return [1,'…',total-4,total-3,total-2,total-1,total];
+  return [1,'…',cur-1,cur,cur+1,'…',total];
+}
+
+function goPage(p){ page=p; render(); }
+function setPageSize(v){ pageSize=parseInt(v); page=1; render(); }
+
+function filterPill(btn){
+  document.querySelectorAll('.pill').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  statusFilter=btn.dataset.filter;
+  page=1; render();
+}
+
+function applyFilters(){
+  typeFilter=document.getElementById('typeFilter').value;
+  searchQ=document.getElementById('tableSearch').value.trim();
+  page=1; render();
+}
+
+function toggleAll(cb){
+  document.querySelectorAll('#tblBody .cb').forEach(c=>c.checked=cb.checked);
+}
+
+/* ─── Global Search ──────────────────── */
+const gsEl=document.getElementById('globalSearch');
+const sdEl=document.getElementById('searchDrop');
+
+gsEl.addEventListener('input',function(){
+  const q=this.value.trim().toLowerCase();
+  if(!q){sdEl.classList.remove('open');return;}
+  const hits=DATA.filter(r=>r.name.toLowerCase().includes(q)||r.type.toLowerCase().includes(q)||r.status.toLowerCase().includes(q)).slice(0,6);
+  sdEl.innerHTML=hits.length
+    ? hits.map(r=>`<div class="sd-item" onclick="jumpTo('${r.name}')">
+        <div class="sd-title">${r.name}</div>
+        <div class="sd-meta">${r.type} · ${r.status} · ฿${r.amount.toLocaleString('th-TH')}</div>
+      </div>`).join('')
+    : `<div class="sd-item"><div class="sd-title" style="color:var(--txt-3)">ไม่พบผลการค้นหา</div></div>`;
+  sdEl.classList.add('open');
+});
+document.addEventListener('click',e=>{
+  if(!e.target.closest('#globalSearch')&&!e.target.closest('#searchDrop')) sdEl.classList.remove('open');
+});
+function jumpTo(name){
+  gsEl.value=name; sdEl.classList.remove('open');
+  document.getElementById('tableSearch').value=name;
+  searchQ=name; statusFilter='all'; typeFilter='';
+  document.querySelectorAll('.pill').forEach(b=>b.classList.toggle('active',b.dataset.filter==='all'));
+  document.getElementById('typeFilter').value='';
+  page=1; render();
+}
+
+/* ─── Sidebar ────────────────────────── */
+const sb=document.getElementById('sidebar');
+let sbCollapsed=false;
+
+function toggleSidebar(){
+  if(window.innerWidth<=900){
+    sb.classList.toggle('mobile-open');
+    document.getElementById('sbOverlay').style.display=sb.classList.contains('mobile-open')?'block':'none';
+  } else {
+    sbCollapsed=!sbCollapsed;
+    sb.classList.toggle('collapsed',sbCollapsed);
+  }
+}
+function closeSidebar(){
+  sb.classList.remove('mobile-open');
+  document.getElementById('sbOverlay').style.display='none';
+}
+
+/* Submenu */
+function toggleSub(item){
+  const subId='sub-'+(item.querySelector('.nav-label')?.textContent?.includes('คำขอ')?'req':'proj');
+  const sub=document.getElementById(subId)||item.nextElementSibling;
+  if(!sub) return;
+  const isOpen=sub.classList.contains('open');
+  // close all
+  document.querySelectorAll('.subnav.open').forEach(s=>{ s.classList.remove('open'); s.previousElementSibling?.classList.remove('open'); });
+  if(!isOpen){ sub.classList.add('open'); item.classList.add('open'); }
+}
+
+/* Sub-items */
+function setSubPage(name){
+  document.querySelectorAll('.sub-item').forEach(i=>i.classList.remove('active'));
+  event.target.classList.add('active');
+  toast(`📂 ${name}`);
+}
+
+/* Nav items */
+function setPage(id, label){
+  document.querySelectorAll('.nav-item').forEach(i=>i.classList.remove('active'));
+  event.currentTarget.classList.add('active');
+  document.getElementById('topbarPage').textContent=label;
+  document.getElementById('crumbPage').textContent=label;
+  document.getElementById('pageTitle').textContent=`${label} · ปีงบประมาณ 2568`;
+  toast(`🗂 เปิดหน้า: ${label}`);
+}
+
+/* Tab bar */
+function switchTab(btn){
+  document.querySelectorAll('.snav-tab').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  const sp=btn.dataset.spage;
+  if(sp==='approved'){statusFilter='อนุมัติแล้ว';}
+  else if(sp==='pending'){statusFilter='รอทำรายการ';}
+  else { statusFilter='all'; }
+  document.querySelectorAll('.pill').forEach(b=>b.classList.toggle('active',b.dataset.filter===statusFilter||(!statusFilter&&b.dataset.filter==='all')));
+  page=1; render();
+  toast(`📋 ${btn.textContent.trim()}`);
+}
+
+/* ─── Night Mode ─────────────────────── */
+function toggleNight(){
+  const html=document.documentElement;
+  const isDark=html.getAttribute('data-theme')==='dark';
+  html.setAttribute('data-theme',isDark?'light':'dark');
+  document.getElementById('nightLabel').textContent=isDark?'☀️':'🌙';
+  document.getElementById('nightText').textContent=isDark?'Light':'Night';
+}
+
+/* ─── Toast ──────────────────────────── */
+function toast(msg){
+  const area=document.getElementById('toastArea');
+  const t=document.createElement('div');
+  t.className='toast'; t.textContent=msg;
+  area.appendChild(t);
+  setTimeout(()=>t.remove(),2800);
+}
+
+// Open first submenu by default
+document.getElementById('sub-proj').classList.add('open');
+document.querySelector('.nav-item.has-sub').classList.add('open');
+
+render();
+</script>
+</body>
+</html>
