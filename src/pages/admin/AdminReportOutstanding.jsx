@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react'
-import StyledSelect from '../../components/StyledSelect'
+import DropdownList from '../../components/DropdownList'
 import ReportMockPage from './reports/ReportMockPage'
 import ReportExportButtons from './ReportExportButtons'
 import { getSystemConfig } from '../../lib/systemConfig'
@@ -31,7 +31,6 @@ export default function AdminReportOutstanding() {
   const [error, setError] = useState('')
   const [year, setYear] = useState(new Date().getFullYear())
   const [setup, setSetup] = useState({})
-  const [search, setSearch] = useState('')
 
   useEffect(() => {
     getSystemConfig().then(setSetup).catch(() => {})
@@ -106,16 +105,7 @@ export default function AdminReportOutstanding() {
         }
       })
 
-      const keyword = String(search || '').trim().toLowerCase()
-      const finalRows = keyword
-        ? mapped.filter((row) => (
-          String(row.houseNo || '').toLowerCase().includes(keyword)
-          || String(row.ownerName || '').toLowerCase().includes(keyword)
-          || String(row.soi || '').toLowerCase().includes(keyword)
-        ))
-        : mapped
-
-      finalRows.sort((left, right) => {
+      mapped.sort((left, right) => {
         const leftSoi = parseInt(String(left.soi || '').replace(/[^0-9]/g, ''), 10)
         const rightSoi = parseInt(String(right.soi || '').replace(/[^0-9]/g, ''), 10)
         const normalizedLeftSoi = Number.isFinite(leftSoi) ? leftSoi : Number.MAX_SAFE_INTEGER
@@ -124,7 +114,7 @@ export default function AdminReportOutstanding() {
         return String(left.houseNo || '').localeCompare(String(right.houseNo || ''), 'th-TH', { numeric: true })
       })
 
-      setRows(finalRows)
+      setRows(mapped)
     } catch (err) {
       setRows([])
       setError(err?.message || 'เกิดข้อผิดพลาดในการโหลดข้อมูล')
@@ -136,7 +126,7 @@ export default function AdminReportOutstanding() {
   useEffect(() => {
     runReport()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  }, [year])
 
   return (
     <div className="pane on houses-compact reports-compact">
@@ -163,24 +153,15 @@ export default function AdminReportOutstanding() {
         </div>
       </div>
 
-      <div className="card report-filter-card">
-        <div className="cb" style={{ padding: 12 }}>
-          <form className="report-filter-grid report-filter-grid-3" onSubmit={(event) => { event.preventDefault(); runReport() }}>
-            <label className="house-field" style={{ margin: 0 }}>
-              <span>ค้นหา (ซอย / บ้าน / ชื่อ)</span>
-              <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="เช่น 99/7 หรือ สมชาย" />
-            </label>
-            <label className="house-field" style={{ margin: 0 }}>
-              <span>ปี</span>
-              <StyledSelect value={year} onChange={(event) => setYear(Number(event.target.value))}>
-                {yearOptions.map((value) => <option key={value} value={value}>{value + 543}</option>)}
-              </StyledSelect>
-            </label>
-            <div className="report-filter-action">
-              <button className="btn btn-p" type="submit" style={{ minWidth: 120 }}>แสดงรายงาน</button>
-            </div>
-          </form>
-          {error && <div style={{ marginTop: 8, color: '#dc2626', fontSize: 12 }}>{error}</div>}
+      <div className="card houses-main-card">
+        <div className="vms-panel-toolbar">
+          <div className="vms-toolbar-left">
+            <DropdownList compact value={String(year)} options={yearOptions.map((y) => ({ value: String(y), label: String(y + 543) }))} onChange={(v) => setYear(Number(v))} placeholder="ปี" />
+          </div>
+          <div className="vms-toolbar-right">
+            {error && <span style={{ fontSize: 12, color: '#dc2626' }}>{error}</span>}
+            <button className="vms-sm-btn" onClick={runReport} disabled={loading}>🔄</button>
+          </div>
         </div>
       </div>
 

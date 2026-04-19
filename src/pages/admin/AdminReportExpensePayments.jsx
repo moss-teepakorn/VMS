@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react'
-import StyledSelect from '../../components/StyledSelect'
+import DropdownList from '../../components/DropdownList'
 import ReportMockPage from './reports/ReportMockPage'
 import ReportExportButtons from './ReportExportButtons'
 import { listDisbursements } from '../../lib/disbursements'
@@ -123,7 +123,7 @@ export default function AdminReportExpensePayments() {
   useEffect(() => {
     runReport()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  }, [startMonth, endMonth, year])
 
   return (
     <div className="pane on houses-compact reports-compact">
@@ -154,32 +154,17 @@ export default function AdminReportExpensePayments() {
         </div>
       </div>
 
-      <div className="card report-filter-card">
-        <div className="cb" style={{ padding: 12 }}>
-          <form className="report-filter-grid report-filter-grid-4" onSubmit={(event) => { event.preventDefault(); runReport() }}>
-            <label className="house-field" style={{ margin: 0 }}>
-              <span>เดือนเริ่มต้น</span>
-              <StyledSelect value={startMonth} onChange={(event) => setStartMonth(Number(event.target.value))}>
-                {monthOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
-              </StyledSelect>
-            </label>
-            <label className="house-field" style={{ margin: 0 }}>
-              <span>ถึงเดือน</span>
-              <StyledSelect value={endMonth} onChange={(event) => setEndMonth(Number(event.target.value))}>
-                {monthOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
-              </StyledSelect>
-            </label>
-            <label className="house-field" style={{ margin: 0 }}>
-              <span>ปี</span>
-              <StyledSelect value={year} onChange={(event) => setYear(Number(event.target.value))}>
-                {yearOptions.map((value) => <option key={value} value={value}>{value + 543}</option>)}
-              </StyledSelect>
-            </label>
-            <div className="report-filter-action">
-              <button className="btn btn-p" type="submit" style={{ minWidth: 120 }}>แสดงรายงาน</button>
-            </div>
-          </form>
-          {error && <div style={{ marginTop: 8, color: '#dc2626', fontSize: 12 }}>{error}</div>}
+      <div className="card houses-main-card">
+        <div className="vms-panel-toolbar">
+          <div className="vms-toolbar-left">
+            <DropdownList compact value={String(startMonth)} options={monthOptions.map((m) => ({ value: String(m.value), label: m.label }))} onChange={(v) => setStartMonth(Number(v))} placeholder="เดือนเริ่มต้น" />
+            <DropdownList compact value={String(endMonth)} options={monthOptions.map((m) => ({ value: String(m.value), label: m.label }))} onChange={(v) => setEndMonth(Number(v))} placeholder="ถึงเดือน" />
+            <DropdownList compact value={String(year)} options={yearOptions.map((y) => ({ value: String(y), label: String(y + 543) }))} onChange={(v) => setYear(Number(v))} placeholder="ปี" />
+          </div>
+          <div className="vms-toolbar-right">
+            {error && <span style={{ fontSize: 12, color: '#dc2626' }}>{error}</span>}
+            <button className="vms-sm-btn" onClick={runReport} disabled={loading}>🔄</button>
+          </div>
         </div>
       </div>
 
