@@ -13,13 +13,17 @@ const defaultPositionForIndex = (i) => {
   return 'กรรมการ'
 }
 
+const uniqueMemberId = () => `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`
+const createMemberRow = ({ member_no, full_name = '', position, phone = '' } = {}) => ({
+  uid: uniqueMemberId(),
+  member_no,
+  full_name,
+  position: String(position || defaultPositionForIndex(member_no - 1)).trim(),
+  phone,
+})
+
 const emptyMembers = () =>
-  Array.from({ length: 7 }, (_, i) => ({
-    member_no: i + 1,
-    full_name: '',
-    position: defaultPositionForIndex(i),
-    phone: '',
-  }))
+  Array.from({ length: 7 }, (_, i) => createMemberRow({ member_no: i + 1 }))
 
 const EMPTY_FORM = { set_no: '', is_active: false, note: '', members: emptyMembers() }
 
@@ -58,7 +62,7 @@ export default function AdminBoardSets() {
     setEditingId(set.id)
     const existing = (set.board_members || []).sort((a, b) => a.member_no - b.member_no)
     const members = existing.length > 0
-      ? existing.map((m, i) => ({
+      ? existing.map((m, i) => createMemberRow({
         member_no: i + 1,
         full_name: m.full_name || '',
         position: m.position || defaultPositionForIndex(i),
@@ -170,12 +174,7 @@ export default function AdminBoardSets() {
   const addMember = () => {
     setForm((prev) => ({
       ...prev,
-      members: [...prev.members, {
-        member_no: prev.members.length + 1,
-        full_name: '',
-        position: 'กรรมการ',
-        phone: '',
-      }],
+      members: [...prev.members, createMemberRow({ member_no: prev.members.length + 1 })],
     }))
   }
 
@@ -232,7 +231,7 @@ export default function AdminBoardSets() {
                 ) : sorted.map((set) => {
                   const members = (set.board_members || []).sort((a, b) => a.member_no - b.member_no)
                   const chairman = members.find((m) => m.position === 'ประธานกรรมการ')
-                  const finance = members.find((m) => m.position === 'กรรมการการเงิน')
+                  const finance = members.find((m) => m.position === 'กรรมการการเงิน') || members.find((m) => m.position === 'กรรมการและเหรัญญิก')
                   return (
                     <tr key={set.id}>
                       <td><strong>ชุดที่ {set.set_no}</strong></td>
@@ -267,7 +266,7 @@ export default function AdminBoardSets() {
             ) : sorted.map((set) => {
               const members = (set.board_members || []).sort((a, b) => a.member_no - b.member_no)
               const chairman = members.find((m) => m.position === 'ประธานกรรมการ')
-              const finance = members.find((m) => m.position === 'กรรมการการเงิน')
+              const finance = members.find((m) => m.position === 'กรรมการการเงิน') || members.find((m) => m.position === 'กรรมการและเหรัญญิก')
               const memberCount = members.filter((m) => m.full_name).length
               return (
                 <div key={`m-${set.id}`} className="mcard">
@@ -353,7 +352,7 @@ export default function AdminBoardSets() {
                     </thead>
                     <tbody>
                       {form.members.map((m, i) => (
-                        <tr key={i}>
+                        <tr key={m.uid}>
                           <td style={{ textAlign: 'center', padding: '5px 8px', border: '1px solid var(--bo)', fontSize: 12, color: 'var(--mu)' }}>{i + 1}</td>
                           <td style={{ padding: '4px 6px', border: '1px solid var(--bo)' }}>
                             <input
