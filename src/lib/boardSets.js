@@ -90,16 +90,26 @@ export async function saveBoardMembers(setId, members = []) {
   const existingIds = new Set((existingRows || []).map((r) => String(r.id)))
   const incomingIds = new Set((incoming || []).map((r) => String(r.id)).filter((s) => s && s !== 'null'))
 
-  // Delete rows that exist in DB but not in incoming list
-  for (const ex of existingRows || []) {
-    const exId = String(ex.id)
-    if (!incomingIds.has(exId)) {
-      const { error: delErr } = await supabase.from('board_members').delete().eq('id', exId)
-      if (delErr) throw delErr
-    }
+  // Compute IDs to delete (existing in DB but not present in incoming payload)
+  const toDeleteIds = (Array.from(existingIds).filter((id) => !incomingIds.has(id)))
+
+  // Batch-delete removed IDs for clarity and efficiency
+  if (toDeleteIds.length > 0) {
+    const { error: delErr } = await supabase.from('board_members').delete().in('id', toDeleteIds)
+    if (delErr) throw delErr
   }
 
-  // Upsert incoming rows: update if id present, insert if new
+  // Re-fetch existing rows after delete to ensure we don't re-insert duplicates
+  const { data: postDeleteRows = [], error: postFetchErr } = await supabase
+    .from('board_members')
+    .select('id, full_name')
+    .eq('set_id', setId)
+  if (postFetchErr) throw postFetchErr
+
+  const existingNames = new Set((postDeleteRows || []).map((r) => String(r.full_name || '').trim().toLowerCase()))
+
+  // Process updates and collect new rows for batch insert
+  const inserts = []
   for (let i = 0; i < incoming.length; i++) {
     const row = incoming[i]
     const payload = {
@@ -113,10 +123,20 @@ export async function saveBoardMembers(setId, members = []) {
       const { error: upErr } = await supabase.from('board_members').update(payload).eq('id', row.id)
       if (upErr) throw upErr
     } else {
-      const { error: insErr } = await supabase.from('board_members').insert([payload])
-      if (insErr) throw insErr
+      // Avoid inserting a row that already exists (case-insensitive match)
+      const nameKey = String(row.full_name || '').trim().toLowerCase()
+      if (!existingNames.has(nameKey)) {
+        inserts.push(payload)
+        existingNames.add(nameKey)
+      }
     }
   }
+
+  if (inserts.length > 0) {
+    const { error: insErr } = await supabase.from('board_members').insert(inserts)
+    if (insErr) throw insErr
+  }
+
   return true
 }
 

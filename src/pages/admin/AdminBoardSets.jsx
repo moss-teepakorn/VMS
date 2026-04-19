@@ -111,6 +111,12 @@ export default function AdminBoardSets() {
     }
 
     try {
+      // Debug: payload about to be sent to backend
+      console.debug('AdminBoardSets.save: payload', {
+        editingId,
+        set_no: setNo,
+        members: cleanedMembers,
+      })
       setSaving(true)
       if (mode === 'edit' && editingId) {
         await updateBoardSet(editingId, { set_no: setNo, is_active: form.is_active, note: form.note })
