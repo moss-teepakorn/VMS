@@ -3,11 +3,19 @@
    Complements AdminLayout.css + AdminDashboard.css
 ═══════════════════════════════════════════════ */
 
-/* ── RESTORE .ph ON RESIDENT PAGES ──
-   AdminDashboard.css has a global .ph { display: none !important }
-   that hides page headers on admin. Override here for resident portal. */
-.main .ph {
-  display: flex !important;
+/* ── SECTION ACTION ROW (replaces .ph banners) ── */
+.sec-act-row {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+/* ── UNIVERSAL SEARCH — smaller for resident portal ── */
+#resident-universal-search.tb-universal-wrap {
+  width: min(220px, 28vw);
+  min-width: 140px;
 }
 
 /* ── SECTION INFO GRID (used in house detail, etc.) ── */

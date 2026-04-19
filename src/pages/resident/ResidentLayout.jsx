@@ -2748,18 +2748,6 @@ export default function ResidentLayout() {
 
           {activeSection === 'rules' && (
             <>
-              <div className="ph" style={{ marginBottom: 18 }}>
-                <div className="ph-in">
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                    <div className="ph-ico">📘</div>
-                    <div>
-                      <div className="ph-h1">กฎระเบียบ</div>
-                      <div className="ph-sub">เอกสารที่นิติประกาศให้ลูกบ้านอ่าน (ไฟล์ PDF)</div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
               <div className="card" style={{ marginBottom: 12 }}>
                 <div className="ch"><div className="ch-ico">🏘️</div><div className="ct">กฎระเบียบหมู่บ้าน ({villageRuleDocs.length} เรื่อง)</div></div>
                 <div className="cb" style={{ padding: 14 }}>
@@ -2806,26 +2794,6 @@ export default function ResidentLayout() {
 
           {activeSection === 'dash' && (
             <>
-              <div className="ph" style={{ marginBottom: 18 }}>
-                <div className="ph-in">
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                    <div className="ph-ico">🏡</div>
-                    <div>
-                      <div className="ph-h1">สวัสดี คุณ{profile?.full_name || profile?.username || 'ลูกบ้าน'} 👋</div>
-                      <div className="ph-sub">บ้าน {houseNo} · {setup.villageName}</div>
-                    </div>
-                  </div>
-                  <div className="ph-acts">
-                    {overdueAmount > 0 && (
-                      <div style={{ textAlign: 'center' }}>
-                        <div style={{ fontSize: 17, fontWeight: 800, color: '#fff' }}>฿{formatMoney(overdueAmount)}</div>
-                        <div style={{ fontSize: '9.5px', color: 'rgba(255,255,255,.75)' }}>ค้างชำระ</div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-
               {overdueAmount > 0 && (
                 <div className="al al-w">⚠️ มียอดค้างชำระ <strong>฿{formatMoney(overdueAmount)}</strong> — กรุณาชำระโดยเร็ว</div>
               )}
@@ -2904,23 +2872,11 @@ export default function ResidentLayout() {
 
           {activeSection === 'house' && (
             <>
-              <div className="ph" style={{ marginBottom: 18 }}>
-                <div className="ph-in">
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                    <div className="ph-ico">🏠</div>
-                    <div>
-                      <div className="ph-h1">ข้อมูลบ้านของฉัน</div>
-                      <div className="ph-sub">บ้าน {houseDetail?.house_no || houseNo}</div>
-                    </div>
-                  </div>
-                  <div className="ph-acts" style={{ gap: 8 }}>
-                    <button className="btn btn-p btn-sm" onClick={openHouseProfileReqModal} disabled={Boolean(pendingHouseProfileRequest) || !houseDetailLoaded}>
-                      {pendingHouseProfileRequest ? 'รออนุมัติคำขออยู่' : '📝 ขอแก้ไขข้อมูลบ้าน'}
-                    </button>
-                  </div>
-                </div>
+              <div className="sec-act-row">
+                <button className="btn btn-p btn-sm" onClick={openHouseProfileReqModal} disabled={Boolean(pendingHouseProfileRequest) || !houseDetailLoaded}>
+                  {pendingHouseProfileRequest ? 'รออนุมัติคำขออยู่' : '📝 ขอแก้ไขข้อมูลบ้าน'}
+                </button>
               </div>
-
               {houseProfileRequestsLoaded && latestHouseProfileRequest && (
                 <div className={`al ${latestHouseProfileRequest.status === 'approved' ? 'al-s' : latestHouseProfileRequest.status === 'rejected' ? 'al-w' : 'al-i'}`}>
                   {latestHouseProfileRequest.status === 'pending' && (
@@ -3001,16 +2957,8 @@ export default function ResidentLayout() {
 
           {activeSection === 'vehicles' && (
             <>
-              <div className="ph ph-veh-head" style={{ marginBottom: 12 }}>
-                <div className="ph-in">
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 11 }}>
-                    <div className="ph-ico">🚗</div>
-                    <div><div className="ph-h1">ข้อมูลรถของฉัน</div><div className="ph-sub">รายการรถที่ลงทะเบียนในบ้านของฉัน</div></div>
-                  </div>
-                  <div className="ph-acts">
-                    <button className="btn btn-p btn-sm" onClick={openAddVehicleRequest}>+ เพิ่มรถ</button>
-                  </div>
-                </div>
+              <div className="sec-act-row">
+                <button className="btn btn-p btn-sm" onClick={openAddVehicleRequest}>+ เพิ่มรถ</button>
               </div>
               {vehicleRequestsLoaded && vehicleRequests.some((r) => r.status === 'pending' || r.status === 'rejected') && (
                 <div className="veh-note">ℹ️ คำขอแก้ไขรถต้องรอนิติอนุมัติก่อนมีผล</div>
@@ -3079,20 +3027,6 @@ export default function ResidentLayout() {
 
           {activeSection === 'fees' && (
             <>
-              <div className="ph" style={{ marginBottom: 14 }}>
-                <div className="ph-in">
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                    <div className="ph-ico">💳</div>
-                    <div><div className="ph-h1">ค่าส่วนกลาง</div><div className="ph-sub">ใบแจ้งหนี้และประวัติการชำระ</div></div>
-                  </div>
-                  {overdueAmount > 0 && (
-                    <div className="ph-acts">
-                      <button className="btn btn-w btn-sm" onClick={() => { const f = unresolvedFees[0]; if (f) openPaymentModal(f) }}>💳 แจ้งชำระ</button>
-                    </div>
-                  )}
-                </div>
-              </div>
-
               <div className="fee-summary-bar">
                 <div className="fee-summary-card tone-error">
                   <div className="fee-summary-label">💸 ค้างชำระ</div>
@@ -3131,10 +3065,13 @@ export default function ResidentLayout() {
                   {feeYearOptions.map((year) => <option key={year} value={year}>{toBE(year)}</option>)}
                 </StyledSelect>
                 <button className="btn btn-a btn-sm fee-toolbar-button" onClick={() => loadFeeData({ status: feeStatusFilter, year: feeYearFilter })}>🔍 ค้นหา</button>
+                {overdueAmount > 0 && (
+                  <button className="btn btn-p btn-sm" style={{ marginLeft: 'auto' }} onClick={() => { const f = unresolvedFees[0]; if (f) openPaymentModal(f) }}>💳 แจ้งชำระ</button>
+                )}
               </div>
 
               <div className="sl">🧾 ใบแจ้งหนี้ <span style={{ fontWeight: 400, marginLeft: 6 }}>{fees.length} รายการ</span></div>
-              <div style={{ overflowX: 'auto', border: '1px solid var(--bo)', borderRadius: 10, marginBottom: 4 }}>
+              <div style={{ overflowX: 'auto', border: '1px solid var(--bo)', borderRadius: 10, marginBottom: 4, background: 'var(--card)' }}>
                 <table className="tw" style={{ width: '100%', minWidth: 580, borderCollapse: 'collapse' }}>
                   <thead>
                     <tr>
@@ -3195,7 +3132,7 @@ export default function ResidentLayout() {
               </div>
 
               <div className="sl" style={{ marginTop: 20 }}>📋 ประวัติการชำระ <span style={{ fontWeight: 400, marginLeft: 6 }}>{payments.length} รายการ</span></div>
-              <div style={{ overflowX: 'auto', border: '1px solid var(--bo)', borderRadius: 10 }}>
+              <div style={{ overflowX: 'auto', border: '1px solid var(--bo)', borderRadius: 10, background: 'var(--card)' }}>
                 <table className="tw" style={{ width: '100%', minWidth: 560, borderCollapse: 'collapse' }}>
                   <thead>
                     <tr>
@@ -3291,20 +3228,11 @@ export default function ResidentLayout() {
 
           {activeSection === 'issue' && (
             <>
-              <div className="ph" style={{ marginBottom: 18 }}>
-                <div className="ph-in">
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                    <div className="ph-ico">🔔</div>
-                    <div><div className="ph-h1">แจ้งปัญหา</div><div className="ph-sub">แจ้งและติดตามสถานะ</div></div>
-                  </div>
-                  <div className="ph-acts">
-                    <button className="btn btn-w btn-sm" onClick={() => setShowIssueForm((p) => !p)}>
-                      {showIssueForm ? '✕ ยกเลิก' : '+ แจ้งปัญหาใหม่'}
-                    </button>
-                  </div>
-                </div>
+              <div className="sec-act-row">
+                <button className="btn btn-p btn-sm" onClick={() => setShowIssueForm((p) => !p)}>
+                  {showIssueForm ? '✕ ยกเลิก' : '+ แจ้งปัญหาใหม่'}
+                </button>
               </div>
-
               {showIssueForm && (
                 <div className="card" style={{ marginBottom: 16 }}>
                   <div className="ch"><div className="ch-ico">🔔</div><div className="ct">แจ้งปัญหาใหม่</div></div>
@@ -3462,16 +3390,6 @@ export default function ResidentLayout() {
 
           {activeSection === 'notif' && (
             <>
-              <div className="ph notif-head" style={{ marginBottom: 12 }}>
-                <div className="ph-in">
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                    <div className="ph-ico">⚠️</div>
-                    <div><div className="ph-h1">การแจ้งเตือนจากนิติ ({notifyTotalCount})</div><div className="ph-sub">การกระทำผิด {notifyViolationCount} · อนุมัติชำระเงิน {notifyPaymentCount}</div></div>
-                  </div>
-                  <div className="ph-acts" />
-                </div>
-              </div>
-
               <div className="card notif-search-card" style={{ marginBottom: 14 }}>
                 <div className="cb notif-search-row">
                   <div className="notif-input-wrap">
@@ -3630,14 +3548,6 @@ export default function ResidentLayout() {
 
           {activeSection === 'news' && (
             <>
-              <div className="ph" style={{ marginBottom: 18 }}>
-                <div className="ph-in">
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                    <div className="ph-ico">📢</div>
-                    <div><div className="ph-h1">ประกาศ / ข่าวสาร</div><div className="ph-sub">ข่าวสารจากนิติบุคคล</div></div>
-                  </div>
-                </div>
-              </div>
               <div className="card">
                 <div className="ch"><div className="ch-ico">📢</div><div className="ct">ประกาศทั้งหมด ({announcements.length} รายการ)</div></div>
                 <div className="cb" style={{ padding: 14 }}>
@@ -3678,14 +3588,6 @@ export default function ResidentLayout() {
 
           {activeSection === 'work' && (
             <>
-              <div className="ph" style={{ marginBottom: 18 }}>
-                <div className="ph-in">
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                    <div className="ph-ico">🏆</div>
-                    <div><div className="ph-h1">ผลงานนิติ</div><div className="ph-sub">รายงานการดูแลหมู่บ้าน</div></div>
-                  </div>
-                </div>
-              </div>
               <div className="card">
                 <div className="ch"><div className="ch-ico">🏆</div><div className="ct">รายงานทั้งหมด ({workReports.length} รายการ)</div></div>
                 <div className="cb" style={{ padding: 14 }}>
@@ -3727,15 +3629,6 @@ export default function ResidentLayout() {
 
           {activeSection === 'tech' && (
             <>
-              <div className="ph" style={{ marginBottom: 18 }}>
-                <div className="ph-in">
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 11 }}>
-                    <div className="ph-ico">🔨</div>
-                    <div><div className="ph-h1">ทำเนียบช่าง</div><div className="ph-sub">ช่างในชุมชนที่ได้รับการรับรอง</div></div>
-                  </div>
-                </div>
-              </div>
-
               <div style={{ display: 'flex', gap: 7, marginBottom: 14, flexWrap: 'wrap' }}>
                 <input className="fi" style={{ flex: 1, minWidth: 160 }} value={techSearch} onChange={(e) => setTechSearch(e.target.value)} placeholder="🔍 ค้นหาชื่อ หรือบริการ..." />
               </div>
@@ -3777,18 +3670,9 @@ export default function ResidentLayout() {
 
           {activeSection === 'market' && (
             <>
-              <div className="ph" style={{ marginBottom: 18 }}>
-                <div className="ph-in">
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 11 }}>
-                    <div className="ph-ico">🛒</div>
-                    <div><div className="ph-h1">ตลาดชุมชน</div><div className="ph-sub">ซื้อ-ขาย-แจก-เช่า ในหมู่บ้าน</div></div>
-                  </div>
-                  <div className="ph-acts" style={{ gap: 8 }}>
-                    <button className="btn btn-w btn-sm" onClick={openMarketPostModal}>+ โพสต์ขายของ</button>
-                  </div>
-                </div>
+              <div className="sec-act-row">
+                <button className="btn btn-p btn-sm" onClick={openMarketPostModal}>+ โพสต์ขายของ</button>
               </div>
-
               {myPendingMarketCount > 0 && (
                 <div className="al al-i">ℹ️ โพสต์ของคุณที่รออนุมัติอยู่ {myPendingMarketCount} รายการ (จะแสดงสาธารณะหลังนิติอนุมัติ)</div>
               )}
@@ -3834,47 +3718,7 @@ export default function ResidentLayout() {
 
           {activeSection === 'profile' && (
             <>
-              <div className="ph" style={{ marginBottom: 18 }}>
-                <div className="ph-in">
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                    <div className="ph-ico">👤</div>
-                    <div><div className="ph-h1">โปรไฟล์</div><div className="ph-sub">จัดการข้อมูลส่วนตัวและรหัสผ่าน</div></div>
-                  </div>
-                </div>
-              </div>
-
               <div className="g2">
-                <div className="card">
-                  <div className="ch"><div className="ch-ico">👤</div><div className="ct">ข้อมูลส่วนตัว</div></div>
-                  <div className="cb">
-                    <form onSubmit={handleSaveProfile}>
-                      <div className="fg">
-                        <label className="fl">ชื่อผู้ใช้</label>
-                        <input className="fi fi-readonly" value={profile?.username || ''} disabled />
-                      </div>
-                      <div className="fg">
-                        <label className="fl">ชื่อ-นามสกุล</label>
-                        <input className="fi" value={profileForm.full_name} onChange={(e) => setProfileForm((p) => ({ ...p, full_name: e.target.value }))} placeholder="ชื่อ-นามสกุล" />
-                      </div>
-                      <div className="fg">
-                        <label className="fl">เบอร์โทรศัพท์</label>
-                        <input className="fi" type="tel" value={profileForm.phone} onChange={(e) => setProfileForm((p) => ({ ...p, phone: e.target.value }))} placeholder="081-xxx-xxxx" />
-                      </div>
-                      <div className="fg">
-                        <label className="fl">Email</label>
-                        <input className="fi" type="email" value={profileForm.email} onChange={(e) => setProfileForm((p) => ({ ...p, email: e.target.value }))} placeholder="email@example.com" />
-                      </div>
-                      <div className="fg">
-                        <label className="fl">บ้านเลขที่</label>
-                        <input className="fi fi-readonly" value={houseNo} disabled />
-                      </div>
-                      <button className="btn btn-p btn-sm" type="submit" disabled={profileSaving}>
-                        {profileSaving ? 'กำลังบันทึก...' : '💾 บันทึกข้อมูล'}
-                      </button>
-                    </form>
-                  </div>
-                </div>
-
                 <div className="card">
                   <div className="ch"><div className="ch-ico">🔒</div><div className="ct">เปลี่ยนรหัสผ่าน</div></div>
                   <div className="cb">
