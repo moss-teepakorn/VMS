@@ -2381,27 +2381,27 @@ button, input, select, textarea {
 }
 
 .app .sb-account-card {
-  border: 1px solid #e8edf6;
-  border-radius: 12px;
-  padding: 10px;
-  background: #f7f9ff;
+  border: none;
+  border-radius: 0;
+  padding: 0;
+  background: transparent;
 }
 
 .app .sb-logout,
 .app .sb-logout.sb-logout-danger,
 .app .sb-res-logout {
-  background: #f0f3fa !important;
-  border: 1px solid #dbe3f2 !important;
-  color: #1e2537 !important;
-  border-radius: 10px !important;
-  font-weight: 700 !important;
+  background: transparent !important;
+  border: none !important;
+  color: var(--sbm, #8898b4) !important;
+  border-radius: 9px !important;
+  font-weight: 600 !important;
 }
 
 .app .sb-logout:hover,
 .app .sb-logout.sb-logout-danger:hover,
 .app .sb-res-logout:hover {
-  background: #e4e9f5 !important;
-  color: #1e2537 !important;
+  background: var(--sbhv, rgba(255,255,255,.08)) !important;
+  color: var(--sbt, #fff) !important;
 }
 
 [data-theme="night"] .app .sidebar,
