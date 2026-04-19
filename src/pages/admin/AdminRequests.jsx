@@ -183,7 +183,6 @@ const AdminRequests = () => {
     { value: 'all', label: 'ทั้งหมด' },
   ]
 
-  const totalReqPages = rowsPerPage === 'all' ? 1 : Math.ceil(filteredRequests.length / Number(rowsPerPage))
   const pagedRequests = filteredRequests
 
   function getApprovalDraft(req) {
