@@ -209,6 +209,26 @@ export default function AdminFeesPrintNotices() {
     await createNoticePrintLogs(rows)
   }
 
+  const fees = useMemo(() => {
+    const houseKeyword = filters.houseNo.trim().toLowerCase()
+    return (rawFees || [])
+      .filter((fee) => {
+        if (houseKeyword && !String(fee?.houses?.house_no || '').toLowerCase().includes(houseKeyword)) return false
+        if (filters.paymentStatus === 'unpaid_only') {
+          const approvedAmount = Number((feeApprovedTotals || {})[fee.id] || 0)
+          const totalAmount = Number(fee.total_amount || 0)
+          if (fee.status === 'cancelled') return false
+          return approvedAmount < totalAmount
+        }
+        return isNoticePrintable(fee)
+      })
+      .sort((left, right) => {
+        const soiCompare = normalizeSoiValue(left?.houses?.soi) - normalizeSoiValue(right?.houses?.soi)
+        if (soiCompare !== 0) return soiCompare
+        return houseSorter.compare(left?.houses?.house_no || '', right?.houses?.house_no || '')
+      })
+  }, [rawFees, filters.houseNo, filters.paymentStatus, feeApprovedTotals])
+
   const selectedFees = useMemo(() => {
     const selectedSet = new Set(selectedIds)
     return fees.filter((fee) => selectedSet.has(fee.id))
@@ -234,26 +254,6 @@ export default function AdminFeesPrintNotices() {
   useEffect(() => {
     setPage((prev) => Math.min(prev, totalPages))
   }, [totalPages])
-
-  const fees = useMemo(() => {
-    const houseKeyword = filters.houseNo.trim().toLowerCase()
-    return (rawFees || [])
-      .filter((fee) => {
-        if (houseKeyword && !String(fee?.houses?.house_no || '').toLowerCase().includes(houseKeyword)) return false
-        if (filters.paymentStatus === 'unpaid_only') {
-          const approvedAmount = Number((feeApprovedTotals || {})[fee.id] || 0)
-          const totalAmount = Number(fee.total_amount || 0)
-          if (fee.status === 'cancelled') return false
-          return approvedAmount < totalAmount
-        }
-        return isNoticePrintable(fee)
-      })
-      .sort((left, right) => {
-        const soiCompare = normalizeSoiValue(left?.houses?.soi) - normalizeSoiValue(right?.houses?.soi)
-        if (soiCompare !== 0) return soiCompare
-        return houseSorter.compare(left?.houses?.house_no || '', right?.houses?.house_no || '')
-      })
-  }, [rawFees, filters.houseNo, filters.paymentStatus, feeApprovedTotals])
 
   const allChecked = fees.length > 0 && selectedIds.length === fees.length
 
