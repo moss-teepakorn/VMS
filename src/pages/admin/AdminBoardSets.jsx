@@ -53,7 +53,7 @@ export default function AdminBoardSets() {
   const openCreate = () => {
     setMode('create')
     setEditingId('')
-    setForm(EMPTY_FORM)
+    setForm({ ...EMPTY_FORM, members: [] }) // always start with no members
     setShowModal(true)
   }
 
