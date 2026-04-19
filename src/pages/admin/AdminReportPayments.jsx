@@ -151,6 +151,19 @@ export default function AdminReportPayments() {
           </div>
           <div className="vms-toolbar-right">
             {error && <span style={{ fontSize: 12, color: '#dc2626' }}>{error}</span>}
+            <ReportExportButtons
+              columns={columns}
+              rows={rows}
+              reportTitle="รายงานจ่ายค่าส่วนกลาง"
+              filter={{
+                startMonthLabel: monthOptions.find((m) => m.value === startMonth)?.label,
+                endMonthLabel: monthOptions.find((m) => m.value === endMonth)?.label,
+                year,
+              }}
+              sumAmount={sumAmount}
+              logoUrl={setup.village_logo_url || '/assets/village-logo.svg'}
+              footerLabel="ยอดชำระรวม"
+            />
             <button className="vms-sm-btn" onClick={runReport} disabled={loading}>🔄</button>
           </div>
         </div>

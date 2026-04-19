@@ -160,6 +160,15 @@ export default function AdminReportOutstanding() {
           </div>
           <div className="vms-toolbar-right">
             {error && <span style={{ fontSize: 12, color: '#dc2626' }}>{error}</span>}
+            <ReportExportButtons
+              columns={columns}
+              rows={rows}
+              reportTitle="รายงานค้างชำระ"
+              filter={{ year }}
+              sumAmount={sumAmount}
+              logoUrl={setup.village_logo_url || '/assets/village-logo.svg'}
+              footerLabel="ยอดค้างรวม"
+            />
             <button className="vms-sm-btn" onClick={runReport} disabled={loading}>🔄</button>
           </div>
         </div>
