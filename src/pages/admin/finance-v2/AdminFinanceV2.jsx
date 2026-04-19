@@ -15,6 +15,7 @@ import {
 } from '../../../lib/fees'
 import { getSystemConfig } from '../../../lib/systemConfig'
 import './AdminFinanceV2.css'
+import '../FinanceLightButton.css'
 
 const V2_ROUTES = [
   { key: 'hub', label: 'ศูนย์การเงิน', path: '/admin/finance-v2' },
@@ -93,12 +94,12 @@ function HubPage({ navigate, summary, pendingPayments, recentOutstanding }) {
           </div>
           <div className="finance-v2-note">หน้าจอชุดนี้ผูกฐานข้อมูลจริงแล้ว และใช้รูปแบบ Hybrid สำหรับงานประจำวัน</div>
           <div className="finance-v2-actions">
-            <button className="btn btn-p btn-sm" onClick={() => navigate('/admin/finance-v2/billing')}>ไปหน้าออกใบแจ้งหนี้</button>
-            <button className="btn btn-o btn-sm" onClick={() => navigate('/admin/finance-v2/collections')}>ไปหน้าติดตามหนี้</button>
-            <button className="btn btn-a btn-sm" onClick={() => navigate('/admin/finance-v2/receive')}>ไปหน้ารับชำระ</button>
-            <button className="btn btn-g btn-sm" onClick={() => navigate('/admin/finance-v2/print-center')}>ไปหน้าศูนย์งานพิมพ์</button>
-            <button className="btn btn-g btn-sm" onClick={() => navigate('/admin/finance-v2/archive')}>ไปหน้าข้อมูลย้อนหลัง</button>
-            <button className="btn btn-o btn-sm" onClick={() => navigate('/admin/finance-v2/reports')}>ไปหน้าศูนย์รายงาน</button>
+            <button className="vms-light-btn vms-light-btn--primary" onClick={() => navigate('/admin/finance-v2/billing')}>ไปหน้าออกใบแจ้งหนี้</button>
+            <button className="vms-light-btn vms-light-btn--primary" onClick={() => navigate('/admin/finance-v2/collections')}>ไปหน้าติดตามหนี้</button>
+            <button className="vms-light-btn vms-light-btn--primary" onClick={() => navigate('/admin/finance-v2/receive')}>ไปหน้ารับชำระ</button>
+            <button className="vms-light-btn vms-light-btn--primary" onClick={() => navigate('/admin/finance-v2/print-center')}>ไปหน้าศูนย์งานพิมพ์</button>
+            <button className="vms-light-btn vms-light-btn--primary" onClick={() => navigate('/admin/finance-v2/archive')}>ไปหน้าข้อมูลย้อนหลัง</button>
+            <button className="vms-light-btn vms-light-btn--primary" onClick={() => navigate('/admin/finance-v2/reports')}>ไปหน้าศูนย์รายงาน</button>
           </div>
 
           <div className="finance-v2-list">
@@ -148,7 +149,7 @@ function BillingPage({ billingYearBE, billingPeriod, setBillingYearBE, setBillin
           <div className="finance-v2-step"><h4>ขั้นตอน 3</h4><p>ตรวจสอบยอดรวมและจำนวนบิล</p></div>
           <div className="finance-v2-step"><h4>ขั้นตอน 4</h4><p>ยืนยันสร้างและบันทึกประวัติรอบงาน</p></div>
           <div className="finance-v2-actions">
-            <button className="btn btn-a btn-sm" onClick={onRunBilling} disabled={billingBusy}>{billingBusy ? 'กำลังสร้าง...' : 'สร้างใบแจ้งหนี้จริง'}</button>
+            <button className="vms-light-btn vms-light-btn--primary" onClick={onRunBilling} disabled={billingBusy}>{billingBusy ? 'กำลังสร้าง...' : 'สร้างใบแจ้งหนี้จริง'}</button>
           </div>
         </div>
       </section>
@@ -207,8 +208,8 @@ function CollectionsPage({ collectionRows, selectedCollectionIds, onToggleCollec
         <div className="finance-v2-head">งานชุด V2</div>
         <div className="finance-v2-body">
           <div className="finance-v2-actions">
-            <button className="btn btn-g btn-sm" onClick={onToggleAllCollections}>เลือกทั้งหมด/ล้างเลือก</button>
-            <button className="btn btn-o btn-sm" onClick={onCalcOverdue} disabled={collectionsBusy}>{collectionsBusy ? 'กำลังคำนวณ...' : 'คำนวณค่าปรับ (รายการที่เลือก)'}</button>
+            <button className="vms-light-btn vms-light-btn--primary" onClick={onToggleAllCollections}>เลือกทั้งหมด/ล้างเลือก</button>
+            <button className="vms-light-btn vms-light-btn--warning" onClick={onCalcOverdue} disabled={collectionsBusy}>{collectionsBusy ? 'กำลังคำนวณ...' : 'คำนวณค่าปรับ (รายการที่เลือก)'}</button>
           </div>
           <div className="finance-v2-note">หน้านี้โฟกัส “ลูกหนี้ + ติดตามหนี้” เท่านั้น ไม่รวมงานรับชำระหรือพิมพ์เอกสารทั่วไป</div>
         </div>
@@ -247,14 +248,14 @@ function ReceivePage({ receiveRows, receiveFilter, setReceiveFilter, onApprove, 
                     {status === 'approved' ? 'อนุมัติแล้ว' : status === 'rejected' ? 'ตีกลับ' : 'รอตรวจสอบ'}
                   </span>
                   {row.slip_url && (
-                    <button className="btn btn-o btn-sm" onClick={() => onOpenSlip(row.slip_url)}>
+                    <button className="vms-light-btn vms-light-btn--primary" onClick={() => onOpenSlip(row.slip_url)}>
                       ดูสลิป
                     </button>
                   )}
                   {!row.verified_at && !isRejected && (
                     <>
-                      <button className="btn btn-ok btn-sm" onClick={() => onApprove(row.id)} disabled={receiveBusy}>อนุมัติ</button>
-                      <button className="btn btn-dg btn-sm" onClick={() => onReject(row.id)} disabled={receiveBusy}>ตีกลับ</button>
+                      <button className="vms-light-btn vms-light-btn--primary" onClick={() => onApprove(row.id)} disabled={receiveBusy}>อนุมัติ</button>
+                      <button className="vms-light-btn vms-light-btn--warning" onClick={() => onReject(row.id)} disabled={receiveBusy}>ตีกลับ</button>
                     </>
                   )}
                 </div>
@@ -288,9 +289,9 @@ function PrintCenterPage({ printFees, printPayments, onPrintInvoices, onPrintNot
         <div className="finance-v2-head">ตัวควบคุมงานพิมพ์</div>
         <div className="finance-v2-body">
           <div className="finance-v2-actions">
-            <button className="btn btn-p btn-sm" onClick={onPrintInvoices}>พิมพ์ใบแจ้งหนี้</button>
-            <button className="btn btn-o btn-sm" onClick={onPrintNotices}>พิมพ์ใบเตือน</button>
-            <button className="btn btn-a btn-sm" onClick={onPrintReceipts}>พิมพ์ใบเสร็จ</button>
+            <button className="vms-light-btn vms-light-btn--primary" onClick={onPrintInvoices}>พิมพ์ใบแจ้งหนี้</button>
+            <button className="vms-light-btn vms-light-btn--primary" onClick={onPrintNotices}>พิมพ์ใบเตือน</button>
+            <button className="vms-light-btn vms-light-btn--primary" onClick={onPrintReceipts}>พิมพ์ใบเสร็จ</button>
           </div>
           <div className="finance-v2-note">รวมงานพิมพ์ไว้จุดเดียว ไม่กระจายปุ่มพิมพ์ไปหลายตาราง</div>
         </div>
@@ -300,11 +301,11 @@ function PrintCenterPage({ printFees, printPayments, onPrintInvoices, onPrintNot
         <div className="finance-v2-body">
           <div className="finance-v2-note">หากต้องการรายงานมาตรฐานพร้อมปุ่มส่งออก PDF/Excel ให้ใช้งานจากปุ่มด้านล่างได้ทันที</div>
           <div className="finance-v2-actions">
-            <button className="btn btn-p btn-sm" onClick={() => navigate('/admin/finance-v2/reports')}>หน้ารวมรายงาน</button>
-            <button className="btn btn-p btn-sm" onClick={() => navigate('/admin/finance-v2/reports/payments')}>รายงานจ่ายค่าส่วนกลาง</button>
-            <button className="btn btn-o btn-sm" onClick={() => navigate('/admin/finance-v2/reports/outstanding')}>รายงานค้างชำระ</button>
-            <button className="btn btn-g btn-sm" onClick={() => navigate('/admin/finance-v2/reports/expense-payments')}>รายงานรายจ่าย</button>
-            <button className="btn btn-a btn-sm" onClick={() => navigate('/admin/finance-v2/reports/violations-summary')}>รายงานค่าปรับ</button>
+            <button className="vms-light-btn vms-light-btn--primary" onClick={() => navigate('/admin/finance-v2/reports')}>หน้ารวมรายงาน</button>
+            <button className="vms-light-btn vms-light-btn--primary" onClick={() => navigate('/admin/finance-v2/reports/payments')}>รายงานจ่ายค่าส่วนกลาง</button>
+            <button className="vms-light-btn vms-light-btn--primary" onClick={() => navigate('/admin/finance-v2/reports/outstanding')}>รายงานค้างชำระ</button>
+            <button className="vms-light-btn vms-light-btn--primary" onClick={() => navigate('/admin/finance-v2/reports/expense-payments')}>รายงานรายจ่าย</button>
+            <button className="vms-light-btn vms-light-btn--primary" onClick={() => navigate('/admin/finance-v2/reports/violations-summary')}>รายงานค่าปรับ</button>
           </div>
         </div>
       </section>

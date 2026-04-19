@@ -1,37 +1,38 @@
 import React from 'react'
 import { useNavigate } from 'react-router-dom'
 import './AdminFinanceV2.css'
+import '../FinanceLightButton.css'
 
 const reportCards = [
   {
     title: 'รายงานจ่ายค่าส่วนกลาง',
     subtitle: 'สรุปรายการรับชำระค่าส่วนกลาง',
     path: '/admin/finance-v2/reports/payments',
-    buttonClass: 'btn btn-p btn-sm',
+    buttonClass: 'vms-light-btn vms-light-btn--primary',
   },
   {
     title: 'รายงานค้างชำระ',
     subtitle: 'สรุปยอดค้างชำระแยกตามบ้านและซอย',
     path: '/admin/finance-v2/reports/outstanding',
-    buttonClass: 'btn btn-o btn-sm',
+    buttonClass: 'vms-light-btn vms-light-btn--primary',
   },
   {
     title: 'รายงานค้างชำระเชิงสรุป',
     subtitle: 'ชุดรายงานค้างชำระแบบ Hybrid',
     path: '/admin/finance-v2/reports/overdue',
-    buttonClass: 'btn btn-g btn-sm',
+    buttonClass: 'vms-light-btn vms-light-btn--primary',
   },
   {
     title: 'รายงานค่าปรับ',
     subtitle: 'สรุปรายงานงานผิดระเบียบและค่าปรับ',
     path: '/admin/finance-v2/reports/violations-summary',
-    buttonClass: 'btn btn-a btn-sm',
+    buttonClass: 'vms-light-btn vms-light-btn--primary',
   },
   {
     title: 'รายงานรายจ่าย',
     subtitle: 'สรุปรายจ่ายและการเบิกจ่าย',
     path: '/admin/finance-v2/reports/expense-payments',
-    buttonClass: 'btn btn-p btn-sm',
+    buttonClass: 'vms-light-btn vms-light-btn--primary',
   },
 ]
 
@@ -55,7 +56,7 @@ export default function AdminFinanceV2Reports() {
       <div className="card report-filter-card admin-search-filter-card">
         <div className="cb">
           <div className="finance-v2-actions">
-            <button className="btn btn-g btn-sm" onClick={() => navigate('/admin/finance-v2')}>กลับหน้าศูนย์การเงิน</button>
+            <button className="vms-light-btn vms-light-btn--primary" onClick={() => navigate('/admin/finance-v2')}>กลับหน้าศูนย์การเงิน</button>
           </div>
         </div>
       </div>

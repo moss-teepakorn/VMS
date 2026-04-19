@@ -18,6 +18,7 @@ import {
 import { getSetupConfig } from '../../lib/setup'
 import { buildReceiptHtmlAdminStyle } from '../../lib/printTemplates'
 import villageLogo from '../../assets/village-logo.svg'
+import './FinanceLightButton.css'
 
 const REJECT_PREFIX = '[REJECT] '
 const PAYMENT_META_PREFIX = '[PAYMENT_ITEMS_JSON]'
@@ -1237,8 +1238,8 @@ export default function AdminPayments() {
         <div className="ch houses-list-head houses-main-head">
           <div className="ct">รายการชำระเงินทั้งหมด {filtered.length} รายการ</div>
           <div className="houses-list-actions">
-            <button className="btn btn-p btn-sm" onClick={openReceiveModal}>+ รับชำระ</button>
-            <button className="btn btn-g btn-sm" onClick={loadPayments} disabled={loading}>🔄 รีเฟรช</button>
+            <button className="vms-light-btn vms-light-btn--primary" onClick={openReceiveModal}>+ รับชำระ</button>
+            <button className="vms-light-btn vms-light-btn--primary" onClick={loadPayments} disabled={loading}>🔄 รีเฟรช</button>
             <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginLeft: 'auto' }}>
               {periodCards.map((item) => {
                 const active = periodFilter === item.value
@@ -1390,8 +1391,8 @@ export default function AdminPayments() {
                     <div className="house-field" style={{ gap: 10, gridColumn: '1 / -1' }}>
                       <span>เลือกรายการรับชำระ</span>
                       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                        <button type="button" className="btn btn-xs btn-a" onClick={selectAllReceiveItems} style={{ padding: '3px 8px', fontSize: 10 }}>เลือกทั้งหมด</button>
-                        <button type="button" className="btn btn-xs btn-g" onClick={clearReceiveItems} style={{ padding: '3px 8px', fontSize: 10 }}>ล้างการเลือก</button>
+                        <button type="button" className="vms-light-btn vms-light-btn--primary" onClick={selectAllReceiveItems} style={{ padding: '3px 8px', fontSize: 10 }}>เลือกทั้งหมด</button>
+                        <button type="button" className="vms-light-btn vms-light-btn--primary" onClick={clearReceiveItems} style={{ padding: '3px 8px', fontSize: 10 }}>ล้างการเลือก</button>
                       </div>
                       <div className="houses-table-wrap payments-receive-wrap" style={{ maxHeight: '280px', overflow: 'auto' }}>
                         <table className="tw receive-items-table" style={{ width: '100%', tableLayout: 'fixed' }}>
@@ -1492,7 +1493,7 @@ export default function AdminPayments() {
               </div>
               <div className="house-md-foot">
                 <button
-                  className="btn btn-g"
+                  className="vms-light-btn vms-light-btn--primary"
                   type="button"
                   onClick={() => {
                     if (receiveSlipPreview) URL.revokeObjectURL(receiveSlipPreview)
@@ -1504,7 +1505,7 @@ export default function AdminPayments() {
                 >
                   ปิด
                 </button>
-                <button className="btn btn-p" type="submit" disabled={savingReceive || uploadingSlip}>
+                <button className="vms-light-btn vms-light-btn--primary" type="submit" disabled={savingReceive || uploadingSlip}>
                   {savingReceive || uploadingSlip ? 'กำลังบันทึก...' : 'บันทึกรับชำระ'}
                 </button>
               </div>
@@ -1533,11 +1534,11 @@ export default function AdminPayments() {
               </div>
             </div>
             <div className="house-md-foot">
-              <button className="btn btn-o" type="button" onClick={downloadReceiptPreviewAsPdf} disabled={receiptPrintPreviewExporting}>{receiptPrintPreviewExporting ? 'กำลังสร้างไฟล์...' : '⬇ PDF'}</button>
-              <button className="btn btn-o" type="button" onClick={downloadReceiptPreviewAsImage} disabled={receiptPrintPreviewExporting}>{receiptPrintPreviewExporting ? 'กำลังสร้างไฟล์...' : '⬇ Image'}</button>
-              <button className="btn btn-a" type="button" onClick={handlePrintReceiptFromPreview} disabled={receiptPrintPreviewExporting}>🖨 พิมพ์</button>
+              <button className="vms-light-btn vms-light-btn--primary" type="button" onClick={downloadReceiptPreviewAsPdf} disabled={receiptPrintPreviewExporting}>{receiptPrintPreviewExporting ? 'กำลังสร้างไฟล์...' : '⬇ PDF'}</button>
+              <button className="vms-light-btn vms-light-btn--primary" type="button" onClick={downloadReceiptPreviewAsImage} disabled={receiptPrintPreviewExporting}>{receiptPrintPreviewExporting ? 'กำลังสร้างไฟล์...' : '⬇ Image'}</button>
+              <button className="vms-light-btn vms-light-btn--primary" type="button" onClick={handlePrintReceiptFromPreview} disabled={receiptPrintPreviewExporting}>🖨 พิมพ์</button>
               <button
-                className="btn btn-g"
+                className="vms-light-btn vms-light-btn--primary"
                 type="button"
                 onClick={closeReceiptPrintPreviewModal}
                 disabled={receiptPrintPreviewExporting}
@@ -1602,8 +1603,8 @@ export default function AdminPayments() {
                     <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
                       <span>ระบุรายการตัดหนี้ (ใช้ตอนอนุมัติ)</span>
                       <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                        <button className="btn btn-xs btn-a" type="button" onClick={handleAutoAllocateApproveDraft} disabled={loadingApproveItems || approving}>เติมอัตโนมัติ</button>
-                        <button className="btn btn-xs btn-g" type="button" onClick={handleClearApproveDraft} disabled={loadingApproveItems || approving}>ล้างค่า</button>
+                        <button className="vms-light-btn vms-light-btn--primary" type="button" onClick={handleAutoAllocateApproveDraft} disabled={loadingApproveItems || approving}>เติมอัตโนมัติ</button>
+                        <button className="vms-light-btn vms-light-btn--primary" type="button" onClick={handleClearApproveDraft} disabled={loadingApproveItems || approving}>ล้างค่า</button>
                       </div>
                     </div>
 
@@ -1668,7 +1669,7 @@ export default function AdminPayments() {
                         style={{ width: '100%', maxWidth: 360, borderRadius: 8, border: '1px solid var(--bo)' }}
                       />
                       <div>
-                        <button className="btn btn-xs btn-o" onClick={() => handleOpenSlip(approveTarget)}>เปิดรูปเต็ม</button>
+                        <button className="vms-light-btn vms-light-btn--primary" onClick={() => handleOpenSlip(approveTarget)}>เปิดรูปเต็ม</button>
                       </div>
                     </div>
                   ) : (
@@ -1684,9 +1685,9 @@ export default function AdminPayments() {
               </section>
             </div>
             <div className="house-md-foot">
-              <button className="btn btn-g" type="button" onClick={() => setApproveTarget(null)} disabled={approving}>ปิด</button>
-              <button className="btn btn-dg" type="button" onClick={handleRejectFromApproveModal} disabled={approving}>ไม่อนุมัติ</button>
-              <button className="btn btn-ok" type="button" onClick={handleApproveConfirmed} disabled={approving}>{approving ? 'กำลังอนุมัติ...' : 'ยืนยันอนุมัติ'}</button>
+              <button className="vms-light-btn vms-light-btn--primary" type="button" onClick={() => setApproveTarget(null)} disabled={approving}>ปิด</button>
+              <button className="vms-light-btn vms-light-btn--warning" type="button" onClick={handleRejectFromApproveModal} disabled={approving}>ไม่อนุมัติ</button>
+              <button className="vms-light-btn vms-light-btn--primary" type="button" onClick={handleApproveConfirmed} disabled={approving}>{approving ? 'กำลังอนุมัติ...' : 'ยืนยันอนุมัติ'}</button>
             </div>
           </div>
         </div>
