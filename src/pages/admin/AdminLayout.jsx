@@ -10,6 +10,8 @@ import { listVehicles } from '../../lib/vehicles'
 import { listAccountRequests } from '../../lib/accountRequests'
 import { listIssues } from '../../lib/issues'
 import { listPayments } from '../../lib/fees'
+import { listTechnicians } from '../../lib/technicians'
+import { listMarketplace } from '../../lib/marketplace'
 import Swal from 'sweetalert2'
 import villageLogo from '../../assets/village-logo.svg'
 import './AdminLayout.css'
@@ -40,7 +42,7 @@ const AdminLayout = () => {
   const [universalSearch, setUniversalSearch] = useState('')
   const [universalSearchOpen, setUniversalSearchOpen] = useState(false)
   const [notifyOpen, setNotifyOpen] = useState(false)
-  const [notifyCounts, setNotifyCounts] = useState({ requests: 0, issues: 0, payments: 0 })
+  const [notifyCounts, setNotifyCounts] = useState({ requests: 0, issues: 0, payments: 0, technicians: 0, marketplace: 0 })
   const [sectionOpen, setSectionOpen] = useState({
     ข้อมูล: false,
     การเงิน: false,
@@ -94,11 +96,13 @@ const AdminLayout = () => {
 
   useEffect(() => {
     const loadNotifies = async () => {
-      const [vehicleRes, accountRes, issuesRes, paymentsRes] = await Promise.allSettled([
+      const [vehicleRes, accountRes, issuesRes, paymentsRes, techRes, mktRes] = await Promise.allSettled([
         listVehicleRequests({ status: 'pending' }),
         listAccountRequests({ status: 'pending' }),
         listIssues({ status: 'pending' }),
         listPayments({ feeOnly: true }),
+        listTechnicians({ status: 'pending' }),
+        listMarketplace({ status: 'pending' }),
       ])
 
       const pendingVehiclesRes = await Promise.allSettled([
@@ -111,6 +115,8 @@ const AdminLayout = () => {
       const feePayments = paymentsRes.status === 'fulfilled' ? (paymentsRes.value || []) : []
       const pendingVehicles = pendingVehiclesRes[0].status === 'fulfilled' ? (pendingVehiclesRes[0].value || []) : []
       const pendingFeePayments = feePayments.filter((row) => !row.verified_at && !String(row.note || '').startsWith('[REJECT] ')).length
+      const pendingTechs = techRes.status === 'fulfilled' ? (techRes.value || []).length : 0
+      const pendingMkt = mktRes.status === 'fulfilled' ? (mktRes.value || []).length : 0
 
       const vehicleRequestKeySet = new Set(
         vehicleReqs
@@ -137,6 +143,8 @@ const AdminLayout = () => {
         requests: vehicleReqs.length + fallbackPendingVehicleCount + accountReqs.length,
         issues: issues.length,
         payments: pendingFeePayments,
+        technicians: pendingTechs,
+        marketplace: pendingMkt,
       })
     }
     loadNotifies()
@@ -564,9 +572,9 @@ const AdminLayout = () => {
             </button>
             <div style={{ position: 'relative' }}>
               <div className="tb-ico" id="admin-notify-btn" onClick={() => setNotifyOpen((prev) => !prev)} title="การแจ้งเตือน">🔔</div>
-              {(notifyCounts.requests + notifyCounts.issues + notifyCounts.payments) > 0 && (
+              {(notifyCounts.requests + notifyCounts.issues + notifyCounts.payments + notifyCounts.technicians + notifyCounts.marketplace) > 0 && (
                 <span style={{ position: 'absolute', top: -3, right: -3, minWidth: 16, height: 16, borderRadius: 8, background: '#ef4444', color: '#fff', fontSize: 10, fontWeight: 800, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: '0 4px' }}>
-                  {notifyCounts.requests + notifyCounts.issues + notifyCounts.payments}
+                  {notifyCounts.requests + notifyCounts.issues + notifyCounts.payments + notifyCounts.technicians + notifyCounts.marketplace}
                 </span>
               )}
 
@@ -599,6 +607,24 @@ const AdminLayout = () => {
                   >
                     <span style={{ fontSize: 13, color: 'var(--tx)' }}>💳 รอตรวจสอบชำระค่าส่วนกลาง</span>
                     <span className="bd b-wn">{notifyCounts.payments}</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => { setNotifyOpen(false); navigate('/admin/technicians') }}
+                    style={{ width: '100%', border: 'none', background: 'transparent', textAlign: 'left', padding: '10px 12px', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid var(--bo)' }}
+                  >
+                    <span style={{ fontSize: 13, color: 'var(--tx)' }}>🔨 ทำเนียบช่างรออนุมัติ</span>
+                    <span className="bd b-wn">{notifyCounts.technicians}</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => { setNotifyOpen(false); navigate('/admin/marketplace') }}
+                    style={{ width: '100%', border: 'none', background: 'transparent', textAlign: 'left', padding: '10px 12px', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid var(--bo)' }}
+                  >
+                    <span style={{ fontSize: 13, color: 'var(--tx)' }}>🛒 ตลาดชุมชนรออนุมัติ</span>
+                    <span className="bd b-wn">{notifyCounts.marketplace}</span>
                   </button>
                 </div>
               )}

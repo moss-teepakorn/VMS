@@ -327,13 +327,15 @@ export default function AdminPaymentCycles() {
                 style={{ height: 32, fontSize: 12, borderRadius: 8, border: '1.5px solid #d1d5e0', padding: '0 6px', width: 64 }}
               />
             </label>
-            <label style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 12, color: 'var(--mu)', flexShrink: 0 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 12, color: 'var(--mu)', flexShrink: 0 }}>
               <span style={{ whiteSpace: 'nowrap' }}>ชำระก่อน</span>
-              <DateInputBE
-                value={earlyFullYearDiscountDeadline}
-                onChange={(event) => setEarlyFullYearDiscountDeadline(event.target.value)}
-              />
-            </label>
+              <div style={{ width: 160, flexShrink: 0 }}>
+                <DateInputBE
+                  value={earlyFullYearDiscountDeadline}
+                  onChange={(event) => setEarlyFullYearDiscountDeadline(event.target.value)}
+                />
+              </div>
+            </div>
           </div>
           <div className="vms-toolbar-right">
             <button className="vms-sm-btn" type="button" onClick={regenerateRows} disabled={loading || saving}>สร้างรายการตามรอบ</button>

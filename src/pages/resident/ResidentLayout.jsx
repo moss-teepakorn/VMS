@@ -15,7 +15,7 @@ import {
 import { createPayment, expireDiscountForFeesBeforePrint, listHouseFees, listHousePayments, uploadPaymentSlip } from '../../lib/fees'
 import { listAnnouncements } from '../../lib/announcements'
 import { listWorkReports } from '../../lib/workReports'
-import { listTechnicians } from '../../lib/technicians'
+import { listTechnicians, createTechnician } from '../../lib/technicians'
 import { createMarketplaceItem, listMarketplace, listMarketplaceImages, updateMarketplaceItem, uploadMarketplaceImages } from '../../lib/marketplace'
 import { listVehicles, listVehicleImages, deleteVehicleImagesByPaths } from '../../lib/vehicles'
 import {
@@ -385,6 +385,9 @@ export default function ResidentLayout() {
 
   const [techSearch, setTechSearch] = useState('')
   const [selectedTech, setSelectedTech] = useState(null)
+  const [showAddTechModal, setShowAddTechModal] = useState(false)
+  const [addTechForm, setAddTechForm] = useState({ name: '', phone: '', line_id: '', skill: '', note: '' })
+  const [addTechSaving, setAddTechSaving] = useState(false)
   const [marketSearch, setMarketSearch] = useState('')
   const [marketFilter, setMarketFilter] = useState('all')
   const [showMarketPostModal, setShowMarketPostModal] = useState(false)
@@ -1522,6 +1525,26 @@ export default function ResidentLayout() {
 
   function closeTechModal() {
     setSelectedTech(null)
+  }
+
+  async function handleAddTechSubmit(e) {
+    e.preventDefault()
+    const name = addTechForm.name.trim()
+    if (!name) return
+    setAddTechSaving(true)
+    try {
+      const services = addTechForm.skill.trim()
+        ? [{ skill: addTechForm.skill.trim(), price_min: 0, price_max: 0, price_note: '' }]
+        : []
+      await createTechnician({ ...addTechForm, status: 'pending' }, services)
+      setShowAddTechModal(false)
+      setAddTechForm({ name: '', phone: '', line_id: '', skill: '', note: '' })
+      await Swal.fire({ icon: 'success', title: 'ส่งคำขอแล้ว!', text: 'นิติจะตรวจสอบและอนุมัติในภายหลัง', timer: 2000, showConfirmButton: false })
+    } catch (err) {
+      await Swal.fire({ icon: 'error', title: 'เกิดข้อผิดพลาด', text: err?.message || 'ไม่สามารถส่งคำขอได้' })
+    } finally {
+      setAddTechSaving(false)
+    }
   }
 
   function openMarketPostModal() {
@@ -3736,8 +3759,9 @@ export default function ResidentLayout() {
 
           {activeSection === 'tech' && (
             <>
-              <div style={{ display: 'flex', gap: 7, marginBottom: 14, flexWrap: 'wrap' }}>
+              <div style={{ display: 'flex', gap: 7, marginBottom: 14, flexWrap: 'wrap', alignItems: 'center' }}>
                 <input className="fi" style={{ width: 200, maxWidth: '100%', minWidth: 0, flexShrink: 1 }} value={techSearch} onChange={(e) => setTechSearch(e.target.value)} placeholder="🔍 ค้นหาชื่อ หรือบริการ..." />
+                <button className="btn btn-p btn-sm" type="button" onClick={() => setShowAddTechModal(true)}>+ ขอลงทะเบียนช่าง</button>
               </div>
 
               {filteredTechs.length === 0 ? (
@@ -4296,6 +4320,51 @@ export default function ResidentLayout() {
                   </a>
                 )}
               </div>
+            </div>
+          </div>
+        )}
+
+        {showAddTechModal && (
+          <div className="house-mo">
+            <div className="house-md house-md--sm">
+              <div className="house-md-head">
+                <div>
+                  <div className="house-md-title">🔨 ขอลงทะเบียนช่าง</div>
+                  <div className="house-md-sub">นิติจะตรวจสอบและอนุมัติก่อนแสดงในรายชื่อ</div>
+                </div>
+              </div>
+              <form onSubmit={handleAddTechSubmit}>
+                <div className="house-md-body">
+                  <section className="house-sec">
+                    <div className="house-grid house-grid-2">
+                      <label className="house-field house-field-span-2">
+                        <span>ชื่อช่าง *</span>
+                        <input className="fi" value={addTechForm.name} onChange={(e) => setAddTechForm((p) => ({ ...p, name: e.target.value }))} placeholder="ชื่อ-นามสกุล" required />
+                      </label>
+                      <label className="house-field">
+                        <span>เบอร์โทรศัพท์</span>
+                        <input className="fi" value={addTechForm.phone} onChange={(e) => setAddTechForm((p) => ({ ...p, phone: e.target.value }))} placeholder="08x-xxx-xxxx" />
+                      </label>
+                      <label className="house-field">
+                        <span>LINE ID</span>
+                        <input className="fi" value={addTechForm.line_id} onChange={(e) => setAddTechForm((p) => ({ ...p, line_id: e.target.value }))} placeholder="Line ID" />
+                      </label>
+                      <label className="house-field house-field-span-2">
+                        <span>ความชำนาญ / บริการ</span>
+                        <input className="fi" value={addTechForm.skill} onChange={(e) => setAddTechForm((p) => ({ ...p, skill: e.target.value }))} placeholder="เช่น ช่างไฟ, ช่างประปา, ช่างทาสี" />
+                      </label>
+                      <label className="house-field house-field-span-2">
+                        <span>หมายเหตุ</span>
+                        <textarea className="fi ft" rows={2} value={addTechForm.note} onChange={(e) => setAddTechForm((p) => ({ ...p, note: e.target.value }))} placeholder="รายละเอียดเพิ่มเติม (ไม่บังคับ)" />
+                      </label>
+                    </div>
+                  </section>
+                </div>
+                <div className="house-md-foot">
+                  <button className="btn btn-g" type="button" onClick={() => setShowAddTechModal(false)} disabled={addTechSaving}>ยกเลิก</button>
+                  <button className="btn btn-p" type="submit" disabled={addTechSaving}>{addTechSaving ? 'กำลังส่ง...' : '📤 ส่งคำขอ'}</button>
+                </div>
+              </form>
             </div>
           </div>
         )}
