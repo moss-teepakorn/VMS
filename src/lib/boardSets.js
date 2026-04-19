@@ -50,8 +50,8 @@ export async function createBoardSet(payload = {}) {
       ...m,
     }))
 
-  if (memberRows.length > 0) {
-    const { error: mErr } = await supabase.from('board_members').insert(memberRows)
+  for (const row of memberRows) {
+    const { error: mErr } = await supabase.from('board_members').insert([row])
     if (mErr) throw mErr
   }
 
@@ -92,8 +92,8 @@ export async function saveBoardMembers(setId, members = []) {
       ...m,
     }))
 
-  if (rows.length > 0) {
-    const { error: insErr } = await supabase.from('board_members').insert(rows)
+  for (const row of rows) {
+    const { error: insErr } = await supabase.from('board_members').insert([row])
     if (insErr) throw insErr
   }
   return true
