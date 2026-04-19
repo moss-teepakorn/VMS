@@ -84,6 +84,11 @@ export default function AdminRules() {
 
   useEffect(() => { loadData() }, [])
 
+  useEffect(() => {
+    const timer = setTimeout(() => { loadData({ search: searchTerm }) }, 400)
+    return () => clearTimeout(timer)
+  }, [searchTerm])
+
   const openAddModal = () => {
     setEditingItem(null)
     setForm({ ...EMPTY_FORM, topic_no: String(nextTopicNo(rules, 'village')) })

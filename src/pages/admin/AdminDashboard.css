@@ -413,6 +413,11 @@
   overflow: hidden;
 }
 
+/* Allow dropdown menus from DropdownList in toolbar to escape card clipping */
+.card:has(.vms-panel-toolbar) {
+  overflow: visible;
+}
+
 .ch {
   padding: 13px 16px;
   border-bottom: 1.5px solid var(--ds-border-strong);

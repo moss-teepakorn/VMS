@@ -64,6 +64,7 @@ const AdminRequests = () => {
   const [loading, setLoading] = useState(false)
   const [statusFilter, setStatusFilter] = useState('pending')
   const [categoryFilter, setCategoryFilter] = useState('all')
+  const [searchTerm, setSearchTerm] = useState('')
   const [saving, setSaving] = useState(false)
   const [approvalDrafts, setApprovalDrafts] = useState({})
   const [page, setPage] = useState(1)
@@ -147,11 +148,26 @@ const AdminRequests = () => {
 
   const filteredRequests = requests.filter((request) => {
     if (categoryFilter === 'vehicle_add') {
-      return (request.__kind === 'vehicle' && request.request_type === 'add') || request.__kind === 'vehicle_fallback'
+      if (!((request.__kind === 'vehicle' && request.request_type === 'add') || request.__kind === 'vehicle_fallback')) return false
+    } else if (categoryFilter === 'vehicle_edit') {
+      if (!(request.__kind === 'vehicle' && request.request_type === 'edit')) return false
+    } else if (categoryFilter === 'account_register') {
+      if (!(request.__kind === 'account' && request.request_type === 'register')) return false
+    } else if (categoryFilter === 'house_profile_update') {
+      if (!(request.__kind === 'account' && request.request_type === 'house_profile_update')) return false
     }
-    if (categoryFilter === 'vehicle_edit') return request.__kind === 'vehicle' && request.request_type === 'edit'
-    if (categoryFilter === 'account_register') return request.__kind === 'account' && request.request_type === 'register'
-    if (categoryFilter === 'house_profile_update') return request.__kind === 'account' && request.request_type === 'house_profile_update'
+    if (searchTerm.trim()) {
+      const kw = searchTerm.trim().toLowerCase()
+      const text = [
+        request.license_plate || '',
+        request.province || '',
+        request.houses?.house_no || request.house_no || '',
+        request.profiles?.full_name || request.profiles?.username || '',
+        request.full_name || '',
+        request.username || '',
+      ].join(' ').toLowerCase()
+      if (!text.includes(kw)) return false
+    }
     return true
   })
 
@@ -365,6 +381,12 @@ const AdminRequests = () => {
         <div className="vms-panel-toolbar">
           <div className="vms-toolbar-left">
             <DropdownList compact value={statusFilter} options={reqStatusOptions} onChange={(v) => { setStatusFilter(v); setPage(1); loadRequests({ status: v }) }} placeholder="รอดำเนินการ" />
+            <div className="vms-inline-search">
+              <svg width="12" height="12" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd" />
+              </svg>
+              <input type="text" value={searchTerm} onChange={(e) => { setSearchTerm(e.target.value); setPage(1) }} placeholder="ค้นหา ทะเบียน / บ้าน / ชื่อ" />
+            </div>
           </div>
           <div className="vms-toolbar-right">
             <button className="vms-sm-btn" onClick={() => loadRequests({ status: statusFilter })}>🔄</button>
