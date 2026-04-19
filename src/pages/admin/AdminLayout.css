@@ -1718,10 +1718,10 @@ button, input, select, textarea {
   width: min(var(--house-md-max-w), 100%);
   height: min(96vh, var(--house-md-max-h));
   max-height: calc(100dvh - 40px);
-  background: #f8fafc;
-  border: 1px solid rgba(210, 218, 230, .95);
-  border-radius: 24px;
-  box-shadow: 0 28px 70px rgba(8, 15, 30, .24);
+  background: #f8fbff;
+  border: 1px solid #d9e3f0;
+  border-radius: 16px;
+  box-shadow: 0 20px 46px rgba(15, 23, 42, .20);
   overflow: hidden;
   display: flex;
   flex-direction: column;
@@ -1789,8 +1789,9 @@ button, input, select, textarea {
   justify-content: space-between;
   gap: 16px;
   padding: 16px 20px 12px;
-  color: #fff;
-  background: linear-gradient(135deg, #1e6b73 0%, #2bb673 100%);
+  color: #1f2a44;
+  background: linear-gradient(180deg, #f8fbff 0%, #f1f5ff 100%);
+  border-bottom: 1px solid #e4eaf6;
 }
 
 .house-md-title {
@@ -1802,8 +1803,9 @@ button, input, select, textarea {
 .house-md-sub {
   margin-top: 4px;
   font-size: 13px;
-  opacity: .86;
+  opacity: .92;
   font-weight: 600;
+  color: #5f6f8f;
 }
 
 .house-md-body {
@@ -1811,10 +1813,28 @@ button, input, select, textarea {
   min-height: 0;
   padding: 12px 14px 10px;
   overflow-y: auto;
-  overflow-x: hidden;
-  background: #f8fafc;
-  scrollbar-width: none;
+  padding: 10px 14px 14px;
+  background: #f3f7ff;
+  border-top: 1px solid #e4eaf6;
   -ms-overflow-style: none;
+
+/* Shared sample-like pagination */
+.vms-pagination {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.vms-page-info {
+  font-size: 12px;
+  font-weight: 600;
+  color: #5f6f8f;
+  background: #eef3ff;
+  border: 1px solid #dbe3f2;
+  border-radius: 999px;
+  padding: 4px 10px;
+}
 }
 
 .house-md-body::-webkit-scrollbar {

@@ -610,74 +610,18 @@
 }
 
 .btn-p {
-  background: var(--ds-brand);
-  color: #fff;
-  border-color: var(--ds-brand-strong);
-  box-shadow: 0 3px 10px color-mix(in srgb, var(--ds-brand) 52%, transparent);
-}
-
-.btn-p:hover {
-  transform: translateY(-1px);
-  background: var(--ds-brand-strong);
-}
-
-.btn-a {
-  background: var(--ds-accent);
-  color: #fff;
-  border-color: var(--ds-accent-strong);
-  box-shadow: 0 3px 10px color-mix(in srgb, var(--ds-accent) 52%, transparent);
-}
-
-.btn-a:hover {
-  background: var(--ds-accent-strong);
-}
-
-.btn-o {
-  background: var(--ds-warning);
-  color: #fff;
-  border-color: var(--ds-warning-strong);
-  box-shadow: 0 3px 10px color-mix(in srgb, var(--ds-warning) 52%, transparent);
-}
-
-.btn-o:hover {
-  background: var(--ds-warning-strong);
-}
-
-.btn-g {
-  background: var(--ds-neutral);
-  color: #fff;
-  border-color: var(--ds-neutral-strong);
-  box-shadow: 0 3px 10px color-mix(in srgb, var(--ds-neutral) 52%, transparent);
-}
-
-.btn-g:hover {
-  background: var(--ds-neutral-strong);
-}
-
-.btn-dg {
-  background: var(--ds-danger);
-  color: #fff;
-  border-color: var(--ds-danger-strong);
-  box-shadow: 0 3px 10px color-mix(in srgb, var(--ds-danger) 52%, transparent);
-}
-
-.btn-dg:hover {
-  background: var(--ds-danger-strong);
-}
-
-.btn-ok {
   background: #4f6ef7;
   color: #fff;
   border-color: #3f5ce0;
   box-shadow: 0 4px 12px rgba(79, 110, 247, .22);
 }
 
-.btn-ok:hover {
-  background: var(--ds-success-strong);
+.btn-p:hover {
+  transform: translateY(-1px);
   background: #3f5ce0;
+}
 
-.btn-sm {
-  padding: 6px 12px;
+.btn-a {
   background: #ffffff;
   color: #1e2537;
   border-color: #dbe3f2;
@@ -806,6 +750,12 @@
   border-top: 1px solid #e6ecf5 !important;
   background: #f7f9ff !important;
 }
+
+.tw th {
+  padding: 10px 12px;
+  text-align: left;
+  font-weight: 700;
+  font-size: 11px;
   color: var(--mu);
   text-transform: uppercase;
   letter-spacing: .05em;

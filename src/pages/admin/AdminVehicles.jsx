@@ -921,9 +921,9 @@ const AdminVehicles = () => {
               onChange={setRowsPerPage}
               placeholder="จำนวนรายการ"
             />
-            <div style={{ marginLeft: 'auto', display: 'flex', gap: 6, alignItems: 'center' }}>
+            <div className="vms-pagination" style={{ marginLeft: 'auto' }}>
               <button className="btn btn-g btn-xs" type="button" onClick={() => setPage((prev) => Math.max(1, prev - 1))} disabled={rowsPerPage === 'all' || page <= 1}>ก่อนหน้า</button>
-              <span style={{ fontSize: 12, color: 'var(--mu)' }}>หน้า {page}/{totalPages}</span>
+              <span className="vms-page-info">หน้า {page}/{totalPages}</span>
               <button className="btn btn-g btn-xs" type="button" onClick={() => setPage((prev) => Math.min(totalPages, prev + 1))} disabled={rowsPerPage === 'all' || page >= totalPages}>ถัดไป</button>
             </div>
           </div>
