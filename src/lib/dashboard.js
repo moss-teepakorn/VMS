@@ -50,6 +50,21 @@ function mapStatus(status) {
   return { label: status || '-', tone: 'pr' }
 }
 
+function normalizeRequestType(type) {
+  const raw = String(type || '').trim().toLowerCase()
+  if (raw === 'edit') return 'แก้ไขข้อมูลรถ'
+  if (raw === 'add') return 'เพิ่มรถใหม่'
+  if (raw === 'register') return 'ลงทะเบียนผู้ใช้งาน'
+  if (raw === 'house_profile_update') return 'แก้ไขข้อมูลบ้าน'
+  return raw || 'คำขอทั่วไป'
+}
+
+function requestMetaText(request) {
+  const houseNo = request?.houses?.house_no || request?.house_no || '-'
+  const owner = request?.profiles?.full_name || request?.full_name || request?.requested_username || '-'
+  return `บ้าน ${houseNo} · ${owner}`
+}
+
 export async function getDashboardData() {
   const [housesResult, feesResult, paymentsResult, issuesResult, vehiclesResult, marketplaceResult, techniciansResult, violationsResult] = await Promise.all([
     supabase.from('houses').select('id, house_no, status, created_at'),
@@ -60,6 +75,19 @@ export async function getDashboardData() {
     supabase.from('marketplace').select('id, status, created_at, house_id, title, houses(house_no)').order('created_at', { ascending: false }),
     supabase.from('technicians').select('id, status, created_at, name').order('created_at', { ascending: false }),
     supabase.from('violations').select('id, status, created_at, type, house_id, houses(house_no)').order('created_at', { ascending: false }),
+  ])
+
+  const [vehicleRequestsResult, accountRequestsResult] = await Promise.allSettled([
+    supabase
+      .from('vehicle_requests')
+      .select('id, status, request_type, created_at, house_id, house_no, license_plate, province, vehicle_type, houses(house_no), profiles:created_by_id(full_name, username)')
+      .eq('status', 'pending')
+      .order('created_at', { ascending: false }),
+    supabase
+      .from('account_requests')
+      .select('id, status, request_type, created_at, house_id, requested_username, full_name, houses(house_no), profiles:profile_id(full_name, username)')
+      .eq('status', 'pending')
+      .order('created_at', { ascending: false }),
   ])
 
   for (const result of [housesResult, feesResult, paymentsResult, issuesResult, vehiclesResult, marketplaceResult, techniciansResult, violationsResult]) {
@@ -74,6 +102,12 @@ export async function getDashboardData() {
   const marketplace = marketplaceResult.data ?? []
   const technicians = techniciansResult.data ?? []
   const violations = violationsResult.data ?? []
+  const vehicleRequests = vehicleRequestsResult.status === 'fulfilled' && !vehicleRequestsResult.value.error
+    ? (vehicleRequestsResult.value.data || [])
+    : []
+  const accountRequests = accountRequestsResult.status === 'fulfilled' && !accountRequestsResult.value.error
+    ? (accountRequestsResult.value.data || [])
+    : []
 
   const now = new Date()
   const currentMonth = now.getMonth()
@@ -124,11 +158,28 @@ export async function getDashboardData() {
     count: issues.filter((issue) => (issue.category || 'อื่นๆ') === category).length,
   }))
 
-  const pendingApprovals =
-    payments.filter((item) => !item.verified_at && !isRejectedPayment(item.note)).length +
-    vehicles.filter((item) => item.status === 'pending').length +
-    marketplace.filter((item) => item.status === 'pending').length +
-    technicians.filter((item) => item.status === 'pending').length
+  const vehicleRequestKeySet = new Set(
+    vehicleRequests
+      .map((row) => [
+        String(row.house_id || ''),
+        String(row.license_plate || '').trim().toLowerCase(),
+        String(row.province || '').trim().toLowerCase(),
+        String(row.vehicle_type || '').trim().toLowerCase(),
+      ].join('|')),
+  )
+
+  const fallbackPendingVehicleCount = vehicles.filter((row) => {
+    if (row.status !== 'pending') return false
+    const key = [
+      String(row.house_id || ''),
+      String(row.license_plate || '').trim().toLowerCase(),
+      String(row.province || '').trim().toLowerCase(),
+      String(row.vehicle_type || '').trim().toLowerCase(),
+    ].join('|')
+    return !vehicleRequestKeySet.has(key)
+  }).length
+
+  const pendingApprovals = vehicleRequests.length + accountRequests.length + fallbackPendingVehicleCount
 
   const openIssues = issues.filter((item) => item.status === 'pending' || item.status === 'in_progress')
   const avgRatingItems = issues.filter((item) => Number(item.rating) > 0)
@@ -152,14 +203,27 @@ export async function getDashboardData() {
         }
       }),
     requests: [
-      ...vehicles.filter((item) => item.status === 'pending').slice(0, 2).map((item) => ({ type: 'รถ', source: item.houses?.house_no || '-', detail: 'คำขอลงทะเบียนรถใหม่', route: '/admin/requests' })),
-      ...marketplace.filter((item) => item.status === 'pending').slice(0, 2).map((item) => ({ type: 'ตลาด', source: item.houses?.house_no || '-', detail: item.title || 'รายการรออนุมัติ', route: '/admin/requests' })),
-      ...technicians.filter((item) => item.status === 'pending').slice(0, 2).map((item) => ({ type: 'ช่าง', source: '-', detail: `คำขอช่าง: ${item.name || '-'}`, route: '/admin/requests' })),
-    ].slice(0, 4),
+      ...vehicleRequests.map((item) => ({
+        type: normalizeRequestType(item.request_type),
+        source: item.houses?.house_no || item.house_no || '-',
+        detail: requestMetaText(item),
+        route: '/admin/requests',
+        createdAt: item.created_at,
+      })),
+      ...accountRequests.map((item) => ({
+        type: normalizeRequestType(item.request_type),
+        source: item.houses?.house_no || item.house_no || '-',
+        detail: requestMetaText(item),
+        route: '/admin/requests',
+        createdAt: item.created_at,
+      })),
+    ]
+      .sort((left, right) => new Date(right.createdAt || 0).getTime() - new Date(left.createdAt || 0).getTime())
+      .slice(0, 8),
   }
 
-  const alerts = [
-    ...violations.slice(0, 3).map((item) => {
+  const alerts = violations
+    .map((item) => {
       const mapped = mapStatus(item.status)
       return {
         kind: 'violation',
@@ -167,20 +231,10 @@ export async function getDashboardData() {
         meta: `บ้าน ${item.houses?.house_no || '-'} · ${new Date(item.created_at).toLocaleDateString('th-TH')}`,
         statusLabel: mapped.label,
         statusTone: mapped.tone,
+        createdAt: item.created_at,
       }
-    }),
-    ...issues.slice(0, 3).map((item) => {
-      const mapped = mapStatus(item.status)
-      return {
-        kind: 'issue',
-        title: item.title,
-        meta: `บ้าน ${item.houses?.house_no || '-'} · ${new Date(item.created_at).toLocaleDateString('th-TH')}`,
-        statusLabel: mapped.label,
-        statusTone: mapped.tone,
-      }
-    }),
-  ]
-    .sort((a, b) => 0)
+    })
+    .sort((left, right) => new Date(right.createdAt || 0).getTime() - new Date(left.createdAt || 0).getTime())
     .slice(0, 4)
 
   return {

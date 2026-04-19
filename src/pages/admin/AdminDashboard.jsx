@@ -278,7 +278,6 @@ const AdminDashboard = () => {
   const data = dashboard
   const quickApprovals = data.quickApprovals || { slips: [], requests: [] }
   const goToRequests = () => navigate('/admin/requests')
-  const goToPayments = () => navigate('/admin/payments')
   const goToViolations = () => navigate('/admin/violations')
   const getStatusBadgeClass = (tone) => {
     if (tone === 'ok') return 'bd b-ok'
@@ -343,7 +342,7 @@ const AdminDashboard = () => {
           <div>
             <div className="sc-v" style={{ fontSize: '36px', fontWeight: 900, lineHeight: 1 }}>{data.kpis.pendingApprovals}</div>
             <div className="sc-l">รออนุมัติ</div>
-            <div className="sc-s">รถ, ชำระเงิน, ตลาด, ช่าง</div>
+            <div className="sc-s">คำขอแก้ไขทั้งหมด</div>
           </div>
         </div>
         <div className="sc">
@@ -403,38 +402,20 @@ const AdminDashboard = () => {
             <h3>⚡ รายการด่วน — รออนุมัติ</h3>
           </div>
           <div className="cb">
-            <div className="qa-split">
-              <div className="qa-group">
-                <div className="qa-group-head" style={{ cursor: 'pointer' }} onClick={goToPayments}>สลิปโอนรอตรวจสอบ</div>
-                {quickApprovals.slips.length === 0 ? (
-                  <div className="qa-empty">ไม่มีสลิปรออนุมัติ</div>
-                ) : quickApprovals.slips.map((item, index) => (
-                  <div key={`slip-${index}`} className="qa-item">
-                    <span className="bd b-wn">{item.type}</span>
-                    <span className="qa-name">บ้าน {item.source}</span>
-                    <span className="qa-status">{item.detail}</span>
-                    <div className="qa-act">
-                      <button className="btn btn-xs btn-a" onClick={goToPayments}>ตรวจสอบ</button>
-                    </div>
+            <div className="qa-group">
+              <div className="qa-group-head" style={{ cursor: 'pointer' }} onClick={goToRequests}>คำขอแก้ไขทั้งหมด</div>
+              {quickApprovals.requests.length === 0 ? (
+                <div className="qa-empty">ไม่มีคำขอรออนุมัติ</div>
+              ) : quickApprovals.requests.map((item, index) => (
+                <div key={`req-${index}`} className="qa-item">
+                  <span className="bd b-wn">{item.type}</span>
+                  <span className="qa-name">บ้าน {item.source}</span>
+                  <span className="qa-status">{item.detail}</span>
+                  <div className="qa-act">
+                    <button className="btn btn-xs btn-a" onClick={goToRequests}>ดูคำขอ</button>
                   </div>
-                ))}
-              </div>
-
-              <div className="qa-group">
-                <div className="qa-group-head" style={{ cursor: 'pointer' }} onClick={goToRequests}>คำขออื่นรออนุมัติ</div>
-                {quickApprovals.requests.length === 0 ? (
-                  <div className="qa-empty">ไม่มีคำขอรออนุมัติ</div>
-                ) : quickApprovals.requests.map((item, index) => (
-                  <div key={`req-${index}`} className="qa-item">
-                    <span className={`bd ${item.type === 'ตลาด' ? 'b-pr' : 'b-wn'}`}>{item.type}</span>
-                    <span className="qa-name">บ้าน {item.source}</span>
-                    <span className="qa-status">{item.detail}</span>
-                    <div className="qa-act">
-                      <button className="btn btn-xs btn-a" onClick={goToRequests}>ดูคำขอ</button>
-                    </div>
-                  </div>
-                ))}
-              </div>
+                </div>
+              ))}
             </div>
           </div>
         </div>
