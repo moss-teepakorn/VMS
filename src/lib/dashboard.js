@@ -75,26 +75,18 @@ function requestMetaText(request) {
 export async function getDashboardData() {
   const [housesResult, feesResult, paymentsResult, issuesResult, vehiclesResult, marketplaceResult, techniciansResult, violationsResult] = await Promise.all([
     supabase.from('houses').select('id, house_no, status, created_at'),
-    supabase.from('fees').select('id, house_id, year, period, status, total_amount, created_at, invoice_date, due_date, houses(house_no)').order('created_at', { ascending: false }),
-    supabase.from('payments').select('id, house_id, amount, paid_at, payment_method, verified_at, note, fees(year, period), houses(house_no)').order('paid_at', { ascending: false }),
-    supabase.from('issues').select('id, house_id, title, category, status, rating, created_at, houses(house_no)').order('created_at', { ascending: false }),
-    supabase.from('vehicles').select('id, status, created_at, house_id, houses(house_no)').order('created_at', { ascending: false }),
-    supabase.from('marketplace').select('id, status, created_at, house_id, title, houses(house_no)').order('created_at', { ascending: false }),
+    supabase.from('fees').select('id, house_id, year, period, status, total_amount, created_at, invoice_date, due_date').order('created_at', { ascending: false }),
+    supabase.from('payments').select('id, house_id, amount, paid_at, payment_method, verified_at, note').order('paid_at', { ascending: false }),
+    supabase.from('issues').select('id, house_id, title, category, status, rating, created_at').order('created_at', { ascending: false }),
+    supabase.from('vehicles').select('id, status, created_at, house_id').order('created_at', { ascending: false }),
+    supabase.from('marketplace').select('id, status, created_at, house_id, title').order('created_at', { ascending: false }),
     supabase.from('technicians').select('id, status, created_at, name').order('created_at', { ascending: false }),
-    supabase.from('violations').select('id, status, created_at, type, house_id, houses(house_no)').order('created_at', { ascending: false }),
+    supabase.from('violations').select('id, status, created_at, type, house_id').order('created_at', { ascending: false }),
   ])
 
   const [vehicleRequestsResult, accountRequestsResult] = await Promise.allSettled([
-    supabase
-      .from('vehicle_requests')
-      .select('id, status, request_type, created_at, house_id, house_no, license_plate, province, vehicle_type, houses(house_no)')
-      .eq('status', 'pending')
-      .order('created_at', { ascending: false }),
-    supabase
-      .from('account_requests')
-      .select('id, status, request_type, created_at, house_id, requested_username, full_name, houses(house_no)')
-      .eq('status', 'pending')
-      .order('created_at', { ascending: false }),
+    listVehicleRequests({ status: 'pending' }),
+    listAccountRequests({ status: 'pending' }),
   ])
 
   for (const result of [housesResult, feesResult, paymentsResult, issuesResult, vehiclesResult, marketplaceResult, techniciansResult, violationsResult]) {

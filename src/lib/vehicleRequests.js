@@ -86,11 +86,15 @@ export async function listVehicleRequests({ houseId = null, status = 'all' } = {
 
   // Fallback: some Supabase projects may not allow nested relation selects via REST
   // Retry with a simpler select that avoids embedding related tables.
-  const { data: plainData, error: plainError } = await supabase
+  let fallback = supabase
     .from('vehicle_requests')
     .select('id, status, request_type, created_at, house_id, house_no, license_plate, province, vehicle_type')
     .order('created_at', { ascending: false })
 
+  if (houseId) fallback = fallback.eq('house_id', houseId)
+  if (status !== 'all') fallback = fallback.eq('status', status)
+
+  const { data: plainData, error: plainError } = await fallback
   if (plainError) throw error
   return plainData || []
 }

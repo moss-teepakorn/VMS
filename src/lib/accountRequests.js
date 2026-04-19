@@ -529,15 +529,18 @@ export async function listAccountRequests({ status = 'all' } = {}) {
     } else {
       // Fallback: retry with a simpler select if relation embedding fails for this project
       const simpler = ['id', 'status', 'request_type', 'created_at', 'house_id', 'requested_username', 'full_name'].join(', ')
-      const { data: plainRows, error: plainError } = await supabase
-        .from('account_requests')
-        .select(simpler)
-        .order('created_at', { ascending: false })
-        .maybeSingle()
+      const fallbackRequest = supabase
+      .from('account_requests')
+      .select(simpler)
+      .order('created_at', { ascending: false })
 
-      if (!plainError) {
-        requestRows = plainRows ? [plainRows] : (plainRows || [])
-      } else {
+    if (status !== 'all') fallbackRequest.eq('status', status)
+
+    const { data: plainRows, error: plainError } = await fallbackRequest
+
+    if (!plainError) {
+      requestRows = plainRows || []
+    } else {
         const msg = String(error.message || '').toLowerCase()
         const isMissingTable = msg.includes('account_requests') && (msg.includes('does not exist') || msg.includes('relation'))
         if (!isMissingTable && !isAccountRequestInsertDenied(error)) {
