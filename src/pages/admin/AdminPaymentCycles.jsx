@@ -313,11 +313,13 @@ export default function AdminPaymentCycles() {
               placeholder="ปี พ.ศ."
               style={{ height: 32, fontSize: 12, borderRadius: 8, border: '1.5px solid #d1d5e0', padding: '0 8px', width: 80, flexShrink: 0 }}
             />
-            <StyledSelect className="payment-cycles-frequency" value={frequency} onChange={(event) => setFrequency(event.target.value)} style={{ height: 32, fontSize: 12, padding: '0 22px 0 8px', border: '1.5px solid #d1d5e0', borderRadius: 8, width: 200 }}>
-              {FREQUENCY_OPTIONS.map((item) => (
-                <option key={item.value} value={item.value}>{item.label}</option>
-              ))}
-            </StyledSelect>
+            <div style={{ width: 200, flexShrink: 0 }}>
+              <StyledSelect compact className="payment-cycles-frequency" value={frequency} onChange={(event) => setFrequency(event.target.value)}>
+                {FREQUENCY_OPTIONS.map((item) => (
+                  <option key={item.value} value={item.value}>{item.label}</option>
+                ))}
+              </StyledSelect>
+            </div>
             <label style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 12, color: 'var(--mu)', flexShrink: 0 }}>
               <span style={{ whiteSpace: 'nowrap' }}>ส่วนลด&nbsp;%</span>
               <input
