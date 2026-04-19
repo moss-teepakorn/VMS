@@ -179,7 +179,12 @@ export async function getDashboardData() {
     return !vehicleRequestKeySet.has(key)
   }).length
 
-  const pendingApprovals = vehicleRequests.length + accountRequests.length + fallbackPendingVehicleCount
+  const pendingRequests = vehicleRequests.length + accountRequests.length + fallbackPendingVehicleCount
+  const pendingIssues = issues.filter((item) => item.status === 'pending').length
+  const pendingPayments = payments.filter((item) => !item.verified_at && !isRejectedPayment(item.note)).length
+  const pendingTechnicians = technicians.filter((item) => item.status === 'pending').length
+  const pendingMarketplace = marketplace.filter((item) => item.status === 'pending').length
+  const pendingApprovals = pendingRequests + pendingIssues + pendingPayments + pendingTechnicians + pendingMarketplace
 
   const openIssues = issues.filter((item) => item.status === 'pending' || item.status === 'in_progress')
   const avgRatingItems = issues.filter((item) => Number(item.rating) > 0)
