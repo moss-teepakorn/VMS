@@ -554,7 +554,7 @@ const AdminConfig = () => {
             </section>
 
             <div className="cfg-sticky-actions">
-              <button className="btn btn-p cfg-save-btn" onClick={handleSave} disabled={saving}>
+              <button className="btn btn-p btn-sm cfg-save-btn" onClick={handleSave} disabled={saving}>
                 {saving ? 'กำลังบันทึก...' : 'บันทึกการตั้งค่า'}
               </button>
             </div>
