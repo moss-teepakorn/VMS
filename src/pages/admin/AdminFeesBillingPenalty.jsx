@@ -4,6 +4,7 @@ import Swal from 'sweetalert2'
 import { getSystemConfig } from '../../lib/systemConfig'
 import { getPaymentCycleConfigByYear } from '../../lib/paymentCycles'
 import { calculateOverdueFeesByIds, listFees, processHalfYearFeesAllHouses } from '../../lib/fees'
+import './FinanceLightButton.css'
 
 function toBE(yearCE) {
   const year = Number(yearCE)
@@ -265,7 +266,12 @@ export default function AdminFeesBillingPenalty() {
           </div>
 
           <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-            <button className="vms-sm-btn vms-sm-btn--primary" type="submit" disabled={processingInvoice}>
+            <button
+              className="vms-light-btn vms-light-btn--primary"
+              type="submit"
+              disabled={processingInvoice}
+              style={{ minWidth: 160 }}
+            >
               {processingInvoice ? 'กำลังประมวลผล...' : 'Process สร้างทั้งหมด'}
             </button>
           </div>
@@ -296,7 +302,13 @@ export default function AdminFeesBillingPenalty() {
           </div>
 
           <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-            <button className="vms-sm-btn vms-sm-btn--warning" type="button" onClick={handleCalculateOverdue} disabled={processingOverdue}>
+            <button
+              className="vms-light-btn vms-light-btn--warning"
+              type="button"
+              onClick={handleCalculateOverdue}
+              disabled={processingOverdue}
+              style={{ minWidth: 160 }}
+            >
               {processingOverdue ? 'กำลังคำนวณ...' : 'คำนวณค่าปรับ'}
             </button>
           </div>

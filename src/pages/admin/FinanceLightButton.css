@@ -1,0 +1,41 @@
+/*
+  Light theme button for finance/report UI (ขาว ขอบสี ตัวอักษรสีหลัก)
+*/
+.vms-light-btn {
+  background: #fff;
+  border: 1.5px solid var(--primary, #3b82f6);
+  color: var(--primary, #2563eb);
+  border-radius: 8px;
+  font-size: 15px;
+  font-weight: 500;
+  padding: 7px 18px;
+  transition: background 0.15s, border 0.15s, color 0.15s;
+  box-shadow: none;
+  outline: none;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.vms-light-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+.vms-light-btn--primary {
+  --primary: #3b82f6;
+  --primary-text: #2563eb;
+  border-color: var(--primary);
+  color: var(--primary-text);
+}
+.vms-light-btn--primary:hover:not(:disabled) {
+  background: #eff6ff;
+}
+.vms-light-btn--warning {
+  --primary: #f59e42;
+  --primary-text: #b45309;
+  border-color: var(--primary);
+  color: var(--primary-text);
+}
+.vms-light-btn--warning:hover:not(:disabled) {
+  background: #fff7ed;
+}
