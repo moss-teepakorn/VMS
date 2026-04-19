@@ -158,16 +158,13 @@ export default function ReportExportButtons({ columns, rows, filter, reportTitle
     <>
     <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
       <button
-        className="btn btn-p"
+        className="btn btn-o"
         style={{
           width: 38,
           height: 38,
           minWidth: 38,
           borderRadius: 10,
           padding: 0,
-          background: '#1e40af',
-          color: '#fff',
-          border: 'none',
           fontWeight: 700,
           display: 'inline-flex',
           alignItems: 'center',

@@ -1172,6 +1172,32 @@
   flex-shrink: 0;
 }
 
+.ph.report-head {
+  background: var(--card);
+  color: var(--tx);
+  border: 1px solid var(--bo);
+  box-shadow: var(--sh);
+}
+
+.ph.report-head::before,
+.ph.report-head::after {
+  display: none;
+}
+
+.ph.report-head .ph-ico {
+  background: #f8fafc;
+  color: #0f172a;
+  border-color: #d1d5db;
+}
+
+.ph.report-head .ph-h1 {
+  color: var(--tx);
+}
+
+.ph.report-head .ph-sub {
+  color: rgba(55, 65, 81, 0.7);
+}
+
 .report-filter-card {
   border: 1px solid var(--bo);
   overflow: visible !important;
