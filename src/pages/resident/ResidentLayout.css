@@ -94,6 +94,12 @@
 /* ── ANNOUNCEMENT ITEMS ── */
 .ann { padding: 12px 14px; border: 1.5px solid var(--bo); border-radius: 10px; margin-bottom: 9px; background: var(--card); display: flex; gap: 10px; transition: box-shadow .15s; }
 .ann:hover { box-shadow: 0 3px 14px rgba(0,0,0,.09); }
+.ann-btn {
+  width: 100%;
+  text-align: left;
+  font-family: inherit;
+  cursor: pointer;
+}
 .ann-dot { width: 7px; height: 7px; border-radius: 50%; margin-top: 5px; flex-shrink: 0; }
 .ad-urg { background: var(--dg); }
 .ad-gen { background: var(--ac); }
@@ -541,6 +547,12 @@
   align-items: center;
 }
 
+.fee-universal-search {
+  width: min(360px, 100%);
+  min-width: 220px;
+  flex: 1 1 260px;
+}
+
 .fee-toolbar-select {
   min-width: 145px;
   flex: 0 1 180px;
@@ -884,6 +896,55 @@
   --house-md-max-h: 760px;
 }
 
+.tech-detail-modal {
+  --house-md-max-w: 760px;
+  --house-md-max-h: calc(100dvh - 56px);
+}
+
+.work-report-detail-modal {
+  --house-md-max-w: 780px;
+  --house-md-max-h: calc(100dvh - 56px);
+}
+
+.tech-detail-top {
+  display: grid;
+  grid-template-columns: 72px 1fr;
+  gap: 12px;
+  align-items: center;
+}
+
+.tech-service-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.tech-service-item {
+  border: 1px solid var(--bo);
+  border-radius: 10px;
+  padding: 8px 10px;
+  background: var(--bg);
+}
+
+.tech-service-skill {
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--tx);
+}
+
+.tech-service-price {
+  margin-top: 3px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--pr);
+}
+
+.tech-service-note {
+  margin-top: 3px;
+  font-size: 11.5px;
+  color: var(--mu);
+}
+
 .house-profile-req-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -970,6 +1031,12 @@
     align-items: center;
     gap: 6px;
     flex-wrap: wrap;
+  }
+
+  .fee-universal-search {
+    width: 100%;
+    min-width: 0;
+    flex: 1 1 100%;
   }
 
   .fee-toolbar-select {

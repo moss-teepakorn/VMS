@@ -54,6 +54,28 @@ const MAX_IMAGE_TARGET_BYTES = 95 * 1024
 const REJECT_PREFIX = '[REJECT] '
 const PAYMENT_META_PREFIX = '[PAYMENT_ITEMS_JSON]'
 const ISSUE_CATEGORY_OPTIONS = ['ทั่วไป', 'ไฟฟ้า', 'ประปา', 'ความปลอดภัย', 'ความสะอาด', 'โครงสร้าง', 'ถนน', 'อื่นๆ']
+const TECHNICIAN_SKILLS = [
+  'ช่างไฟฟ้า',
+  'ช่างประปา',
+  'ช่างก่อสร้าง',
+  'ช่างไม้',
+  'ช่างปูน',
+  'ช่างสี',
+  'ช่างเหล็ก/เชื่อม',
+  'ช่างแอร์',
+  'ช่างรถยนต์',
+  'ช่างรถจักรยานยนต์',
+  'ช่างอิเล็กทรอนิกส์',
+  'ช่างคอมพิวเตอร์',
+  'ช่างซ่อมแซมทั่วไป',
+]
+const WORK_REPORT_CATEGORY_LABELS = {
+  maintenance: 'บำรุงรักษา',
+  cleaning: 'ความสะอาด',
+  safety: 'ความปลอดภัย',
+  activities: 'กิจกรรม',
+  environment: 'สิ่งแวดล้อม',
+}
 const MARKETPLACE_MAX_ATTACHMENTS = 2
 const MARKET_CATEGORY_OPTIONS = [
   'อาหารและเครื่องดื่ม',
@@ -322,6 +344,7 @@ export default function ResidentLayout() {
   const [feeLoading, setFeeLoading] = useState(false)
   const [feeStatusFilter, setFeeStatusFilter] = useState('all')
   const [feeYearFilter, setFeeYearFilter] = useState('all')
+  const [feeSearch, setFeeSearch] = useState('')
   const [showPaymentModal, setShowPaymentModal] = useState(false)
   const [selectedFee, setSelectedFee] = useState(null)
   const [paymentForm, setPaymentForm] = useState({ amount: '', payment_method: 'transfer', note: '' })
@@ -385,8 +408,18 @@ export default function ResidentLayout() {
 
   const [techSearch, setTechSearch] = useState('')
   const [selectedTech, setSelectedTech] = useState(null)
+  const [selectedWorkReport, setSelectedWorkReport] = useState(null)
   const [showAddTechModal, setShowAddTechModal] = useState(false)
-  const [addTechForm, setAddTechForm] = useState({ name: '', phone: '', line_id: '', skill: '', note: '' })
+  const [addTechForm, setAddTechForm] = useState({
+    name: '',
+    phone: '',
+    line_id: '',
+    skill: '',
+    price_min: '',
+    price_max: '',
+    price_note: '',
+    note: '',
+  })
   const [addTechSaving, setAddTechSaving] = useState(false)
   const [marketSearch, setMarketSearch] = useState('')
   const [marketFilter, setMarketFilter] = useState('all')
@@ -1427,7 +1460,25 @@ export default function ResidentLayout() {
   const nextDueFee = [...unresolvedFees].sort((left, right) => new Date(left.due_date || 0) - new Date(right.due_date || 0))[0] || null
   const approvedPaymentCount = payments.filter((row) => row.verified_at && !getRejectedReason(row.note)).length
   const feeStatusSummary = getFeeStatusSummary()
+  const selectedFeeOutstandingAmount = selectedFee ? getFeeOutstandingTotal(selectedFee) : 0
   const feeYearOptions = [...new Set(allFees.map((row) => row.year).filter(Boolean))].sort((a, b) => b - a)
+  const filteredFees = fees.filter((fee) => {
+    const kw = String(feeSearch || '').trim().toLowerCase()
+    if (!kw) return true
+    const statusLabel = getFeeStatusBadge(fee.status).label
+    const outstandingTotal = getFeeOutstandingTotal(fee)
+    const haystack = [
+      formatFeePeriodLabel(fee),
+      periodLabel(fee.period),
+      formatDate(fee.due_date),
+      statusLabel,
+      String(fee.year || ''),
+      String(toBE(fee.year) || ''),
+      String(fee.total_amount || ''),
+      String(outstandingTotal || ''),
+    ].join(' ').toLowerCase()
+    return haystack.includes(kw)
+  })
   const inProgressViolations = violations.filter((v) => v.status === 'pending' || v.status === 'in_progress')
   const latestViolation = violations[0] || null
   const pendingIssues = issues.filter((i) => i.status === 'pending' || i.status === 'in_progress')
@@ -1523,6 +1574,26 @@ export default function ResidentLayout() {
     setSelectedTech(item)
   }
 
+  function getWorkReportCategoryLabel(category) {
+    const key = String(category || '').trim()
+    if (!key) return 'บำรุงรักษา'
+    return WORK_REPORT_CATEGORY_LABELS[key] || key
+  }
+
+  function openAddTechModal() {
+    setAddTechForm({
+      name: '',
+      phone: '',
+      line_id: '',
+      skill: '',
+      price_min: '',
+      price_max: '',
+      price_note: '',
+      note: '',
+    })
+    setShowAddTechModal(true)
+  }
+
   function closeTechModal() {
     setSelectedTech(null)
   }
@@ -1534,11 +1605,25 @@ export default function ResidentLayout() {
     setAddTechSaving(true)
     try {
       const services = addTechForm.skill.trim()
-        ? [{ skill: addTechForm.skill.trim(), price_min: 0, price_max: 0, price_note: '' }]
+        ? [{
+          skill: addTechForm.skill.trim(),
+          price_min: addTechForm.price_min,
+          price_max: addTechForm.price_max,
+          price_note: addTechForm.price_note,
+        }]
         : []
       await createTechnician({ ...addTechForm, status: 'pending' }, services)
       setShowAddTechModal(false)
-      setAddTechForm({ name: '', phone: '', line_id: '', skill: '', note: '' })
+      setAddTechForm({
+        name: '',
+        phone: '',
+        line_id: '',
+        skill: '',
+        price_min: '',
+        price_max: '',
+        price_note: '',
+        note: '',
+      })
       await Swal.fire({ icon: 'success', title: 'ส่งคำขอแล้ว!', text: 'นิติจะตรวจสอบและอนุมัติในภายหลัง', timer: 2000, showConfirmButton: false })
     } catch (err) {
       await Swal.fire({ icon: 'error', title: 'เกิดข้อผิดพลาด', text: err?.message || 'ไม่สามารถส่งคำขอได้' })
@@ -1765,8 +1850,10 @@ export default function ResidentLayout() {
   }
 
   function openPaymentModal(fee) {
+    const outstandingAmount = Math.max(0, getFeeOutstandingTotal(fee))
+    const initialAmount = outstandingAmount > 0 ? outstandingAmount : Number(fee.total_amount || 0)
     setSelectedFee(fee)
-    setPaymentForm({ amount: String(Number(fee.total_amount || 0)), payment_method: 'transfer', note: '' })
+    setPaymentForm({ amount: String(initialAmount), payment_method: 'transfer', note: '' })
     if (paymentSlipPreview) URL.revokeObjectURL(paymentSlipPreview)
     setPaymentSlipPreview('')
     setPaymentSlipFile(null)
@@ -1839,7 +1926,7 @@ export default function ResidentLayout() {
         payment_items: [{
           item_key: 'resident_submitted_total',
           item_label: 'ยอดชำระที่ลูกบ้านส่งมา',
-          due_amount: Number(selectedFee.total_amount || 0),
+          due_amount: Math.max(0, getFeeOutstandingTotal(selectedFee)) || Number(selectedFee.total_amount || 0),
           paid_amount: Number(paymentForm.amount || 0),
         }],
       })
@@ -2724,7 +2811,7 @@ export default function ResidentLayout() {
               <button className="vms-sm-btn vms-sm-btn--primary" onClick={openMarketPostModal}>+ โพสต์ขายของ</button>
             )}
             {activeSection === 'fees' && overdueAmount > 0 && (
-              <button className="vms-sm-btn vms-sm-btn--warning" onClick={() => { const f = unresolvedFees[0]; if (f) openPaymentModal(f) }}>💳 แจ้งชำระ</button>
+              <button className="vms-sm-btn vms-sm-btn--warning" onClick={() => { const f = unresolvedFees[0]; if (f) openPaymentModal(f) }}>💳 แจ้งชำระ ฿{formatMoney(overdueAmount)}</button>
             )}
           </div>
           <div className="tb-right">
@@ -3089,21 +3176,38 @@ export default function ResidentLayout() {
               )}
 
               <div className="fee-toolbar-row" style={{ marginBottom: 16 }}>
-                <StyledSelect className="fee-toolbar-select" value={feeStatusFilter} onChange={(e) => setFeeStatusFilter(e.target.value)}>
+                <div className="tb-universal-wrap fee-universal-search">
+                  <span className="tb-universal-icon">🔎</span>
+                  <input
+                    className="tb-universal-input"
+                    type="text"
+                    placeholder="ค้นหางวด / สถานะ / ปี / ยอด"
+                    value={feeSearch}
+                    onChange={(e) => setFeeSearch(e.target.value)}
+                  />
+                </div>
+                <StyledSelect className="fee-toolbar-select" value={feeStatusFilter} onChange={(e) => {
+                  const nextStatus = e.target.value
+                  setFeeStatusFilter(nextStatus)
+                  loadFeeData({ status: nextStatus, year: feeYearFilter })
+                }}>
                   <option value="all">ทุกสถานะ</option>
                   <option value="unpaid">ยังไม่ชำระ</option>
                   <option value="pending">รอตรวจสอบ</option>
                   <option value="paid">ชำระแล้ว</option>
                   <option value="overdue">ค้างชำระ</option>
                 </StyledSelect>
-                <StyledSelect className="fee-toolbar-select" value={feeYearFilter} onChange={(e) => setFeeYearFilter(e.target.value)}>
+                <StyledSelect className="fee-toolbar-select" value={feeYearFilter} onChange={(e) => {
+                  const nextYear = e.target.value
+                  setFeeYearFilter(nextYear)
+                  loadFeeData({ status: feeStatusFilter, year: nextYear })
+                }}>
                   <option value="all">ทุกปี</option>
                   {feeYearOptions.map((year) => <option key={year} value={year}>{toBE(year)}</option>)}
                 </StyledSelect>
-                <button className="vms-sm-btn" onClick={() => loadFeeData({ status: feeStatusFilter, year: feeYearFilter })}>🔍 ค้นหา</button>
               </div>
 
-              <div className="sl">🧾 ใบแจ้งหนี้ <span style={{ fontWeight: 400, marginLeft: 6 }}>{fees.length} รายการ</span></div>
+              <div className="sl">🧾 ใบแจ้งหนี้ <span style={{ fontWeight: 400, marginLeft: 6 }}>{filteredFees.length} รายการ</span></div>
               {/* Desktop table */}
               <div className="fee-table-desktop" style={{ overflowX: 'auto', border: '1px solid var(--bo)', borderRadius: 10, marginBottom: 4, background: 'var(--card)' }}>
                 <table className="tw" style={{ width: '100%', minWidth: 580, borderCollapse: 'collapse' }}>
@@ -3120,9 +3224,9 @@ export default function ResidentLayout() {
                   <tbody>
                     {feeLoading ? (
                       <tr><td colSpan={6} style={{ textAlign: 'center', padding: 20, color: 'var(--mu)' }}>กำลังโหลด...</td></tr>
-                    ) : fees.length === 0 ? (
+                    ) : filteredFees.length === 0 ? (
                       <tr><td colSpan={6} style={{ textAlign: 'center', padding: 20, color: 'var(--mu)' }}>ยังไม่มีใบแจ้งหนี้</td></tr>
-                    ) : fees.map((fee) => {
+                    ) : filteredFees.map((fee) => {
                       const badge = getFeeStatusBadge(fee.status)
                       const canSubmitSlip = fee.status === 'unpaid' || fee.status === 'overdue'
                       const outstandingItems = getOutstandingItemsForFee(fee)
@@ -3139,7 +3243,7 @@ export default function ResidentLayout() {
                             <td><span className={badge.className}>{badge.label}</span></td>
                             <td>
                               <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap' }}>
-                                {canSubmitSlip && <button className="btn btn-xs btn-a" onClick={() => openPaymentModal(fee)}>💳 ส่งหลักฐาน</button>}
+                                {canSubmitSlip && <button className="btn btn-xs btn-a" onClick={() => openPaymentModal(fee)}>💳 แจ้งชำระ ฿{formatMoney(outstandingTotal > 0 ? outstandingTotal : Number(fee.total_amount || 0))}</button>}
                                 <button className="btn btn-xs btn-g" onClick={() => handlePrintInvoice(fee)}>🖨 ใบแจ้งหนี้</button>
                               </div>
                             </td>
@@ -3168,9 +3272,9 @@ export default function ResidentLayout() {
               <div className="fee-mobile-cards">
                 {feeLoading ? (
                   <div className="fee-mobile-empty">กำลังโหลด...</div>
-                ) : fees.length === 0 ? (
+                ) : filteredFees.length === 0 ? (
                   <div className="fee-mobile-empty">ยังไม่มีใบแจ้งหนี้</div>
-                ) : fees.map((fee) => {
+                ) : filteredFees.map((fee) => {
                   const badge = getFeeStatusBadge(fee.status)
                   const canSubmitSlip = fee.status === 'unpaid' || fee.status === 'overdue'
                   const outstandingItems = getOutstandingItemsForFee(fee)
@@ -3204,7 +3308,7 @@ export default function ResidentLayout() {
                         </div>
                       )}
                       <div className="fee-mcard-actions">
-                        {canSubmitSlip && <button className="btn btn-xs btn-a" onClick={() => openPaymentModal(fee)}>💳 ส่งหลักฐาน</button>}
+                        {canSubmitSlip && <button className="btn btn-xs btn-a" onClick={() => openPaymentModal(fee)}>💳 แจ้งชำระ ฿{formatMoney(outstandingTotal > 0 ? outstandingTotal : Number(fee.total_amount || 0))}</button>}
                         <button className="btn btn-xs btn-g" onClick={() => handlePrintInvoice(fee)}>🖨 ใบแจ้งหนี้</button>
                       </div>
                     </div>
@@ -3726,30 +3830,18 @@ export default function ResidentLayout() {
                   ) : workReports.map((rp) => {
                     const MONTH_TH = ['', 'ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.']
                     const monthName = MONTH_TH[rp.month] || rp.month
-                    const imageUrls = Array.isArray(rp.image_urls) ? rp.image_urls : []
-                    const attachments = buildAttachmentItems({ imageUrls, text: rp.detail, maxItems: 6 })
+                    const detailText = String(rp.detail || '').trim()
+                    const detailPreview = detailText.length > 180 ? `${detailText.slice(0, 180)}...` : detailText
                     return (
-                      <div key={rp.id} className="ann">
+                      <button key={rp.id} type="button" className="ann ann-btn" onClick={() => setSelectedWorkReport(rp)}>
                         <div className="ann-dot ad-evt" />
                         <div style={{ flex: 1 }}>
                           <div className="ann-t">รายงาน {monthName} {toBE(rp.year)}</div>
                           {rp.summary && <div className="ann-b">{rp.summary}</div>}
-                          {attachments.length > 0 && (
-                            <div className="ann-attachments">
-                              {attachments.map((att) => (
-                                <button key={`${rp.id}-${att.id}`} type="button" className="ann-attach-item ann-attach-btn" onClick={() => openResidentAttachment(att.url, `${rp.summary || 'ผลงานนิติ'} - ${att.title || 'ไฟล์แนบ'}`)}>
-                                  {att.isImage ? (
-                                    <img src={att.url} alt={att.title} className="ann-attach-thumb" />
-                                  ) : (
-                                    <span className="ann-attach-file">{getFileKind(att.url).icon} {getFileKind(att.url).label}</span>
-                                  )}
-                                </button>
-                              ))}
-                            </div>
-                          )}
-                          <div className="ann-d">{formatDate(rp.created_at)} · {rp.category || 'บำรุงรักษา'}</div>
+                          {detailPreview && <div className="ann-b" style={{ marginTop: 5, color: 'var(--mu)' }}>{detailPreview}</div>}
+                          <div className="ann-d">{formatDate(rp.created_at)} · {getWorkReportCategoryLabel(rp.category)} · แตะเพื่อดูรายละเอียดทั้งหมด</div>
                         </div>
-                      </div>
+                      </button>
                     )
                   })}
                 </div>
@@ -3761,7 +3853,7 @@ export default function ResidentLayout() {
             <>
               <div style={{ display: 'flex', gap: 7, marginBottom: 14, flexWrap: 'wrap', alignItems: 'center' }}>
                 <input className="fi" style={{ width: 200, maxWidth: '100%', minWidth: 0, flexShrink: 1 }} value={techSearch} onChange={(e) => setTechSearch(e.target.value)} placeholder="🔍 ค้นหาชื่อ หรือบริการ..." />
-                <button className="btn btn-p btn-sm" type="button" onClick={() => setShowAddTechModal(true)}>+ ขอลงทะเบียนช่าง</button>
+                <button className="btn btn-p btn-sm" type="button" onClick={openAddTechModal}>+ ขอลงทะเบียนช่าง</button>
               </div>
 
               {filteredTechs.length === 0 ? (
@@ -4007,7 +4099,10 @@ export default function ResidentLayout() {
                     <div className="house-grid" style={{ gridTemplateColumns: '1fr 1fr' }}>
                       <label className="house-field">
                         <span>ยอดชำระ *</span>
-                        <input type="number" min="0" step="0.01" value={paymentForm.amount} onChange={(e) => setPaymentForm((p) => ({ ...p, amount: e.target.value }))} />
+                        <input type="number" min="0" max={selectedFeeOutstandingAmount > 0 ? selectedFeeOutstandingAmount : undefined} step="0.01" value={paymentForm.amount} onChange={(e) => setPaymentForm((p) => ({ ...p, amount: e.target.value }))} />
+                        {selectedFeeOutstandingAmount > 0 && (
+                          <div style={{ fontSize: 12, color: 'var(--mu)' }}>ยอดค้างที่ต้องชำระ: ฿{formatMoney(selectedFeeOutstandingAmount)}</div>
+                        )}
                       </label>
                       <label className="house-field">
                         <span>วิธีชำระ *</span>
@@ -4270,7 +4365,7 @@ export default function ResidentLayout() {
 
         {selectedTech && (
           <div className="house-mo">
-            <div className="house-md house-md--sm tech-detail-modal">
+            <div className="house-md house-md--md tech-detail-modal">
               <div className="house-md-head">
                 <div>
                   <div className="house-md-title">🔨 รายละเอียดช่าง</div>
@@ -4279,7 +4374,7 @@ export default function ResidentLayout() {
               </div>
               <div className="house-md-body">
                 <section className="house-sec">
-                  <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+                  <div className="tech-detail-top">
                     <div className="tech-avatar" style={{ width: 62, height: 62 }}>
                       {selectedTech.avatar_url ? <img src={selectedTech.avatar_url} alt={selectedTech.name} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 12 }} /> : '🔨'}
                     </div>
@@ -4299,14 +4394,17 @@ export default function ResidentLayout() {
 
                 <section className="house-sec">
                   <div className="house-sec-title">บริการและราคา</div>
-                  <div className="tech-tags" style={{ marginTop: 0 }}>
+                  <div className="tech-service-list" style={{ marginTop: 0 }}>
                     {(selectedTech.technician_services || []).length === 0 ? (
                       <span style={{ fontSize: 12, color: 'var(--mu)' }}>ยังไม่ได้ระบุบริการ</span>
                     ) : (selectedTech.technician_services || []).map((svc) => (
-                      <span key={svc.id} className="tech-tag">
-                        {svc.skill}
-                        {(Number(svc.price_min || 0) > 0 || Number(svc.price_max || 0) > 0) && ` • ฿${formatMoney(svc.price_min || 0)}-${formatMoney(svc.price_max || 0)}`}
-                      </span>
+                      <div key={svc.id} className="tech-service-item">
+                        <div className="tech-service-skill">{svc.skill}</div>
+                        {(Number(svc.price_min || 0) > 0 || Number(svc.price_max || 0) > 0) && (
+                          <div className="tech-service-price">฿{formatMoney(svc.price_min || 0)} - ฿{formatMoney(svc.price_max || 0)}</div>
+                        )}
+                        {svc.price_note && <div className="tech-service-note">{svc.price_note}</div>}
+                      </div>
                     ))}
                   </div>
                   {selectedTech.note && <div style={{ marginTop: 10, fontSize: 12.5, color: 'var(--tx)', whiteSpace: 'pre-wrap' }}>หมายเหตุ: {selectedTech.note}</div>}
@@ -4351,7 +4449,24 @@ export default function ResidentLayout() {
                       </label>
                       <label className="house-field house-field-span-2">
                         <span>ความชำนาญ / บริการ</span>
-                        <input className="fi" value={addTechForm.skill} onChange={(e) => setAddTechForm((p) => ({ ...p, skill: e.target.value }))} placeholder="เช่น ช่างไฟ, ช่างประปา, ช่างทาสี" />
+                        <StyledSelect value={addTechForm.skill} onChange={(e) => setAddTechForm((p) => ({ ...p, skill: e.target.value }))}>
+                          <option value="">เลือกความชำนาญ</option>
+                          {TECHNICIAN_SKILLS.map((skill) => (
+                            <option key={skill} value={skill}>{skill}</option>
+                          ))}
+                        </StyledSelect>
+                      </label>
+                      <label className="house-field">
+                        <span>ราคาต่ำสุด (บาท)</span>
+                        <input className="fi" type="number" min="0" value={addTechForm.price_min} onChange={(e) => setAddTechForm((p) => ({ ...p, price_min: e.target.value }))} placeholder="0" />
+                      </label>
+                      <label className="house-field">
+                        <span>ราคาสูงสุด (บาท)</span>
+                        <input className="fi" type="number" min="0" value={addTechForm.price_max} onChange={(e) => setAddTechForm((p) => ({ ...p, price_max: e.target.value }))} placeholder="0" />
+                      </label>
+                      <label className="house-field house-field-span-2">
+                        <span>หมายเหตุราคา</span>
+                        <input className="fi" value={addTechForm.price_note} onChange={(e) => setAddTechForm((p) => ({ ...p, price_note: e.target.value }))} placeholder="เช่น รวมค่าแรง" />
                       </label>
                       <label className="house-field house-field-span-2">
                         <span>หมายเหตุ</span>
@@ -4365,6 +4480,69 @@ export default function ResidentLayout() {
                   <button className="btn btn-p" type="submit" disabled={addTechSaving}>{addTechSaving ? 'กำลังส่ง...' : '📤 ส่งคำขอ'}</button>
                 </div>
               </form>
+            </div>
+          </div>
+        )}
+
+        {selectedWorkReport && (
+          <div className="house-mo">
+            <div className="house-md house-md--md work-report-detail-modal">
+              <div className="house-md-head">
+                <div>
+                  <div className="house-md-title">🏆 รายละเอียดผลงานนิติ</div>
+                  <div className="house-md-sub">{selectedWorkReport.summary || 'รายงานผลงานนิติ'}</div>
+                </div>
+              </div>
+              <div className="house-md-body">
+                <section className="house-sec">
+                  <div style={{ display: 'flex', gap: 7, flexWrap: 'wrap' }}>
+                    <span className="tech-tag">เดือน {selectedWorkReport.month} / ปี {toBE(selectedWorkReport.year)}</span>
+                    <span className="tech-tag ac-tag">{getWorkReportCategoryLabel(selectedWorkReport.category)}</span>
+                    <span className="tech-tag">{formatDate(selectedWorkReport.created_at)}</span>
+                  </div>
+                </section>
+
+                <section className="house-sec">
+                  <div className="house-sec-title">สรุปงาน</div>
+                  <div style={{ fontSize: 13, color: 'var(--tx)', whiteSpace: 'pre-wrap', lineHeight: 1.6 }}>
+                    {selectedWorkReport.summary || '-'}
+                  </div>
+                </section>
+
+                <section className="house-sec">
+                  <div className="house-sec-title">รายละเอียด</div>
+                  <div style={{ fontSize: 13, color: 'var(--tx)', whiteSpace: 'pre-wrap', lineHeight: 1.7 }}>
+                    {selectedWorkReport.detail || '-'}
+                  </div>
+                </section>
+
+                <section className="house-sec">
+                  <div className="house-sec-title">ไฟล์แนบ</div>
+                  {(() => {
+                    const imageUrls = Array.isArray(selectedWorkReport.image_urls) ? selectedWorkReport.image_urls : []
+                    const attachments = buildAttachmentItems({ imageUrls, text: selectedWorkReport.detail, maxItems: 20 })
+                    if (attachments.length === 0) {
+                      return <div style={{ fontSize: 12, color: 'var(--mu)' }}>ไม่มีไฟล์แนบ</div>
+                    }
+                    return (
+                      <div className="ann-attachments">
+                        {attachments.map((att) => (
+                          <button key={`${selectedWorkReport.id}-${att.id}`} type="button" className="ann-attach-item ann-attach-btn" onClick={() => openResidentAttachment(att.url, `${selectedWorkReport.summary || 'ผลงานนิติ'} - ${att.title || 'ไฟล์แนบ'}`)}>
+                            {att.isImage ? (
+                              <img src={att.url} alt={att.title} className="ann-attach-thumb" />
+                            ) : (
+                              <span className="ann-attach-file">{getFileKind(att.url).icon} {getFileKind(att.url).label}</span>
+                            )}
+                          </button>
+                        ))}
+                      </div>
+                    )
+                  })()}
+                </section>
+              </div>
+              <div className="house-md-foot">
+                <button className="btn btn-g" type="button" onClick={() => setSelectedWorkReport(null)}>ปิด</button>
+              </div>
             </div>
           </div>
         )}
