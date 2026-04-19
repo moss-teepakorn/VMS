@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import StyledSelect from '../../components/StyledSelect'
+import DropdownList from '../../components/DropdownList'
 import VmsPagination from '../../components/VmsPagination'
 import html2canvas from 'html2canvas'
 import { jsPDF } from 'jspdf'
@@ -90,7 +91,7 @@ export default function AdminFeesPrintNotices() {
   })
   const [loading, setLoading] = useState(false)
   const [runningPrintAction, setRunningPrintAction] = useState(false)
-  const [fees, setFees] = useState([])
+  const [rawFees, setRawFees] = useState([])
   const [selectedIds, setSelectedIds] = useState([])
   const [feeSubmittedTotals, setFeeSubmittedTotals] = useState({})
   const [feeApprovedTotals, setFeeApprovedTotals] = useState({})
@@ -235,70 +236,60 @@ export default function AdminFeesPrintNotices() {
     setPage((prev) => Math.min(prev, totalPages))
   }, [totalPages])
 
+  const fees = useMemo(() => {
+    const houseKeyword = filters.houseNo.trim().toLowerCase()
+    return (rawFees || [])
+      .filter((fee) => {
+        if (houseKeyword && !String(fee?.houses?.house_no || '').toLowerCase().includes(houseKeyword)) return false
+        if (filters.paymentStatus === 'unpaid_only') {
+          const approvedAmount = Number((feeApprovedTotals || {})[fee.id] || 0)
+          const totalAmount = Number(fee.total_amount || 0)
+          if (fee.status === 'cancelled') return false
+          return approvedAmount < totalAmount
+        }
+        return isNoticePrintable(fee)
+      })
+      .sort((left, right) => {
+        const soiCompare = normalizeSoiValue(left?.houses?.soi) - normalizeSoiValue(right?.houses?.soi)
+        if (soiCompare !== 0) return soiCompare
+        return houseSorter.compare(left?.houses?.house_no || '', right?.houses?.house_no || '')
+      })
+  }, [rawFees, filters.houseNo, filters.paymentStatus, feeApprovedTotals])
+
   const allChecked = fees.length > 0 && selectedIds.length === fees.length
 
-  const handleSearch = async (event) => {
-    event.preventDefault()
-    const yearCE = toGregorianYear(filters.yearBE)
-    if (!yearCE) {
-      await Swal.fire({ icon: 'warning', title: 'ปีไม่ถูกต้อง' })
-      return
-    }
-
+  const loadFeeData = async (yearBE, period) => {
+    const yearCE = toGregorianYear(yearBE ?? filters.yearBE)
+    if (!yearCE) return
     try {
       setLoading(true)
       const [config, feeRows] = await Promise.all([
         getSystemConfig().catch(() => null),
-        listFees({
-          year: yearCE,
-          period: filters.period,
-          status: 'all',
-        }),
+        listFees({ year: yearCE, period: period ?? filters.period, status: 'all' }),
       ])
-
       if (config) setSetup(config)
-
       const ids = (feeRows || []).map((row) => row.id)
       const [paymentTotals, paymentItemTotals, noticeCounts] = await Promise.all([
         listPaymentTotalsByFeeIds(ids),
         listApprovedPaymentItemTotalsByFeeIds(ids),
         listNoticePrintCountsByFeeIds(ids),
       ])
-
       setFeeSubmittedTotals(paymentTotals.submitted || {})
       setFeeApprovedTotals(paymentTotals.approved || {})
       setFeeApprovedItemTotals(paymentItemTotals || {})
       setNoticePrintCounts(noticeCounts || {})
-
-      const houseKeyword = filters.houseNo.trim().toLowerCase()
-
-      const filteredRows = (feeRows || [])
-        .filter((fee) => {
-          if (houseKeyword && !String(fee?.houses?.house_no || '').toLowerCase().includes(houseKeyword)) {
-            return false
-          }
-          if (filters.paymentStatus === 'unpaid_only') {
-            const approvedAmount = Number((paymentTotals.approved || {})[fee.id] || 0)
-            const totalAmount = Number(fee.total_amount || 0)
-            if (fee.status === 'cancelled') return false
-            return approvedAmount < totalAmount
-          }
-          return isNoticePrintable(fee)
-        })
-        .sort((left, right) => {
-          const soiCompare = normalizeSoiValue(left?.houses?.soi) - normalizeSoiValue(right?.houses?.soi)
-          if (soiCompare !== 0) return soiCompare
-          return houseSorter.compare(left?.houses?.house_no || '', right?.houses?.house_no || '')
-        })
-
-      setFees(filteredRows)
+      setRawFees(feeRows || [])
       setSelectedIds([])
     } catch (error) {
-      await Swal.fire({ icon: 'error', title: 'ค้นหาไม่สำเร็จ', text: error.message })
+      await Swal.fire({ icon: 'error', title: 'โหลดข้อมูลไม่สำเร็จ', text: error.message })
     } finally {
       setLoading(false)
     }
   }
+
+  useEffect(() => {
+    loadFeeData(filters.yearBE, filters.period)
+  }, [filters.yearBE, filters.period])
 
   const toggleAll = () => {
     if (allChecked) {
@@ -836,51 +827,22 @@ export default function AdminFeesPrintNotices() {
         </div>
       </div>
 
-      <div className="card report-filter-card admin-search-filter-card">
-        <form className="cb" style={{ padding: 12, display: 'grid', gap: 10 }} onSubmit={handleSearch}>
-          <div className="house-grid" style={{ gridTemplateColumns: 'repeat(5, minmax(150px, 1fr))', gap: 10 }}>
-            <label className="house-field">
-              <span>ปี (พ.ศ.)</span>
-              <StyledSelect value={filters.yearBE} onChange={(e) => setFilters((prev) => ({ ...prev, yearBE: e.target.value }))}>
-                {processYearOptions.map((yearBE) => (
-                  <option key={yearBE} value={String(yearBE)}>{yearBE}</option>
-                ))}
-              </StyledSelect>
-            </label>
-            <label className="house-field">
-              <span>ครั้งที่/งวด</span>
-              <StyledSelect value={filters.period} onChange={(e) => setFilters((prev) => ({ ...prev, period: e.target.value }))}>
-                {periodOptions.map((option) => (
-                  <option key={option.value} value={option.value}>{option.label}</option>
-                ))}
-              </StyledSelect>
-            </label>
-            <label className="house-field">
-              <span>สถานะการจ่าย</span>
-              <StyledSelect value={filters.paymentStatus} onChange={(e) => setFilters((prev) => ({ ...prev, paymentStatus: e.target.value }))}>
-                <option value="unpaid_only">เฉพาะที่ยังไม่จ่าย</option>
-                <option value="all">ทั้งหมด</option>
-              </StyledSelect>
-            </label>
-            <label className="house-field" style={{ gridColumn: 'span 2' }}>
-              <span>บ้านเลขที่ (กรอกเอง)</span>
-              <input
-                type="text"
-                placeholder="เช่น 88/12"
-                value={filters.houseNo}
-                onChange={(e) => setFilters((prev) => ({ ...prev, houseNo: e.target.value }))}
-              />
-            </label>
-          </div>
-
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-            <button className="btn btn-a btn-sm" type="submit" disabled={loading}>{loading ? 'กำลังค้นหา...' : 'ค้นหา'}</button>
-            <button className="btn btn-g btn-sm" type="button" onClick={toggleAll}>เลือกทั้งหมด</button>
-            <div style={{ marginLeft: 'auto', display: 'flex', gap: 8 }}>
-              <button className="btn btn-p btn-sm" type="button" onClick={openPrintPreviewModal} disabled={runningPrintAction || selectedFees.length === 0}>🖨</button>
+      <div className="card houses-main-card">
+        <div className="vms-panel-toolbar">
+          <div className="vms-toolbar-left">
+            <DropdownList compact value={filters.yearBE} options={processYearOptions.map((y) => ({ value: String(y), label: String(y) }))} onChange={(v) => setFilters((prev) => ({ ...prev, yearBE: v }))} placeholder="ปี (พ.ศ.)" />
+            <DropdownList compact value={filters.period} options={periodOptions} onChange={(v) => setFilters((prev) => ({ ...prev, period: v }))} placeholder="ครั้งที่/งวด" />
+            <DropdownList compact value={filters.paymentStatus} options={[{ value: 'unpaid_only', label: 'เฉพาะที่ยังไม่จ่าย' }, { value: 'all', label: 'ทั้งหมด' }]} onChange={(v) => setFilters((prev) => ({ ...prev, paymentStatus: v }))} placeholder="สถานะการจ่าย" />
+            <div className="vms-inline-search">
+              <svg width="12" height="12" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd" /></svg>
+              <input type="text" value={filters.houseNo} onChange={(e) => setFilters((prev) => ({ ...prev, houseNo: e.target.value }))} placeholder="บ้านเลขที่..." />
             </div>
           </div>
-        </form>
+          <div className="vms-toolbar-right">
+            <button className="vms-sm-btn" onClick={toggleAll} disabled={loading}>เลือกทั้งหมด</button>
+            <button className="vms-sm-btn vms-sm-btn--primary" onClick={openPrintPreviewModal} disabled={runningPrintAction || selectedFees.length === 0}>🖨 พิมพ์</button>
+          </div>
+        </div>
       </div>
 
       <div className="card">

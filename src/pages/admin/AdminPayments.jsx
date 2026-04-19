@@ -1197,7 +1197,7 @@ export default function AdminPayments() {
       <div className="card report-filter-card admin-search-filter-card">
         <div className="cb" style={{ padding: 12 }}>
           <div className="vms-panel-toolbar" style={{ borderBottom: 'none', padding: 0 }}>
-            <div className="vms-toolbar-left" style={{ flexWrap: 'wrap', gap: 6 }}>
+            <div className="vms-toolbar-left">
               <div className="vms-inline-search">
                 <svg width="12" height="12" viewBox="0 0 20 20" fill="currentColor">
                   <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd"/>

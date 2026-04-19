@@ -303,25 +303,30 @@ export default function AdminPaymentCycles() {
         </div>
       </div>
 
-      <div className="card report-filter-card admin-search-filter-card">
-        <div className="cb">
-          <div className="payment-cycles-filter-row">
+      <div className="card houses-main-card">
+        <div className="vms-panel-toolbar">
+          <div className="vms-toolbar-left">
             <input
               className="fi payment-cycles-year"
               value={yearBE}
               onChange={(event) => setYearBE(event.target.value.replace(/[^0-9]/g, '').slice(0, 4))}
               placeholder="ปี พ.ศ."
+              style={{ height: 32, fontSize: 12, borderRadius: 8, border: '1.5px solid #d1d5e0', padding: '0 8px', minWidth: 80 }}
             />
-            <StyledSelect className="payment-cycles-frequency" value={frequency} onChange={(event) => setFrequency(event.target.value)}>
+            <StyledSelect className="payment-cycles-frequency" value={frequency} onChange={(event) => setFrequency(event.target.value)} style={{ height: 32, fontSize: 12, padding: '0 22px 0 8px', border: '1.5px solid #d1d5e0', borderRadius: 8 }}>
               {FREQUENCY_OPTIONS.map((item) => (
                 <option key={item.value} value={item.value}>{item.label}</option>
               ))}
             </StyledSelect>
-            <button className="btn btn-a btn-sm" type="button" onClick={regenerateRows} disabled={loading || saving}>สร้างรายการตามรอบ</button>
-            <button className="btn btn-g btn-sm" type="button" onClick={loadByYear} disabled={loading || saving}>{loading ? 'กำลังโหลด...' : 'โหลดจากปีนี้'}</button>
-            <button className="btn btn-p btn-sm" type="button" onClick={handleSave} disabled={loading || saving}>{saving ? 'กำลังบันทึก...' : 'บันทึกกำหนดรอบ'}</button>
           </div>
-          <div className="payment-cycles-filter-row" style={{ marginTop: 8 }}>
+          <div className="vms-toolbar-right">
+            <button className="vms-sm-btn" type="button" onClick={regenerateRows} disabled={loading || saving}>สร้างรายการตามรอบ</button>
+            <button className="vms-sm-btn" type="button" onClick={loadByYear} disabled={loading || saving}>{loading ? 'กำลังโหลด...' : 'โหลดจากปีนี้'}</button>
+            <button className="vms-sm-btn vms-sm-btn--primary" type="button" onClick={handleSave} disabled={loading || saving}>{saving ? 'กำลังบันทึก...' : 'บันทึกกำหนดรอบ'}</button>
+          </div>
+        </div>
+        <div className="cb" style={{ padding: '10px 16px 14px' }}>
+          <div className="payment-cycles-filter-row">
             <label className="house-field" style={{ minWidth: 220 }}>
               <span>ส่วนลดเต็มปี (%)</span>
               <input

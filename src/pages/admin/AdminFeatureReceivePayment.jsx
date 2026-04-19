@@ -907,37 +907,6 @@ export default function AdminFeatureReceivePayment() {
 
       </div>
 
-      <div className="card report-filter-card admin-search-filter-card">
-        <div className="cb">
-        <div className="houses-filter-row" style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center' }}>
-          <input
-            type="text"
-            className="houses-filter-input"
-            placeholder="ค้นหาเลขที่ใบเสร็จ / ซอย / บ้าน / ผู้ชำระ / วิธีชำระ"
-            value={search}
-            onChange={(event) => setSearch(event.target.value)}
-            style={{ flex: '1 1 240px', minWidth: 0 }}
-          />
-          <button className="btn btn-p btn-sm" onClick={handleSearch} disabled={loading} style={{ height: '34px' }}>ค้นหา</button>
-          <StyledSelect value={yearFilter} onChange={(event) => setYearFilter(event.target.value)} style={{ width: 180 }}>
-            <option value="all">ทุกปี</option>
-            {yearOptions.map((year) => (
-              <option key={year} value={String(year)}>{year + 543}</option>
-            ))}
-          </StyledSelect>
-          <StyledSelect value={monthFilter} onChange={(event) => setMonthFilter(event.target.value)} style={{ width: 160 }}>
-            <option value="all">ทุกเดือน</option>
-            {Array.from({ length: 12 }, (_, index) => index + 1).map((month) => (
-              <option key={month} value={String(month)}>
-                {new Date(2000, month - 1, 1).toLocaleString('th-TH', { month: 'long' })}
-              </option>
-            ))}
-          </StyledSelect>
-          <button className="btn btn-g btn-sm" onClick={loadPageData} disabled={loading} style={{ height: '34px' }}>รีเฟรช</button>
-        </div>
-        </div>
-      </div>
-
       {!showReceiveModal && (
         <>
       <div className="stats">
@@ -948,11 +917,30 @@ export default function AdminFeatureReceivePayment() {
       </div>
 
       <div className="card">
-        <div className="ch houses-list-head houses-main-head">
-          <div className="ct">รายการรับชำระ {filteredPayments.length} รายการ</div>
-          <div className="houses-list-actions">
-            <button className="btn btn-p btn-sm" onClick={openReceiveModal}>+ เพิ่มการรับชำระ</button>
-            <button className="btn btn-g btn-sm" onClick={loadPageData} disabled={loading}>รีเฟรช</button>
+        <div className="vms-panel-toolbar">
+          <div className="vms-toolbar-left">
+            <div className="vms-inline-search">
+              <svg width="12" height="12" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd" /></svg>
+              <input type="text" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="ค้นหาเลขที่ใบเสร็จ / ซอย / บ้าน / ผู้ชำระ" />
+            </div>
+            <StyledSelect value={yearFilter} onChange={(event) => setYearFilter(event.target.value)} style={{ height: 32, fontSize: 12, padding: '0 22px 0 8px', border: '1.5px solid #d1d5e0', borderRadius: 8, minWidth: 120 }}>
+              <option value="all">ทุกปี</option>
+              {yearOptions.map((year) => (
+                <option key={year} value={String(year)}>{year + 543}</option>
+              ))}
+            </StyledSelect>
+            <StyledSelect value={monthFilter} onChange={(event) => setMonthFilter(event.target.value)} style={{ height: 32, fontSize: 12, padding: '0 22px 0 8px', border: '1.5px solid #d1d5e0', borderRadius: 8, minWidth: 120 }}>
+              <option value="all">ทุกเดือน</option>
+              {Array.from({ length: 12 }, (_, index) => index + 1).map((month) => (
+                <option key={month} value={String(month)}>
+                  {new Date(2000, month - 1, 1).toLocaleString('th-TH', { month: 'long' })}
+                </option>
+              ))}
+            </StyledSelect>
+          </div>
+          <div className="vms-toolbar-right">
+            <button className="vms-sm-btn vms-sm-btn--primary" onClick={openReceiveModal}>+ เพิ่มการรับชำระ</button>
+            <button className="vms-sm-btn" onClick={loadPageData} disabled={loading}>🔄</button>
           </div>
         </div>
         <div className="cb houses-table-card-body houses-main-body">

@@ -235,19 +235,17 @@ export default function AdminPaymentsSetup() {
             <div className="ct">รายการประเภท{itemTypeTab === 'receive' ? 'รับชำระ' : 'จ่ายเงิน'}</div>
             <div style={{ display: 'flex', gap: 4 }}>
               <button
-                className={`btn btn-xs ${itemTypeTab === 'receive' ? 'btn-p' : 'btn-g'}`}
+                className={`vms-sm-btn ${itemTypeTab === 'receive' ? 'vms-sm-btn--primary' : ''}`}
                 onClick={() => setItemTypeTab('receive')}
-                style={{ fontSize: 11 }}
               >รับชำระ</button>
               <button
-                className={`btn btn-xs ${itemTypeTab === 'disburse' ? 'btn-p' : 'btn-g'}`}
+                className={`vms-sm-btn ${itemTypeTab === 'disburse' ? 'vms-sm-btn--primary' : ''}`}
                 onClick={() => setItemTypeTab('disburse')}
-                style={{ fontSize: 11 }}
               >จ่ายเงิน</button>
             </div>
           </div>
           <div className="houses-list-actions">
-            <button className="btn btn-p btn-sm" onClick={openCreateItemModal}>+ เพิ่มรายการ</button>
+            <button className="vms-sm-btn vms-sm-btn--primary" onClick={openCreateItemModal}>+ เพิ่มรายการ</button>
           </div>
         </div>
         <div className="cb houses-table-card-body houses-main-body">
@@ -279,8 +277,8 @@ export default function AdminPaymentsSetup() {
                     <td>{row.is_active ? 'ใช้งาน' : 'ปิด'}</td>
                     <td style={{ whiteSpace: 'nowrap' }}>
                       <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                        <button className="btn btn-xs btn-o" onClick={() => openEditItemModal(row)}>แก้ไข</button>
-                        <button className="btn btn-xs btn-dg" onClick={() => handleDeleteItem(row.id)}>ลบ</button>
+                        <button className="vms-ra-btn" onClick={() => openEditItemModal(row)} title="แก้ไข"><svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor"><path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z"/></svg></button>
+                        <button className="vms-ra-btn vms-ra-del" onClick={() => handleDeleteItem(row.id)} title="ลบ"><svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd"/></svg></button>
                       </div>
                     </td>
                   </tr>
@@ -307,8 +305,8 @@ export default function AdminPaymentsSetup() {
                   <span><span className="mcard-label">รายละเอียด</span> {row.description || '-'}</span>
                 </div>
                 <div className="mcard-actions">
-                  <button className="btn btn-xs btn-o" onClick={() => openEditItemModal(row)}>แก้ไข</button>
-                  <button className="btn btn-xs btn-dg" onClick={() => handleDeleteItem(row.id)}>ลบ</button>
+                  <button className="vms-sm-btn" onClick={() => openEditItemModal(row)}>แก้ไข</button>
+                  <button className="vms-sm-btn vms-sm-btn--warning" onClick={() => handleDeleteItem(row.id)}>ลบ</button>
                 </div>
               </div>
             ))}

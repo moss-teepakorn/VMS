@@ -536,6 +536,32 @@ export default function AdminFeatureExpensePayment() {
 
       {!isCreateInline && (
       <>
+      <div className="card houses-main-card">
+        <div className="vms-panel-toolbar">
+          <div className="vms-toolbar-left">
+            <StyledSelect value={monthFilter} onChange={(e) => setMonthFilter(e.target.value)} style={{ height: 32, fontSize: 12, padding: '0 22px 0 8px', border: '1.5px solid #d1d5e0', borderRadius: 8, minWidth: 120 }}>
+              {Array.from({ length: 12 }, (_, index) => index + 1).map((month) => (
+                <option key={month} value={String(month)}>
+                  {new Date(2000, month - 1, 1).toLocaleString('th-TH', { month: 'long' })}
+                </option>
+              ))}
+            </StyledSelect>
+            <StyledSelect value={yearFilter} onChange={(e) => setYearFilter(e.target.value)} style={{ height: 32, fontSize: 12, padding: '0 22px 0 8px', border: '1.5px solid #d1d5e0', borderRadius: 8, minWidth: 100 }}>
+              {yearOptions.map((year) => (
+                <option key={year} value={String(year)}>{year + 543}</option>
+              ))}
+            </StyledSelect>
+            <div className="vms-inline-search">
+              <svg width="12" height="12" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd" /></svg>
+              <input placeholder="ค้นหา..." value={search} onChange={(e) => setSearch(e.target.value)} />
+            </div>
+          </div>
+          <div className="vms-toolbar-right">
+            <button className="vms-sm-btn vms-sm-btn--primary" onClick={openCreate}>+ สร้างรายการ</button>
+          </div>
+        </div>
+      </div>
+
       <div className="stats">
         {statCards.map((c) => (
           <div key={c.key} className="sc" style={{ cursor: 'pointer', outline: statusFilter === c.key ? '2px solid #1E40AF' : undefined, outlineOffset: 2 }} onClick={() => setStatusFilter((p) => (p === c.key ? 'all' : c.key))}>
@@ -545,33 +571,6 @@ export default function AdminFeatureExpensePayment() {
             {c.s && <div className="sc-s">{c.s}</div>}
           </div>
         ))}
-      </div>
-
-      <div className="card report-filter-card admin-search-filter-card">
-        <div className="cb">
-          <div className="houses-filter-row" style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center' }}>
-            <StyledSelect className="houses-filter-select" value={monthFilter} onChange={(e) => setMonthFilter(e.target.value)} style={{ width: 150 }}>
-              {Array.from({ length: 12 }, (_, index) => index + 1).map((month) => (
-                <option key={month} value={String(month)}>
-                  {new Date(2000, month - 1, 1).toLocaleString('th-TH', { month: 'long' })}
-                </option>
-              ))}
-            </StyledSelect>
-            <StyledSelect className="houses-filter-select" value={yearFilter} onChange={(e) => setYearFilter(e.target.value)} style={{ width: 110 }}>
-              {yearOptions.map((year) => (
-                <option key={year} value={String(year)}>{year + 543}</option>
-              ))}
-            </StyledSelect>
-            <input
-              className="houses-filter-input"
-              placeholder="ค้นหา..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              style={{ flex: '1 1 220px', minWidth: 0 }}
-            />
-            <button className="btn btn-p btn-sm" onClick={openCreate}>+ สร้างรายการ</button>
-          </div>
-        </div>
       </div>
 
       <div className="card houses-main-card">

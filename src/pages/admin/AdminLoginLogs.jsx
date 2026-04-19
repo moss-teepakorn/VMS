@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react'
 import StyledSelect from '../../components/StyledSelect'
+import DropdownList from '../../components/DropdownList'
 import { getLoginLogs, deleteLoginLogs, deleteAllLoginLogs } from '../../lib/loginLogs'
 import { getSetupConfig } from '../../lib/setup'
 import Swal from 'sweetalert2'
@@ -180,65 +181,19 @@ export default function AdminLoginLogs() {
 
       </div>
 
-      <div className="card report-filter-card admin-search-filter-card">
-        <div className="cb">
-        <div className="houses-filter-row login-logs-search-row">
-          <input
-            type="text"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            placeholder="ค้นหา username / ชื่อ / หน้าจอ / browser..."
-            className="houses-filter-input login-logs-search-input"
-          />
-          <StyledSelect
-            value={roleFilter}
-            onChange={(e) => setRoleFilter(e.target.value)}
-            className="login-logs-search-select"
-          >
-            <option value="all">ทุกบทบาท</option>
-            <option value="admin">ผู้ดูแลระบบ</option>
-            <option value="resident">ลูกบ้าน</option>
-          </StyledSelect>
-          <button
-            className="btn btn-a btn-sm login-logs-search-btn"
-            onClick={loadLogs}
-            disabled={loading}
-          >
-            ค้นหา
-          </button>
-        </div>
-        </div>
-      </div>
-
       <div className="card">
-        {/* Card header with action buttons */}
-        <div className="ch houses-list-head houses-main-head">
-          <div className="ct">
-            รายการทั้งหมด {filtered.length} รายการ
-            {selected.size > 0 && (
-              <span style={{ marginLeft: 8, color: 'var(--pr)', fontWeight: 600 }}>
-                · เลือก {selected.size}
-              </span>
-            )}
+        <div className="vms-panel-toolbar">
+          <div className="vms-toolbar-left">
+            <DropdownList compact value={roleFilter} options={[{ value: 'all', label: 'ทุกบทบาท' }, { value: 'admin', label: 'ผู้ดูแลระบบ' }, { value: 'resident', label: 'ลูกบ้าน' }]} onChange={(v) => setRoleFilter(v)} placeholder="ทุกบทบาท" />
+            <div className="vms-inline-search">
+              <svg width="12" height="12" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd" /></svg>
+              <input type="text" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} placeholder="ค้นหา username / ชื่อ..." />
+            </div>
           </div>
-          <div className="houses-list-actions">
-            <button
-              className="btn btn-dg btn-sm"
-              onClick={handleDeleteSelected}
-              disabled={selected.size === 0}
-            >
-              🗑 ลบที่เลือก ({selected.size})
-            </button>
-            <button
-              className="btn btn-dg btn-sm"
-              onClick={handleDeleteAll}
-              disabled={logs.length === 0}
-            >
-              🗑 ลบทั้งหมด
-            </button>
-            <button className="btn btn-g btn-sm" onClick={loadLogs} disabled={loading}>
-              🔄 รีเฟรช
-            </button>
+          <div className="vms-toolbar-right">
+            <button className="vms-sm-btn vms-sm-btn--warning" onClick={handleDeleteSelected} disabled={selected.size === 0}>🗑 ลบที่เลือก ({selected.size})</button>
+            <button className="vms-sm-btn vms-sm-btn--warning" onClick={handleDeleteAll} disabled={logs.length === 0}>🗑 ลบทั้งหมด</button>
+            <button className="vms-sm-btn" onClick={loadLogs} disabled={loading}>🔄</button>
           </div>
         </div>
 
