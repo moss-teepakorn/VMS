@@ -216,7 +216,7 @@ export default function AdminPaymentsSetup() {
   }
 
   return (
-    <div className="pane on houses-compact fees-compact payments-setup-compact">
+    <div className="pane on houses-compact fees-compact payments-setup-compact settings-pane">
       <div className="ph houses-ph">
         <div className="ph-in">
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>

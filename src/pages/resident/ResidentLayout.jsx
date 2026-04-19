@@ -3635,7 +3635,7 @@ export default function ResidentLayout() {
           {activeSection === 'tech' && (
             <>
               <div style={{ display: 'flex', gap: 7, marginBottom: 14, flexWrap: 'wrap' }}>
-                <input className="fi" style={{ flex: 1, minWidth: 160 }} value={techSearch} onChange={(e) => setTechSearch(e.target.value)} placeholder="🔍 ค้นหาชื่อ หรือบริการ..." />
+                <input className="fi" style={{ width: 200, maxWidth: '100%', minWidth: 0, flexShrink: 1 }} value={techSearch} onChange={(e) => setTechSearch(e.target.value)} placeholder="🔍 ค้นหาชื่อ หรือบริการ..." />
               </div>
 
               {filteredTechs.length === 0 ? (
@@ -3680,7 +3680,7 @@ export default function ResidentLayout() {
               )}
 
               <div style={{ display: 'flex', gap: 7, marginBottom: 14, flexWrap: 'wrap' }}>
-                <input className="fi" style={{ flex: 1, minWidth: 150 }} value={marketSearch} onChange={(e) => setMarketSearch(e.target.value)} placeholder="🔍 ค้นหาสินค้า..." />
+                <input className="fi" style={{ width: 200, maxWidth: '100%', minWidth: 0, flexShrink: 1 }} value={marketSearch} onChange={(e) => setMarketSearch(e.target.value)} placeholder="🔍 ค้นหาสินค้า..." />
                 <StyledSelect style={{ width: 'auto', minWidth: 120 }} value={marketFilter} onChange={(e) => setMarketFilter(e.target.value)}>
                   <option value="all">ทุกประเภท</option>
                   <option value="sell">ขาย</option>

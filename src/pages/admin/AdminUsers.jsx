@@ -335,7 +335,7 @@ const AdminUsers = () => {
   }
 
   return (
-    <div className="pane on houses-compact">
+    <div className="pane on houses-compact settings-pane">
       <div className="ph">
         <div className="ph-in">
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>

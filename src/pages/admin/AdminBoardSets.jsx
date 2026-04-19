@@ -144,7 +144,7 @@ export default function AdminBoardSets() {
   }
 
   return (
-    <div className="pane on houses-compact fees-compact payments-setup-compact">
+    <div className="pane on houses-compact fees-compact payments-setup-compact settings-pane">
       <div className="ph houses-ph">
         <div className="ph-in">
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
@@ -307,7 +307,8 @@ export default function AdminBoardSets() {
                           <td style={{ textAlign: 'center', padding: '5px 8px', border: '1px solid var(--bo)', fontSize: 12, color: 'var(--mu)' }}>{i + 1}</td>
                           <td style={{ padding: '4px 6px', border: '1px solid var(--bo)' }}>
                             <input
-                              style={{ width: '100%', border: 'none', outline: 'none', background: 'transparent', fontSize: 12, padding: '2px 4px' }}
+                              className="fi"
+                              style={{ width: '100%', fontSize: 12, minHeight: 30 }}
                               value={m.full_name}
                               onChange={(e) => updateMember(i, 'full_name', e.target.value)}
                               placeholder={`กรรมการที่ ${i + 1}`}
@@ -315,7 +316,7 @@ export default function AdminBoardSets() {
                           </td>
                           <td style={{ padding: '4px 6px', border: '1px solid var(--bo)' }}>
                             <StyledSelect
-                              style={{ width: '100%', border: 'none', outline: 'none', background: 'transparent', fontSize: 12, padding: '2px 4px' }}
+                              style={{ width: '100%', fontSize: 12, minHeight: 30 }}
                               value={m.position}
                               onChange={(e) => updateMember(i, 'position', e.target.value)}
                             >
@@ -324,7 +325,8 @@ export default function AdminBoardSets() {
                           </td>
                           <td style={{ padding: '4px 6px', border: '1px solid var(--bo)' }}>
                             <input
-                              style={{ width: '100%', border: 'none', outline: 'none', background: 'transparent', fontSize: 12, padding: '2px 4px' }}
+                              className="fi"
+                              style={{ width: '100%', fontSize: 12, minHeight: 30 }}
                               value={m.phone}
                               onChange={(e) => updateMember(i, 'phone', e.target.value)}
                               placeholder="-"

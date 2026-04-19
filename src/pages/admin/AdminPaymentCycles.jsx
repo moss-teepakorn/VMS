@@ -290,7 +290,7 @@ export default function AdminPaymentCycles() {
   }
 
   return (
-    <div className="pane on houses-compact payment-cycles-pane">
+    <div className="pane on houses-compact payment-cycles-pane settings-pane">
       <div className="ph">
         <div className="ph-in">
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
@@ -304,49 +304,41 @@ export default function AdminPaymentCycles() {
       </div>
 
       <div className="card houses-main-card">
-        <div className="vms-panel-toolbar">
-          <div className="vms-toolbar-left">
+        <div className="vms-panel-toolbar" style={{ flexWrap: 'wrap', gap: 8 }}>
+          <div className="vms-toolbar-left" style={{ flexWrap: 'wrap', gap: 6 }}>
             <input
               className="fi payment-cycles-year"
               value={yearBE}
               onChange={(event) => setYearBE(event.target.value.replace(/[^0-9]/g, '').slice(0, 4))}
               placeholder="ปี พ.ศ."
-              style={{ height: 32, fontSize: 12, borderRadius: 8, border: '1.5px solid #d1d5e0', padding: '0 8px', minWidth: 80 }}
+              style={{ height: 32, fontSize: 12, borderRadius: 8, border: '1.5px solid #d1d5e0', padding: '0 8px', width: 80, flexShrink: 0 }}
             />
-            <StyledSelect className="payment-cycles-frequency" value={frequency} onChange={(event) => setFrequency(event.target.value)} style={{ height: 32, fontSize: 12, padding: '0 22px 0 8px', border: '1.5px solid #d1d5e0', borderRadius: 8 }}>
+            <StyledSelect className="payment-cycles-frequency" value={frequency} onChange={(event) => setFrequency(event.target.value)} style={{ height: 32, fontSize: 12, padding: '0 22px 0 8px', border: '1.5px solid #d1d5e0', borderRadius: 8, width: 200 }}>
               {FREQUENCY_OPTIONS.map((item) => (
                 <option key={item.value} value={item.value}>{item.label}</option>
               ))}
             </StyledSelect>
+            <label style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 12, color: 'var(--mu)', flexShrink: 0 }}>
+              <span style={{ whiteSpace: 'nowrap' }}>ส่วนลด&nbsp;%</span>
+              <input
+                type="number" min="0" max="100" step="0.01"
+                value={earlyFullYearDiscountPct}
+                onChange={(event) => setEarlyFullYearDiscountPct(event.target.value)}
+                style={{ height: 32, fontSize: 12, borderRadius: 8, border: '1.5px solid #d1d5e0', padding: '0 6px', width: 64 }}
+              />
+            </label>
+            <label style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 12, color: 'var(--mu)', flexShrink: 0 }}>
+              <span style={{ whiteSpace: 'nowrap' }}>ชำระก่อน</span>
+              <DateInputBE
+                value={earlyFullYearDiscountDeadline}
+                onChange={(event) => setEarlyFullYearDiscountDeadline(event.target.value)}
+              />
+            </label>
           </div>
           <div className="vms-toolbar-right">
             <button className="vms-sm-btn" type="button" onClick={regenerateRows} disabled={loading || saving}>สร้างรายการตามรอบ</button>
             <button className="vms-sm-btn" type="button" onClick={loadByYear} disabled={loading || saving}>{loading ? 'กำลังโหลด...' : 'โหลดจากปีนี้'}</button>
             <button className="vms-sm-btn vms-sm-btn--primary" type="button" onClick={handleSave} disabled={loading || saving}>{saving ? 'กำลังบันทึก...' : 'บันทึกกำหนดรอบ'}</button>
-          </div>
-        </div>
-        <div className="cb" style={{ padding: '10px 16px 14px' }}>
-          <div className="payment-cycles-filter-row">
-            <label className="house-field" style={{ minWidth: 220 }}>
-              <span>ส่วนลดเต็มปี (%)</span>
-              <input
-                className="fi"
-                type="number"
-                min="0"
-                max="100"
-                step="0.01"
-                value={earlyFullYearDiscountPct}
-                onChange={(event) => setEarlyFullYearDiscountPct(event.target.value)}
-              />
-            </label>
-            <label className="house-field" style={{ minWidth: 240 }}>
-              <span>ชำระเต็มปีก่อนวันที่</span>
-              <DateInputBE
-                className="fi"
-                value={earlyFullYearDiscountDeadline}
-                onChange={(event) => setEarlyFullYearDiscountDeadline(event.target.value)}
-              />
-            </label>
           </div>
         </div>
       </div>
@@ -359,7 +351,7 @@ export default function AdminPaymentCycles() {
 
         <div className="cb payment-cycles-table-wrap">
           <div style={{ overflowX: 'auto' }}>
-            <table className="tw houses-table" style={{ minWidth: '1200px' }}>
+            <table className="tw houses-table" style={{ minWidth: '1200px', width: '100%' }}>
               <thead>
                 <tr>
                   <th style={{ width: 90 }}>รอบ</th>

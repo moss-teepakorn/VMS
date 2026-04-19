@@ -164,7 +164,7 @@ export default function AdminLoginLogs() {
   }
 
   return (
-    <div className="pane on houses-compact">
+    <div className="pane on houses-compact settings-pane">
       {/* Page header — filter row inside ph (same as AdminHouses) */}
       <div className="ph houses-ph">
         <div className="ph-in">

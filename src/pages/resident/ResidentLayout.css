@@ -203,7 +203,7 @@
 
 .notif-search-row {
   display: grid;
-  grid-template-columns: minmax(220px, 1fr) 180px 160px;
+  grid-template-columns: 200px 180px 160px;
   gap: 10px;
   align-items: center;
   padding: 16px;

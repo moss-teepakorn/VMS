@@ -2676,6 +2676,34 @@
 }
 
 /* ═════════════════════════════════════════════════
+   SETTINGS PAGES — light card headers
+═════════════════════════════════════════════════ */
+.settings-pane .card > .ch,
+.settings-pane .card > .houses-main-head {
+  background: var(--card);
+  border-bottom: 1.5px solid var(--bo);
+}
+.settings-pane .card > .ch .ct,
+.settings-pane .card > .houses-main-head .ct {
+  color: var(--tx);
+}
+.settings-pane .card > .ch .ch-ico {
+  background: var(--bg2);
+}
+/* Neutralize white-on-blue .btn override inside settings headers */
+.settings-pane .card > .ch .btn,
+.settings-pane .card > .houses-main-head .btn {
+  background: var(--card) !important;
+  color: var(--tx) !important;
+  border-color: var(--bo) !important;
+  box-shadow: none !important;
+}
+.settings-pane .card > .ch .btn:hover,
+.settings-pane .card > .houses-main-head .btn:hover {
+  background: var(--bg2) !important;
+}
+
+/* ═════════════════════════════════════════════════
    RESPONSIVE
 ═════════════════════════════════════════════════ */
 @media (max-width: 480px) {

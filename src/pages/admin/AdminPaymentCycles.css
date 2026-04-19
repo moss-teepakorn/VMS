@@ -16,8 +16,9 @@
 }
 
 .payment-cycles-frequency {
-  width: 100%;
+  width: 200px;
   min-width: 0;
+  flex-shrink: 1;
 }
 
 .payment-cycles-table-wrap .fi,

@@ -409,7 +409,7 @@ const AdminConfig = () => {
   }
 
   return (
-    <div className="pane on houses-compact cfg-modern">
+    <div className="pane on houses-compact cfg-modern settings-pane">
       <div className="ph">
         <div className="ph-in">
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
