@@ -15,6 +15,24 @@
   height: 36px;
 }
 
+.payment-cycles-toolbar {
+  padding: 12px 16px;
+  gap: 12px;
+}
+
+.payment-cycles-toolbar-left {
+  gap: 10px;
+}
+
+.payment-cycles-inline-field {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--mu);
+  flex-shrink: 0;
+}
+
 .payment-cycles-frequency {
   width: 200px;
   min-width: 0;
@@ -67,6 +85,10 @@
 
 .fi-date-be.is-disabled {
   color: var(--mu);
+}
+
+.fi-date-be.is-placeholder {
+  color: #9ca3af;
 }
 
 .payment-cycles-checkbox {

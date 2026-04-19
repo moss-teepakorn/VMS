@@ -200,7 +200,7 @@ export default function AdminBoardSets() {
                       </td>
                       <td>{set.note || '-'}</td>
                       <td>
-                        <button className="btn btn-xs btn-o" onClick={() => openEdit(set)}>แก้ไข</button>
+                        <button className="btn btn-xs btn-a" onClick={() => openEdit(set)}>แก้ไข</button>
                         {!set.is_active && (
                           <button className="btn btn-xs btn-p" style={{ marginLeft: 6 }} onClick={() => handleSetActive(set)}>ตั้งใช้งาน</button>
                         )}
@@ -236,11 +236,11 @@ export default function AdminBoardSets() {
                     <span><span className="mcard-label">หมายเหตุ</span> {set.note || '-'}</span>
                   </div>
                   <div className="mcard-actions">
-                    <button className="btn btn-xs btn-o" onClick={() => openEdit(set)}>แก้ไข</button>
+                    <button className="btn btn-a btn-sm" onClick={() => openEdit(set)}>แก้ไข</button>
                     {!set.is_active && (
-                      <button className="btn btn-xs btn-p" onClick={() => handleSetActive(set)}>ตั้งใช้งาน</button>
+                      <button className="btn btn-p btn-sm" onClick={() => handleSetActive(set)}>ตั้งใช้งาน</button>
                     )}
-                    <button className="btn btn-xs btn-dg" onClick={() => handleDelete(set)}>ลบ</button>
+                    <button className="btn btn-dg btn-sm" onClick={() => handleDelete(set)}>ลบ</button>
                   </div>
                 </div>
               )
@@ -340,10 +340,10 @@ export default function AdminBoardSets() {
               </section>
             </div>
             <div className="house-md-foot">
-              <button className="btn btn-p" type="button" disabled={saving} onClick={save}>
+              <button className="btn btn-p btn-sm" type="button" disabled={saving} onClick={save}>
                 {saving ? 'กำลังบันทึก...' : 'บันทึก'}
               </button>
-              <button className="btn btn-g" type="button" disabled={saving} onClick={closeModal}>ยกเลิก</button>
+              <button className="btn btn-g btn-sm" type="button" disabled={saving} onClick={closeModal}>ยกเลิก</button>
             </div>
           </div>
         </div>

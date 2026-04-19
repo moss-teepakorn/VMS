@@ -39,6 +39,7 @@ function formatDateBE(isoValue) {
 }
 
 function DateInputBE({ value, onChange, disabled = false, className = '' }) {
+  const displayText = value ? formatDateBE(value) : 'วว/ดด/ปปปป'
   return (
     <label className="fi-date-wrap">
       <input
@@ -49,7 +50,7 @@ function DateInputBE({ value, onChange, disabled = false, className = '' }) {
         onChange={onChange}
         disabled={disabled}
       />
-      {value ? <span className={`fi-date-be ${disabled ? 'is-disabled' : ''}`}>{formatDateBE(value)}</span> : null}
+      <span className={`fi-date-be ${disabled ? 'is-disabled' : ''} ${value ? '' : 'is-placeholder'}`}>{displayText}</span>
     </label>
   )
 }
@@ -304,8 +305,8 @@ export default function AdminPaymentCycles() {
       </div>
 
       <div className="card houses-main-card">
-        <div className="vms-panel-toolbar" style={{ flexWrap: 'wrap', gap: 8 }}>
-          <div className="vms-toolbar-left" style={{ flexWrap: 'wrap', gap: 6 }}>
+        <div className="vms-panel-toolbar payment-cycles-toolbar" style={{ flexWrap: 'wrap' }}>
+          <div className="vms-toolbar-left payment-cycles-toolbar-left" style={{ flexWrap: 'wrap' }}>
             <input
               className="fi payment-cycles-year"
               value={yearBE}
@@ -320,7 +321,7 @@ export default function AdminPaymentCycles() {
                 ))}
               </StyledSelect>
             </div>
-            <label style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 12, color: 'var(--mu)', flexShrink: 0 }}>
+            <label className="payment-cycles-inline-field">
               <span style={{ whiteSpace: 'nowrap' }}>ส่วนลด&nbsp;%</span>
               <input
                 type="number" min="0" max="100" step="0.01"
@@ -329,10 +330,11 @@ export default function AdminPaymentCycles() {
                 style={{ height: 32, fontSize: 12, borderRadius: 8, border: '1.5px solid #d1d5e0', padding: '0 6px', width: 64 }}
               />
             </label>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 12, color: 'var(--mu)', flexShrink: 0 }}>
+            <div className="payment-cycles-inline-field">
               <span style={{ whiteSpace: 'nowrap' }}>ชำระก่อน</span>
               <div style={{ width: 160, flexShrink: 0 }}>
                 <DateInputBE
+                  className="fi"
                   value={earlyFullYearDiscountDeadline}
                   onChange={(event) => setEarlyFullYearDiscountDeadline(event.target.value)}
                 />
@@ -340,9 +342,9 @@ export default function AdminPaymentCycles() {
             </div>
           </div>
           <div className="vms-toolbar-right">
-            <button className="vms-sm-btn" type="button" onClick={regenerateRows} disabled={loading || saving}>สร้างรายการตามรอบ</button>
-            <button className="vms-sm-btn" type="button" onClick={loadByYear} disabled={loading || saving}>{loading ? 'กำลังโหลด...' : 'โหลดจากปีนี้'}</button>
-            <button className="vms-sm-btn vms-sm-btn--primary" type="button" onClick={handleSave} disabled={loading || saving}>{saving ? 'กำลังบันทึก...' : 'บันทึกกำหนดรอบ'}</button>
+            <button className="btn btn-p btn-sm" type="button" onClick={regenerateRows} disabled={loading || saving}>สร้างรายการตามรอบ</button>
+            <button className="btn btn-p btn-sm" type="button" onClick={loadByYear} disabled={loading || saving}>{loading ? 'กำลังโหลด...' : 'โหลดจากปีนี้'}</button>
+            <button className="btn btn-p btn-sm" type="button" onClick={handleSave} disabled={loading || saving}>{saving ? 'กำลังบันทึก...' : 'บันทึกกำหนดรอบ'}</button>
           </div>
         </div>
       </div>

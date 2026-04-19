@@ -235,17 +235,17 @@ export default function AdminPaymentsSetup() {
             <div className="ct">รายการประเภท{itemTypeTab === 'receive' ? 'รับชำระ' : 'จ่ายเงิน'}</div>
             <div style={{ display: 'flex', gap: 4 }}>
               <button
-                className={`vms-sm-btn ${itemTypeTab === 'receive' ? 'vms-sm-btn--primary' : ''}`}
+                className={`btn ${itemTypeTab === 'receive' ? 'btn-p' : 'btn-a'} btn-sm`}
                 onClick={() => setItemTypeTab('receive')}
               >รับชำระ</button>
               <button
-                className={`vms-sm-btn ${itemTypeTab === 'disburse' ? 'vms-sm-btn--primary' : ''}`}
+                className={`btn ${itemTypeTab === 'disburse' ? 'btn-p' : 'btn-a'} btn-sm`}
                 onClick={() => setItemTypeTab('disburse')}
               >จ่ายเงิน</button>
             </div>
           </div>
           <div className="houses-list-actions">
-            <button className="vms-sm-btn vms-sm-btn--primary" onClick={openCreateItemModal}>+ เพิ่มรายการ</button>
+            <button className="btn btn-p btn-sm" onClick={openCreateItemModal}>+ เพิ่มรายการ</button>
           </div>
         </div>
         <div className="cb houses-table-card-body houses-main-body">
@@ -305,8 +305,8 @@ export default function AdminPaymentsSetup() {
                   <span><span className="mcard-label">รายละเอียด</span> {row.description || '-'}</span>
                 </div>
                 <div className="mcard-actions">
-                  <button className="vms-sm-btn" onClick={() => openEditItemModal(row)}>แก้ไข</button>
-                  <button className="vms-sm-btn vms-sm-btn--warning" onClick={() => handleDeleteItem(row.id)}>ลบ</button>
+                  <button className="btn btn-a btn-sm" onClick={() => openEditItemModal(row)}>แก้ไข</button>
+                  <button className="btn btn-dg btn-sm" onClick={() => handleDeleteItem(row.id)}>ลบ</button>
                 </div>
               </div>
             ))}
@@ -350,7 +350,7 @@ export default function AdminPaymentsSetup() {
                     <td>{row.is_active ? 'ใช้งาน' : 'ปิด'}</td>
                     <td style={{ whiteSpace: 'nowrap' }}>
                       <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                        <button className="btn btn-xs btn-o" onClick={() => openEditPartnerModal(row)}>แก้ไข</button>
+                        <button className="btn btn-xs btn-a" onClick={() => openEditPartnerModal(row)}>แก้ไข</button>
                         <button className="btn btn-xs btn-dg" onClick={() => handleDeletePartner(row.id)}>ลบ</button>
                       </div>
                     </td>
@@ -378,8 +378,8 @@ export default function AdminPaymentsSetup() {
                   <span><span className="mcard-label">รายละเอียด</span> {row.note || '-'}</span>
                 </div>
                 <div className="mcard-actions">
-                  <button className="btn btn-xs btn-o" onClick={() => openEditPartnerModal(row)}>แก้ไข</button>
-                  <button className="btn btn-xs btn-dg" onClick={() => handleDeletePartner(row.id)}>ลบ</button>
+                  <button className="btn btn-a btn-sm" onClick={() => openEditPartnerModal(row)}>แก้ไข</button>
+                  <button className="btn btn-dg btn-sm" onClick={() => handleDeletePartner(row.id)}>ลบ</button>
                 </div>
               </div>
             ))}
@@ -430,8 +430,8 @@ export default function AdminPaymentsSetup() {
               </section>
             </div>
             <div className="house-md-foot">
-              <button className="btn btn-p" type="button" disabled={savingItem} onClick={saveItem}>{savingItem ? 'กำลังบันทึก...' : 'บันทึก'}</button>
-              <button className="btn btn-g" type="button" disabled={savingItem} onClick={closeItemModal}>ยกเลิก</button>
+              <button className="btn btn-p btn-sm" type="button" disabled={savingItem} onClick={saveItem}>{savingItem ? 'กำลังบันทึก...' : 'บันทึก'}</button>
+              <button className="btn btn-g btn-sm" type="button" disabled={savingItem} onClick={closeItemModal}>ยกเลิก</button>
             </div>
           </div>
         </div>
@@ -480,8 +480,8 @@ export default function AdminPaymentsSetup() {
               </section>
             </div>
             <div className="house-md-foot">
-              <button className="btn btn-p" type="button" disabled={savingPartner} onClick={savePartner}>{savingPartner ? 'กำลังบันทึก...' : 'บันทึก'}</button>
-              <button className="btn btn-g" type="button" disabled={savingPartner} onClick={closePartnerModal}>ยกเลิก</button>
+              <button className="btn btn-p btn-sm" type="button" disabled={savingPartner} onClick={savePartner}>{savingPartner ? 'กำลังบันทึก...' : 'บันทึก'}</button>
+              <button className="btn btn-g btn-sm" type="button" disabled={savingPartner} onClick={closePartnerModal}>ยกเลิก</button>
             </div>
           </div>
         </div>

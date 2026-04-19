@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react'
 import StyledSelect from '../../components/StyledSelect'
 import DropdownList from '../../components/DropdownList'
+import VmsPagination from '../../components/VmsPagination'
 import { getLoginLogs, deleteLoginLogs, deleteAllLoginLogs } from '../../lib/loginLogs'
 import { getSetupConfig } from '../../lib/setup'
 import Swal from 'sweetalert2'
@@ -71,6 +72,8 @@ export default function AdminLoginLogs() {
   const [searchTerm, setSearchTerm] = useState('')
   const [roleFilter, setRoleFilter] = useState('all')
   const [selected, setSelected] = useState(new Set())
+  const [page, setPage] = useState(1)
+  const [rowsPerPage, setRowsPerPage] = useState('25')
   const [setup, setSetup] = useState({ villageName: 'The Greenfield', loginCircleLogoUrl: '' })
 
   useEffect(() => {
@@ -99,15 +102,44 @@ export default function AdminLoginLogs() {
     })
   }, [logs, searchTerm, roleFilter])
 
+  const totalPages = useMemo(() => {
+    if (rowsPerPage === 'all') return 1
+    const limit = Math.max(1, Number(rowsPerPage || 25))
+    return Math.max(1, Math.ceil(filtered.length / limit))
+  }, [filtered.length, rowsPerPage])
+
+  const pagedLogs = useMemo(() => {
+    if (rowsPerPage === 'all') return filtered
+    const limit = Math.max(1, Number(rowsPerPage || 25))
+    const start = (page - 1) * limit
+    return filtered.slice(start, start + limit)
+  }, [filtered, rowsPerPage, page])
+
+  useEffect(() => {
+    setPage(1)
+  }, [searchTerm, roleFilter, rowsPerPage])
+
+  useEffect(() => {
+    setPage((prev) => Math.min(prev, totalPages))
+  }, [totalPages])
+
   // ─── Checkbox logic ────────────────────────────────────────────────
-  const allChecked = filtered.length > 0 && filtered.every((r) => selected.has(r.id))
-  const someChecked = !allChecked && filtered.some((r) => selected.has(r.id))
+  const allChecked = pagedLogs.length > 0 && pagedLogs.every((r) => selected.has(r.id))
+  const someChecked = !allChecked && pagedLogs.some((r) => selected.has(r.id))
 
   const toggleAll = () => {
     if (allChecked) {
-      setSelected(new Set())
+      setSelected((prev) => {
+        const next = new Set(prev)
+        pagedLogs.forEach((r) => next.delete(r.id))
+        return next
+      })
     } else {
-      setSelected(new Set(filtered.map((r) => r.id)))
+      setSelected((prev) => {
+        const next = new Set(prev)
+        pagedLogs.forEach((r) => next.add(r.id))
+        return next
+      })
     }
   }
 
@@ -191,9 +223,10 @@ export default function AdminLoginLogs() {
             </div>
           </div>
           <div className="vms-toolbar-right">
+            <button className="vms-sm-btn vms-sm-btn--primary" onClick={toggleAll} disabled={pagedLogs.length === 0}>{allChecked ? 'ยกเลิกเลือกหน้านี้' : 'เลือกหน้านี้'}</button>
             <button className="vms-sm-btn vms-sm-btn--warning" onClick={handleDeleteSelected} disabled={selected.size === 0}>🗑 ลบที่เลือก ({selected.size})</button>
             <button className="vms-sm-btn vms-sm-btn--warning" onClick={handleDeleteAll} disabled={logs.length === 0}>🗑 ลบทั้งหมด</button>
-            <button className="vms-sm-btn" onClick={loadLogs} disabled={loading}><svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M17.65 6.35A7.958 7.958 0 0 0 12 4C7.58 4 4.01 7.58 4.01 12S7.58 20 12 20c3.73 0 6.84-2.55 7.73-6h-2.08A5.99 5.99 0 0 1 12 18c-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg></button>
+            <button className="vms-sm-btn vms-sm-btn--primary" onClick={loadLogs} disabled={loading}><svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M17.65 6.35A7.958 7.958 0 0 0 12 4C7.58 4 4.01 7.58 4.01 12S7.58 20 12 20c3.73 0 6.84-2.55 7.73-6h-2.08A5.99 5.99 0 0 1 12 18c-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg></button>
           </div>
         </div>
 
@@ -227,7 +260,7 @@ export default function AdminLoginLogs() {
                   <tr><td colSpan="10" style={{ textAlign: 'center', color: 'var(--mu)', padding: '24px' }}>กำลังโหลด...</td></tr>
                 ) : filtered.length === 0 ? (
                   <tr><td colSpan="10" style={{ textAlign: 'center', color: 'var(--mu)', padding: '24px' }}>ไม่มีข้อมูล Log</td></tr>
-                ) : filtered.map((row, idx) => (
+                ) : pagedLogs.map((row, idx) => (
                   <tr
                     key={row.id}
                     style={{ background: selected.has(row.id) ? 'var(--pr-bg, #f0f7ff)' : undefined, cursor: 'pointer' }}
@@ -240,7 +273,7 @@ export default function AdminLoginLogs() {
                         onChange={() => toggleRow(row.id)}
                       />
                     </td>
-                    <td style={{ color: 'var(--mu)', textAlign: 'center' }}>{idx + 1}</td>
+                    <td style={{ color: 'var(--mu)', textAlign: 'center' }}>{(page - 1) * Math.max(1, Number(rowsPerPage || 25)) + idx + 1}</td>
                     <td style={{ whiteSpace: 'nowrap' }}>{fmtDatetime(row.login_at)}</td>
                     <td>{toEventLabel(row.event_type)}</td>
                     <td>{toPageLabel(row.page_path)}</td>
@@ -271,7 +304,7 @@ export default function AdminLoginLogs() {
                   <input type="checkbox" checked={allChecked} ref={(el) => { if (el) el.indeterminate = someChecked }} onChange={toggleAll} />
                   <span style={{ fontSize: 12, color: 'var(--mu)' }}>เลือกทั้งหมด</span>
                 </div>
-                {filtered.map((row) => (
+                {pagedLogs.map((row) => (
                   <div
                     key={row.id}
                     className="houses-mcard"
@@ -306,6 +339,15 @@ export default function AdminLoginLogs() {
             )}
           </div>
         </div>
+
+        <VmsPagination
+          page={page}
+          totalPages={totalPages}
+          rowsPerPage={rowsPerPage}
+          setRowsPerPage={setRowsPerPage}
+          totalRows={filtered.length}
+          onPage={setPage}
+        />
       </div>
     </div>
   )
