@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import StyledSelect from '../../components/StyledSelect'
+import DropdownList from '../../components/DropdownList'
+import VmsPagination from '../../components/VmsPagination'
 import Swal from 'sweetalert2'
 import {
   createRuleDocument,
@@ -57,6 +59,16 @@ export default function AdminRules() {
   const [showPdfViewerModal, setShowPdfViewerModal] = useState(false)
   const [pdfViewerUrl, setPdfViewerUrl] = useState('')
   const [pdfViewerTitle, setPdfViewerTitle] = useState('เอกสาร PDF')
+  const [page, setPage] = useState(1)
+  const [rowsPerPage, setRowsPerPage] = useState('25')
+
+  const ruleCategoryOptions = [
+    { value: 'all', label: 'ทุกหมวด' },
+    ...CATEGORY_OPTIONS.map((option) => ({ value: option.value, label: option.label })),
+  ]
+
+  const totalPages = rowsPerPage === 'all' ? 1 : Math.ceil(rules.length / Number(rowsPerPage))
+  const pagedRules = rowsPerPage === 'all' ? rules : rules.slice((page - 1) * Number(rowsPerPage), page * Number(rowsPerPage))
 
   const loadData = async (override = {}) => {
     try {
@@ -221,31 +233,20 @@ export default function AdminRules() {
         </div>
       </div>
 
-      <div className="card report-filter-card admin-search-filter-card">
-        <div className="cb" style={{ padding: 12 }}>
-        <div className="houses-filter-row">
-          <input
-            className="houses-filter-input"
-            type="text"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            placeholder="ค้นหา หัวข้อ / รายละเอียด"
-          />
-          <StyledSelect value={categoryFilter} onChange={(e) => setCategoryFilter(e.target.value)}>
-            <option value="all">ทุกหมวด</option>
-            {CATEGORY_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
-          </StyledSelect>
-          <button className="btn btn-a btn-sm houses-filter-btn" onClick={() => loadData({ category: categoryFilter, search: searchTerm })}>ค้นหา</button>
-        </div>
-        </div>
-      </div>
-
-      <div className="card">
-        <div className="ch houses-list-head houses-main-head">
-          <div className="ct">รายการทั้งหมด ({rules.length} เรื่อง)</div>
-          <div className="houses-list-actions">
-            <button className="btn btn-p btn-sm" onClick={openAddModal}>+ เพิ่มเรื่องใหม่</button>
-            <button className="btn btn-g btn-sm" onClick={() => loadData({ category: categoryFilter, search: searchTerm })}>🔄 รีเฟรช</button>
+      <div className="card houses-main-card">
+        <div className="vms-panel-toolbar">
+          <div className="vms-toolbar-left">
+            <DropdownList compact value={categoryFilter} options={ruleCategoryOptions} onChange={(v) => { setCategoryFilter(v); setPage(1); loadData({ category: v, search: searchTerm }) }} placeholder="ทุกหมวด" />
+            <div className="vms-inline-search">
+              <svg width="12" height="12" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd"/>
+              </svg>
+              <input type="text" value={searchTerm} onChange={(e) => { setSearchTerm(e.target.value); setPage(1) }} placeholder="ค้นหา หัวข้อ / รายละเอียด" />
+            </div>
+          </div>
+          <div className="vms-toolbar-right">
+            <button className="vms-sm-btn vms-sm-btn--primary" onClick={openAddModal}>+ เพิ่มเรื่องใหม่</button>
+            <button className="vms-sm-btn" onClick={() => loadData({ category: categoryFilter, search: searchTerm })}>🔄</button>
           </div>
         </div>
 
@@ -268,7 +269,7 @@ export default function AdminRules() {
                   <tr><td colSpan="7" style={{ textAlign: 'center', color: 'var(--mu)', padding: '20px' }}>กำลังโหลด...</td></tr>
                 ) : rules.length === 0 ? (
                   <tr><td colSpan="7" style={{ textAlign: 'center', color: 'var(--mu)', padding: '20px' }}>ยังไม่มีข้อมูล</td></tr>
-                ) : rules.map((item) => (
+                ) : pagedRules.map((item) => (
                   <tr key={item.id}>
                     <td>{item.category_label}</td>
                     <td>{item.topic_no || '-'}</td>
@@ -281,9 +282,9 @@ export default function AdminRules() {
                     </td>
                     <td>{formatDate(item.announcement_date || item.created_at)}</td>
                     <td>
-                      <div className="td-acts">
-                        <button className="btn btn-xs btn-a" onClick={() => openEditModal(item)}>แก้ไข</button>
-                        <button className="btn btn-xs btn-dg" onClick={() => handleDelete(item)}>ลบ</button>
+                      <div className="vms-row-acts">
+                        <button className="vms-ra-btn vms-ra-edit" title="แก้ไข" onClick={() => openEditModal(item)}><svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor"><path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z"/></svg></button>
+                        <button className="vms-ra-btn vms-ra-del" title="ลบ" onClick={() => handleDelete(item)}><svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd"/></svg></button>
                       </div>
                     </td>
                   </tr>
@@ -308,14 +309,17 @@ export default function AdminRules() {
                   <span><span className="mcard-label">รายละเอียด</span> {item.description || '-'}</span>
                 </div>
                 <div className="mcard-actions">
-                  {item.pdf_url && <button type="button" className="btn btn-xs btn-o" onClick={() => openPdfViewer(item.pdf_url, item.title)}>📄 เปิด PDF</button>}
-                  <button className="btn btn-xs btn-a" onClick={() => openEditModal(item)}>แก้ไข</button>
-                  <button className="btn btn-xs btn-dg" onClick={() => handleDelete(item)}>ลบ</button>
+                  <div className="vms-row-acts">
+                    {item.pdf_url && <button type="button" className="vms-ra-btn vms-ra-view" title="เปิด PDF" onClick={() => openPdfViewer(item.pdf_url, item.title)}><svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" clipRule="evenodd"/></svg></button>}
+                    <button className="vms-ra-btn vms-ra-edit" title="แก้ไข" onClick={() => openEditModal(item)}><svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor"><path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z"/></svg></button>
+                    <button className="vms-ra-btn vms-ra-del" title="ลบ" onClick={() => handleDelete(item)}><svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd"/></svg></button>
+                  </div>
                 </div>
               </div>
             ))}
           </div>
         </div>
+        <VmsPagination page={page} totalPages={totalPages} rowsPerPage={rowsPerPage} setRowsPerPage={(v) => { setRowsPerPage(v); setPage(1) }} totalRows={rules.length} onPage={setPage} />
       </div>
 
       {showModal && (

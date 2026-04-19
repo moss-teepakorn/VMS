@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import StyledSelect from '../../components/StyledSelect'
+import DropdownList from '../../components/DropdownList'
+import VmsPagination from '../../components/VmsPagination'
 import { useNavigate } from 'react-router-dom'
 import Swal from 'sweetalert2'
 import html2canvas from 'html2canvas'
@@ -46,6 +48,21 @@ const AdminWorkReportsList = () => {
   const [filterMonth, setFilterMonth] = useState('')
   const [filterYear, setFilterYear] = useState(String(new Date().getFullYear()))
   const [filterCategory, setFilterCategory] = useState('all')
+  const [page, setPage] = useState(1)
+  const [rowsPerPage, setRowsPerPage] = useState('25')
+
+  const monthOptions = [
+    { value: '', label: 'ทุกเดือน' },
+    ...[1,2,3,4,5,6,7,8,9,10,11,12].map((m) => ({ value: String(m), label: new Date(2024, m - 1).toLocaleDateString('th-TH', { month: 'long' }) })),
+  ]
+  const yearOptions = YEAR_OPTIONS.map((y) => ({ value: String(y), label: String(y + 543) }))
+  const categoryOptions = [
+    { value: 'all', label: 'ทุกหมวดหมู่' },
+    ...CATEGORIES.map((cat) => ({ value: cat.value, label: cat.label })),
+  ]
+
+  const totalPages = rowsPerPage === 'all' ? 1 : Math.ceil(reports.length / Number(rowsPerPage))
+  const pagedReports = rowsPerPage === 'all' ? reports : reports.slice((page - 1) * Number(rowsPerPage), page * Number(rowsPerPage))
 
   const loadReports = async (override = {}) => {
     try {
@@ -237,41 +254,22 @@ const AdminWorkReportsList = () => {
 
       </div>
 
-      <div className="card report-filter-card admin-search-filter-card">
-        <div className="cb">
-        <div className="houses-filter-row" style={{ display: 'flex', flexWrap: 'wrap', gap: '8px 10px', alignItems: 'center' }}>
-          <input
-            type="text"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            placeholder="ค้นหาจากสรุป/รายละเอียด..."
-            className="houses-filter-input"
-            style={{ flex: '1', minWidth: '160px' }}
-          />
-          <StyledSelect value={filterMonth} onChange={(e) => setFilterMonth(e.target.value)} style={{ width: '170px' }}>
-            <option value="">ทุกเดือน</option>
-            {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((m) => (
-              <option key={m} value={m}>{new Date(2024, m - 1).toLocaleDateString('th-TH', { month: 'long' })}</option>
-            ))}
-          </StyledSelect>
-          <StyledSelect value={filterYear} onChange={(e) => setFilterYear(e.target.value)} style={{ width: '150px' }}>
-            {YEAR_OPTIONS.map((y) => <option key={y} value={y}>{y + 543}</option>)}
-          </StyledSelect>
-          <StyledSelect value={filterCategory} onChange={(e) => setFilterCategory(e.target.value)} style={{ width: '220px' }}>
-            <option value="all">ทุกหมวดหมู่</option>
-            {CATEGORIES.map((cat) => <option key={cat.value} value={cat.value}>{cat.label}</option>)}
-          </StyledSelect>
-          <button className="btn btn-a btn-sm houses-filter-btn" style={{ flexShrink: 0 }} onClick={() => loadReports()}>ค้นหา</button>
-        </div>
-        </div>
-      </div>
-
-      <div className="card">
-        <div className="ch houses-list-head houses-main-head">
-          <div className="ct">รายการผลงานนิติ ({reports.length} รายการ)</div>
-          <div className="houses-list-actions">
-            <button className="btn btn-p btn-sm" onClick={() => setShowCreateModal(true)}>+ เพิ่มผลงาน</button>
-            <button className="btn btn-g btn-sm" onClick={() => loadReports()}>รีเฟรช</button>
+      <div className="card houses-main-card">
+        <div className="vms-panel-toolbar">
+          <div className="vms-toolbar-left">
+            <DropdownList compact value={filterMonth} options={monthOptions} onChange={(v) => { setFilterMonth(v); setPage(1) }} placeholder="ทุกเดือน" />
+            <DropdownList compact value={filterYear} options={yearOptions} onChange={(v) => { setFilterYear(v); setPage(1) }} placeholder="ปี" />
+            <DropdownList compact value={filterCategory} options={categoryOptions} onChange={(v) => { setFilterCategory(v); setPage(1) }} placeholder="ทุกหมวดหมู่" />
+            <div className="vms-inline-search">
+              <svg width="12" height="12" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd"/>
+              </svg>
+              <input type="text" value={searchTerm} onChange={(e) => { setSearchTerm(e.target.value); setPage(1) }} placeholder="ค้นหาจากสรุป/รายละเอียด..." />
+            </div>
+          </div>
+          <div className="vms-toolbar-right">
+            <button className="vms-sm-btn vms-sm-btn--primary" onClick={() => setShowCreateModal(true)}>+ เพิ่มผลงาน</button>
+            <button className="vms-sm-btn" onClick={() => loadReports()}>🔄</button>
           </div>
         </div>
         <div className="cb houses-table-card-body houses-main-body">
@@ -292,7 +290,7 @@ const AdminWorkReportsList = () => {
                   <tr><td colSpan={6} style={{ textAlign: 'center' }}>กำลังโหลด...</td></tr>
                 ) : reports.length === 0 ? (
                   <tr><td colSpan={6} style={{ textAlign: 'center' }}>ไม่มีข้อมูล</td></tr>
-                ) : reports.map((report) => (
+                ) : pagedReports.map((report) => (
                   <tr key={report.id}>
                     <td>{formatMonthYear(report.month, report.year)}</td>
                     <td>{categoryLabel(report.category)}</td>
@@ -345,20 +343,23 @@ const AdminWorkReportsList = () => {
                   </div>
                 )}
                 <div className="houses-mcard-actions">
-                  <button className="btn btn-xs btn-a" style={{ flex: 1 }} onClick={() => setEditingReportId(report.id)}>แก้ไข</button>
-                  <button className="btn btn-xs btn-o" title="ส่งออก PNG" onClick={() => handleExportImage(report)}>
-                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ display: 'block' }}>
-                      <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
-                      <circle cx="8.5" cy="8.5" r="1.5" />
-                      <polyline points="21 15 16 10 5 21" />
-                    </svg>
-                  </button>
-                  <button className="btn btn-xs btn-dg" style={{ flex: 1 }} onClick={() => handleDelete(report)}>ลบ</button>
+                  <div className="vms-row-acts">
+                    <button className="vms-ra-btn vms-ra-edit" title="แก้ไข" onClick={() => setEditingReportId(report.id)}><svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor"><path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z"/></svg></button>
+                    <button className="vms-ra-btn vms-ra-view" title="ส่งออก PNG" onClick={() => handleExportImage(report)}>
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ display: 'block' }}>
+                        <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                        <circle cx="8.5" cy="8.5" r="1.5" />
+                        <polyline points="21 15 16 10 5 21" />
+                      </svg>
+                    </button>
+                    <button className="vms-ra-btn vms-ra-del" title="ลบ" onClick={() => handleDelete(report)}><svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd"/></svg></button>
+                  </div>
                 </div>
               </div>
             ))}
           </div>
         </div>
+        <VmsPagination page={page} totalPages={totalPages} rowsPerPage={rowsPerPage} setRowsPerPage={(v) => { setRowsPerPage(v); setPage(1) }} totalRows={reports.length} onPage={setPage} />
       </div>
 
       {showCreateModal && (

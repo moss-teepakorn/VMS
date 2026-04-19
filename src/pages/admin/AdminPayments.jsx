@@ -338,7 +338,7 @@ export default function AdminPayments() {
   const [search, setSearch] = useState('')
   const [yearFilter, setYearFilter] = useState('all')
   const [periodFilter, setPeriodFilter] = useState('all')
-  const [rowsPerPage, setRowsPerPage] = useState('30')
+  const [rowsPerPage, setRowsPerPage] = useState('25')
   const [page, setPage] = useState(1)
   const [showReceiveModal, setShowReceiveModal] = useState(false)
   const [savingReceive, setSavingReceive] = useState(false)
@@ -1209,7 +1209,6 @@ export default function AdminPayments() {
                   onChange={(e) => setSearch(e.target.value)}
                 />
               </div>
-              <button className="vms-sm-btn" onClick={loadPayments} disabled={loading}>ค้นหา</button>
             </div>
           </div>
           <div style={{ marginTop: 10, display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center' }}>
