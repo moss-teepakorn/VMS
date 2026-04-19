@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
 import DropdownList from '../../components/DropdownList'
+import VmsPagination from '../../components/VmsPagination'
 import Swal from 'sweetalert2'
 import * as XLSX from 'xlsx'
 import { listHouses } from '../../lib/houses'
@@ -861,73 +862,41 @@ const AdminVehicles = () => {
         </div>
       </div>
 
-      <div className="card report-filter-card admin-search-filter-card">
-        <div className="cb" style={{ padding: 12 }}>
-        <div className="houses-filter-row">
-          <input
-            className="houses-filter-input"
-            type="text"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            placeholder="ค้นหา ทะเบียน / บ้าน / เจ้าของ / ยี่ห้อ / สี"
-          />
-          <DropdownList
-            compact
-            value={soiFilter}
-            options={soiFilterOptions}
-            onChange={setSoiFilter}
-            placeholder="เลือกซอย"
-          />
-          <DropdownList
-            compact
-            value={vehicleTypeFilter}
-            options={vehicleTypeFilterOptions}
-            onChange={setVehicleTypeFilter}
-            placeholder="เลือกประเภทรถ"
-          />
-          <DropdownList
-            compact
-            value={statusFilter}
-            options={statusFilterOptions}
-            onChange={setStatusFilter}
-            placeholder="เลือกสถานะ"
-          />
-          <button className="btn btn-a btn-sm houses-filter-btn" onClick={() => loadVehicles({ status: statusFilter, search: searchTerm, soi: soiFilter, vehicleType: vehicleTypeFilter })}>ค้นหา</button>
-        </div>
-        </div>
-      </div>
-
       <div className="card vehicles-list-card houses-main-card">
-        <div className="ch houses-list-head houses-main-head">
-          <div className="ct">ยานพาหนะทั้งหมด ({vehicles.length} รายการ)</div>
-          <div className="houses-list-actions">
-            <button className="btn btn-p btn-sm" onClick={openAddModal}>+ ลงทะเบียนรถใหม่</button>
-            <button className="btn btn-o btn-sm" onClick={handleOpenImportVehicleExcel}>📥 นำเข้า Excel</button>
-            <button className="btn btn-g btn-sm" onClick={() => loadVehicles({ status: statusFilter, search: searchTerm, soi: soiFilter, vehicleType: vehicleTypeFilter })}>🔄 รีเฟรช</button>
-          </div>
-        </div>
-        <div className="cb" style={{ paddingTop: 0 }}>
-          <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-            <span style={{ fontSize: 12, color: 'var(--mu)' }}>แสดง</span>
-            <DropdownList
-              compact
-              value={rowsPerPage}
-              options={[
-                { value: '30', label: '30 รายการ' },
-                { value: '60', label: '60 รายการ' },
-                { value: '100', label: '100 รายการ' },
-                { value: 'all', label: 'แสดงทั้งหมด' },
-              ]}
-              onChange={setRowsPerPage}
-              placeholder="จำนวนรายการ"
-            />
-            <div className="vms-pagination" style={{ marginLeft: 'auto' }}>
-              <button className="btn btn-g btn-xs" type="button" onClick={() => setPage((prev) => Math.max(1, prev - 1))} disabled={rowsPerPage === 'all' || page <= 1}>ก่อนหน้า</button>
-              <span className="vms-page-info">หน้า {page}/{totalPages}</span>
-              <button className="btn btn-g btn-xs" type="button" onClick={() => setPage((prev) => Math.min(totalPages, prev + 1))} disabled={rowsPerPage === 'all' || page >= totalPages}>ถัดไป</button>
+        {/* Toolbar — sample pattern */}
+        <div className="vms-panel-toolbar">
+          <div className="vms-toolbar-left">
+            <DropdownList compact value={soiFilter} options={soiFilterOptions} onChange={setSoiFilter} placeholder="เลือกซอย" />
+            <DropdownList compact value={vehicleTypeFilter} options={vehicleTypeFilterOptions} onChange={setVehicleTypeFilter} placeholder="ประเภทรถ" />
+            <DropdownList compact value={statusFilter} options={statusFilterOptions} onChange={setStatusFilter} placeholder="สถานะ" />
+            <div className="vms-inline-search">
+              <svg width="12" height="12" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd"/>
+              </svg>
+              <input
+                type="text"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Enter') loadVehicles({ status: statusFilter, search: searchTerm, soi: soiFilter, vehicleType: vehicleTypeFilter }) }}
+                placeholder="ค้นหา ทะเบียน / บ้าน / เจ้าของ..."
+              />
             </div>
+            <button className="vms-sm-btn" onClick={() => loadVehicles({ status: statusFilter, search: searchTerm, soi: soiFilter, vehicleType: vehicleTypeFilter })}>ค้นหา</button>
+          </div>
+          <div className="vms-toolbar-right">
+            <button className="vms-sm-btn vms-sm-btn--primary" onClick={openAddModal}>+ ลงทะเบียนรถ</button>
+            <button className="vms-sm-btn" onClick={handleOpenImportVehicleExcel}>📥 Excel</button>
+            <button className="vms-sm-btn" onClick={() => loadVehicles({ status: statusFilter, search: searchTerm, soi: soiFilter, vehicleType: vehicleTypeFilter })}>🔄</button>
           </div>
         </div>
+        <VmsPagination
+          page={page}
+          totalPages={totalPages}
+          rowsPerPage={rowsPerPage}
+          setRowsPerPage={(v) => { setRowsPerPage(v); setPage(1) }}
+          totalRows={vehicles.length}
+          onPage={setPage}
+        />
         <div className="cb houses-table-card-body houses-main-body vehicles-page-table-body">
           <div className="desktop-only">
             <div className="houses-main-wrap" style={{ overflowX: 'auto' }}>
@@ -967,8 +936,10 @@ const AdminVehicles = () => {
                           <td>{formatDecimal(vehicle.parking_fee)}</td>
                           <td><span className={badge.className}>{badge.label}</span></td>
                           <td><div className="td-acts">
-                            <button className="btn btn-xs btn-a" onClick={() => openEditModal(vehicle)}>แก้ไข</button>
-                            <button className="btn btn-xs btn-dg" onClick={() => handleDeleteVehicle(vehicle)}>ลบ</button>
+                            <div className="vms-row-acts">
+                              <button className="vms-ra-btn vms-ra-edit" onClick={() => openEditModal(vehicle)}>แก้ไข</button>
+                              <button className="vms-ra-btn vms-ra-del" onClick={() => handleDeleteVehicle(vehicle)}>ลบ</button>
+                            </div>
                           </div></td>
                         </tr>
                       )
@@ -1002,8 +973,10 @@ const AdminVehicles = () => {
                     <span><span className="mcard-label">ค่าจอด</span> {formatDecimal(vehicle.parking_fee)}</span>
                   </div>
                   <div className="mcard-actions">
-                    <button className="btn btn-xs btn-a" onClick={() => openEditModal(vehicle)}>แก้ไข</button>
-                    <button className="btn btn-xs btn-dg" onClick={() => handleDeleteVehicle(vehicle)}>ลบ</button>
+                    <div className="vms-row-acts">
+                      <button className="vms-ra-btn vms-ra-edit" onClick={() => openEditModal(vehicle)}>แก้ไข</button>
+                      <button className="vms-ra-btn vms-ra-del" onClick={() => handleDeleteVehicle(vehicle)}>ลบ</button>
+                    </div>
                   </div>
                 </div>
               )

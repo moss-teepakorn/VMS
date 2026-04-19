@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import StyledSelect from '../../components/StyledSelect'
+import VmsPagination from '../../components/VmsPagination'
 import html2canvas from 'html2canvas'
 import { jsPDF } from 'jspdf'
 import Swal from 'sweetalert2'
@@ -813,22 +814,14 @@ export default function AdminFeesPrintInvoices() {
         <div className="ch houses-list-head houses-main-head">
           <div className="ct">ผลลัพธ์ ({fees.length}) | เลือกแล้ว {selectedFees.length}</div>
         </div>
-        <div className="cb" style={{ paddingTop: 0 }}>
-          <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-            <span style={{ fontSize: 12, color: 'var(--mu)' }}>แสดง</span>
-            <StyledSelect value={rowsPerPage} onChange={(e) => setRowsPerPage(e.target.value)}>
-              <option value="30">30 รายการ</option>
-              <option value="60">60 รายการ</option>
-              <option value="100">100 รายการ</option>
-              <option value="all">แสดงทั้งหมด</option>
-            </StyledSelect>
-            <div className="vms-pagination" style={{ marginLeft: 'auto' }}>
-              <button className="btn btn-g btn-xs" type="button" onClick={() => setPage((prev) => Math.max(1, prev - 1))} disabled={rowsPerPage === 'all' || page <= 1}>ก่อนหน้า</button>
-              <span className="vms-page-info">หน้า {page}/{totalPages}</span>
-              <button className="btn btn-g btn-xs" type="button" onClick={() => setPage((prev) => Math.min(totalPages, prev + 1))} disabled={rowsPerPage === 'all' || page >= totalPages}>ถัดไป</button>
-            </div>
-          </div>
-        </div>
+        <VmsPagination
+          page={page}
+          totalPages={totalPages}
+          rowsPerPage={rowsPerPage}
+          setRowsPerPage={(v) => { setRowsPerPage(v); setPage(1) }}
+          totalRows={fees.length}
+          onPage={setPage}
+        />
         <div className="cb houses-table-card-body houses-main-body">
           <div className="houses-desktop-only" style={{ overflowX: 'auto' }}>
             <table className="tw houses-table houses-main-table" style={{ width: '100%' }}>

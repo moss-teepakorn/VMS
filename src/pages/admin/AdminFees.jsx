@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import StyledSelect from '../../components/StyledSelect'
+import VmsPagination from '../../components/VmsPagination'
 import html2canvas from 'html2canvas'
 import { jsPDF } from 'jspdf'
 import Swal from 'sweetalert2'
@@ -1746,22 +1747,14 @@ const AdminFees = () => {
             </div>
           </div>
         </div>
-        <div className="cb" style={{ paddingTop: 0 }}>
-          <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-            <span style={{ fontSize: 12, color: 'var(--mu)' }}>แสดง</span>
-            <StyledSelect value={activeRowsPerPage} onChange={(e) => setActiveRowsPerPage(e.target.value)}>
-              <option value="30">30 รายการ</option>
-              <option value="60">60 รายการ</option>
-              <option value="100">100 รายการ</option>
-              <option value="all">แสดงทั้งหมด</option>
-            </StyledSelect>
-            <div className="vms-pagination" style={{ marginLeft: 'auto' }}>
-              <button className="btn btn-g btn-xs" type="button" onClick={() => setActivePage((prev) => Math.max(1, prev - 1))} disabled={activeRowsPerPage === 'all' || activePage <= 1}>ก่อนหน้า</button>
-              <span className="vms-page-info">หน้า {activePage}/{activeTotalPages}</span>
-              <button className="btn btn-g btn-xs" type="button" onClick={() => setActivePage((prev) => Math.min(activeTotalPages, prev + 1))} disabled={activeRowsPerPage === 'all' || activePage >= activeTotalPages}>ถัดไป</button>
-            </div>
-          </div>
-        </div>
+        <VmsPagination
+          page={activePage}
+          totalPages={activeTotalPages}
+          rowsPerPage={activeRowsPerPage}
+          setRowsPerPage={(v) => { setActiveRowsPerPage(v); setActivePage(1) }}
+          totalRows={activeFees.length}
+          onPage={setActivePage}
+        />
         <div className="cb houses-table-card-body houses-main-body">
           <div className="desktop-only">
             <div style={{ overflowX: 'auto' }}>
@@ -1873,22 +1866,14 @@ const AdminFees = () => {
             })}
           </div>
         </div>
-        <div className="cb" style={{ paddingTop: 0 }}>
-          <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-            <span style={{ fontSize: 12, color: 'var(--mu)' }}>แสดง</span>
-            <StyledSelect value={archiveRowsPerPage} onChange={(e) => setArchiveRowsPerPage(e.target.value)}>
-              <option value="30">30 รายการ</option>
-              <option value="60">60 รายการ</option>
-              <option value="100">100 รายการ</option>
-              <option value="all">แสดงทั้งหมด</option>
-            </StyledSelect>
-            <div className="vms-pagination" style={{ marginLeft: 'auto' }}>
-              <button className="btn btn-g btn-xs" type="button" onClick={() => setArchivePage((prev) => Math.max(1, prev - 1))} disabled={archiveRowsPerPage === 'all' || archivePage <= 1}>ก่อนหน้า</button>
-              <span className="vms-page-info">หน้า {archivePage}/{archiveTotalPages}</span>
-              <button className="btn btn-g btn-xs" type="button" onClick={() => setArchivePage((prev) => Math.min(archiveTotalPages, prev + 1))} disabled={archiveRowsPerPage === 'all' || archivePage >= archiveTotalPages}>ถัดไป</button>
-            </div>
-          </div>
-        </div>
+        <VmsPagination
+          page={archivePage}
+          totalPages={archiveTotalPages}
+          rowsPerPage={archiveRowsPerPage}
+          setRowsPerPage={(v) => { setArchiveRowsPerPage(v); setArchivePage(1) }}
+          totalRows={archiveFees.length}
+          onPage={setArchivePage}
+        />
         <div className="cb houses-table-card-body houses-main-body">
           <div className="desktop-only">
             <div style={{ overflowX: 'auto' }}>

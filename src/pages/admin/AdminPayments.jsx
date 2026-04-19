@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
 import StyledSelect from '../../components/StyledSelect'
+import VmsPagination from '../../components/VmsPagination'
 import html2canvas from 'html2canvas'
 import { jsPDF } from 'jspdf'
 import Swal from 'sweetalert2'
@@ -1195,16 +1196,21 @@ export default function AdminPayments() {
 
       <div className="card report-filter-card admin-search-filter-card">
         <div className="cb" style={{ padding: 12 }}>
-          <div className="houses-filter-row" style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-            <input
-              type="text"
-              className="houses-filter-input"
-              placeholder="ค้นหา ซอย / บ้าน / วิธีชำระ / สถานะ"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              style={{ flex: '1 1 220px', minWidth: 0 }}
-            />
-            <button className="btn btn-a btn-sm" onClick={loadPayments} disabled={loading} style={{ height: '34px' }}>ค้นหา</button>
+          <div className="vms-panel-toolbar" style={{ borderBottom: 'none', padding: 0 }}>
+            <div className="vms-toolbar-left" style={{ flexWrap: 'wrap', gap: 6 }}>
+              <div className="vms-inline-search">
+                <svg width="12" height="12" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd"/>
+                </svg>
+                <input
+                  type="text"
+                  placeholder="ค้นหา ซอย / บ้าน / วิธีชำระ / สถานะ"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                />
+              </div>
+              <button className="vms-sm-btn" onClick={loadPayments} disabled={loading}>ค้นหา</button>
+            </div>
           </div>
           <div style={{ marginTop: 10, display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center' }}>
             <span style={{ fontSize: 12, color: 'var(--mu)' }}>ปี:</span>
@@ -1275,22 +1281,14 @@ export default function AdminPayments() {
             </div>
           </div>
         </div>
-        <div className="cb" style={{ paddingTop: 0 }}>
-          <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-            <span style={{ fontSize: 12, color: 'var(--mu)' }}>แสดง</span>
-            <StyledSelect value={rowsPerPage} onChange={(e) => setRowsPerPage(e.target.value)}>
-              <option value="30">30 รายการ</option>
-              <option value="60">60 รายการ</option>
-              <option value="100">100 รายการ</option>
-              <option value="all">แสดงทั้งหมด</option>
-            </StyledSelect>
-            <div className="vms-pagination" style={{ marginLeft: 'auto' }}>
-              <button className="btn btn-g btn-xs" type="button" onClick={() => setPage((prev) => Math.max(1, prev - 1))} disabled={rowsPerPage === 'all' || page <= 1}>ก่อนหน้า</button>
-              <span className="vms-page-info">หน้า {page}/{totalPages}</span>
-              <button className="btn btn-g btn-xs" type="button" onClick={() => setPage((prev) => Math.min(totalPages, prev + 1))} disabled={rowsPerPage === 'all' || page >= totalPages}>ถัดไป</button>
-            </div>
-          </div>
-        </div>
+        <VmsPagination
+          page={page}
+          totalPages={totalPages}
+          rowsPerPage={rowsPerPage}
+          setRowsPerPage={(v) => { setRowsPerPage(v); setPage(1) }}
+          totalRows={payments.length}
+          onPage={setPage}
+        />
         <div className="cb houses-table-card-body houses-main-body">
             <div className="houses-table-wrap houses-desktop-only payments-main-wrap">
               <table className="tw houses-table houses-main-table" style={{ width: '100%', tableLayout: 'fixed' }}>
@@ -1326,11 +1324,11 @@ export default function AdminPayments() {
                         <td style={{ whiteSpace: 'nowrap' }}>{formatDateTime(payment.paid_at)}</td>
                         <td><span className={badge.className}>{badge.label}</span></td>
                         <td>
-                          <div className="td-acts payments-row-acts">
-                            {payment.slip_url && <button className="btn btn-xs btn-o" onClick={() => handleOpenSlip(payment)}>สลิป</button>}
-                            {!payment.verified_at && <button className="btn btn-xs btn-ok" onClick={() => openApproveModal(payment)}>อนุมัติ</button>}
-                            {!payment.verified_at && <button className="btn btn-xs btn-dg" onClick={() => handleReject(payment)}>ตีกลับ</button>}
-                            {payment.verified_at && <button className="btn btn-xs btn-a" onClick={() => handlePrintReceipt(payment)}>ใบเสร็จ</button>}
+                          <div className="vms-row-acts">
+                            {payment.slip_url && <button className="vms-ra-btn vms-ra-view" onClick={() => handleOpenSlip(payment)}>สลิป</button>}
+                            {!payment.verified_at && <button className="vms-ra-btn vms-ra-ok" onClick={() => openApproveModal(payment)}>อนุมัติ</button>}
+                            {!payment.verified_at && <button className="vms-ra-btn vms-ra-del" onClick={() => handleReject(payment)}>ตีกลับ</button>}
+                            {payment.verified_at && <button className="vms-ra-btn vms-ra-edit" onClick={() => handlePrintReceipt(payment)}>ใบเสร็จ</button>}
                           </div>
                         </td>
                       </tr>
@@ -1363,11 +1361,11 @@ export default function AdminPayments() {
                   <span><span className="mcard-label">วันที่ชำระ</span> {formatDateTime(payment.paid_at)}</span>
                   {getRejectedReason(payment.note) && <span><span className="mcard-label">เหตุผลตีกลับ</span> {getRejectedReason(payment.note)}</span>}
                 </div>
-                <div className="mcard-actions">
-                  {payment.slip_url && <button className="btn btn-xs btn-o" onClick={() => handleOpenSlip(payment)}>สลิป</button>}
-                  {!payment.verified_at && <button className="btn btn-xs btn-ok" onClick={() => openApproveModal(payment)}>อนุมัติ</button>}
-                  {!payment.verified_at && <button className="btn btn-xs btn-dg" onClick={() => handleReject(payment)}>ตีกลับ</button>}
-                  {payment.verified_at && <button className="btn btn-xs btn-a" onClick={() => handlePrintReceipt(payment)}>ใบเสร็จ</button>}
+                <div className="vms-row-acts" style={{ marginTop: 6 }}>
+                  {payment.slip_url && <button className="vms-ra-btn vms-ra-view" onClick={() => handleOpenSlip(payment)}>สลิป</button>}
+                  {!payment.verified_at && <button className="vms-ra-btn vms-ra-ok" onClick={() => openApproveModal(payment)}>อนุมัติ</button>}
+                  {!payment.verified_at && <button className="vms-ra-btn vms-ra-del" onClick={() => handleReject(payment)}>ตีกลับ</button>}
+                  {payment.verified_at && <button className="vms-ra-btn vms-ra-edit" onClick={() => handlePrintReceipt(payment)}>ใบเสร็จ</button>}
                 </div>
               </div>
             )})}

@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
 import DropdownList from '../../components/DropdownList'
+import VmsPagination from '../../components/VmsPagination'
 import Swal from 'sweetalert2'
 import * as XLSX from 'xlsx'
 import { createHouse, deleteHouse, getHouseSetup, listHouses, updateAllHousesFeeRate, updateHouse } from '../../lib/houses'
@@ -554,68 +555,54 @@ const AdminHouses = () => {
         </div>
       </div>
 
-      <div className="card report-filter-card admin-search-filter-card">
-        <div className="cb" style={{ padding: 12 }}>
-        <div className="houses-filter-row">
-          <input
-            type="text"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            placeholder="ค้นหาเลขที่บ้าน / เจ้าของ / หมายเลขห้อง..."
-            className="houses-filter-input"
-          />
-          <DropdownList
-            compact
-            value={filterType}
-            options={filterTypeOptions}
-            onChange={setFilterType}
-            placeholder="เลือกสถานะ"
-          />
-          <DropdownList
-            compact
-            value={soiFilter}
-            options={[{ value: 'all', label: 'ทุกซอย' }, ...soiOptions]}
-            onChange={setSoiFilter}
-            placeholder="เลือกซอย"
-          />
-          <button className="btn btn-a btn-sm houses-filter-btn" onClick={() => loadHouses({ status: filterType, soi: soiFilter, search: searchTerm })}>ค้นหา</button>
-        </div>
-        </div>
-      </div>
-
       {/* Houses Table */}
       <div className="card houses-main-card">
-        <div className="ch houses-list-head houses-main-head">
-          <div className="ct">รายการบ้านทั้งหมด ({houses.length} หลัง)</div>
-          <div className="houses-list-actions">
-            <button className="btn btn-p btn-sm" onClick={openAddModal}>+ เพิ่มบ้าน</button>
-            <button className="btn btn-o btn-sm" onClick={handleOpenImportExcel}>📥 นำเข้า Excel</button>
-            <button className="btn btn-a btn-sm" onClick={handleBulkUpdateAnnualFee}>⏳ อัปเดตค่าส่วนกลาง</button>
-            <button className="btn btn-g btn-sm" onClick={() => loadHouses()}>🔄 รีเฟรช</button>
-          </div>
-        </div>
-        <div className="cb" style={{ paddingTop: 0 }}>
-          <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-            <span style={{ fontSize: 12, color: 'var(--mu)' }}>แสดง</span>
+        {/* Toolbar — sample pattern */}
+        <div className="vms-panel-toolbar">
+          <div className="vms-toolbar-left">
             <DropdownList
               compact
-              value={rowsPerPage}
-              options={[
-                { value: '30', label: '30 รายการ' },
-                { value: '60', label: '60 รายการ' },
-                { value: '100', label: '100 รายการ' },
-                { value: 'all', label: 'แสดงทั้งหมด' },
-              ]}
-              onChange={setRowsPerPage}
-              placeholder="จำนวนรายการ"
+              value={filterType}
+              options={filterTypeOptions}
+              onChange={setFilterType}
+              placeholder="เลือกสถานะ"
             />
-            <div className="vms-pagination" style={{ marginLeft: 'auto' }}>
-              <button className="btn btn-g btn-xs" type="button" onClick={() => setPage((prev) => Math.max(1, prev - 1))} disabled={rowsPerPage === 'all' || page <= 1}>ก่อนหน้า</button>
-              <span className="vms-page-info">หน้า {page}/{totalPages}</span>
-              <button className="btn btn-g btn-xs" type="button" onClick={() => setPage((prev) => Math.min(totalPages, prev + 1))} disabled={rowsPerPage === 'all' || page >= totalPages}>ถัดไป</button>
+            <DropdownList
+              compact
+              value={soiFilter}
+              options={[{ value: 'all', label: 'ทุกซอย' }, ...soiOptions]}
+              onChange={setSoiFilter}
+              placeholder="เลือกซอย"
+            />
+            <div className="vms-inline-search">
+              <svg width="12" height="12" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd"/>
+              </svg>
+              <input
+                type="text"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Enter') loadHouses({ status: filterType, soi: soiFilter, search: searchTerm }) }}
+                placeholder="ค้นหาเลขที่บ้าน / เจ้าของ..."
+              />
             </div>
+            <button className="vms-sm-btn" onClick={() => loadHouses({ status: filterType, soi: soiFilter, search: searchTerm })}>ค้นหา</button>
+          </div>
+          <div className="vms-toolbar-right">
+            <button className="vms-sm-btn vms-sm-btn--primary" onClick={openAddModal}>+ เพิ่มบ้าน</button>
+            <button className="vms-sm-btn" onClick={handleOpenImportExcel}>📥 Excel</button>
+            <button className="vms-sm-btn" onClick={handleBulkUpdateAnnualFee}>⏳ ค่าส่วนกลาง</button>
+            <button className="vms-sm-btn" onClick={() => loadHouses()}>🔄</button>
           </div>
         </div>
+        <VmsPagination
+          page={page}
+          totalPages={totalPages}
+          rowsPerPage={rowsPerPage}
+          setRowsPerPage={(v) => { setRowsPerPage(v); setPage(1) }}
+          totalRows={houses.length}
+          onPage={setPage}
+        />
         <div className="cb houses-table-card-body houses-main-body">
           {/* Desktop Table */}
           <div className="houses-table-wrap houses-desktop-only houses-main-wrap">
@@ -657,9 +644,9 @@ const AdminHouses = () => {
                         <td>{annualFee}</td>
                         <td><span className={`${badge.className} houses-status houses-status-${house.status}`}>{badge.label}</span></td>
                         <td className="houses-actions-cell">
-                          <div className="houses-actions-inner">
-                            <button className="btn btn-xs btn-a houses-action-btn" onClick={() => openEditModal(house)}>แก้ไข</button>
-                            <button className="btn btn-xs houses-action-btn houses-action-delete" onClick={() => handleDeleteHouse(house)}>ลบ</button>
+                          <div className="vms-row-acts">
+                            <button className="vms-ra-btn vms-ra-edit" onClick={() => openEditModal(house)}>แก้ไข</button>
+                            <button className="vms-ra-btn vms-ra-del" onClick={() => handleDeleteHouse(house)}>ลบ</button>
                           </div>
                         </td>
                       </tr>
@@ -697,8 +684,8 @@ const AdminHouses = () => {
                       <span><span className="houses-mcard-label">ค่าส่วนกลาง/ปี</span> {annualFee}</span>
                     </div>
                     <div className="houses-mcard-actions">
-                      <button className="btn btn-xs btn-a houses-action-btn" onClick={() => openEditModal(house)}>แก้ไข</button>
-                      <button className="btn btn-xs houses-action-btn houses-action-delete" onClick={() => handleDeleteHouse(house)}>ลบ</button>
+                      <button className="vms-ra-btn vms-ra-edit" onClick={() => openEditModal(house)}>แก้ไข</button>
+                      <button className="vms-ra-btn vms-ra-del" onClick={() => handleDeleteHouse(house)}>ลบ</button>
                     </div>
                   </div>
                 )
