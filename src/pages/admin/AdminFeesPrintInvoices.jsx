@@ -2,8 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react'
 import StyledSelect from '../../components/StyledSelect'
 import DropdownList from '../../components/DropdownList'
 import VmsPagination from '../../components/VmsPagination'
-import html2canvas from 'html2canvas'
-import { jsPDF } from 'jspdf'
+
 import Swal from 'sweetalert2'
 import { getSystemConfig } from '../../lib/systemConfig'
 import { buildPeriodLabelMapFromCycle, buildPeriodOptionsFromCycle, getPaymentCycleConfigByYear } from '../../lib/paymentCycles'
@@ -648,6 +647,10 @@ export default function AdminFeesPrintInvoices() {
       const title = printPreviewTitle || `ใบแจ้งหนี้ค่าส่วนกลาง ${filters.yearBE} ${resolvePeriodLabel(filters.period)}`
 
       if (mode === 'image' || mode === 'pdf') {
+        const [{ default: html2canvas }, { jsPDF }] = await Promise.all([
+          import('html2canvas'),
+          import('jspdf'),
+        ])
         const expectedSheets = effectiveFees.length * 2
         const html = await buildInvoiceHtml(effectiveFees, title, {
           autoPrint: false,

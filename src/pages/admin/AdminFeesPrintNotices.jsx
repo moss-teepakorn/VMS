@@ -2,8 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react'
 import StyledSelect from '../../components/StyledSelect'
 import DropdownList from '../../components/DropdownList'
 import VmsPagination from '../../components/VmsPagination'
-import html2canvas from 'html2canvas'
-import { jsPDF } from 'jspdf'
+
 import Swal from 'sweetalert2'
 import { getSystemConfig } from '../../lib/systemConfig'
 import { buildPeriodLabelMapFromCycle, buildPeriodOptionsFromCycle, getPaymentCycleConfigByYear } from '../../lib/paymentCycles'
@@ -714,6 +713,10 @@ export default function AdminFeesPrintNotices() {
           docType: 'notice',
           noticeNoMap,
         })
+        const [{ default: html2canvas }, { jsPDF }] = await Promise.all([
+          import('html2canvas'),
+          import('jspdf'),
+        ])
         const { iframe, sheets } = await renderInvoicesInIframe(html, expectedSheets)
 
         if (mode === 'image') {
