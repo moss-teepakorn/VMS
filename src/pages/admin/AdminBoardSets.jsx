@@ -23,10 +23,9 @@ const createMemberRow = ({ id = null, member_no, full_name = '', position, phone
   phone,
 })
 
-const emptyMembers = () =>
-  Array.from({ length: 7 }, (_, i) => createMemberRow({ member_no: i + 1 }))
+const emptyMembers = () => []
 
-const EMPTY_FORM = { set_no: '', is_active: false, note: '', members: emptyMembers() }
+const EMPTY_FORM = { set_no: '', is_active: false, note: '', members: [] }
 
 export default function AdminBoardSets() {
   const [sets, setSets] = useState([])
@@ -70,15 +69,12 @@ export default function AdminBoardSets() {
         position: m.position || defaultPositionForIndex(i),
         phone: m.phone || '',
       }))
-      : emptyMembers()
-    const padded = members.length < 7
-      ? [...members, ...emptyMembers().slice(members.length)]
-      : members
+      : []
     setForm({
       set_no: String(set.set_no || ''),
       is_active: !!set.is_active,
       note: set.note || '',
-      members: padded,
+      members,
     })
     setShowModal(true)
   }
