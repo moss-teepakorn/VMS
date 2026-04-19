@@ -1281,14 +1281,6 @@ export default function AdminPayments() {
             </div>
           </div>
         </div>
-        <VmsPagination
-          page={page}
-          totalPages={totalPages}
-          rowsPerPage={rowsPerPage}
-          setRowsPerPage={(v) => { setRowsPerPage(v); setPage(1) }}
-          totalRows={payments.length}
-          onPage={setPage}
-        />
         <div className="cb houses-table-card-body houses-main-body">
             <div className="houses-table-wrap houses-desktop-only payments-main-wrap">
               <table className="tw houses-table houses-main-table" style={{ width: '100%', tableLayout: 'fixed' }}>
@@ -1371,6 +1363,14 @@ export default function AdminPayments() {
             )})}
           </div>
         </div>
+        <VmsPagination
+          page={page}
+          totalPages={totalPages}
+          rowsPerPage={rowsPerPage}
+          setRowsPerPage={(v) => { setRowsPerPage(v); setPage(1) }}
+          totalRows={filtered.length}
+          onPage={setPage}
+        />
       </div>
 
       {showReceiveModal && (

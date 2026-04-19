@@ -171,22 +171,35 @@ const AdminVehicles = () => {
   const [rowsPerPage, setRowsPerPage] = useState('30')
   const [page, setPage] = useState(1)
 
+  // Client-side text filter — instant, no server round-trip
+  const filteredVehicles = useMemo(() => {
+    const q = searchTerm.trim().toLowerCase()
+    if (!q) return vehicles
+    return vehicles.filter((v) =>
+      (v.plate_no || '').toLowerCase().includes(q) ||
+      (v.owner_name || '').toLowerCase().includes(q) ||
+      (v.house_no || '').toLowerCase().includes(q) ||
+      (v.brand || '').toLowerCase().includes(q) ||
+      (v.color || '').toLowerCase().includes(q)
+    )
+  }, [vehicles, searchTerm])
+
   const pagedVehicles = useMemo(() => {
-    if (rowsPerPage === 'all') return vehicles
+    if (rowsPerPage === 'all') return filteredVehicles
     const limit = Math.max(1, Number(rowsPerPage || 30))
     const start = (page - 1) * limit
-    return vehicles.slice(start, start + limit)
-  }, [vehicles, rowsPerPage, page])
+    return filteredVehicles.slice(start, start + limit)
+  }, [filteredVehicles, rowsPerPage, page])
 
   const totalPages = useMemo(() => {
     if (rowsPerPage === 'all') return 1
     const limit = Math.max(1, Number(rowsPerPage || 30))
-    return Math.max(1, Math.ceil(vehicles.length / limit))
-  }, [vehicles.length, rowsPerPage])
+    return Math.max(1, Math.ceil(filteredVehicles.length / limit))
+  }, [filteredVehicles.length, rowsPerPage])
 
   useEffect(() => {
     setPage(1)
-  }, [rowsPerPage, vehicles.length])
+  }, [rowsPerPage, filteredVehicles.length])
 
   useEffect(() => {
     setPage((prev) => Math.min(prev, totalPages))
@@ -239,7 +252,6 @@ const AdminVehicles = () => {
       const [vehicleData, houseData] = await Promise.all([
         listVehicles({
           status: override.status ?? statusFilter,
-          search: override.search ?? searchTerm,
           soi: override.soi ?? soiFilter,
           vehicleType: override.vehicleType ?? vehicleTypeFilter,
         }),
@@ -254,6 +266,12 @@ const AdminVehicles = () => {
       setLoading(false)
     }
   }
+
+  // Auto-reload from server when dropdown filters change
+  useEffect(() => {
+    loadVehicles({ status: statusFilter, soi: soiFilter, vehicleType: vehicleTypeFilter })
+    setPage(1)
+  }, [statusFilter, soiFilter, vehicleTypeFilter])
 
   useEffect(() => {
     loadVehicles()
@@ -876,27 +894,17 @@ const AdminVehicles = () => {
               <input
                 type="text"
                 value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                onKeyDown={(e) => { if (e.key === 'Enter') loadVehicles({ status: statusFilter, search: searchTerm, soi: soiFilter, vehicleType: vehicleTypeFilter }) }}
+                onChange={(e) => { setSearchTerm(e.target.value); setPage(1) }}
                 placeholder="ค้นหา ทะเบียน / บ้าน / เจ้าของ..."
               />
             </div>
-            <button className="vms-sm-btn" onClick={() => loadVehicles({ status: statusFilter, search: searchTerm, soi: soiFilter, vehicleType: vehicleTypeFilter })}>ค้นหา</button>
           </div>
           <div className="vms-toolbar-right">
             <button className="vms-sm-btn vms-sm-btn--primary" onClick={openAddModal}>+ ลงทะเบียนรถ</button>
             <button className="vms-sm-btn" onClick={handleOpenImportVehicleExcel}>📥 Excel</button>
-            <button className="vms-sm-btn" onClick={() => loadVehicles({ status: statusFilter, search: searchTerm, soi: soiFilter, vehicleType: vehicleTypeFilter })}>🔄</button>
+            <button className="vms-sm-btn" onClick={() => loadVehicles()}>🔄</button>
           </div>
         </div>
-        <VmsPagination
-          page={page}
-          totalPages={totalPages}
-          rowsPerPage={rowsPerPage}
-          setRowsPerPage={(v) => { setRowsPerPage(v); setPage(1) }}
-          totalRows={vehicles.length}
-          onPage={setPage}
-        />
         <div className="cb houses-table-card-body houses-main-body vehicles-page-table-body">
           <div className="desktop-only">
             <div className="houses-main-wrap" style={{ overflowX: 'auto' }}>
@@ -983,6 +991,14 @@ const AdminVehicles = () => {
             })}
           </div>
         </div>
+        <VmsPagination
+          page={page}
+          totalPages={totalPages}
+          rowsPerPage={rowsPerPage}
+          setRowsPerPage={(v) => { setRowsPerPage(v); setPage(1) }}
+          totalRows={filteredVehicles.length}
+          onPage={setPage}
+        />
       </div>
 
       {showModal && (

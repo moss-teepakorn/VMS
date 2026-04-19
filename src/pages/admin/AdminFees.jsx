@@ -1747,14 +1747,6 @@ const AdminFees = () => {
             </div>
           </div>
         </div>
-        <VmsPagination
-          page={activePage}
-          totalPages={activeTotalPages}
-          rowsPerPage={activeRowsPerPage}
-          setRowsPerPage={(v) => { setActiveRowsPerPage(v); setActivePage(1) }}
-          totalRows={activeFees.length}
-          onPage={setActivePage}
-        />
         <div className="cb houses-table-card-body houses-main-body">
           <div className="desktop-only">
             <div style={{ overflowX: 'auto' }}>
@@ -1845,6 +1837,14 @@ const AdminFees = () => {
             })}
           </div>
         </div>
+        <VmsPagination
+          page={activePage}
+          totalPages={activeTotalPages}
+          rowsPerPage={activeRowsPerPage}
+          setRowsPerPage={(v) => { setActiveRowsPerPage(v); setActivePage(1) }}
+          totalRows={activeFees.length}
+          onPage={setActivePage}
+        />
       </div>
 
       <div className="card">
@@ -1866,14 +1866,6 @@ const AdminFees = () => {
             })}
           </div>
         </div>
-        <VmsPagination
-          page={archivePage}
-          totalPages={archiveTotalPages}
-          rowsPerPage={archiveRowsPerPage}
-          setRowsPerPage={(v) => { setArchiveRowsPerPage(v); setArchivePage(1) }}
-          totalRows={archiveFees.length}
-          onPage={setArchivePage}
-        />
         <div className="cb houses-table-card-body houses-main-body">
           <div className="desktop-only">
             <div style={{ overflowX: 'auto' }}>
@@ -1943,6 +1935,14 @@ const AdminFees = () => {
             )})}
           </div>
         </div>
+        <VmsPagination
+          page={archivePage}
+          totalPages={archiveTotalPages}
+          rowsPerPage={archiveRowsPerPage}
+          setRowsPerPage={(v) => { setArchiveRowsPerPage(v); setArchivePage(1) }}
+          totalRows={archiveFees.length}
+          onPage={setArchivePage}
+        />
       </div>
 
       {showPrintActionModal && (

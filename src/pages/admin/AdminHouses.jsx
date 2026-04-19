@@ -141,22 +141,34 @@ const AdminHouses = () => {
   const [rowsPerPage, setRowsPerPage] = useState('30')
   const [page, setPage] = useState(1)
 
+  // Client-side text filter — instant, no server round-trip
+  const filteredHouses = useMemo(() => {
+    const q = searchTerm.trim().toLowerCase()
+    if (!q) return houses
+    return houses.filter((h) =>
+      (h.house_no || '').toLowerCase().includes(q) ||
+      (h.owner_name || '').toLowerCase().includes(q) ||
+      (h.room_no || '').toLowerCase().includes(q) ||
+      (h.soi != null && String(h.soi).toLowerCase().includes(q))
+    )
+  }, [houses, searchTerm])
+
   const pagedHouses = useMemo(() => {
-    if (rowsPerPage === 'all') return houses
+    if (rowsPerPage === 'all') return filteredHouses
     const limit = Math.max(1, Number(rowsPerPage || 30))
     const start = (page - 1) * limit
-    return houses.slice(start, start + limit)
-  }, [houses, rowsPerPage, page])
+    return filteredHouses.slice(start, start + limit)
+  }, [filteredHouses, rowsPerPage, page])
 
   const totalPages = useMemo(() => {
     if (rowsPerPage === 'all') return 1
     const limit = Math.max(1, Number(rowsPerPage || 30))
-    return Math.max(1, Math.ceil(houses.length / limit))
-  }, [houses.length, rowsPerPage])
+    return Math.max(1, Math.ceil(filteredHouses.length / limit))
+  }, [filteredHouses.length, rowsPerPage])
 
   useEffect(() => {
     setPage(1)
-  }, [rowsPerPage, houses.length])
+  }, [rowsPerPage, filteredHouses.length])
 
   useEffect(() => {
     setPage((prev) => Math.min(prev, totalPages))
@@ -338,7 +350,6 @@ const AdminHouses = () => {
       const data = await listHouses({
         status: override.status ?? filterType,
         soi: override.soi ?? soiFilter,
-        search: override.search ?? searchTerm,
       })
       setHouses(data)
     } catch (error) {
@@ -349,12 +360,18 @@ const AdminHouses = () => {
     }
   }
 
+  // Auto-reload from server when dropdown filters change
+  useEffect(() => {
+    loadHouses({ status: filterType, soi: soiFilter })
+    setPage(1)
+  }, [filterType, soiFilter])
+
   useEffect(() => {
     const loadInitialData = async () => {
       try {
         setLoading(true)
         const [houseData, houseSetup] = await Promise.all([
-          listHouses({ status: filterType, soi: soiFilter, search: searchTerm }),
+          listHouses({ status: filterType, soi: soiFilter }),
           getHouseSetup(),
         ])
         setHouses(houseData)
@@ -581,12 +598,10 @@ const AdminHouses = () => {
               <input
                 type="text"
                 value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                onKeyDown={(e) => { if (e.key === 'Enter') loadHouses({ status: filterType, soi: soiFilter, search: searchTerm }) }}
+                onChange={(e) => { setSearchTerm(e.target.value); setPage(1) }}
                 placeholder="ค้นหาเลขที่บ้าน / เจ้าของ..."
               />
             </div>
-            <button className="vms-sm-btn" onClick={() => loadHouses({ status: filterType, soi: soiFilter, search: searchTerm })}>ค้นหา</button>
           </div>
           <div className="vms-toolbar-right">
             <button className="vms-sm-btn vms-sm-btn--primary" onClick={openAddModal}>+ เพิ่มบ้าน</button>
@@ -595,14 +610,6 @@ const AdminHouses = () => {
             <button className="vms-sm-btn" onClick={() => loadHouses()}>🔄</button>
           </div>
         </div>
-        <VmsPagination
-          page={page}
-          totalPages={totalPages}
-          rowsPerPage={rowsPerPage}
-          setRowsPerPage={(v) => { setRowsPerPage(v); setPage(1) }}
-          totalRows={houses.length}
-          onPage={setPage}
-        />
         <div className="cb houses-table-card-body houses-main-body">
           {/* Desktop Table */}
           <div className="houses-table-wrap houses-desktop-only houses-main-wrap">
@@ -693,6 +700,14 @@ const AdminHouses = () => {
             )}
           </div>
         </div>
+        <VmsPagination
+          page={page}
+          totalPages={totalPages}
+          rowsPerPage={rowsPerPage}
+          setRowsPerPage={(v) => { setRowsPerPage(v); setPage(1) }}
+          totalRows={filteredHouses.length}
+          onPage={setPage}
+        />
       </div>
 
       {showModal && (
