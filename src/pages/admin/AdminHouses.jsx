@@ -138,7 +138,7 @@ const AdminHouses = () => {
   const [editingHouse, setEditingHouse] = useState(null)
   const [form, setForm] = useState(EMPTY_FORM)
   const [setup, setSetup] = useState({ feeRatePerSqw: 85, villageName: 'The Greenfield' })
-  const [rowsPerPage, setRowsPerPage] = useState('30')
+  const [rowsPerPage, setRowsPerPage] = useState('25')
   const [page, setPage] = useState(1)
 
   // Client-side text filter — instant, no server round-trip

@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react'
 import StyledSelect from '../../components/StyledSelect'
+import DropdownList from '../../components/DropdownList'
+import VmsPagination from '../../components/VmsPagination'
 import Swal from 'sweetalert2'
 import {
   getUsers,
@@ -36,6 +38,8 @@ const AdminUsers = () => {
   const [soiFilter, setSoiFilter] = useState('all')
   const [houseFilter, setHouseFilter] = useState('all')
   const [selectedUserIds, setSelectedUserIds] = useState([])
+  const [page, setPage] = useState(1)
+  const [rowsPerPage, setRowsPerPage] = useState('25')
 
   const houseById = useMemo(() => {
     return new Map((houses || []).map((house) => [String(house.id), house]))
@@ -103,6 +107,25 @@ const AdminUsers = () => {
 
   const selectedIdSet = new Set(selectedUserIds)
   const allFilteredSelected = filteredUsers.length > 0 && filteredUsers.every((user) => selectedIdSet.has(String(user.id)))
+
+  const totalPages = rowsPerPage === 'all' ? 1 : Math.ceil(filteredUsers.length / Number(rowsPerPage))
+  const pagedUsers = rowsPerPage === 'all' ? filteredUsers : filteredUsers.slice((page - 1) * Number(rowsPerPage), page * Number(rowsPerPage))
+
+  const statusOptions = [
+    { value: 'all', label: 'ทุกสถานะ' },
+    { value: 'active', label: 'เฉพาะ Active' },
+    { value: 'inactive', label: 'เฉพาะ Inactive' },
+  ]
+  const soiFilterOptions = useMemo(() => [
+    { value: 'all', label: 'ทุกซอย' },
+    ...soiOptions.map((soi) => ({ value: soi, label: `ซอย ${soi}` })),
+  ], [soiOptions])
+  const houseFilterOptions = useMemo(() => [
+    { value: 'all', label: 'ทุกบ้านเลขที่' },
+    ...houses
+      .filter((house) => soiFilter === 'all' || String(house.soi || '') === String(soiFilter))
+      .map((house) => ({ value: String(house.id), label: `${house.house_no}${house.soi ? ` (ซอย ${house.soi})` : ''}` })),
+  ], [houses, soiFilter])
 
   const toggleUserSelection = (userId) => {
     const key = String(userId)
@@ -325,44 +348,22 @@ const AdminUsers = () => {
         </div>
       </div>
 
-      <div className="card report-filter-card admin-search-filter-card">
-        <div className="cb">
-          <div className="users-search-row">
-            <StyledSelect className="users-search-select" value={statusFilter} onChange={(e) => { setStatusFilter(e.target.value); setSelectedUserIds([]) }}>
-              <option value="all">ทุกสถานะ</option>
-              <option value="active">เฉพาะ Active</option>
-              <option value="inactive">เฉพาะ Inactive</option>
-            </StyledSelect>
-            <StyledSelect className="users-search-select" value={soiFilter} onChange={(e) => { setSoiFilter(e.target.value); setHouseFilter('all'); setSelectedUserIds([]) }}>
-              <option value="all">ทุกซอย</option>
-              {soiOptions.map((soi) => (
-                <option key={`soi-${soi}`} value={soi}>ซอย {soi}</option>
-              ))}
-            </StyledSelect>
-            <StyledSelect className="users-search-select" value={houseFilter} onChange={(e) => { setHouseFilter(e.target.value); setSelectedUserIds([]) }}>
-              <option value="all">ทุกบ้านเลขที่</option>
-              {houses
-                .filter((house) => soiFilter === 'all' || String(house.soi || '') === String(soiFilter))
-                .map((house) => (
-                  <option key={`house-${house.id}`} value={house.id}>{house.house_no}{house.soi ? ` (ซอย ${house.soi})` : ''}</option>
-                ))}
-            </StyledSelect>
-            <button className="btn btn-a btn-sm users-search-refresh" onClick={loadUsers}>🔄 รีเฟรช</button>
+      <div className="card houses-main-card">
+        <div className="vms-panel-toolbar">
+          <div className="vms-toolbar-left">
+            <DropdownList compact value={statusFilter} options={statusOptions} onChange={(v) => { setStatusFilter(v); setSelectedUserIds([]); setPage(1) }} placeholder="ทุกสถานะ" />
+            <DropdownList compact value={soiFilter} options={soiFilterOptions} onChange={(v) => { setSoiFilter(v); setHouseFilter('all'); setSelectedUserIds([]); setPage(1) }} placeholder="ทุกซอย" />
+            <DropdownList compact value={houseFilter} options={houseFilterOptions} onChange={(v) => { setHouseFilter(v); setSelectedUserIds([]); setPage(1) }} placeholder="ทุกบ้านเลขที่" />
           </div>
-        </div>
-      </div>
-
-      <div className="card">
-        <div className="ch houses-list-head houses-main-head">
-          <div className="ct">รายชื่อผู้ใช้งาน ({filteredUsers.length}/{users.length})</div>
-          <div className="houses-list-actions">
-            <button className="btn btn-sm" style={{ background: allFilteredSelected ? '#0f766e' : '#334155', color: '#fff', border: 'none' }} onClick={toggleSelectAllFiltered}>
-              {allFilteredSelected ? 'ยกเลิกเลือกทั้งหมด' : 'เลือกทั้งหมด'}
+          <div className="vms-toolbar-right">
+            <button className="vms-sm-btn" style={{ background: allFilteredSelected ? '#0f766e' : undefined, color: allFilteredSelected ? '#fff' : undefined }} onClick={toggleSelectAllFiltered}>
+              {allFilteredSelected ? 'ยกเลิกเลือก' : 'เลือกทั้งหมด'}
             </button>
-            <button className="btn btn-dg btn-sm" disabled={selectedUserIds.length === 0} onClick={handleDeleteSelectedUsers}>
+            <button className="vms-sm-btn" style={{ background: selectedUserIds.length > 0 ? '#dc2626' : undefined, color: selectedUserIds.length > 0 ? '#fff' : undefined }} disabled={selectedUserIds.length === 0} onClick={handleDeleteSelectedUsers}>
               ลบที่เลือก ({selectedUserIds.length})
             </button>
-            <button className="btn btn-p btn-sm" onClick={openAddModal}>+ เพิ่มผู้ใช้ใหม่</button>
+            <button className="vms-sm-btn vms-sm-btn--primary" onClick={openAddModal}>+ เพิ่มผู้ใช้ใหม่</button>
+            <button className="vms-sm-btn" onClick={loadUsers}>🔄</button>
           </div>
         </div>
         <div className="cb houses-table-card-body houses-main-body">
@@ -389,7 +390,7 @@ const AdminUsers = () => {
                     <tr><td colSpan="11" style={{ textAlign: 'center', color: 'var(--mu)', padding: '20px' }}>กำลังโหลด...</td></tr>
                   ) : filteredUsers.length === 0 ? (
                     <tr><td colSpan="11" style={{ textAlign: 'center', color: 'var(--mu)', padding: '20px' }}>ไม่มีข้อมูลผู้ใช้</td></tr>
-                  ) : filteredUsers.map((user) => (
+                  ) : pagedUsers.map((user) => (
                     <tr key={user.id}>
                       <td>
                         <input type="checkbox" checked={selectedIdSet.has(String(user.id))} onChange={() => toggleUserSelection(user.id)} />
@@ -403,10 +404,10 @@ const AdminUsers = () => {
                       <td>{user.is_active ? <span className="bd b-ok">active</span> : <span className="bd b-mu">inactive</span>}</td>
                       <td>{formatDateTime(user.created_at)}</td>
                       <td>{formatDateTime(user.last_login_at)}</td>
-                      <td><div className="td-acts">
-                        <button className="btn btn-xs btn-a" onClick={() => openEditModal(user)}>แก้ไข</button>
-                        <button className="btn btn-xs btn-o" onClick={() => handleQuickResetPassword(user)}>เปลี่ยนรหัสผ่าน</button>
-                        <button className="btn btn-xs btn-dg" onClick={() => handleDeleteUser(user)}>ลบ</button>
+                      <td><div className="vms-row-acts">
+                        <button className="vms-ra-btn vms-ra-edit" title="แก้ไข" onClick={() => openEditModal(user)}><svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor"><path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z"/></svg></button>
+                        <button className="vms-ra-btn vms-ra-view" title="เปลี่ยนรหัสผ่าน" onClick={() => handleQuickResetPassword(user)}><svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M18 8a6 6 0 01-7.743 5.743L10 14l-1 1-1 1H6v2H2v-4l4.257-4.257A6 6 0 1118 8zm-6-4a1 1 0 100 2 2 2 0 012 2 1 1 0 102 0 4 4 0 00-4-4z" clipRule="evenodd"/></svg></button>
+                        <button className="vms-ra-btn vms-ra-del" title="ลบ" onClick={() => handleDeleteUser(user)}><svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd"/></svg></button>
                       </div></td>
                     </tr>
                   ))}
@@ -435,14 +436,17 @@ const AdminUsers = () => {
                   <span><span className="mcard-label">สถานะ</span> {user.is_active ? <span className="bd b-ok">active</span> : <span className="bd b-mu">inactive</span>}</span>
                 </div>
                 <div className="mcard-actions">
-                  <button className="btn btn-xs btn-a" onClick={() => openEditModal(user)}>แก้ไข</button>
-                  <button className="btn btn-xs btn-o" onClick={() => handleQuickResetPassword(user)}>เปลี่ยนรหัสผ่าน</button>
-                  <button className="btn btn-xs btn-dg" onClick={() => handleDeleteUser(user)}>ลบ</button>
+                  <div className="vms-row-acts">
+                    <button className="vms-ra-btn vms-ra-edit" title="แก้ไข" onClick={() => openEditModal(user)}><svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor"><path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z"/></svg></button>
+                    <button className="vms-ra-btn vms-ra-view" title="เปลี่ยนรหัสผ่าน" onClick={() => handleQuickResetPassword(user)}><svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M18 8a6 6 0 01-7.743 5.743L10 14l-1 1-1 1H6v2H2v-4l4.257-4.257A6 6 0 1118 8zm-6-4a1 1 0 100 2 2 2 0 012 2 1 1 0 102 0 4 4 0 00-4-4z" clipRule="evenodd"/></svg></button>
+                    <button className="vms-ra-btn vms-ra-del" title="ลบ" onClick={() => handleDeleteUser(user)}><svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd"/></svg></button>
+                  </div>
                 </div>
               </div>
             ))}
           </div>
         </div>
+        <VmsPagination page={page} totalPages={totalPages} rowsPerPage={rowsPerPage} setRowsPerPage={(v) => { setRowsPerPage(v); setPage(1) }} totalRows={filteredUsers.length} onPage={setPage} />
       </div>
 
       {showModal && (

@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import StyledSelect from '../../components/StyledSelect'
+import DropdownList from '../../components/DropdownList'
+import VmsPagination from '../../components/VmsPagination'
 import Swal from 'sweetalert2'
 import {
   createTechnician,
@@ -54,6 +56,18 @@ const AdminTechnicians = () => {
   const [editingItem, setEditingItem] = useState(null)
   const [form, setForm] = useState(EMPTY_FORM)
   const [services, setServices] = useState([{ ...EMPTY_SERVICE }])
+  const [page, setPage] = useState(1)
+  const [rowsPerPage, setRowsPerPage] = useState('25')
+
+  const techStatusOptions = [
+    { value: 'all', label: 'ทุกสถานะ' },
+    { value: 'pending', label: 'รออนุมัติ' },
+    { value: 'approved', label: 'อนุมัติแล้ว' },
+    { value: 'suspended', label: 'ระงับ' },
+  ]
+
+  const totalPages = rowsPerPage === 'all' ? 1 : Math.ceil(technicians.length / Number(rowsPerPage))
+  const pagedTechnicians = rowsPerPage === 'all' ? technicians : technicians.slice((page - 1) * Number(rowsPerPage), page * Number(rowsPerPage))
 
   const loadData = async (override = {}) => {
     try {
@@ -193,33 +207,20 @@ const AdminTechnicians = () => {
         </div>
       </div>
 
-      <div className="card report-filter-card admin-search-filter-card">
-        <div className="cb" style={{ padding: 12 }}>
-        <div className="houses-filter-row">
-          <input
-            className="houses-filter-input"
-            type="text"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            placeholder="ค้นหา ชื่อ / เบอร์โทร / Line ID / ความเชี่ยวชาญ"
-          />
-          <StyledSelect value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
-            <option value="all">ทุกสถานะ</option>
-            <option value="pending">รออนุมัติ</option>
-            <option value="approved">อนุมัติแล้ว</option>
-            <option value="suspended">ระงับ</option>
-          </StyledSelect>
-          <button className="btn btn-a btn-sm houses-filter-btn" onClick={() => loadData({ status: statusFilter, search: searchTerm })}>ค้นหา</button>
-        </div>
-        </div>
-      </div>
-
-      <div className="card">
-        <div className="ch houses-list-head houses-main-head">
-          <div className="ct">รายชื่อช่างทั้งหมด ({technicians.length} คน)</div>
-          <div className="houses-list-actions">
-            <button className="btn btn-p btn-sm" onClick={openAddModal}>+ เพิ่มช่างใหม่</button>
-            <button className="btn btn-g btn-sm" onClick={() => loadData({ status: statusFilter, search: searchTerm })}>🔄 รีเฟรช</button>
+      <div className="card houses-main-card">
+        <div className="vms-panel-toolbar">
+          <div className="vms-toolbar-left">
+            <DropdownList compact value={statusFilter} options={techStatusOptions} onChange={(v) => { setStatusFilter(v); setPage(1); loadData({ status: v, search: searchTerm }) }} placeholder="ทุกสถานะ" />
+            <div className="vms-inline-search">
+              <svg width="12" height="12" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd"/>
+              </svg>
+              <input type="text" value={searchTerm} onChange={(e) => { setSearchTerm(e.target.value); setPage(1) }} placeholder="ค้นหา ชื่อ / เบอร์โทร / Line ID / ความเชี่ยวชาญ" />
+            </div>
+          </div>
+          <div className="vms-toolbar-right">
+            <button className="vms-sm-btn vms-sm-btn--primary" onClick={openAddModal}>+ เพิ่มช่างใหม่</button>
+            <button className="vms-sm-btn" onClick={() => loadData({ status: statusFilter, search: searchTerm })}>🔄</button>
           </div>
         </div>
         <div className="cb houses-table-card-body houses-main-body">
@@ -240,7 +241,7 @@ const AdminTechnicians = () => {
                     <tr><td colSpan="7" style={{ textAlign: 'center', color: 'var(--mu)', padding: '20px' }}>กำลังโหลด...</td></tr>
                   ) : technicians.length === 0 ? (
                     <tr><td colSpan="7" style={{ textAlign: 'center', color: 'var(--mu)', padding: '20px' }}>ไม่พบข้อมูล</td></tr>
-                  ) : technicians.map((item) => {
+                  ) : pagedTechnicians.map((item) => {
                     const badge = getStatusBadge(item.status)
                     const skills = (item.technician_services || []).map((s) => s.skill).filter(Boolean).join(', ')
                     return (
@@ -251,9 +252,9 @@ const AdminTechnicians = () => {
                         <td style={{ maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{skills || '-'}</td>
                         <td>{item.rating > 0 ? `${Number(item.rating).toFixed(1)} (${item.review_count})` : '-'}</td>
                         <td><span className={badge.className}>{badge.label}</span></td>
-                        <td><div className="td-acts">
-                          <button className="btn btn-xs btn-a" onClick={() => openEditModal(item)}>แก้ไข</button>
-                          <button className="btn btn-xs btn-dg" onClick={() => handleDelete(item)}>ลบ</button>
+                        <td><div className="vms-row-acts">
+                          <button className="vms-ra-btn vms-ra-edit" title="แก้ไข" onClick={() => openEditModal(item)}><svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor"><path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z"/></svg></button>
+                          <button className="vms-ra-btn vms-ra-del" title="ลบ" onClick={() => handleDelete(item)}><svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd"/></svg></button>
                         </div></td>
                       </tr>
                     )
@@ -284,14 +285,17 @@ const AdminTechnicians = () => {
                     <span><span className="mcard-label">คะแนน</span> {item.rating > 0 ? `${Number(item.rating).toFixed(1)} (${item.review_count})` : '-'}</span>
                   </div>
                   <div className="mcard-actions">
-                    <button className="btn btn-xs btn-a" onClick={() => openEditModal(item)}>แก้ไข</button>
-                    <button className="btn btn-xs btn-dg" onClick={() => handleDelete(item)}>ลบ</button>
+                    <div className="vms-row-acts">
+                      <button className="vms-ra-btn vms-ra-edit" title="แก้ไข" onClick={() => openEditModal(item)}><svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor"><path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z"/></svg></button>
+                      <button className="vms-ra-btn vms-ra-del" title="ลบ" onClick={() => handleDelete(item)}><svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd"/></svg></button>
+                    </div>
                   </div>
                 </div>
               )
             })}
           </div>
         </div>
+        <VmsPagination page={page} totalPages={totalPages} rowsPerPage={rowsPerPage} setRowsPerPage={(v) => { setRowsPerPage(v); setPage(1) }} totalRows={technicians.length} onPage={setPage} />
       </div>
 
       {showModal && (

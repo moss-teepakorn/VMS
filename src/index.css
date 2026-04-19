@@ -176,15 +176,17 @@
 
   .cars-ss-input:focus {
     outline: none;
-    border-color: #2bb673;
-    box-shadow: 0 0 0 3px rgba(43, 182, 115, .14);
+    border-color: #4f6ef7;
+    box-shadow: 0 0 0 3px rgba(79,110,247,.12);
   }
 
   .cars-ss--compact .cars-ss-input {
-    height: 34px;
-    min-height: 34px;
+    height: 32px;
+    min-height: 32px;
     font-size: 12px;
-    padding: 6px 10px 6px 10px;
+    padding: 0 26px 0 10px;
+    border: 1.5px solid #d1d5e0;
+    border-radius: 8px;
   }
 
   .cars-ss-menu {

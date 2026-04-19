@@ -143,9 +143,9 @@ const AdminFees = () => {
   const [feeSubmittedTotals, setFeeSubmittedTotals] = useState({})
   const [feeApprovedTotals, setFeeApprovedTotals] = useState({})
   const [feeApprovedItemTotals, setFeeApprovedItemTotals] = useState({})
-  const [activeRowsPerPage, setActiveRowsPerPage] = useState('30')
+  const [activeRowsPerPage, setActiveRowsPerPage] = useState('25')
   const [activePage, setActivePage] = useState(1)
-  const [archiveRowsPerPage, setArchiveRowsPerPage] = useState('30')
+  const [archiveRowsPerPage, setArchiveRowsPerPage] = useState('25')
   const [archivePage, setArchivePage] = useState(1)
   const [paymentForm, setPaymentForm] = useState({
     payment_method: 'transfer',

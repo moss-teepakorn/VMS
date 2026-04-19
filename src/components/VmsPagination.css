@@ -38,33 +38,33 @@
 
 .vms-pages {
   display: flex;
-  gap: 3px;
+  gap: 4px;
   align-items: center;
 }
 
 .vms-pg {
-  width: 30px;
-  height: 30px;
+  width: 32px;
+  height: 32px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border-radius: 6px;
-  border: 1px solid transparent;
+  border-radius: 50%;
+  border: 1px solid #d1d5e0;
   font-size: 12.5px;
   font-weight: 500;
   cursor: pointer;
   font-family: inherit;
-  color: var(--mu, #9aa3bb);
-  background: transparent;
+  color: var(--tx, #374151);
+  background: var(--card, #fff);
   transition: all .18s ease;
   line-height: 1;
   padding: 0;
 }
 
 .vms-pg:hover:not(.active):not(:disabled) {
-  background: var(--card, #fff);
-  border-color: var(--bo, #e4e9f5);
-  color: var(--tx, #1e2537);
+  background: #f0f4ff;
+  border-color: #4f6ef7;
+  color: #4f6ef7;
 }
 
 .vms-pg.active {
@@ -72,19 +72,20 @@
   color: #fff;
   border-color: #4f6ef7;
   font-weight: 700;
+  box-shadow: 0 2px 8px rgba(79,110,247,.35);
 }
 
 .vms-pg:disabled {
-  opacity: .35;
+  opacity: .4;
   cursor: default;
 }
 
 .vms-pg-ellipsis {
-  width: 30px;
+  width: 32px;
   text-align: center;
   color: var(--mu, #9aa3bb);
-  font-size: 12px;
-  line-height: 30px;
+  font-size: 13px;
+  line-height: 32px;
 }
 
 /* ════════════════════════════════
@@ -97,21 +98,66 @@
   justify-content: space-between;
   gap: 8px;
   border-bottom: 1px solid var(--bo, #e4e9f5);
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
 }
 
 .vms-toolbar-left {
   display: flex;
   align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
+  gap: 6px;
+  flex-wrap: nowrap;
+  min-width: 0;
+  flex: 1;
 }
 
 .vms-toolbar-right {
   display: flex;
   gap: 6px;
   align-items: center;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
+  flex-shrink: 0;
+}
+
+/* Compact dropdown (DropdownList compact) in toolbar */
+.vms-toolbar-left .cars-ss--compact {
+  width: auto !important;
+  min-width: 110px;
+  max-width: 160px;
+  flex-shrink: 0;
+}
+
+.vms-toolbar-left .cars-ss--compact .cars-ss-input {
+  width: 100%;
+  min-height: 32px;
+  height: 32px;
+  font-size: 12px;
+  padding: 0 26px 0 10px;
+  border: 1.5px solid #d1d5e0;
+  border-radius: 8px;
+  background: #fff;
+}
+
+.vms-toolbar-left .cars-ss--compact .cars-ss-input:focus {
+  border-color: #4f6ef7;
+  box-shadow: none;
+}
+
+.vms-toolbar-left .cars-ss::after {
+  font-size: 11px;
+  right: 8px;
+}
+
+@media (max-width: 768px) {
+  .vms-panel-toolbar {
+    flex-wrap: wrap;
+  }
+  .vms-toolbar-left {
+    flex-wrap: wrap;
+    flex: 1 1 100%;
+  }
+  .vms-toolbar-right {
+    flex-wrap: wrap;
+  }
 }
 
 /* Inline search */
@@ -235,8 +281,8 @@
 }
 
 .vms-ra-btn {
-  width: 28px;
-  height: 28px;
+  width: 30px;
+  height: 30px;
   padding: 0;
   border-radius: 7px;
   border: 1px solid transparent;
@@ -283,15 +329,15 @@
   background: #bbf7d0;
 }
 
-/* del = ghost → red on hover (trash/X) */
+/* del = light red tint always visible */
 .vms-ra-del {
-  background: transparent;
-  color: #d1d5db;
-  border-color: transparent;
+  background: #fff5f5;
+  color: #ef4444;
+  border-color: #fca5a5;
 }
 
 .vms-ra-del:hover {
   background: #fee2e2;
   color: #991b1b;
-  border-color: #fecaca;
+  border-color: #f87171;
 }

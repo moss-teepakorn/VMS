@@ -1,5 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react'
 import StyledSelect from '../../components/StyledSelect'
+import DropdownList from '../../components/DropdownList'
+import VmsPagination from '../../components/VmsPagination'
 import Swal from 'sweetalert2'
 import {
   listVehicleRequests,
@@ -64,6 +66,8 @@ const AdminRequests = () => {
   const [categoryFilter, setCategoryFilter] = useState('all')
   const [saving, setSaving] = useState(false)
   const [approvalDrafts, setApprovalDrafts] = useState({})
+  const [page, setPage] = useState(1)
+  const [rowsPerPage, setRowsPerPage] = useState('25')
 
   const loadRequests = useCallback(async (override = {}) => {
     try {
@@ -156,6 +160,17 @@ const AdminRequests = () => {
   const pendingAccountRegisterCount = accountRequests.filter((request) => request.status === 'pending' && request.request_type === 'register').length
   const pendingHouseProfileUpdateCount = accountRequests.filter((request) => request.status === 'pending' && request.request_type === 'house_profile_update').length
   const pendingAllCount = pendingVehicleAddCount + pendingVehicleEditCount + pendingAccountRegisterCount + pendingHouseProfileUpdateCount
+
+  const reqStatusOptions = [
+    { value: 'pending', label: 'รอดำเนินการ' },
+    { value: 'approved', label: 'อนุมัติแล้ว' },
+    { value: 'rejected', label: 'ปฏิเสธ' },
+    { value: 'cancelled', label: 'ยกเลิก' },
+    { value: 'all', label: 'ทั้งหมด' },
+  ]
+
+  const totalReqPages = rowsPerPage === 'all' ? 1 : Math.ceil(filteredRequests.length / Number(rowsPerPage))
+  const pagedRequests = rowsPerPage === 'all' ? filteredRequests : filteredRequests.slice((page - 1) * Number(rowsPerPage), page * Number(rowsPerPage))
 
   function getApprovalDraft(req) {
     return approvalDrafts[req.id] || {
@@ -346,17 +361,13 @@ const AdminRequests = () => {
         </div>
       </div>
 
-      <div className="card report-filter-card admin-search-filter-card">
-        <div className="cb">
-          <div className="houses-filter-row request-search-row">
-            <StyledSelect className="request-search-status" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
-              <option value="pending">รอดำเนินการ</option>
-              <option value="approved">อนุมัติแล้ว</option>
-              <option value="rejected">ปฏิเสธ</option>
-              <option value="cancelled">ยกเลิก</option>
-              <option value="all">ทั้งหมด</option>
-            </StyledSelect>
-            <button className="btn btn-a btn-sm request-search-refresh" onClick={() => loadRequests({ status: statusFilter })}>🔄 รีเฟรช</button>
+      <div className="card houses-main-card" style={{ marginBottom: 16 }}>
+        <div className="vms-panel-toolbar">
+          <div className="vms-toolbar-left">
+            <DropdownList compact value={statusFilter} options={reqStatusOptions} onChange={(v) => { setStatusFilter(v); setPage(1); loadRequests({ status: v }) }} placeholder="รอดำเนินการ" />
+          </div>
+          <div className="vms-toolbar-right">
+            <button className="vms-sm-btn" onClick={() => loadRequests({ status: statusFilter })}>🔄</button>
           </div>
         </div>
       </div>
@@ -414,7 +425,7 @@ const AdminRequests = () => {
             <div className="card"><div className="cb" style={{ textAlign: 'center', color: 'var(--mu)', padding: '24px 0' }}>ไม่พบคำขอ</div></div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-              {filteredRequests.map((req) => {
+              {pagedRequests.map((req) => {
                 const badge = getRequestStatusBadge(req.status)
                 const lockAfter = req.status === 'approved' || req.status === 'cancelled'
                 const isAccountRequest = req.__kind === 'account'
@@ -595,6 +606,7 @@ const AdminRequests = () => {
             </div>
           )}
         </div>
+        <VmsPagination page={page} totalPages={totalReqPages} rowsPerPage={rowsPerPage} setRowsPerPage={(v) => { setRowsPerPage(v); setPage(1) }} totalRows={filteredRequests.length} onPage={setPage} />
       </div>
     </div>
   )

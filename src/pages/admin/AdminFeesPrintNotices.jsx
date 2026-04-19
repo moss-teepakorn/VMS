@@ -100,7 +100,7 @@ export default function AdminFeesPrintNotices() {
   const [printPreviewHtml, setPrintPreviewHtml] = useState('')
   const [printPreviewTitle, setPrintPreviewTitle] = useState('เอกสารสำหรับพิมพ์')
   const [printPreviewNoticeNoMap, setPrintPreviewNoticeNoMap] = useState({})
-  const [rowsPerPage, setRowsPerPage] = useState('30')
+  const [rowsPerPage, setRowsPerPage] = useState('25')
   const [page, setPage] = useState(1)
   const [filters, setFilters] = useState({
     yearBE: String(new Date().getFullYear() + 543),
