@@ -59,3 +59,5 @@ src/
 ├── App.jsx                # Router + Auth provider
 └── main.jsx
 ```
+
+<!-- deployment-bump: rebuild to refresh Vercel cache -->
