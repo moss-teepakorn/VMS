@@ -78,6 +78,72 @@
   color: var(--tx);
 }
 
+/* Responsive: desktop table vs mobile cards */
+.payment-cycles-desktop-only {
+  display: block;
+}
+.payment-cycles-mobile-only {
+  display: none;
+}
+
+.pc-mcard {
+  background: var(--card);
+  border: 1.5px solid var(--bo);
+  border-radius: 12px;
+  padding: 14px 16px;
+  margin-bottom: 10px;
+}
+
+.pc-mcard-title {
+  font-weight: 700;
+  font-size: 13px;
+  color: var(--tx);
+  margin-bottom: 10px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--bo);
+}
+
+.pc-mcard-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.pc-mcard-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.pc-mcard-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--mu);
+  text-transform: uppercase;
+  letter-spacing: .04em;
+}
+
+.pc-mcard-penalty {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--bo);
+}
+
+@media (max-width: 900px) {
+  .payment-cycles-desktop-only {
+    display: none;
+  }
+  .payment-cycles-mobile-only {
+    display: block;
+  }
+}
+
+@media (max-width: 480px) {
+  .pc-mcard-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
 @media (max-width: 1024px) {
   .payment-cycles-filter-row {
     grid-template-columns: 1fr 1fr;

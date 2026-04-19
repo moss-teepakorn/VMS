@@ -350,7 +350,8 @@ export default function AdminPaymentCycles() {
         </div>
 
         <div className="cb payment-cycles-table-wrap">
-          <div style={{ overflowX: 'auto' }}>
+          {/* Desktop table */}
+          <div className="payment-cycles-desktop-only" style={{ overflowX: 'auto' }}>
             <table className="tw houses-table" style={{ minWidth: '1200px', width: '100%' }}>
               <thead>
                 <tr>
@@ -401,6 +402,56 @@ export default function AdminPaymentCycles() {
                 ))}
               </tbody>
             </table>
+          </div>
+          {/* Mobile card view */}
+          <div className="payment-cycles-mobile-only">
+            {periods.map((row, index) => (
+              <div key={`mcard-${row.seq_no}`} className="pc-mcard">
+                <div className="pc-mcard-title">{row.period_label}</div>
+                <div className="pc-mcard-grid">
+                  <div className="pc-mcard-field">
+                    <span className="pc-mcard-label">วันที่เริ่ม</span>
+                    <DateInputBE className="fi" value={row.start_date || ''} onChange={(event) => updatePeriod(index, 'start_date', event.target.value)} />
+                  </div>
+                  <div className="pc-mcard-field">
+                    <span className="pc-mcard-label">วันที่สิ้นสุด</span>
+                    <DateInputBE className="fi" value={row.end_date || ''} onChange={(event) => updatePeriod(index, 'end_date', event.target.value)} />
+                  </div>
+                  <div className="pc-mcard-field">
+                    <span className="pc-mcard-label">จ่ายภายใน</span>
+                    <DateInputBE className="fi" value={row.due_date || ''} onChange={(event) => updatePeriod(index, 'due_date', event.target.value)} />
+                  </div>
+                  <div className="pc-mcard-field">
+                    <span className="pc-mcard-label">ปีชำระ</span>
+                    <StyledSelect value={String(row.due_year_offset || 0)} onChange={(event) => updatePeriod(index, 'due_year_offset', Number(event.target.value))}>
+                      <option value="0">ภายในปี</option>
+                      <option value="1">ปีถัดไป</option>
+                    </StyledSelect>
+                  </div>
+                </div>
+                <div className="pc-mcard-penalty">
+                  <label className="payment-cycles-checkbox">
+                    <input type="checkbox" checked={Boolean(row.enable_penalty)} onChange={(event) => togglePenalty(index, event.target.checked)} />
+                    <span>คิดค่าปรับ</span>
+                  </label>
+                  {row.enable_penalty && (
+                    <div className="pc-mcard-grid" style={{ marginTop: 8 }}>
+                      <div className="pc-mcard-field">
+                        <span className="pc-mcard-label">เริ่มคิดค่าปรับ</span>
+                        <DateInputBE className="fi" value={row.penalty_start_date || ''} onChange={(event) => updatePeriod(index, 'penalty_start_date', event.target.value)} />
+                      </div>
+                      <div className="pc-mcard-field">
+                        <span className="pc-mcard-label">ปีค่าปรับ</span>
+                        <StyledSelect value={String(row.penalty_year_offset || 0)} onChange={(event) => updatePeriod(index, 'penalty_year_offset', Number(event.target.value))}>
+                          <option value="0">ภายในปี</option>
+                          <option value="1">ปีถัดไป</option>
+                        </StyledSelect>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       </div>

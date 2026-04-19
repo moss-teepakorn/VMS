@@ -3081,7 +3081,8 @@ export default function ResidentLayout() {
               </div>
 
               <div className="sl">🧾 ใบแจ้งหนี้ <span style={{ fontWeight: 400, marginLeft: 6 }}>{fees.length} รายการ</span></div>
-              <div style={{ overflowX: 'auto', border: '1px solid var(--bo)', borderRadius: 10, marginBottom: 4, background: 'var(--card)' }}>
+              {/* Desktop table */}
+              <div className="fee-table-desktop" style={{ overflowX: 'auto', border: '1px solid var(--bo)', borderRadius: 10, marginBottom: 4, background: 'var(--card)' }}>
                 <table className="tw" style={{ width: '100%', minWidth: 580, borderCollapse: 'collapse' }}>
                   <thead>
                     <tr>
@@ -3140,9 +3141,57 @@ export default function ResidentLayout() {
                   </tbody>
                 </table>
               </div>
+              {/* Mobile cards — fee invoices */}
+              <div className="fee-mobile-cards">
+                {feeLoading ? (
+                  <div className="fee-mobile-empty">กำลังโหลด...</div>
+                ) : fees.length === 0 ? (
+                  <div className="fee-mobile-empty">ยังไม่มีใบแจ้งหนี้</div>
+                ) : fees.map((fee) => {
+                  const badge = getFeeStatusBadge(fee.status)
+                  const canSubmitSlip = fee.status === 'unpaid' || fee.status === 'overdue'
+                  const outstandingItems = getOutstandingItemsForFee(fee)
+                  const outstandingTotal = outstandingItems.reduce((sum, item) => sum + Number(item.amount || 0), 0)
+                  return (
+                    <div key={`mf-${fee.id}`} className={`fee-mcard${fee.status === 'overdue' ? ' fee-mcard--overdue' : fee.status === 'paid' ? ' fee-mcard--paid' : ''}`}>
+                      <div className="fee-mcard-top">
+                        <div>
+                          <div className="fee-mcard-period">{formatFeePeriodLabel(fee)}</div>
+                          <div className="fee-mcard-sub">ครบกำหนด {formatDate(fee.due_date)}</div>
+                        </div>
+                        <span className={badge.className}>{badge.label}</span>
+                      </div>
+                      <div className="fee-mcard-amounts">
+                        <div className="fee-mcard-amt-item">
+                          <span className="fee-mcard-amt-label">ยอดรวม</span>
+                          <span className="fee-mcard-amt-value">฿{formatMoney(fee.total_amount)}</span>
+                        </div>
+                        {outstandingTotal > 0 && (
+                          <div className="fee-mcard-amt-item">
+                            <span className="fee-mcard-amt-label">ค้างชำระ</span>
+                            <span className="fee-mcard-amt-value fee-mcard-amt-overdue">฿{formatMoney(outstandingTotal)}</span>
+                          </div>
+                        )}
+                      </div>
+                      {outstandingItems.length > 0 && (
+                        <div className="fee-mcard-outstanding">
+                          {outstandingItems.map((item) => (
+                            <span key={item.key} className="fee-mcard-tag">{item.label} ฿{formatMoney(item.amount)}</span>
+                          ))}
+                        </div>
+                      )}
+                      <div className="fee-mcard-actions">
+                        {canSubmitSlip && <button className="btn btn-xs btn-a" onClick={() => openPaymentModal(fee)}>💳 ส่งหลักฐาน</button>}
+                        <button className="btn btn-xs btn-g" onClick={() => handlePrintInvoice(fee)}>🖨 ใบแจ้งหนี้</button>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
 
               <div className="sl" style={{ marginTop: 20 }}>📋 ประวัติการชำระ <span style={{ fontWeight: 400, marginLeft: 6 }}>{payments.length} รายการ</span></div>
-              <div style={{ overflowX: 'auto', border: '1px solid var(--bo)', borderRadius: 10, background: 'var(--card)' }}>
+              {/* Desktop table */}
+              <div className="fee-table-desktop" style={{ overflowX: 'auto', border: '1px solid var(--bo)', borderRadius: 10, background: 'var(--card)' }}>
                 <table className="tw" style={{ width: '100%', minWidth: 560, borderCollapse: 'collapse' }}>
                   <thead>
                     <tr>
@@ -3232,6 +3281,59 @@ export default function ResidentLayout() {
                     })}
                   </tbody>
                 </table>
+              </div>
+              {/* Mobile cards — payment history */}
+              <div className="fee-mobile-cards">
+                {feeLoading ? (
+                  <div className="fee-mobile-empty">กำลังโหลด...</div>
+                ) : payments.length === 0 ? (
+                  <div className="fee-mobile-empty">ยังไม่มีประวัติการชำระ</div>
+                ) : payments.map((row) => {
+                  const badge = getPaymentStatusBadge(row)
+                  const breakdown = getPaymentBreakdown(row)
+                  const outstandingBreakdown = getPaymentOutstandingBreakdown(row)
+                  const amount = getPaymentAmount(row)
+                  const rejectedReason = getRejectedReason(row.note)
+                  const hasDetails = breakdown.length > 0 || outstandingBreakdown.length > 0 || row.slip_url || rejectedReason
+                  const canPrintReceipt = !!row.verified_at
+                  const isExpanded = expandedPaymentIds.has(row.id)
+                  return (
+                    <div key={`mp-${row.id}`} className={`fee-mcard${rejectedReason ? ' fee-mcard--overdue' : ''}`} onClick={() => hasDetails && togglePaymentExpand(row.id)} style={{ cursor: hasDetails ? 'pointer' : 'default' }}>
+                      <div className="fee-mcard-top">
+                        <div>
+                          <div className="fee-mcard-period">{formatDate(row.paid_at)}</div>
+                          <div className="fee-mcard-sub">{row.fees ? `งวด ${formatFeePeriodLabel(row.fees)}` : '-'} · {formatMethod(row.payment_method)}</div>
+                        </div>
+                        <span className={badge.className}>{badge.label}</span>
+                      </div>
+                      <div className="fee-mcard-amounts">
+                        <div className="fee-mcard-amt-item">
+                          <span className="fee-mcard-amt-label">จำนวนเงิน</span>
+                          <span className="fee-mcard-amt-value" style={{ color: 'var(--pr)', fontSize: 16 }}>฿{formatMoney(amount)}</span>
+                        </div>
+                        {hasDetails && <span style={{ fontSize: 13, color: 'var(--mu)', alignSelf: 'flex-end' }}>{isExpanded ? '▲' : '▼'}</span>}
+                      </div>
+                      {isExpanded && hasDetails && (
+                        <div className="fee-mcard-detail" onClick={(e) => e.stopPropagation()}>
+                          {breakdown.length > 0 && (
+                            <div className="fee-breakdown-list" style={{ marginBottom: 6 }}>
+                              {breakdown.map((item, index) => (
+                                <div key={`${row.id}-m-${index}`} className="fee-breakdown-row">
+                                  <span>{item.label}</span><strong>฿{formatMoney(item.amount)}</strong>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                          {rejectedReason && <div className="fee-payment-note-row fee-payment-note-row--error" style={{ marginBottom: 6 }}>เหตุผลตีกลับ: {rejectedReason}</div>}
+                          {row.slip_url && <button type="button" className="btn btn-xs btn-o" onClick={() => openResidentAttachment(row.slip_url, 'หลักฐานการชำระเงิน')}>ดูหลักฐานการชำระ</button>}
+                        </div>
+                      )}
+                      <div className="fee-mcard-actions" onClick={(e) => e.stopPropagation()}>
+                        {canPrintReceipt && <button className="btn btn-xs btn-g" onClick={() => handlePrintReceipt(row)}>🖨 ใบเสร็จ</button>}
+                      </div>
+                    </div>
+                  )
+                })}
               </div>
             </>
           )}
