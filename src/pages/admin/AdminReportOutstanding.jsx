@@ -144,7 +144,7 @@ export default function AdminReportOutstanding() {
               columns={columns}
               rows={rows}
               reportTitle="รายงานค้างชำระ"
-              filter={{ year, search }}
+              filter={{ year }}
               sumAmount={sumAmount}
               logoUrl={setup.village_logo_url || '/assets/village-logo.svg'}
               footerLabel="ยอดค้างรวม"

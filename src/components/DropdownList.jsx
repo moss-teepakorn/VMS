@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 
 export default function DropdownList({
   value,
@@ -14,8 +15,10 @@ export default function DropdownList({
   ...rest
 }) {
   const rootRef = useRef(null)
+  const inputRef = useRef(null)
   const [open, setOpen] = useState(false)
   const [keyword, setKeyword] = useState('')
+  const [menuStyle, setMenuStyle] = useState({})
 
   const optionsList = useMemo(() => {
     if (!Array.isArray(options)) return []
@@ -34,11 +37,37 @@ export default function DropdownList({
     if (!open) setKeyword('')
   }, [open])
 
+  // Compute fixed position from input's bounding rect
+  useLayoutEffect(() => {
+    if (!open || !inputRef.current) return
+    const updatePosition = () => {
+      const rect = inputRef.current?.getBoundingClientRect()
+      if (!rect) return
+      setMenuStyle({
+        position: 'fixed',
+        top: rect.bottom + 4,
+        left: rect.left,
+        width: rect.width,
+        zIndex: 99999,
+      })
+    }
+    updatePosition()
+    window.addEventListener('scroll', updatePosition, true)
+    window.addEventListener('resize', updatePosition)
+    return () => {
+      window.removeEventListener('scroll', updatePosition, true)
+      window.removeEventListener('resize', updatePosition)
+    }
+  }, [open])
+
   useEffect(() => {
     if (!open) return undefined
 
     const handleOutsideClick = (event) => {
-      if (!rootRef.current?.contains(event.target)) {
+      if (
+        !rootRef.current?.contains(event.target) &&
+        !event.target.closest('.cars-ss-portal-menu')
+      ) {
         setOpen(false)
       }
     }
@@ -53,6 +82,39 @@ export default function DropdownList({
     return optionsList.filter((option) => String(option.label || '').toLowerCase().includes(needle))
   }, [optionsList, keyword])
 
+  const menu = open && !disabled
+    ? createPortal(
+      <div className="cars-ss-menu cars-ss-portal-menu" style={menuStyle}>
+        {filtered.length === 0 ? (
+          <div className="cars-ss-empty">ไม่พบข้อมูล</div>
+        ) : (
+          filtered.map((option) => {
+            const isSelected = String(value) === String(option.value)
+            return (
+              <button
+                key={`${option.value}`}
+                type="button"
+                className={`cars-ss-item ${isSelected ? 'is-selected' : ''}`}
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => {
+                  if (option.disabled) return
+                  onChange(option.value)
+                  setKeyword(option.label)
+                  setOpen(false)
+                }}
+                disabled={option.disabled}
+              >
+                <span>{option.label}</span>
+                <span className="cars-ss-item-arrow">›</span>
+              </button>
+            )
+          })
+        )}
+      </div>,
+      document.body
+    )
+    : null
+
   return (
     <div
       ref={rootRef}
@@ -63,6 +125,7 @@ export default function DropdownList({
       {...rest}
     >
       <input
+        ref={inputRef}
         name={name}
         className="cars-ss-input"
         value={disabled ? selected?.label || '' : open ? keyword : selected?.label || ''}
@@ -76,38 +139,15 @@ export default function DropdownList({
           setKeyword('')
           setOpen(true)
         }}
+        onBlur={() => {
+          // small delay so portal click can fire first
+          setTimeout(() => setOpen(false), 150)
+        }}
         placeholder={placeholder}
         disabled={disabled}
         readOnly={disabled}
       />
-      {open && !disabled && (
-        <div className="cars-ss-menu">
-          {filtered.length === 0 ? (
-            <div className="cars-ss-empty">ไม่พบข้อมูล</div>
-          ) : (
-            filtered.map((option) => {
-              const isSelected = String(value) === String(option.value)
-              return (
-                <button
-                  key={`${option.value}`}
-                  type="button"
-                  className={`cars-ss-item ${isSelected ? 'is-selected' : ''}`}
-                  onClick={() => {
-                    if (option.disabled) return
-                    onChange(option.value)
-                    setKeyword(option.label)
-                    setOpen(false)
-                  }}
-                  disabled={option.disabled}
-                >
-                  <span>{option.label}</span>
-                  <span className="cars-ss-item-arrow">›</span>
-                </button>
-              )
-            })
-          )}
-        </div>
-      )}
+      {menu}
     </div>
   )
 }
