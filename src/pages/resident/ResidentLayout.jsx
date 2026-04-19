@@ -337,6 +337,7 @@ export default function ResidentLayout() {
   const [setupOpen, setSetupOpen] = useState(false)
   const [houseNo, setHouseNo] = useState('-')
   const [setup, setSetup] = useState({ villageName: 'The Greenfield', appLineMain: 'Village Management', version: 'v12.3' })
+  const currentResidentYear = String(new Date().getFullYear())
 
   const [fees, setFees] = useState([])
   const [allFees, setAllFees] = useState([])
@@ -366,8 +367,12 @@ export default function ResidentLayout() {
   const [attachments, setAttachments] = useState([])
 
   const [announcements, setAnnouncements] = useState([])
+  const [newsSearch, setNewsSearch] = useState('')
+  const [newsYearFilter, setNewsYearFilter] = useState(currentResidentYear)
   const [ruleDocs, setRuleDocs] = useState([])
   const [workReports, setWorkReports] = useState([])
+  const [workSearch, setWorkSearch] = useState('')
+  const [workYearFilter, setWorkYearFilter] = useState(currentResidentYear)
   const [technicians, setTechnicians] = useState([])
   const [marketplace, setMarketplace] = useState([])
   const [vehicles, setVehicles] = useState([])
@@ -881,6 +886,10 @@ export default function ResidentLayout() {
 
   function formatMoney(value) {
     return Number(value || 0).toLocaleString('th-TH')
+  }
+
+  function formatMoney2(value) {
+    return Number(value || 0).toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
   }
 
   function formatMethod(method) {
@@ -1518,6 +1527,47 @@ export default function ResidentLayout() {
   const notifyTotalCount = notifyViolationCount + notifyPaymentCount
   const notifyNavCount = violations.filter((row) => ['new', 'pending', 'in_progress', 'not_fixed'].includes(row.status)).length
     + payments.filter((row) => row.verified_at && !getRejectedReason(row.note)).length
+  const getEntryYear = (value) => {
+    const date = new Date(value || 0)
+    if (Number.isNaN(date.getTime())) return ''
+    return String(date.getFullYear())
+  }
+  const newsYearOptions = Array.from(
+    new Set([
+      ...announcements.map((ann) => getEntryYear(ann.announcement_date || ann.created_at)).filter(Boolean),
+      currentResidentYear,
+    ]),
+  ).sort((a, b) => Number(b) - Number(a))
+  const filteredAnnouncements = announcements.filter((ann) => {
+    const annYear = getEntryYear(ann.announcement_date || ann.created_at)
+    if (newsYearFilter !== 'all' && annYear !== newsYearFilter) return false
+    const kw = String(newsSearch || '').trim().toLowerCase()
+    if (!kw) return true
+    const haystack = [ann.title, ann.content, ann.type, annYear, String(toBE(annYear) || '')].join(' ').toLowerCase()
+    return haystack.includes(kw)
+  })
+  const workYearOptions = Array.from(
+    new Set([
+      ...workReports.map((rp) => String(rp.year || '')).filter(Boolean),
+      currentResidentYear,
+    ]),
+  ).sort((a, b) => Number(b) - Number(a))
+  const filteredWorkReports = workReports.filter((rp) => {
+    const reportYear = String(rp.year || '')
+    if (workYearFilter !== 'all' && reportYear !== workYearFilter) return false
+    const kw = String(workSearch || '').trim().toLowerCase()
+    if (!kw) return true
+    const haystack = [
+      rp.summary,
+      rp.detail,
+      rp.category,
+      getWorkReportCategoryLabel(rp.category),
+      String(rp.month || ''),
+      reportYear,
+      String(toBE(reportYear) || ''),
+    ].join(' ').toLowerCase()
+    return haystack.includes(kw)
+  })
   const latestAnnouncements = announcements.slice(0, 3)
   const houseAreaSqw = Number(houseDetail?.area_sqw ?? houseDetail?.area ?? 0)
   const houseAnnualFee = Number(houseDetail?.annual_fee || (houseAreaSqw > 0 ? houseAreaSqw * 12 * Number(houseDetail?.fee_rate || 0) : 0))
@@ -2810,8 +2860,11 @@ export default function ResidentLayout() {
             {activeSection === 'market' && (
               <button className="vms-sm-btn vms-sm-btn--primary" onClick={openMarketPostModal}>+ โพสต์ขายของ</button>
             )}
+            {activeSection === 'tech' && (
+              <button className="vms-sm-btn vms-sm-btn--primary" type="button" onClick={openAddTechModal}>+ ขอลงทะเบียนช่าง</button>
+            )}
             {activeSection === 'fees' && overdueAmount > 0 && (
-              <button className="vms-sm-btn vms-sm-btn--warning" onClick={() => { const f = unresolvedFees[0]; if (f) openPaymentModal(f) }}>💳 แจ้งชำระ ฿{formatMoney(overdueAmount)}</button>
+              <button className="vms-sm-btn vms-sm-btn--warning" onClick={() => { const f = unresolvedFees[0]; if (f) openPaymentModal(f) }}>💳 แจ้งชำระ ฿{formatMoney2(overdueAmount)}</button>
             )}
           </div>
           <div className="tb-right">
@@ -3020,7 +3073,7 @@ export default function ResidentLayout() {
                 </div>
               )}
               <div className="g2">
-                <div className="card">
+                <div className="card card-light-head">
                   <div className="ch"><div className="ch-ico">🏠</div><div className="ct">ข้อมูลที่อยู่</div></div>
                   <div className="cb">
                     {houseDetailLoaded ? (
@@ -3057,7 +3110,7 @@ export default function ResidentLayout() {
                     )}
                   </div>
                 </div>
-                <div className="card">
+                <div className="card card-light-head">
                   <div className="ch"><div className="ch-ico">🚗</div><div className="ct">รถที่ลงทะเบียน</div></div>
                   <div className="cb">
                     {!vehiclesLoaded ? (
@@ -3089,7 +3142,7 @@ export default function ResidentLayout() {
 
               {/* Pending requests block */}
               {vehicleRequestsLoaded && vehicleRequests.filter((r) => r.status === 'pending' || r.status === 'rejected').length > 0 && (
-                <div className="card" style={{ marginBottom: 14 }}>
+                <div className="card card-light-head" style={{ marginBottom: 14 }}>
                   <div className="ch"><div className="ch-ico">📋</div><div className="ct">คำขอที่รอดำเนินการ ({vehicleRequests.filter((r) => r.status === 'pending' || r.status === 'rejected').length} รายการ)</div></div>
                   <div className="cb" style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                     {vehicleRequests.filter((r) => r.status === 'pending' || r.status === 'rejected').map((req) => (
@@ -3122,7 +3175,7 @@ export default function ResidentLayout() {
                 </div>
               )}
 
-              <div className="card" style={{ marginBottom: 14 }}>
+              <div className="card card-light-head" style={{ marginBottom: 14 }}>
                 <div className="ch"><div className="ch-ico">🚗</div><div className="ct">รถที่ลงทะเบียน ({houseVehicles.length} คัน)</div></div>
                 <div className="cb">
                   {!vehiclesLoaded ? (
@@ -3243,7 +3296,7 @@ export default function ResidentLayout() {
                             <td><span className={badge.className}>{badge.label}</span></td>
                             <td>
                               <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap' }}>
-                                {canSubmitSlip && <button className="btn btn-xs btn-a" onClick={() => openPaymentModal(fee)}>💳 แจ้งชำระ ฿{formatMoney(outstandingTotal > 0 ? outstandingTotal : Number(fee.total_amount || 0))}</button>}
+                                {canSubmitSlip && <button className="btn btn-xs btn-a" onClick={() => openPaymentModal(fee)}>💳 แจ้งชำระ ฿{formatMoney2(outstandingTotal > 0 ? outstandingTotal : Number(fee.total_amount || 0))}</button>}
                                 <button className="btn btn-xs btn-g" onClick={() => handlePrintInvoice(fee)}>🖨 ใบแจ้งหนี้</button>
                               </div>
                             </td>
@@ -3308,7 +3361,7 @@ export default function ResidentLayout() {
                         </div>
                       )}
                       <div className="fee-mcard-actions">
-                        {canSubmitSlip && <button className="btn btn-xs btn-a" onClick={() => openPaymentModal(fee)}>💳 แจ้งชำระ ฿{formatMoney(outstandingTotal > 0 ? outstandingTotal : Number(fee.total_amount || 0))}</button>}
+                        {canSubmitSlip && <button className="btn btn-xs btn-a" onClick={() => openPaymentModal(fee)}>💳 แจ้งชำระ ฿{formatMoney2(outstandingTotal > 0 ? outstandingTotal : Number(fee.total_amount || 0))}</button>}
                         <button className="btn btn-xs btn-g" onClick={() => handlePrintInvoice(fee)}>🖨 ใบแจ้งหนี้</button>
                       </div>
                     </div>
@@ -3648,7 +3701,7 @@ export default function ResidentLayout() {
                 </div>
               </div>
 
-              <div className="card notif-payment-card" style={{ marginBottom: 12 }}>
+              <div className="card card-light-head notif-payment-card" style={{ marginBottom: 12 }}>
                 <div className="ch"><div className="ct notif-card-title">การอนุมัติการชำระเงิน ({filteredNotifyApprovedPayments.length} รายการ)</div></div>
                 <div className="cb" style={{ padding: 12 }}>
                   {feeLoading ? (
@@ -3681,7 +3734,7 @@ export default function ResidentLayout() {
                 </div>
               </div>
 
-              <div className="card notif-list-card">
+              <div className="card card-light-head notif-list-card">
                 <div className="ch"><div className="ct notif-card-title">รายการแจ้งเตือน ({filteredNotifViolations.length} รายการ)</div></div>
                 <div className="cb notif-table-wrap" style={{ padding: 0 }}>
                   <div className="tw notif-table-scroll">
@@ -3782,12 +3835,28 @@ export default function ResidentLayout() {
 
           {activeSection === 'news' && (
             <>
-              <div className="card">
-                <div className="ch"><div className="ch-ico">📢</div><div className="ct">ประกาศทั้งหมด ({announcements.length} รายการ)</div></div>
+              <div style={{ display: 'flex', gap: 8, marginBottom: 12, alignItems: 'center', flexWrap: 'wrap' }}>
+                <div className="tb-universal-wrap fee-universal-search" style={{ marginBottom: 0 }}>
+                  <span className="tb-universal-icon">🔍</span>
+                  <input
+                    className="tb-universal-input"
+                    type="text"
+                    value={newsSearch}
+                    onChange={(e) => setNewsSearch(e.target.value)}
+                    placeholder="ค้นหาประกาศ"
+                  />
+                </div>
+                <StyledSelect className="fee-toolbar-select" value={newsYearFilter} onChange={(e) => setNewsYearFilter(e.target.value)}>
+                  <option value="all">ทุกปี</option>
+                  {newsYearOptions.map((year) => <option key={year} value={year}>{toBE(year)}</option>)}
+                </StyledSelect>
+              </div>
+              <div className="card card-light-head">
+                <div className="ch"><div className="ch-ico">📢</div><div className="ct">ประกาศทั้งหมด ({filteredAnnouncements.length} รายการ)</div></div>
                 <div className="cb" style={{ padding: 14 }}>
-                  {announcements.length === 0 ? (
+                  {filteredAnnouncements.length === 0 ? (
                     <div style={{ color: 'var(--mu)', textAlign: 'center', padding: '16px 0' }}>ยังไม่มีประกาศ</div>
-                  ) : announcements.map((ann) => (
+                  ) : filteredAnnouncements.map((ann) => (
                     (() => {
                       const attachments = buildAttachmentItems({ imageUrls: [ann.image_url], text: ann.content, maxItems: 4 })
                       return (
@@ -3822,12 +3891,28 @@ export default function ResidentLayout() {
 
           {activeSection === 'work' && (
             <>
-              <div className="card">
-                <div className="ch"><div className="ch-ico">🏆</div><div className="ct">รายงานทั้งหมด ({workReports.length} รายการ)</div></div>
+              <div style={{ display: 'flex', gap: 8, marginBottom: 12, alignItems: 'center', flexWrap: 'wrap' }}>
+                <div className="tb-universal-wrap fee-universal-search" style={{ marginBottom: 0 }}>
+                  <span className="tb-universal-icon">🔍</span>
+                  <input
+                    className="tb-universal-input"
+                    type="text"
+                    value={workSearch}
+                    onChange={(e) => setWorkSearch(e.target.value)}
+                    placeholder="ค้นหารายงาน"
+                  />
+                </div>
+                <StyledSelect className="fee-toolbar-select" value={workYearFilter} onChange={(e) => setWorkYearFilter(e.target.value)}>
+                  <option value="all">ทุกปี</option>
+                  {workYearOptions.map((year) => <option key={year} value={year}>{toBE(year)}</option>)}
+                </StyledSelect>
+              </div>
+              <div className="card card-light-head">
+                <div className="ch"><div className="ch-ico">🏆</div><div className="ct">รายงานทั้งหมด ({filteredWorkReports.length} รายการ)</div></div>
                 <div className="cb" style={{ padding: 14 }}>
-                  {workReports.length === 0 ? (
+                  {filteredWorkReports.length === 0 ? (
                     <div style={{ color: 'var(--mu)', textAlign: 'center', padding: '16px 0' }}>ยังไม่มีรายงาน</div>
-                  ) : workReports.map((rp) => {
+                  ) : filteredWorkReports.map((rp) => {
                     const MONTH_TH = ['', 'ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.']
                     const monthName = MONTH_TH[rp.month] || rp.month
                     const detailText = String(rp.detail || '').trim()
@@ -3853,7 +3938,6 @@ export default function ResidentLayout() {
             <>
               <div style={{ display: 'flex', gap: 7, marginBottom: 14, flexWrap: 'wrap', alignItems: 'center' }}>
                 <input className="fi" style={{ width: 200, maxWidth: '100%', minWidth: 0, flexShrink: 1 }} value={techSearch} onChange={(e) => setTechSearch(e.target.value)} placeholder="🔍 ค้นหาชื่อ หรือบริการ..." />
-                <button className="btn btn-p btn-sm" type="button" onClick={openAddTechModal}>+ ขอลงทะเบียนช่าง</button>
               </div>
 
               {filteredTechs.length === 0 ? (

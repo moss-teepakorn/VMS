@@ -119,6 +119,19 @@
   border-top-right-radius: inherit;
 }
 
+.card-light-head > .ch {
+  background: var(--card);
+  border-bottom: 1.5px solid var(--bo);
+}
+
+.card-light-head > .ch .ct {
+  color: var(--tx);
+}
+
+.card-light-head > .ch .ch-ico {
+  background: var(--prl);
+}
+
 /* ── VEHICLES ── */
 .ph-veh-head .ph-in { min-height: 72px; background: #1f4f78; }
 .ph-veh-head .ph-h1 { font-size: 19px; }
@@ -548,9 +561,18 @@
 }
 
 .fee-universal-search {
-  width: min(360px, 100%);
-  min-width: 220px;
-  flex: 1 1 260px;
+  width: 200px;
+  min-width: 200px;
+  max-width: 200px;
+  height: 32px;
+  flex: 0 0 200px;
+}
+
+.fee-universal-search .tb-universal-input {
+  height: 32px;
+  min-height: 32px;
+  padding-top: 0;
+  padding-bottom: 0;
 }
 
 .fee-toolbar-select {
@@ -1034,9 +1056,10 @@
   }
 
   .fee-universal-search {
-    width: 100%;
+    width: min(200px, 100%);
     min-width: 0;
-    flex: 1 1 100%;
+    max-width: 100%;
+    flex: 1 1 auto;
   }
 
   .fee-toolbar-select {
