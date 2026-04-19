@@ -7,9 +7,24 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+    <meta http-equiv="cache-control" content="no-cache, no-store, must-revalidate" />
+    <meta http-equiv="pragma" content="no-cache" />
+    <meta http-equiv="expires" content="0" />
   </head>
   <body>
     <div id="root"></div>
+    <script>
+      // If a stale bundle causes React to be null (useEffect error), reload once with cache-busting query.
+      window.addEventListener('error', (ev) => {
+        try {
+          const msg = String(ev?.message || '')
+          if (msg.includes("Cannot read properties of null (reading 'useEffect')") && !location.search.includes('b=')) {
+            const sep = location.href.includes('?') ? '&' : '?'
+            location.replace(location.href + sep + 'b=' + Date.now())
+          }
+        } catch (_) {}
+      })
+    </script>
     <script>
       try {
         const villageName = localStorage.getItem('vms-setup-village-name') || 'The Greenfield'
