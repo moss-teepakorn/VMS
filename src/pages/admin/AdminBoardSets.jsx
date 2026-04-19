@@ -14,8 +14,9 @@ const defaultPositionForIndex = (i) => {
 }
 
 const uniqueMemberId = () => `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`
-const createMemberRow = ({ member_no, full_name = '', position, phone = '' } = {}) => ({
+const createMemberRow = ({ id = null, member_no, full_name = '', position, phone = '' } = {}) => ({
   uid: uniqueMemberId(),
+  id: id || null,
   member_no,
   full_name,
   position: String(position || defaultPositionForIndex(member_no - 1)).trim(),
@@ -63,6 +64,7 @@ export default function AdminBoardSets() {
     const existing = (set.board_members || []).sort((a, b) => a.member_no - b.member_no)
     const members = existing.length > 0
       ? existing.map((m, i) => createMemberRow({
+        id: m.id || null,
         member_no: i + 1,
         full_name: m.full_name || '',
         position: m.position || defaultPositionForIndex(i),
@@ -96,6 +98,7 @@ export default function AdminBoardSets() {
     }
     const cleanedMembers = (form.members || [])
       .map((m) => ({
+        id: m.id || null,
         full_name: String(m.full_name || '').trim(),
         position: String(m.position || 'กรรมการ').trim(),
         phone: String(m.phone || '').trim(),

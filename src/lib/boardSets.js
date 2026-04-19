@@ -76,25 +76,46 @@ export async function saveBoardMembers(setId, members = []) {
   if (!setId) throw new Error('ไม่พบรหัส board set')
 
   // Delete all existing members and re-insert updated member rows
-  const { error: delErr } = await supabase.from('board_members').delete().eq('set_id', setId)
-  if (delErr) throw delErr
+  // Fetch existing rows to compute diff
+  const { data: existingRows = [], error: fetchErr } = await supabase
+    .from('board_members')
+    .select('id, member_no')
+    .eq('set_id', setId)
+  if (fetchErr) throw fetchErr
 
-  const rows = (Array.isArray(members) ? members : [])
-    .map((m) => ({
-      full_name: String(m.full_name || '').trim(),
-      position: String(m.position || 'กรรมการ').trim(),
-      phone: String(m.phone || '').trim() || null,
-    }))
+  const incoming = (Array.isArray(members) ? members : [])
+    .map((m) => ({ id: m.id || null, full_name: String(m.full_name || '').trim(), position: String(m.position || 'กรรมการ').trim(), phone: String(m.phone || '').trim(), member_no: Number(m.member_no || 0) }))
     .filter((m) => m.full_name)
-    .map((m, idx) => ({
-      set_id: setId,
-      member_no: idx + 1,
-      ...m,
-    }))
 
-  for (const row of rows) {
-    const { error: insErr } = await supabase.from('board_members').insert([row])
-    if (insErr) throw insErr
+  const existingIds = new Set((existingRows || []).map((r) => Number(r.id)))
+  const incomingIds = new Set((incoming || []).map((r) => Number(r.id)).filter(Boolean))
+
+  // Delete rows that exist in DB but not in incoming list
+  for (const ex of existingRows || []) {
+    const exId = Number(ex.id)
+    if (!incomingIds.has(exId)) {
+      const { error: delErr } = await supabase.from('board_members').delete().eq('id', exId)
+      if (delErr) throw delErr
+    }
+  }
+
+  // Upsert incoming rows: update if id present, insert if new
+  for (let i = 0; i < incoming.length; i++) {
+    const row = incoming[i]
+    const payload = {
+      set_id: setId,
+      member_no: i + 1,
+      full_name: row.full_name,
+      position: row.position,
+      phone: row.phone || null,
+    }
+    if (row.id) {
+      const { error: upErr } = await supabase.from('board_members').update(payload).eq('id', row.id)
+      if (upErr) throw upErr
+    } else {
+      const { error: insErr } = await supabase.from('board_members').insert([payload])
+      if (insErr) throw insErr
+    }
   }
   return true
 }
