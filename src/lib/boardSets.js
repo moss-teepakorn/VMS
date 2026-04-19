@@ -87,12 +87,12 @@ export async function saveBoardMembers(setId, members = []) {
     .map((m) => ({ id: m.id || null, full_name: String(m.full_name || '').trim(), position: String(m.position || 'กรรมการ').trim(), phone: String(m.phone || '').trim(), member_no: Number(m.member_no || 0) }))
     .filter((m) => m.full_name)
 
-  const existingIds = new Set((existingRows || []).map((r) => Number(r.id)))
-  const incomingIds = new Set((incoming || []).map((r) => Number(r.id)).filter(Boolean))
+  const existingIds = new Set((existingRows || []).map((r) => String(r.id)))
+  const incomingIds = new Set((incoming || []).map((r) => String(r.id)).filter((s) => s && s !== 'null'))
 
   // Delete rows that exist in DB but not in incoming list
   for (const ex of existingRows || []) {
-    const exId = Number(ex.id)
+    const exId = String(ex.id)
     if (!incomingIds.has(exId)) {
       const { error: delErr } = await supabase.from('board_members').delete().eq('id', exId)
       if (delErr) throw delErr
