@@ -118,7 +118,7 @@ textarea {
 .houses-filter-input:focus,
 .houses-filter-select:focus,
 .setup-input:focus {
-  border-color: color-mix(in srgb, var(--ds-brand) 72%, #ffffff 28%);
+  border-color: #4f6ef7;
   box-shadow: 0 0 0 3px var(--ds-focus-ring);
   outline: none;
 }
@@ -137,12 +137,12 @@ textarea {
 }
 
 .vms-login-input::placeholder {
-  color: color-mix(in srgb, var(--ds-text-secondary) 85%, #ffffff 15%);
+  color: #73839b;
 }
 
 .vms-login-input:focus {
-  border-color: color-mix(in srgb, var(--ds-brand) 68%, #ffffff 32%);
-  box-shadow: 0 0 0 4px color-mix(in srgb, var(--ds-brand-soft) 70%, #ffffff 30%);
+  border-color: #4f6ef7;
+  box-shadow: 0 0 0 4px rgba(79, 110, 247, .18);
   outline: none;
 }
 
@@ -171,4 +171,236 @@ textarea {
 .vms-login-link {
   font-weight: 600;
   transition: color 0.15s ease;
+}
+
+/* Phase 2: Login polish */
+.vms-login-shell {
+  -webkit-font-smoothing: antialiased;
+}
+
+.vms-login-card {
+  animation: vmsLoginCardIn 0.34s ease-out;
+}
+
+.vms-login-hero {
+  animation: vmsLoginFadeUp 0.36s ease-out;
+}
+
+.vms-login-form {
+  display: grid;
+  gap: 12px;
+}
+
+.vms-login-form--compact {
+  gap: 10px;
+}
+
+.vms-login-links {
+  margin-top: 1px;
+}
+
+.vms-login-pin-panel {
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+}
+
+.vms-login-input {
+  min-height: 42px;
+  padding: 10px 14px;
+  font-size: 14px;
+}
+
+.vms-login-input:focus {
+  transform: translateY(-0.5px);
+}
+
+.vms-login-submit {
+  min-height: 44px;
+  border-radius: 12px;
+}
+
+.vms-login-submit:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.vms-login-footer {
+  padding-bottom: 2px;
+}
+
+@keyframes vmsLoginCardIn {
+  from { opacity: 0; transform: translateY(10px) scale(.988); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes vmsLoginFadeUp {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@media (max-width: 768px) {
+  .vms-login-root {
+    min-height: 100svh;
+  }
+
+  .vms-login-card {
+    border-radius: 16px;
+    padding: 18px 16px 16px;
+  }
+
+  .vms-login-form {
+    gap: 10px;
+  }
+}
+
+/* Phase 3: Unified component skin */
+:root {
+  --vms-c-text: #1e2537;
+  --vms-c-muted: #5c6882;
+  --vms-c-surface: #ffffff;
+  --vms-c-surface-soft: #f0f3fa;
+  --vms-c-border: #d5deea;
+  --vms-c-primary: #4f6ef7;
+  --vms-c-primary-strong: #3f5ce0;
+  --vms-c-focus: rgba(79, 110, 247, .18);
+  --vms-c-danger-soft: #fee2e2;
+  --vms-c-danger-text: #b91c1c;
+  --vms-c-success-soft: #dcfce7;
+  --vms-c-success-text: #15803d;
+  --vms-c-warn-soft: #fef3c7;
+  --vms-c-warn-text: #92400e;
+}
+
+:where(.btn, .btn-p, .btn-a, .btn-o, .btn-g, .btn-d, .btn-w, .btn-primary, .btn-danger, .btn-ghost, .btn-outline) {
+  min-height: 34px;
+  border-radius: 10px;
+  font-size: 12.5px;
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: .01em;
+  transition: background-color .15s ease, color .15s ease, border-color .15s ease, box-shadow .15s ease, transform .12s ease;
+}
+
+:where(.btn, .btn-p, .btn-primary) {
+  background: linear-gradient(180deg, var(--vms-c-primary) 0%, var(--vms-c-primary-strong) 100%);
+  color: #fff;
+  border: 1px solid transparent;
+  box-shadow: 0 8px 18px rgba(79, 110, 247, .22);
+}
+
+:where(.btn, .btn-p, .btn-primary):hover {
+  filter: brightness(1.02);
+  transform: translateY(-1px);
+}
+
+:where(.btn-o, .btn-outline) {
+  background: var(--vms-c-surface);
+  border: 1px solid var(--vms-c-border);
+  color: var(--vms-c-text);
+}
+
+:where(.btn-g, .btn-ghost) {
+  background: var(--vms-c-surface-soft);
+  border: 1px solid transparent;
+  color: var(--vms-c-text);
+}
+
+:where(.btn-d, .btn-danger) {
+  background: var(--vms-c-danger-soft);
+  border: 1px solid #fecaca;
+  color: var(--vms-c-danger-text);
+}
+
+:where(.btn-sm) {
+  min-height: 30px;
+  padding: 0 12px;
+  font-size: 12px;
+}
+
+:where(.btn-xs) {
+  min-height: 26px;
+  padding: 0 10px;
+  font-size: 11px;
+}
+
+:where(.fi, .fs, .ft, .input, .setup-input, .houses-filter-input, .houses-filter-select, .cars-ss-input, .ts-control, select, textarea) {
+  border: 1px solid var(--vms-c-border) !important;
+  border-radius: 10px !important;
+  background: var(--vms-c-surface) !important;
+  color: var(--vms-c-text) !important;
+  font-size: 13px !important;
+}
+
+:where(.fi, .fs, .ft, .input, .setup-input, .houses-filter-input, .houses-filter-select, .cars-ss-input, .ts-control, select, textarea)::placeholder {
+  color: #7b879c !important;
+}
+
+:where(.fi, .fs, .ft, .input, .setup-input, .houses-filter-input, .houses-filter-select, .cars-ss-input, .ts-control, select, textarea):focus {
+  border-color: var(--vms-c-primary) !important;
+  box-shadow: 0 0 0 3px var(--vms-c-focus) !important;
+  outline: none !important;
+}
+
+:where(.card, .chart-box, .panel) {
+  background: var(--vms-c-surface);
+  border: 1px solid #e4e9f5;
+  border-radius: 12px;
+  box-shadow: 0 2px 12px rgba(15, 23, 42, .06);
+}
+
+:where(.tw th, table thead th) {
+  background: #f0f3fa !important;
+  color: #5c6882 !important;
+  border-bottom: 1px solid #e4e9f5 !important;
+  font-weight: 700;
+  font-size: 11px;
+}
+
+:where(.tw td, table tbody td) {
+  color: var(--vms-c-text);
+  border-bottom: 1px solid #eef2f7;
+}
+
+:where(.badge, .bd) {
+  border-radius: 999px;
+  font-weight: 700;
+}
+
+:where(.b-ok, .badge-green) {
+  background: var(--vms-c-success-soft) !important;
+  color: var(--vms-c-success-text) !important;
+}
+
+:where(.b-wn, .badge-yellow) {
+  background: var(--vms-c-warn-soft) !important;
+  color: var(--vms-c-warn-text) !important;
+}
+
+:where(.b-dg, .badge-red) {
+  background: var(--vms-c-danger-soft) !important;
+  color: var(--vms-c-danger-text) !important;
+}
+
+:where(.b-pr, .badge-blue) {
+  background: #dbeafe !important;
+  color: #1d4ed8 !important;
+}
+
+:where(.mo, .house-mo) {
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+}
+
+:where(.md, .house-md) {
+  border: 1px solid #dde6f2;
+  border-radius: 14px;
+  box-shadow: 0 18px 44px rgba(15, 23, 42, .18);
+}
+
+:where(.md-hd, .house-md-head) {
+  border-bottom: 1px solid #e6ecf5;
+}
+
+:where(.md-ft, .house-md-foot) {
+  border-top: 1px solid #e6ecf5;
+  background: #f7f9ff;
 }

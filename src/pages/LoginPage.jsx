@@ -254,32 +254,32 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="relative min-h-screen overflow-hidden vms-login-root" style={{ background: loginTheme.pageBackground }}>
+    <div className="relative min-h-screen overflow-hidden vms-login-root vms-login-shell" style={{ background: loginTheme.pageBackground }}>
       <div className="pointer-events-none absolute inset-0">
         <div className="absolute left-1/2 top-1/3 h-80 w-80 -translate-x-1/2 rounded-full blur-3xl" style={{ background: loginTheme.blobPrimary }} />
         <div className="absolute left-1/2 bottom-12 h-64 w-64 -translate-x-1/2 rounded-full blur-3xl" style={{ background: loginTheme.blobSecondary }} />
       </div>
 
-      <div className="relative z-10 flex min-h-screen flex-col px-4 py-6 sm:px-8 sm:py-8">
+      <div className="relative z-10 flex min-h-screen flex-col px-4 py-5 sm:px-8 sm:py-8">
         <div className="flex flex-1 items-center justify-center">
           <div
-            className="w-full max-w-[418px] rounded-[18px] border px-5 py-5 sm:px-6 sm:py-6"
+            className="vms-login-card w-full max-w-[418px] rounded-[18px] border px-5 py-5 sm:px-6 sm:py-6"
             style={{
               background: loginTheme.cardBackground,
               borderColor: loginTheme.cardBorder,
               boxShadow: loginTheme.cardShadow,
             }}
           >
-            <div className="mb-6 text-center">
+            <div className="mb-5 text-center vms-login-hero">
               <div className="mx-auto flex h-[70px] w-[70px] items-center justify-center overflow-hidden rounded-2xl bg-white ring-1" style={{ '--tw-ring-color': loginTheme.logoRing }}>
                 <img src={setup.loginCircleLogoUrl || villageLogo} alt="Village Logo" className="h-[56px] w-[56px] rounded-xl object-cover" />
               </div>
-              <div className="mt-3 text-[21px] font-bold tracking-tight" style={{ color: loginTheme.subtitleColor }}>{setup.villageName}</div>
+              <div className="mt-2.5 text-[20px] font-bold tracking-tight" style={{ color: loginTheme.subtitleColor }}>{setup.villageName}</div>
               <div className="mt-2 text-[19px] font-extrabold tracking-tight" style={{ color: loginTheme.titleColor }}>{mode === 'login' ? 'Sign In' : mode === 'register' ? 'ลงทะเบียนผู้ใช้งาน' : 'Forgot Password'}</div>
             </div>
 
             {mode === 'login' && (
-              <form onSubmit={handleSubmit} className="space-y-4" noValidate>
+              <form onSubmit={handleSubmit} className="vms-login-form" noValidate>
                 {isMobileLayout && pinAvailable && (
                   <div className="grid grid-cols-2 gap-2 rounded-xl border border-slate-200 bg-slate-50 p-1">
                     <button
@@ -343,7 +343,7 @@ export default function LoginPage() {
                     </div>
 
                     {isMobileLayout && (
-                      <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-3">
+                      <div className="vms-login-pin-panel rounded-xl border border-slate-200 bg-slate-50 px-3 py-3">
                         <label className="flex items-center gap-2 text-xs font-semibold text-slate-700">
                           <input
                             type="checkbox"
@@ -391,7 +391,7 @@ export default function LoginPage() {
                   </div>
                 )}
 
-                <div className="flex items-center justify-between gap-3 text-xs font-semibold">
+                <div className="vms-login-links flex items-center justify-between gap-3 text-xs font-semibold">
                   <button type="button" className="vms-login-link hover:text-[#4f6ea5]" style={{ color: loginTheme.secondaryLink }} onClick={() => switchMode('register')}>ลงทะเบียนผู้ใช้งาน</button>
                   <button type="button" className="vms-login-link hover:text-[#4f6ea5]" style={{ color: loginTheme.secondaryLink }} onClick={() => switchMode('forgot')}>Forgot Password?</button>
                 </div>
@@ -405,7 +405,7 @@ export default function LoginPage() {
                 <button
                   type="submit"
                   disabled={submitting || !username || (loginMethod === 'pin' ? !pin : !password)}
-                  className="vms-login-submit mt-1 text-[20px]"
+                  className="vms-login-submit mt-1 text-[19px]"
                   style={{ background: loginTheme.primaryButton }}
                 >
                   {submitting ? 'Signing in...' : loginMethod === 'pin' ? 'Sign In with PIN' : 'Sign In'}
@@ -414,7 +414,7 @@ export default function LoginPage() {
             )}
 
             {mode === 'register' && (
-              <form onSubmit={handleRegisterSubmit} className="space-y-3" noValidate>
+              <form onSubmit={handleRegisterSubmit} className="vms-login-form vms-login-form--compact" noValidate>
                 <input value={registerUsername} onChange={(e) => setRegisterUsername(e.target.value)} required placeholder="Username" className="vms-login-input" style={{ borderColor: loginTheme.fieldBorder, background: loginTheme.fieldBackground }} />
                 <input value={registerHouseNo} onChange={(e) => setRegisterHouseNo(e.target.value)} required placeholder="บ้านเลขที่" className="vms-login-input" style={{ borderColor: loginTheme.fieldBorder, background: loginTheme.fieldBackground }} />
                 <input value={registerPhone} onChange={(e) => setRegisterPhone(e.target.value)} required placeholder="เบอร์โทรศัพท์ (ตามข้อมูลบ้าน)" className="vms-login-input" style={{ borderColor: loginTheme.fieldBorder, background: loginTheme.fieldBackground }} />
@@ -428,7 +428,7 @@ export default function LoginPage() {
             )}
 
             {mode === 'forgot' && (
-              <form onSubmit={handleResetPasswordSubmit} className="space-y-3" noValidate>
+              <form onSubmit={handleResetPasswordSubmit} className="vms-login-form vms-login-form--compact" noValidate>
                 <input value={resetUsername} onChange={(e) => setResetUsername(e.target.value)} required placeholder="Username" className="vms-login-input" style={{ borderColor: loginTheme.fieldBorder, background: loginTheme.fieldBackground }} />
                 <input value={resetHouseNo} onChange={(e) => setResetHouseNo(e.target.value)} required placeholder="บ้านเลขที่" className="vms-login-input" style={{ borderColor: loginTheme.fieldBorder, background: loginTheme.fieldBackground }} />
                 <input value={resetPhone} onChange={(e) => setResetPhone(e.target.value)} required placeholder="เบอร์โทรศัพท์ที่ลงทะเบียนไว้" className="vms-login-input" style={{ borderColor: loginTheme.fieldBorder, background: loginTheme.fieldBackground }} />
@@ -453,13 +453,13 @@ export default function LoginPage() {
               </div>
             )}
 
-            <div className="mt-5 border-t border-slate-200/80 pt-3 text-center text-[10px] text-slate-400">
+            <div className="mt-4 border-t border-slate-200/80 pt-3 text-center text-[10px] text-slate-400">
               build {BUILD_SHA} · {BUILD_DATE} · v{APP_VERSION}
             </div>
           </div>
         </div>
 
-        <div className="text-center text-[11px] font-semibold" style={{ color: loginTheme.footerColor }}>©VMS™ All Rights Reserved 2026</div>
+        <div className="text-center text-[11px] font-semibold vms-login-footer" style={{ color: loginTheme.footerColor }}>©VMS™ All Rights Reserved 2026</div>
       </div>
     </div>
   )
