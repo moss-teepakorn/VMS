@@ -1,3 +1,8 @@
+  // Auto-load latest payment cycle config on mount
+  useEffect(() => {
+    loadByYear()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 import React, { useEffect, useMemo, useState } from 'react'
 import StyledSelect from '../../components/StyledSelect'
 import Swal from 'sweetalert2'
