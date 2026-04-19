@@ -1,4 +1,11 @@
 import { supabase } from './supabase'
+import { listVehicleRequests } from './vehicleRequests'
+import { listAccountRequests } from './accountRequests'
+import { listIssues } from './issues'
+import { listPayments } from './fees'
+import { listTechnicians } from './technicians'
+import { listMarketplace } from './marketplace'
+import { listVehicles } from './vehicles'
 
 const REJECT_PREFIX = '[REJECT] '
 
@@ -179,12 +186,54 @@ export async function getDashboardData() {
     return !vehicleRequestKeySet.has(key)
   }).length
 
-  const pendingRequests = vehicleRequests.length + accountRequests.length + fallbackPendingVehicleCount
-  const pendingIssues = issues.filter((item) => item.status === 'pending').length
-  const pendingPayments = payments.filter((item) => !item.verified_at && !isRejectedPayment(item.note)).length
-  const pendingTechnicians = technicians.filter((item) => item.status === 'pending').length
-  const pendingMarketplace = marketplace.filter((item) => item.status === 'pending').length
-  const pendingApprovals = pendingRequests + pendingIssues + pendingPayments + pendingTechnicians + pendingMarketplace
+  // Keep dashboard pending count aligned with AdminLayout notify badge sources.
+  const [notifyVehicleRes, notifyAccountRes, notifyIssuesRes, notifyPaymentsRes, notifyTechRes, notifyMktRes, notifyVehiclesRes] = await Promise.allSettled([
+    listVehicleRequests({ status: 'pending' }),
+    listAccountRequests({ status: 'pending' }),
+    listIssues({ status: 'pending' }),
+    listPayments({ feeOnly: true }),
+    listTechnicians({ status: 'pending' }),
+    listMarketplace({ status: 'pending' }),
+    listVehicles({ status: 'pending' }),
+  ])
+
+  const notifyVehicleReqs = notifyVehicleRes.status === 'fulfilled' ? (notifyVehicleRes.value || []) : []
+  const notifyAccountReqs = notifyAccountRes.status === 'fulfilled' ? (notifyAccountRes.value || []) : []
+  const notifyIssues = notifyIssuesRes.status === 'fulfilled' ? (notifyIssuesRes.value || []) : []
+  const notifyFeePayments = notifyPaymentsRes.status === 'fulfilled' ? (notifyPaymentsRes.value || []) : []
+  const notifyPendingVehicles = notifyVehiclesRes.status === 'fulfilled' ? (notifyVehiclesRes.value || []) : []
+  const notifyPendingTechs = notifyTechRes.status === 'fulfilled' ? (notifyTechRes.value || []).length : 0
+  const notifyPendingMkt = notifyMktRes.status === 'fulfilled' ? (notifyMktRes.value || []).length : 0
+  const notifyPendingFeePayments = notifyFeePayments.filter((row) => !row.verified_at && !isRejectedPayment(row.note)).length
+
+  const notifyVehicleRequestKeySet = new Set(
+    notifyVehicleReqs
+      .filter((row) => row.status === 'pending')
+      .map((row) => [
+        String(row.house_id || ''),
+        String(row.license_plate || '').trim().toLowerCase(),
+        String(row.province || '').trim().toLowerCase(),
+        String(row.vehicle_type || '').trim().toLowerCase(),
+      ].join('|')),
+  )
+
+  const notifyFallbackPendingVehicleCount = notifyPendingVehicles.filter((row) => {
+    const key = [
+      String(row.house_id || ''),
+      String(row.license_plate || '').trim().toLowerCase(),
+      String(row.province || '').trim().toLowerCase(),
+      String(row.vehicle_type || '').trim().toLowerCase(),
+    ].join('|')
+    return !notifyVehicleRequestKeySet.has(key)
+  }).length
+
+  const pendingApprovals = notifyVehicleReqs.length
+    + notifyAccountReqs.length
+    + notifyIssues.length
+    + notifyPendingFeePayments
+    + notifyPendingTechs
+    + notifyPendingMkt
+    + notifyFallbackPendingVehicleCount
 
   const openIssues = issues.filter((item) => item.status === 'pending' || item.status === 'in_progress')
   const avgRatingItems = issues.filter((item) => Number(item.rating) > 0)
