@@ -1,8 +1,3 @@
-  // Auto-load latest payment cycle config on mount
-  useEffect(() => {
-    loadByYear()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
 import React, { useEffect, useMemo, useState } from 'react'
 import StyledSelect from '../../components/StyledSelect'
 import Swal from 'sweetalert2'
@@ -191,6 +186,11 @@ export default function AdminPaymentCycles() {
   useEffect(() => {
     regenerateRows()
   }, [frequency, yearCE])
+
+  useEffect(() => {
+    loadByYear()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   const loadByYear = async () => {
     if (!yearCE) {
