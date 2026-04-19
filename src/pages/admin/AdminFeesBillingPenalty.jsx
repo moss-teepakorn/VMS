@@ -265,7 +265,7 @@ export default function AdminFeesBillingPenalty() {
           </div>
 
           <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-            <button className="btn btn-p" type="submit" disabled={processingInvoice}>
+            <button className="vms-sm-btn vms-sm-btn--primary" type="submit" disabled={processingInvoice}>
               {processingInvoice ? 'กำลังประมวลผล...' : 'Process สร้างทั้งหมด'}
             </button>
           </div>
@@ -296,7 +296,7 @@ export default function AdminFeesBillingPenalty() {
           </div>
 
           <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-            <button className="btn btn-dg" type="button" onClick={handleCalculateOverdue} disabled={processingOverdue}>
+            <button className="vms-sm-btn vms-sm-btn--warning" type="button" onClick={handleCalculateOverdue} disabled={processingOverdue}>
               {processingOverdue ? 'กำลังคำนวณ...' : 'คำนวณค่าปรับ'}
             </button>
           </div>

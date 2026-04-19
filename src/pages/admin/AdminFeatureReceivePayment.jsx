@@ -923,13 +923,13 @@ export default function AdminFeatureReceivePayment() {
               <svg width="12" height="12" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd" /></svg>
               <input type="text" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="ค้นหาเลขที่ใบเสร็จ / ซอย / บ้าน / ผู้ชำระ" />
             </div>
-            <StyledSelect value={yearFilter} onChange={(event) => setYearFilter(event.target.value)} style={{ height: 32, fontSize: 12, padding: '0 22px 0 8px', border: '1.5px solid #d1d5e0', borderRadius: 8, minWidth: 120 }}>
+            <StyledSelect compact value={yearFilter} onChange={(event) => setYearFilter(event.target.value)} style={{ minWidth: 120 }}>
               <option value="all">ทุกปี</option>
               {yearOptions.map((year) => (
                 <option key={year} value={String(year)}>{year + 543}</option>
               ))}
             </StyledSelect>
-            <StyledSelect value={monthFilter} onChange={(event) => setMonthFilter(event.target.value)} style={{ height: 32, fontSize: 12, padding: '0 22px 0 8px', border: '1.5px solid #d1d5e0', borderRadius: 8, minWidth: 120 }}>
+            <StyledSelect compact value={monthFilter} onChange={(event) => setMonthFilter(event.target.value)} style={{ minWidth: 120 }}>
               <option value="all">ทุกเดือน</option>
               {Array.from({ length: 12 }, (_, index) => index + 1).map((month) => (
                 <option key={month} value={String(month)}>
@@ -979,10 +979,16 @@ export default function AdminFeatureReceivePayment() {
                         <td style={{ whiteSpace: 'nowrap' }}>{formatDateTime(payment.paid_at)}</td>
                         <td><span className={badge.className}>{badge.label}</span></td>
                         <td>
-                          <div className="td-acts payments-row-acts">
-                            <button className="btn btn-xs btn-g" onClick={() => openDetail(payment)}>รายละเอียด</button>
-                            <button className="btn btn-xs btn-o" onClick={() => toggleEditable(payment)}>{editableMap[payment.id] ? 'ล็อกแก้ไข' : 'เปลี่ยนสถานะเพื่อแก้ไข'}</button>
-                            <button className="btn btn-xs btn-a" onClick={() => handlePrintReceipt(payment)}>ใบเสร็จ</button>
+                          <div className="vms-row-acts">
+                            <button className="vms-ra-btn vms-ra-view" title="รายละเอียด" onClick={() => openDetail(payment)}>
+                              <svg width="13" height="13" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M10 12a2 2 0 100-4 2 2 0 000 4z"/><path fillRule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clipRule="evenodd"/></svg>
+                            </button>
+                            <button className="vms-ra-btn vms-ra-edit" title={editableMap[payment.id] ? 'ล็อกแก้ไข' : 'เปลี่ยนสถานะเพื่อแก้ไข'} onClick={() => toggleEditable(payment)}>
+                              <svg width="13" height="13" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z"/></svg>
+                            </button>
+                            <button className="vms-ra-btn vms-ra-edit" title="ใบเสร็จ" onClick={() => handlePrintReceipt(payment)}>
+                              <svg width="13" height="13" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fillRule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" clipRule="evenodd"/></svg>
+                            </button>
                           </div>
                         </td>
                       </tr>
@@ -1019,9 +1025,9 @@ export default function AdminFeatureReceivePayment() {
                     <span><span className="mcard-label">รายการ</span> {itemCount}</span>
                   </div>
                   <div className="mcard-actions">
-                    <button className="btn btn-xs btn-g" onClick={() => openDetail(payment)}>รายละเอียด</button>
-                    <button className="btn btn-xs btn-o" onClick={() => toggleEditable(payment)}>{editableMap[payment.id] ? 'ล็อกแก้ไข' : 'เปลี่ยนสถานะเพื่อแก้ไข'}</button>
-                    <button className="btn btn-xs btn-a" onClick={() => handlePrintReceipt(payment)}>ใบเสร็จ</button>
+                    <button className="vms-sm-btn" onClick={() => openDetail(payment)}>รายละเอียด</button>
+                    <button className="vms-sm-btn" onClick={() => toggleEditable(payment)}>{editableMap[payment.id] ? 'ล็อกแก้ไข' : 'แก้ไข'}</button>
+                    <button className="vms-sm-btn vms-sm-btn--primary" onClick={() => handlePrintReceipt(payment)}>ใบเสร็จ</button>
                   </div>
                 </div>
               )

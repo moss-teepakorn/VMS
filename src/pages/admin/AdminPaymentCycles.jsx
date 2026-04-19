@@ -342,9 +342,9 @@ export default function AdminPaymentCycles() {
             </div>
           </div>
           <div className="vms-toolbar-right">
-            <button className="btn btn-p btn-sm" type="button" onClick={regenerateRows} disabled={loading || saving}>สร้างรายการตามรอบ</button>
-            <button className="btn btn-p btn-sm" type="button" onClick={loadByYear} disabled={loading || saving}>{loading ? 'กำลังโหลด...' : 'โหลดจากปีนี้'}</button>
-            <button className="btn btn-p btn-sm" type="button" onClick={handleSave} disabled={loading || saving}>{saving ? 'กำลังบันทึก...' : 'บันทึกกำหนดรอบ'}</button>
+            <button className="vms-sm-btn vms-sm-btn--primary" type="button" onClick={regenerateRows} disabled={loading || saving}>สร้างรายการตามรอบ</button>
+            <button className="vms-sm-btn vms-sm-btn--primary" type="button" onClick={loadByYear} disabled={loading || saving}>{loading ? 'กำลังโหลด...' : 'โหลดจากปีนี้'}</button>
+            <button className="vms-sm-btn vms-sm-btn--primary" type="button" onClick={handleSave} disabled={loading || saving}>{saving ? 'กำลังบันทึก...' : 'บันทึกกำหนดรอบ'}</button>
           </div>
         </div>
       </div>

@@ -1180,38 +1180,37 @@ export default function AdminPayments() {
 
   return (
     <div className="pane on houses-compact payments-compact">
-      <div className="ph houses-ph">
-        <div className="ph-in">
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <div className="ph-ico">
-              <img className="ph-ico-img" src={setup.loginCircleLogoUrl || villageLogo} alt="system-logo" />
-            </div>
-            <div>
-              <div className="ph-h1">จ่ายค่าส่วนกลาง</div>
-              <div className="ph-sub">ตรวจสอบการชำระ อนุมัติ และออกใบเสร็จ · {setup.villageName}</div>
-            </div>
-          </div>
-        </div>
+
+      <div className="stats">
+        <div className="sc"><div className="sc-ico a">💵</div><div><div className="sc-v">฿{formatMoney(summary.totalAmount)}</div><div className="sc-l">ยอดชำระทั้งหมด</div></div></div>
+        <div className="sc"><div className="sc-ico p">✅</div><div><div className="sc-v">{summary.approvedCount}</div><div className="sc-l">อนุมัติแล้ว ฿{formatMoney(summary.approvedAmount)}</div></div></div>
+        <div className="sc"><div className="sc-ico d">⏳</div><div><div className="sc-v">{summary.pendingCount}</div><div className="sc-l">รอตรวจสอบ ฿{formatMoney(summary.pendingAmount)}</div></div></div>
+        <div className="sc"><div className="sc-ico d">⛔</div><div><div className="sc-v">{summary.rejectedCount}</div><div className="sc-l">ตีกลับ</div></div></div>
       </div>
 
       <div className="card report-filter-card admin-search-filter-card">
         <div className="cb" style={{ padding: 12 }}>
-          <div className="vms-panel-toolbar" style={{ borderBottom: 'none', padding: 0 }}>
-            <div className="vms-toolbar-left">
-              <div className="vms-inline-search">
-                <svg width="12" height="12" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd"/>
-                </svg>
-                <input
-                  type="text"
-                  placeholder="ค้นหา ซอย / บ้าน / วิธีชำระ / สถานะ"
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                />
-              </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 10, flexWrap: 'wrap' }}>
+            <div className="ph-ico" style={{ margin: 0 }}>
+              <img className="ph-ico-img" src={setup.loginCircleLogoUrl || villageLogo} alt="system-logo" />
+            </div>
+            <div>
+              <div style={{ fontWeight: 700, fontSize: 15, color: 'var(--tx)' }}>จ่ายค่าส่วนกลาง</div>
+              <div style={{ fontSize: 12, color: 'var(--mu)' }}>ตรวจสอบการชำระ อนุมัติ และออกใบเสร็จ · {setup.villageName}</div>
             </div>
           </div>
-          <div style={{ marginTop: 10, display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center' }}>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center' }}>
+            <div className="vms-inline-search" style={{ flex: '1 1 200px', maxWidth: 320 }}>
+              <svg width="12" height="12" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd"/>
+              </svg>
+              <input
+                type="text"
+                placeholder="ค้นหา ซอย / บ้าน / วิธีชำระ / สถานะ"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+              />
+            </div>
             <span style={{ fontSize: 12, color: 'var(--mu)' }}>ปี:</span>
             <button
               type="button"
@@ -1232,13 +1231,6 @@ export default function AdminPayments() {
             ))}
           </div>
         </div>
-      </div>
-
-      <div className="stats">
-        <div className="sc"><div className="sc-ico a">💵</div><div><div className="sc-v">฿{formatMoney(summary.totalAmount)}</div><div className="sc-l">ยอดชำระทั้งหมด</div></div></div>
-        <div className="sc"><div className="sc-ico p">✅</div><div><div className="sc-v">{summary.approvedCount}</div><div className="sc-l">อนุมัติแล้ว ฿{formatMoney(summary.approvedAmount)}</div></div></div>
-        <div className="sc"><div className="sc-ico d">⏳</div><div><div className="sc-v">{summary.pendingCount}</div><div className="sc-l">รอตรวจสอบ ฿{formatMoney(summary.pendingAmount)}</div></div></div>
-        <div className="sc"><div className="sc-ico d">⛔</div><div><div className="sc-v">{summary.rejectedCount}</div><div className="sc-l">ตีกลับ</div></div></div>
       </div>
 
       <div className="card">
