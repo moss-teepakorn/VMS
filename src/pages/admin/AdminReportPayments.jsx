@@ -164,7 +164,7 @@ export default function AdminReportPayments() {
               logoUrl={setup.village_logo_url || '/assets/village-logo.svg'}
               footerLabel="ยอดชำระรวม"
             />
-            <button className="vms-sm-btn" onClick={runReport} disabled={loading}>🔄</button>
+            <button className="vms-sm-btn" onClick={runReport} disabled={loading}>{loading ? 'กำลังโหลด...' : 'แสดงข้อมูล'}</button>
           </div>
         </div>
       </div>

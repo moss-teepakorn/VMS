@@ -3,6 +3,54 @@
    Complements AdminLayout.css + AdminDashboard.css
 ═══════════════════════════════════════════════ */
 
+/* ── RESTORE .ph ON RESIDENT PAGES ──
+   AdminDashboard.css has a global .ph { display: none !important }
+   that hides page headers on admin. Override here for resident portal. */
+.main .ph {
+  display: flex !important;
+}
+
+/* ── SECTION INFO GRID (used in house detail, etc.) ── */
+.ig {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1px;
+  background: var(--bo);
+  border: 1px solid var(--bo);
+  border-radius: 10px;
+  overflow: hidden;
+  margin-bottom: 10px;
+}
+
+.ii {
+  background: var(--card);
+  padding: 9px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.ii.ii-full {
+  grid-column: 1 / -1;
+}
+
+.ik {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--mu);
+  text-transform: uppercase;
+  letter-spacing: .05em;
+  line-height: 1.2;
+}
+
+.iv {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--tx);
+  word-break: break-word;
+  line-height: 1.4;
+}
+
 /* ── WHITE BUTTON (used in .ph gradient header) ── */
 .btn-w {
   background: rgba(255,255,255,.2);
@@ -139,7 +187,7 @@
 
 .notif-search-row {
   display: grid;
-  grid-template-columns: minmax(220px, 1fr) 180px 160px 120px;
+  grid-template-columns: minmax(220px, 1fr) 180px 160px;
   gap: 10px;
   align-items: center;
   padding: 16px;
@@ -501,6 +549,10 @@
 .fee-payment-list {
   display: flex;
   flex-direction: column;
+  border: 1px solid var(--bo);
+  border-radius: 10px;
+  overflow: hidden;
+  background: var(--card);
 }
 
 .fee-invoice-head,
@@ -511,8 +563,9 @@
   font-weight: 800;
   letter-spacing: .05em;
   text-transform: uppercase;
-  padding: 0 0 6px;
-  border-bottom: 1px solid var(--bo);
+  padding: 9px 12px;
+  border-bottom: 1.5px solid var(--bo);
+  background: var(--ds-surface-muted, #f8fafc);
 }
 
 .fee-invoice-head,
@@ -530,18 +583,19 @@
 .fee-invoice-row {
   display: grid;
   align-items: center;
-  padding: 10px 0;
+  padding: 10px 12px;
   border-bottom: 1px solid var(--bo);
+  background: var(--card);
 }
 
 .fee-invoice-row:last-child {
   border-bottom: none;
 }
 
-.fee-invoice-row.tone-success { border-left: 3px solid var(--ac); padding-left: 12px; }
-.fee-invoice-row.tone-warning { border-left: 3px solid var(--wn); padding-left: 12px; }
-.fee-invoice-row.tone-error { border-left: 3px solid var(--dg); padding-left: 12px; }
-.fee-invoice-row.tone-primary { border-left: 3px solid var(--pr); padding-left: 12px; }
+.fee-invoice-row.tone-success { border-left: 3px solid var(--ac); }
+.fee-invoice-row.tone-warning { border-left: 3px solid var(--wn); background: rgba(245,158,11,.03); }
+.fee-invoice-row.tone-error { border-left: 3px solid var(--dg); background: rgba(239,68,68,.04); }
+.fee-invoice-row.tone-primary { border-left: 3px solid var(--pr); }
 
 .fee-invoice-cell,
 .fee-payment-col {
@@ -591,6 +645,7 @@
 
 .fee-payment-item {
   border-bottom: 1px solid var(--bo);
+  background: var(--card);
 }
 
 .fee-payment-item:last-child {
@@ -600,7 +655,7 @@
 .fee-payment-summary {
   display: grid;
   align-items: center;
-  padding: 10px 0;
+  padding: 10px 12px;
   cursor: pointer;
   list-style: none;
 }

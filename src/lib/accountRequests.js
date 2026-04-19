@@ -34,11 +34,12 @@ function buildHouseProfileUpdatePayload(input = {}) {
     phone: normalizeOptionalValue(input.phone),
     line_id: normalizeOptionalValue(input.line_id),
     email: normalizeOptionalValue(input.email),
+    house_type: normalizeOptionalValue(input.house_type),
   }
 }
 
 function hasHouseProfilePayloadValue(payload = {}) {
-  return ['resident_name', 'contact_name', 'phone', 'line_id', 'email']
+  return ['resident_name', 'contact_name', 'phone', 'line_id', 'email', 'house_type']
     .some((key) => String(payload?.[key] || '').trim().length > 0)
 }
 
@@ -882,6 +883,7 @@ export async function approveAccountRequest(requestId, { reviewedById = null } =
         phone: payload.phone,
         line_id: payload.line_id,
         email: payload.email,
+        ...(payload.house_type ? { house_type: payload.house_type } : {}),
       })
       .eq('id', request.house_id)
 
