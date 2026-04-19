@@ -524,14 +524,27 @@ export async function listAccountRequests({ status = 'all' } = {}) {
 
     const { data, error } = await query
 
-    requestRows = data || []
-    if (error) {
-      const msg = String(error.message || '').toLowerCase()
-      const isMissingTable = msg.includes('account_requests') && (msg.includes('does not exist') || msg.includes('relation'))
-      if (!isMissingTable && !isAccountRequestInsertDenied(error)) {
-        throw error
+    if (!error) {
+      requestRows = data || []
+    } else {
+      // Fallback: retry with a simpler select if relation embedding fails for this project
+      const simpler = ['id', 'status', 'request_type', 'created_at', 'house_id', 'requested_username', 'full_name'].join(', ')
+      const { data: plainRows, error: plainError } = await supabase
+        .from('account_requests')
+        .select(simpler)
+        .order('created_at', { ascending: false })
+        .maybeSingle()
+
+      if (!plainError) {
+        requestRows = plainRows ? [plainRows] : (plainRows || [])
+      } else {
+        const msg = String(error.message || '').toLowerCase()
+        const isMissingTable = msg.includes('account_requests') && (msg.includes('does not exist') || msg.includes('relation'))
+        if (!isMissingTable && !isAccountRequestInsertDenied(error)) {
+          throw error
+        }
+        requestRows = []
       }
-      requestRows = []
     }
   }
 

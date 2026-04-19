@@ -82,8 +82,17 @@ export async function listVehicleRequests({ houseId = null, status = 'all' } = {
   if (status !== 'all') query = query.eq('status', status)
 
   const { data, error } = await query
-  if (error) throw error
-  return data || []
+  if (!error) return data || []
+
+  // Fallback: some Supabase projects may not allow nested relation selects via REST
+  // Retry with a simpler select that avoids embedding related tables.
+  const { data: plainData, error: plainError } = await supabase
+    .from('vehicle_requests')
+    .select('id, status, request_type, created_at, house_id, house_no, license_plate, province, vehicle_type')
+    .order('created_at', { ascending: false })
+
+  if (plainError) throw error
+  return plainData || []
 }
 
 export async function createVehicleRequest(payload) {
