@@ -2651,7 +2651,7 @@ export default function ResidentLayout() {
             <input
               className="tb-universal-input"
               type="text"
-              placeholder="ค้นหาเมนู, หน้า, ฟังก์ชัน..."
+              placeholder="ค้นหาเมนู..."
               value={universalSearch}
               onFocus={() => setUniversalSearchOpen(true)}
               onChange={(e) => {
@@ -2681,6 +2681,27 @@ export default function ResidentLayout() {
                   <div className="tb-universal-empty">ไม่พบเมนูที่ตรงกับการค้นหา</div>
                 )}
               </div>
+            )}
+          </div>
+          <div className="tb-section-acts">
+            {activeSection === 'house' && (
+              <button className="vms-sm-btn vms-sm-btn--primary" onClick={openHouseProfileReqModal} disabled={Boolean(pendingHouseProfileRequest) || !houseDetailLoaded}>
+                {pendingHouseProfileRequest ? 'รออนุมัติอยู่' : '📝 ขอแก้ไขข้อมูลบ้าน'}
+              </button>
+            )}
+            {activeSection === 'vehicles' && (
+              <button className="vms-sm-btn vms-sm-btn--primary" onClick={openAddVehicleRequest}>+ เพิ่มรถ</button>
+            )}
+            {activeSection === 'issue' && (
+              <button className="vms-sm-btn vms-sm-btn--primary" onClick={() => setShowIssueForm((p) => !p)}>
+                {showIssueForm ? '✕ ยกเลิก' : '+ แจ้งปัญหาใหม่'}
+              </button>
+            )}
+            {activeSection === 'market' && (
+              <button className="vms-sm-btn vms-sm-btn--primary" onClick={openMarketPostModal}>+ โพสต์ขายของ</button>
+            )}
+            {activeSection === 'fees' && overdueAmount > 0 && (
+              <button className="vms-sm-btn vms-sm-btn--warning" onClick={() => { const f = unresolvedFees[0]; if (f) openPaymentModal(f) }}>💳 แจ้งชำระ</button>
             )}
           </div>
           <div className="tb-right">
@@ -2872,11 +2893,6 @@ export default function ResidentLayout() {
 
           {activeSection === 'house' && (
             <>
-              <div className="sec-act-row">
-                <button className="btn btn-p btn-sm" onClick={openHouseProfileReqModal} disabled={Boolean(pendingHouseProfileRequest) || !houseDetailLoaded}>
-                  {pendingHouseProfileRequest ? 'รออนุมัติคำขออยู่' : '📝 ขอแก้ไขข้อมูลบ้าน'}
-                </button>
-              </div>
               {houseProfileRequestsLoaded && latestHouseProfileRequest && (
                 <div className={`al ${latestHouseProfileRequest.status === 'approved' ? 'al-s' : latestHouseProfileRequest.status === 'rejected' ? 'al-w' : 'al-i'}`}>
                   {latestHouseProfileRequest.status === 'pending' && (
@@ -2957,9 +2973,6 @@ export default function ResidentLayout() {
 
           {activeSection === 'vehicles' && (
             <>
-              <div className="sec-act-row">
-                <button className="btn btn-p btn-sm" onClick={openAddVehicleRequest}>+ เพิ่มรถ</button>
-              </div>
               {vehicleRequestsLoaded && vehicleRequests.some((r) => r.status === 'pending' || r.status === 'rejected') && (
                 <div className="veh-note">ℹ️ คำขอแก้ไขรถต้องรอนิติอนุมัติก่อนมีผล</div>
               )}
@@ -3064,10 +3077,7 @@ export default function ResidentLayout() {
                   <option value="all">ทุกปี</option>
                   {feeYearOptions.map((year) => <option key={year} value={year}>{toBE(year)}</option>)}
                 </StyledSelect>
-                <button className="btn btn-a btn-sm fee-toolbar-button" onClick={() => loadFeeData({ status: feeStatusFilter, year: feeYearFilter })}>🔍 ค้นหา</button>
-                {overdueAmount > 0 && (
-                  <button className="btn btn-p btn-sm" style={{ marginLeft: 'auto' }} onClick={() => { const f = unresolvedFees[0]; if (f) openPaymentModal(f) }}>💳 แจ้งชำระ</button>
-                )}
+                <button className="vms-sm-btn" onClick={() => loadFeeData({ status: feeStatusFilter, year: feeYearFilter })}>🔍 ค้นหา</button>
               </div>
 
               <div className="sl">🧾 ใบแจ้งหนี้ <span style={{ fontWeight: 400, marginLeft: 6 }}>{fees.length} รายการ</span></div>
@@ -3228,11 +3238,6 @@ export default function ResidentLayout() {
 
           {activeSection === 'issue' && (
             <>
-              <div className="sec-act-row">
-                <button className="btn btn-p btn-sm" onClick={() => setShowIssueForm((p) => !p)}>
-                  {showIssueForm ? '✕ ยกเลิก' : '+ แจ้งปัญหาใหม่'}
-                </button>
-              </div>
               {showIssueForm && (
                 <div className="card" style={{ marginBottom: 16 }}>
                   <div className="ch"><div className="ch-ico">🔔</div><div className="ct">แจ้งปัญหาใหม่</div></div>
@@ -3670,9 +3675,6 @@ export default function ResidentLayout() {
 
           {activeSection === 'market' && (
             <>
-              <div className="sec-act-row">
-                <button className="btn btn-p btn-sm" onClick={openMarketPostModal}>+ โพสต์ขายของ</button>
-              </div>
               {myPendingMarketCount > 0 && (
                 <div className="al al-i">ℹ️ โพสต์ของคุณที่รออนุมัติอยู่ {myPendingMarketCount} รายการ (จะแสดงสาธารณะหลังนิติอนุมัติ)</div>
               )}

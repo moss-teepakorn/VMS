@@ -12,10 +12,18 @@
   margin-bottom: 14px;
 }
 
+/* ── SECTION ACTION BUTTONS IN TOPBAR ── */
+.tb-section-acts {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
 /* ── UNIVERSAL SEARCH — smaller for resident portal ── */
 #resident-universal-search.tb-universal-wrap {
-  width: min(220px, 28vw);
-  min-width: 140px;
+  width: min(170px, 20vw);
+  min-width: 120px;
 }
 
 /* ── SECTION INFO GRID (used in house detail, etc.) ── */

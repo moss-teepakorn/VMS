@@ -940,7 +940,7 @@ export default function AdminFeatureReceivePayment() {
           </div>
           <div className="vms-toolbar-right">
             <button className="vms-sm-btn vms-sm-btn--primary" onClick={openReceiveModal}>+ เพิ่มการรับชำระ</button>
-            <button className="vms-sm-btn" onClick={loadPageData} disabled={loading}>🔄</button>
+            <button className="vms-sm-btn" onClick={loadPageData} disabled={loading}><svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M17.65 6.35A7.958 7.958 0 0 0 12 4C7.58 4 4.01 7.58 4.01 12S7.58 20 12 20c3.73 0 6.84-2.55 7.73-6h-2.08A5.99 5.99 0 0 1 12 18c-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg></button>
           </div>
         </div>
         <div className="cb houses-table-card-body houses-main-body">
