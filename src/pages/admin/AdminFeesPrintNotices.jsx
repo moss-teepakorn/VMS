@@ -887,14 +887,6 @@ export default function AdminFeesPrintNotices() {
         <div className="ch houses-list-head houses-main-head">
           <div className="ct">ผลลัพธ์ ({fees.length}) | เลือกแล้ว {selectedFees.length}</div>
         </div>
-        <VmsPagination
-          page={page}
-          totalPages={totalPages}
-          rowsPerPage={rowsPerPage}
-          setRowsPerPage={(v) => { setRowsPerPage(v); setPage(1) }}
-          totalRows={fees.length}
-          onPage={setPage}
-        />
         <div className="cb houses-table-card-body houses-main-body">
           <div className="houses-desktop-only" style={{ overflowX: 'auto' }}>
             <table className="tw houses-table houses-main-table" style={{ width: '100%' }}>
@@ -972,6 +964,14 @@ export default function AdminFeesPrintNotices() {
             })}
           </div>
         </div>
+        <VmsPagination
+          page={page}
+          totalPages={totalPages}
+          rowsPerPage={rowsPerPage}
+          setRowsPerPage={(v) => { setRowsPerPage(v); setPage(1) }}
+          totalRows={fees.length}
+          onPage={setPage}
+        />
       </div>
 
       {showPrintPreviewModal && (

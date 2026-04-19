@@ -1784,14 +1784,14 @@ const AdminFees = () => {
                           <td><strong style={{ color: outstanding > 0 ? '#9a3412' : '#166534' }}>{outstanding.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong></td>
                           <td><span className={badge.className}>{badge.label}</span></td>
                           <td style={{ width: '1%', whiteSpace: 'nowrap' }}>
-                            <div className="td-acts" style={{ justifyContent: 'flex-end', display: 'flex', width: '100%' }}>
-                              <button className="btn btn-xs btn-a" onClick={() => handleEditFee(fee)}>แก้ไข</button>
+                            <div className="td-acts" style={{ justifyContent: 'flex-end', display: 'flex', width: '100%', gap: 4, alignItems: 'center' }}>
+                              <button className="vms-ra-btn vms-ra-edit" title="แก้ไข" onClick={() => handleEditFee(fee)}><svg width="13" height="13" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z"/></svg></button>
                               {showLegacyBillingActions && <button className="btn btn-xs btn-g" onClick={() => handlePrintInvoiceByHouse(fee)}>พิมพ์</button>}
                               {showLegacyBillingActions && isNoticePrintable(fee) && <button className="btn btn-xs btn-o" onClick={() => handlePrintNoticeByHouse(fee)}>พิมพ์ใบเตือน</button>}
                               {canCalculateAnnualFee(fee) && <button className="btn btn-xs btn-o" onClick={() => handleCalculateAnnual(fee)}>คำนวณทั้งปี</button>}
                               {canCancelAnnualFee(fee) && <button className="btn btn-xs btn-g" onClick={() => handleCancelAnnualCalculation(fee)}>ยกเลิกทั้งปี</button>}
                               {showLegacyBillingActions && !isFeeFullyPaid(fee) && <button className="btn btn-xs btn-dg" onClick={() => handleCalculateOverdue(fee)}>คำนวณค่าปรับ</button>}
-                              <button className="btn btn-xs btn-dg" onClick={() => handleDeleteFee(fee)}>ลบ</button>
+                              <button className="vms-ra-btn vms-ra-del" title="ลบ" onClick={() => handleDeleteFee(fee)}><svg width="13" height="13" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd"/></svg></button>
                             </div>
                           </td>
                         </tr>
@@ -1824,13 +1824,13 @@ const AdminFees = () => {
                     <span><span className="mcard-label">ยอดค้างชำระ</span> {outstanding.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                   </div>
                   <div className="mcard-actions">
-                    <button className="btn btn-xs btn-a" onClick={() => handleEditFee(fee)}>แก้ไข</button>
+                    <button className="vms-ra-btn vms-ra-edit" title="แก้ไข" onClick={() => handleEditFee(fee)}><svg width="13" height="13" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z"/></svg></button>
                     {showLegacyBillingActions && <button className="btn btn-xs btn-g" onClick={() => handlePrintInvoiceByHouse(fee)}>พิมพ์</button>}
                     {showLegacyBillingActions && isNoticePrintable(fee) && <button className="btn btn-xs btn-o" onClick={() => handlePrintNoticeByHouse(fee)}>ใบเตือน</button>}
                     {canCalculateAnnualFee(fee) && <button className="btn btn-xs btn-o" onClick={() => handleCalculateAnnual(fee)}>ทั้งปี</button>}
                     {canCancelAnnualFee(fee) && <button className="btn btn-xs btn-g" onClick={() => handleCancelAnnualCalculation(fee)}>ยกเลิกทั้งปี</button>}
                     {showLegacyBillingActions && !isFeeFullyPaid(fee) && <button className="btn btn-xs btn-dg" onClick={() => handleCalculateOverdue(fee)}>ค่าปรับ</button>}
-                    <button className="btn btn-xs btn-dg" onClick={() => handleDeleteFee(fee)}>ลบ</button>
+                    <button className="vms-ra-btn vms-ra-del" title="ลบ" onClick={() => handleDeleteFee(fee)}><svg width="13" height="13" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd"/></svg></button>
                   </div>
                 </div>
               )
@@ -1898,8 +1898,8 @@ const AdminFees = () => {
                         <td><strong>{Number(fee.total_amount || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong></td>
                         <td><span className={badge.className}>{badge.label}</span></td>
                         <td style={{ width: '1%', whiteSpace: 'nowrap' }}>
-                          <div className="td-acts" style={{ justifyContent: 'flex-end', display: 'flex', width: '100%' }}>
-                            <button className="btn btn-xs btn-a" onClick={() => handleEditFee(fee)}>แก้ไข</button>
+                          <div className="td-acts" style={{ justifyContent: 'flex-end', display: 'flex', width: '100%', gap: 4, alignItems: 'center' }}>
+                            <button className="vms-ra-btn vms-ra-edit" title="แก้ไข" onClick={() => handleEditFee(fee)}><svg width="13" height="13" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z"/></svg></button>
                             {showLegacyBillingActions && <button className="btn btn-xs btn-g" onClick={() => handlePrintInvoiceByHouse(fee)}>พิมพ์</button>}
                           </div>
                         </td>
@@ -1928,7 +1928,7 @@ const AdminFees = () => {
                   <span><span className="mcard-label">ยอดรวม</span> {Number(fee.total_amount || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                 </div>
                 <div className="mcard-actions">
-                  <button className="btn btn-xs btn-a" onClick={() => handleEditFee(fee)}>แก้ไข</button>
+                  <button className="vms-ra-btn vms-ra-edit" title="แก้ไข" onClick={() => handleEditFee(fee)}><svg width="13" height="13" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z"/></svg></button>
                   {showLegacyBillingActions && <button className="btn btn-xs btn-g" onClick={() => handlePrintInvoiceByHouse(fee)}>พิมพ์</button>}
                 </div>
               </div>

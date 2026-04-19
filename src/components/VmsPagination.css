@@ -131,11 +131,12 @@
 
 .vms-inline-search input {
   height: 32px;
-  width: 220px;
+  width: 200px;
+  min-width: 140px;
   padding: 0 10px 0 28px;
-  border: 1px solid var(--bo, #e4e9f5);
+  border: 1.5px solid #d1d5e0;
   border-radius: 8px;
-  background: var(--bg2, #f0f3fa);
+  background: var(--card, #fff);
   font-size: 12px;
   color: var(--tx, #1e2537);
   outline: none;
@@ -145,19 +146,18 @@
 
 .vms-inline-search input:focus {
   border-color: #4f6ef7;
-  background: var(--card, #fff);
 }
 
-/* Small toolbar buttons */
+/* Small toolbar buttons — outline style */
 .vms-sm-btn {
   height: 32px;
   padding: 0 12px;
-  border: 1px solid var(--bo, #e4e9f5);
+  border: 1.5px solid #d1d5e0;
   border-radius: 8px;
-  background: var(--bg2, #f0f3fa);
+  background: transparent;
   font-size: 12px;
   font-weight: 500;
-  color: var(--mu, #5c6882);
+  color: #5c6882;
   display: inline-flex;
   align-items: center;
   gap: 5px;
@@ -168,9 +168,9 @@
 }
 
 .vms-sm-btn:hover {
-  background: var(--card, #fff);
-  color: var(--tx, #1e2537);
-  border-color: #c7d0e8;
+  background: #f8fafc;
+  border-color: #9aa3bb;
+  color: #1e2537;
 }
 
 .vms-sm-btn:disabled {
@@ -178,20 +178,55 @@
   cursor: default;
 }
 
+/* Outline color variants */
 .vms-sm-btn--primary {
-  background: #4f6ef7;
   border-color: #4f6ef7;
-  color: #fff;
+  color: #4f6ef7;
+}
+.vms-sm-btn--primary:hover {
+  background: #eef2ff;
+  border-color: #3d5ce5;
+  color: #3d5ce5;
 }
 
-.vms-sm-btn--primary:hover {
-  background: #3d5ce5;
-  border-color: #3d5ce5;
-  color: #fff;
+.vms-sm-btn--success {
+  border-color: #16a34a;
+  color: #16a34a;
+}
+.vms-sm-btn--success:hover {
+  background: #f0fdf4;
+  color: #15803d;
+}
+
+.vms-sm-btn--danger {
+  border-color: #dc2626;
+  color: #dc2626;
+}
+.vms-sm-btn--danger:hover {
+  background: #fef2f2;
+  color: #b91c1c;
+}
+
+.vms-sm-btn--warning {
+  border-color: #d97706;
+  color: #d97706;
+}
+.vms-sm-btn--warning:hover {
+  background: #fffbeb;
+  color: #b45309;
+}
+
+.vms-sm-btn--info {
+  border-color: #0891b2;
+  color: #0891b2;
+}
+.vms-sm-btn--info:hover {
+  background: #ecfeff;
+  color: #0e7490;
 }
 
 /* ════════════════════════════════
-   Row Action Buttons — sample-matched
+   Row Action Buttons — icon-only
 ════════════════════════════════ */
 .vms-row-acts {
   display: flex;
@@ -200,32 +235,32 @@
 }
 
 .vms-ra-btn {
-  height: 26px;
-  padding: 0 9px;
-  border-radius: 6px;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border-radius: 7px;
   border: 1px solid transparent;
-  font-size: 11.5px;
-  font-weight: 500;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
-  gap: 3px;
+  justify-content: center;
   font-family: inherit;
   transition: all .15s;
-  white-space: nowrap;
+  flex-shrink: 0;
 }
 
-/* view = blue tint */
+/* view = blue tint (eye/slip) */
 .vms-ra-view {
   background: #dbeafe;
   color: #1d4ed8;
+  border-color: #bfdbfe;
 }
 
 .vms-ra-view:hover {
   background: #bfdbfe;
 }
 
-/* edit = neutral */
+/* edit = neutral (pencil) */
 .vms-ra-edit {
   background: var(--bg2, #f0f3fa);
   color: var(--mu, #5c6882);
@@ -237,20 +272,21 @@
   color: var(--tx, #1e2537);
 }
 
-/* ok = green tint */
+/* ok = green tint (check) */
 .vms-ra-ok {
   background: #dcfce7;
   color: #166534;
+  border-color: #bbf7d0;
 }
 
 .vms-ra-ok:hover {
   background: #bbf7d0;
 }
 
-/* del = ghost → red on hover */
+/* del = ghost → red on hover (trash/X) */
 .vms-ra-del {
   background: transparent;
-  color: var(--mu, #9aa3bb);
+  color: #d1d5db;
   border-color: transparent;
 }
 
