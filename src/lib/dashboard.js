@@ -80,12 +80,12 @@ export async function getDashboardData() {
   const [vehicleRequestsResult, accountRequestsResult] = await Promise.allSettled([
     supabase
       .from('vehicle_requests')
-      .select('id, status, request_type, created_at, house_id, house_no, license_plate, province, vehicle_type, houses(house_no), profiles:created_by_id(full_name, username)')
+      .select('id, status, request_type, created_at, house_id, house_no, license_plate, province, vehicle_type, houses(house_no)')
       .eq('status', 'pending')
       .order('created_at', { ascending: false }),
     supabase
       .from('account_requests')
-      .select('id, status, request_type, created_at, house_id, requested_username, full_name, houses(house_no), profiles:profile_id(full_name, username)')
+      .select('id, status, request_type, created_at, house_id, requested_username, full_name, houses(house_no)')
       .eq('status', 'pending')
       .order('created_at', { ascending: false }),
   ])
