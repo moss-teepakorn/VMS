@@ -37,19 +37,23 @@ export async function createBoardSet(payload = {}) {
     .single()
   if (setError) throw setError
 
-  const memberRows = Array.from({ length: 7 }, (_, i) => {
-    const m = members[i] || {}
-    return {
-      set_id: setData.id,
-      member_no: i + 1,
+  const memberRows = (Array.isArray(members) ? members : [])
+    .map((m) => ({
       full_name: String(m.full_name || '').trim(),
       position: String(m.position || 'กรรมการ').trim(),
       phone: String(m.phone || '').trim() || null,
-    }
-  })
+    }))
+    .filter((m) => m.full_name)
+    .map((m, idx) => ({
+      set_id: setData.id,
+      member_no: idx + 1,
+      ...m,
+    }))
 
-  const { error: mErr } = await supabase.from('board_members').insert(memberRows)
-  if (mErr) throw mErr
+  if (memberRows.length > 0) {
+    const { error: mErr } = await supabase.from('board_members').insert(memberRows)
+    if (mErr) throw mErr
+  }
 
   return setData
 }
@@ -71,23 +75,27 @@ export async function updateBoardSet(id, patch = {}) {
 export async function saveBoardMembers(setId, members = []) {
   if (!setId) throw new Error('ไม่พบรหัส board set')
 
-  // Delete all existing members and re-insert 7 rows
+  // Delete all existing members and re-insert updated member rows
   const { error: delErr } = await supabase.from('board_members').delete().eq('set_id', setId)
   if (delErr) throw delErr
 
-  const rows = Array.from({ length: 7 }, (_, i) => {
-    const m = members[i] || {}
-    return {
-      set_id: setId,
-      member_no: i + 1,
+  const rows = (Array.isArray(members) ? members : [])
+    .map((m) => ({
       full_name: String(m.full_name || '').trim(),
       position: String(m.position || 'กรรมการ').trim(),
       phone: String(m.phone || '').trim() || null,
-    }
-  })
+    }))
+    .filter((m) => m.full_name)
+    .map((m, idx) => ({
+      set_id: setId,
+      member_no: idx + 1,
+      ...m,
+    }))
 
-  const { error: insErr } = await supabase.from('board_members').insert(rows)
-  if (insErr) throw insErr
+  if (rows.length > 0) {
+    const { error: insErr } = await supabase.from('board_members').insert(rows)
+    if (insErr) throw insErr
+  }
   return true
 }
 
