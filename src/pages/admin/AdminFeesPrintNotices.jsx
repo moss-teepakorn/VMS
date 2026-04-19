@@ -2,7 +2,6 @@ import React, { useEffect, useMemo, useState } from 'react'
 import StyledSelect from '../../components/StyledSelect'
 import DropdownList from '../../components/DropdownList'
 import VmsPagination from '../../components/VmsPagination'
-
 import Swal from 'sweetalert2'
 import { getSystemConfig } from '../../lib/systemConfig'
 import { buildPeriodLabelMapFromCycle, buildPeriodOptionsFromCycle, getPaymentCycleConfigByYear } from '../../lib/paymentCycles'
@@ -15,6 +14,7 @@ import {
   listFees,
 } from '../../lib/fees'
 import { resolveImageToDataUrl, DEFAULT_LOGO_DATAURL } from '../../lib/logoUtils'
+import './FinanceLightButton.css'
 
 function periodLabel(period) {
   if (period === 'first_half') return 'ครึ่งปีแรก'
@@ -842,8 +842,8 @@ export default function AdminFeesPrintNotices() {
             </div>
           </div>
           <div className="vms-toolbar-right">
-            <button className="vms-sm-btn" onClick={toggleAll} disabled={loading}>เลือกทั้งหมด</button>
-            <button className="vms-sm-btn vms-sm-btn--primary" onClick={openPrintPreviewModal} disabled={runningPrintAction || selectedFees.length === 0}>🖨 พิมพ์</button>
+            <button className="vms-light-btn vms-light-btn--primary" onClick={toggleAll} disabled={loading}>เลือกทั้งหมด</button>
+            <button className="vms-light-btn vms-light-btn--primary" onClick={openPrintPreviewModal} disabled={runningPrintAction || selectedFees.length === 0}>🖨 พิมพ์</button>
           </div>
         </div>
       </div>
@@ -958,10 +958,10 @@ export default function AdminFeesPrintNotices() {
               </div>
             </div>
             <div className="house-md-foot">
-              <button className="btn btn-o" type="button" onClick={() => runPrintAction('pdf')} disabled={runningPrintAction}>{runningPrintAction ? 'กำลังสร้างไฟล์...' : '⬇ PDF'}</button>
-              <button className="btn btn-o" type="button" onClick={() => runPrintAction('image')} disabled={runningPrintAction}>{runningPrintAction ? 'กำลังสร้างไฟล์...' : '⬇ Image'}</button>
-              <button className="btn btn-a" type="button" onClick={() => runPrintAction('paper')} disabled={runningPrintAction}>🖨 พิมพ์</button>
-              <button className="btn btn-g" type="button" onClick={closePrintPreviewModal} disabled={runningPrintAction}>ปิด</button>
+              <button className="vms-light-btn vms-light-btn--primary" type="button" onClick={() => runPrintAction('pdf')} disabled={runningPrintAction}>{runningPrintAction ? 'กำลังสร้างไฟล์...' : '⬇ PDF'}</button>
+              <button className="vms-light-btn vms-light-btn--primary" type="button" onClick={() => runPrintAction('image')} disabled={runningPrintAction}>{runningPrintAction ? 'กำลังสร้างไฟล์...' : '⬇ Image'}</button>
+              <button className="vms-light-btn vms-light-btn--primary" type="button" onClick={() => runPrintAction('paper')} disabled={runningPrintAction}>🖨 พิมพ์</button>
+              <button className="vms-light-btn" type="button" onClick={closePrintPreviewModal} disabled={runningPrintAction}>ปิด</button>
             </div>
           </div>
         </div>
