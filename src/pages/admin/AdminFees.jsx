@@ -1755,9 +1755,9 @@ const AdminFees = () => {
               <option value="100">100 รายการ</option>
               <option value="all">แสดงทั้งหมด</option>
             </StyledSelect>
-            <div style={{ marginLeft: 'auto', display: 'flex', gap: 6, alignItems: 'center' }}>
+            <div className="vms-pagination" style={{ marginLeft: 'auto' }}>
               <button className="btn btn-g btn-xs" type="button" onClick={() => setActivePage((prev) => Math.max(1, prev - 1))} disabled={activeRowsPerPage === 'all' || activePage <= 1}>ก่อนหน้า</button>
-              <span style={{ fontSize: 12, color: 'var(--mu)' }}>หน้า {activePage}/{activeTotalPages}</span>
+              <span className="vms-page-info">หน้า {activePage}/{activeTotalPages}</span>
               <button className="btn btn-g btn-xs" type="button" onClick={() => setActivePage((prev) => Math.min(activeTotalPages, prev + 1))} disabled={activeRowsPerPage === 'all' || activePage >= activeTotalPages}>ถัดไป</button>
             </div>
           </div>
@@ -1882,9 +1882,9 @@ const AdminFees = () => {
               <option value="100">100 รายการ</option>
               <option value="all">แสดงทั้งหมด</option>
             </StyledSelect>
-            <div style={{ marginLeft: 'auto', display: 'flex', gap: 6, alignItems: 'center' }}>
+            <div className="vms-pagination" style={{ marginLeft: 'auto' }}>
               <button className="btn btn-g btn-xs" type="button" onClick={() => setArchivePage((prev) => Math.max(1, prev - 1))} disabled={archiveRowsPerPage === 'all' || archivePage <= 1}>ก่อนหน้า</button>
-              <span style={{ fontSize: 12, color: 'var(--mu)' }}>หน้า {archivePage}/{archiveTotalPages}</span>
+              <span className="vms-page-info">หน้า {archivePage}/{archiveTotalPages}</span>
               <button className="btn btn-g btn-xs" type="button" onClick={() => setArchivePage((prev) => Math.min(archiveTotalPages, prev + 1))} disabled={archiveRowsPerPage === 'all' || archivePage >= archiveTotalPages}>ถัดไป</button>
             </div>
           </div>

@@ -258,6 +258,7 @@
   justify-content: center;
   font-size: 24px;
   flex-shrink: 0;
+  -webkit-backdrop-filter: blur(4px);
   backdrop-filter: blur(4px);
   border: 1.5px solid rgba(255, 255, 255, 0.25);
 }
@@ -591,15 +592,16 @@
   align-items: center;
   justify-content: center;
   gap: 5px;
-  padding: 8px 16px;
-  border-radius: 9px;
+  padding: 7px 14px;
+  border-radius: 10px;
   font-family: 'Sarabun', sans-serif;
-  font-size: 13px;
-  font-weight: 700;
+  font-size: 12.5px;
+  font-weight: 600;
   cursor: pointer;
-  border: 1px solid transparent;
+  border: 1px solid #dbe3f2;
   transition: transform 0.15s ease, background-color 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
   white-space: nowrap;
+  min-height: 32px;
 }
 
 .btn:focus-visible {
@@ -664,79 +666,146 @@
 }
 
 .btn-ok {
-  background: var(--ds-success);
+  background: #4f6ef7;
   color: #fff;
-  border-color: var(--ds-success-strong);
-  box-shadow: 0 3px 10px color-mix(in srgb, var(--ds-success) 52%, transparent);
+  border-color: #3f5ce0;
+  box-shadow: 0 4px 12px rgba(79, 110, 247, .22);
 }
 
 .btn-ok:hover {
   background: var(--ds-success-strong);
+  background: #3f5ce0;
+
+.btn-sm {
+  padding: 6px 12px;
+  background: #ffffff;
+  color: #1e2537;
+  border-color: #dbe3f2;
+  box-shadow: 0 1px 4px rgba(15, 23, 42, .06);
+}
+
+.btn-a:hover {
+  background: #f0f3fa;
+}
+
+.btn-o {
+  background: #f0f3fa;
+  color: #5c6882;
+  border-color: #dbe3f2;
+}
+
+.btn-o:hover {
+  background: #e4e9f5;
+  color: #1e2537;
+}
+
+.btn-g {
+  background: #ffffff;
+  color: #5c6882;
+  border-color: #dbe3f2;
+}
+
+.btn-g:hover {
+  background: #f0f3fa;
+  color: #1e2537;
+}
+
+.btn-dg {
+  background: #fee2e2;
+  color: #b91c1c;
+  border-color: #fecaca;
+}
+
+.btn-dg:hover {
+  background: #fecaca;
+  color: #991b1b;
+}
+
+.btn-ok {
+  background: #dcfce7;
+  color: #15803d;
+  border-color: #bbf7d0;
+}
+
+.btn-ok:hover {
+  background: #bbf7d0;
+  color: #166534;
 }
 
 .btn-sm {
   padding: 6px 12px;
   font-size: 12px;
-  border-radius: 8px;
+  border-radius: 9px;
+  min-height: 30px;
 }
 
 .btn-xs {
   padding: 4px 9px;
   font-size: 11px;
-  border-radius: 6px;
+  border-radius: 8px;
+  min-height: 26px;
 }
 
-/* ═════════════════════════════════════════════════
-   INFO GRID
-═════════════════════════════════════════════════ */
-.ig {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 0;
+/* Pagination style based on enterprise sample */
+.vms-pagination {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
 }
 
-@media (max-width: 480px) {
-  .ig {
-    grid-template-columns: 1fr;
-  }
-}
-
-.ii {
-  padding: 10px 4px;
-  border-bottom: 1px solid var(--bo);
-}
-
-.ii:nth-last-child(-n+2) {
-  border-bottom: none;
-}
-
-.ik {
-  font-size: 10.5px;
+.vms-pagination .vms-page-info {
+  font-size: 12px;
   color: var(--mu);
-  font-weight: 600;
-  letter-spacing: 0.03em;
-  margin-bottom: 4px;
+  background: #f0f3fa;
+  border: 1px solid #dbe3f2;
+  border-radius: 999px;
+  padding: 4px 10px;
 }
 
-.iv {
-  font-size: 14px;
-  color: var(--tx);
-  font-weight: 700;
+.vms-pagination .btn {
+  min-width: 58px;
 }
 
-/* ═════════════════════════════════════════════════
-   TABLE STYLES
-═════════════════════════════════════════════════ */
-.tw {
-  width: 100%;
-  border-collapse: collapse;
+/* Density tuning for heavy screens */
+.dashboard,
+.houses-compact,
+.payments-compact {
+  gap: 14px;
 }
 
-.tw th {
-  padding: 10px 12px;
-  text-align: left;
-  font-weight: 700;
-  font-size: 11px;
+.pane.on .card > .cb {
+  padding: 12px 14px;
+}
+
+.pane.on .card > .ch {
+  padding: 10px 14px;
+}
+
+.pane.on .card .tw th,
+.pane.on .card .tw td {
+  padding-top: 9px;
+  padding-bottom: 9px;
+}
+
+/* Modal look aligned with new theme */
+.house-md,
+.md {
+  border: 1px solid #dde6f2 !important;
+  border-radius: 14px !important;
+  box-shadow: 0 18px 40px rgba(15, 23, 42, .18) !important;
+}
+
+.house-md-head,
+.md-hd {
+  border-bottom: 1px solid #e6ecf5 !important;
+}
+
+.house-md-foot,
+.md-ft {
+  border-top: 1px solid #e6ecf5 !important;
+  background: #f7f9ff !important;
+}
   color: var(--mu);
   text-transform: uppercase;
   letter-spacing: .05em;
