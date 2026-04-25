@@ -1795,7 +1795,7 @@ button, input, select, textarea {
 }
 
 .house-md.house-md--lg > .house-md-head {
-  background-color: #f2f4f8 !important;
+  background: #f2f4f8 !important;
   border-bottom: 1px solid #d8e2ef !important;
 }
 
