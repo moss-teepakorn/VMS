@@ -1081,7 +1081,7 @@ const AdminVehicles = () => {
                     <div className="house-card-head">รายละเอียดรถ</div>
                     <div className="house-card-body">
                       <div className="card-content">
-                        <div className="row-slot">
+                        <div className="double-row">
                           <label className="house-field field">
                             <span>ยี่ห้อ</span>
                             <DropdownList
@@ -1091,14 +1091,12 @@ const AdminVehicles = () => {
                               placeholder="เลือกยี่ห้อ"
                             />
                           </label>
-                        </div>
-                        <div className="row-slot">
                           <label className="house-field field">
                             <span>รุ่น</span>
                             <input name="model" value={form.model} onChange={handleChange} placeholder="เช่น City / Revo" />
                           </label>
                         </div>
-                        <div className="row-slot">
+                        <div className="double-row">
                           <label className="house-field field">
                             <span>สี</span>
                             <DropdownList
@@ -1108,21 +1106,27 @@ const AdminVehicles = () => {
                               placeholder="เลือกสี"
                             />
                           </label>
-                        </div>
-                        {form.color === 'อื่นๆ' ? (
-                          <div className="row-slot">
+                          {form.color === 'อื่นๆ' ? (
                             <label className="house-field field">
                               <span>ระบุสีอื่นๆ *</span>
                               <input name="color_other" value={form.color_other} onChange={handleChange} placeholder="เช่น เทาอมฟ้า" />
                             </label>
-                          </div>
-                        ) : null}
-                        {form.brand === 'อื่นๆ' ? (
-                          <div className="row-slot">
+                          ) : form.brand === 'อื่นๆ' ? (
                             <label className="house-field field">
                               <span>ระบุยี่ห้ออื่นๆ *</span>
                               <input name="brand_other" value={form.brand_other} onChange={handleChange} placeholder="เช่น NETA" />
                             </label>
+                          ) : (
+                            <div />
+                          )}
+                        </div>
+                        {form.color === 'อื่นๆ' && form.brand === 'อื่นๆ' ? (
+                          <div className="double-row">
+                            <label className="house-field field">
+                              <span>ระบุยี่ห้ออื่นๆ *</span>
+                              <input name="brand_other" value={form.brand_other} onChange={handleChange} placeholder="เช่น NETA" />
+                            </label>
+                            <div />
                           </div>
                         ) : null}
                       </div>
@@ -1133,7 +1137,7 @@ const AdminVehicles = () => {
                     <div className="house-card-head">ที่จอดและสถานะ</div>
                     <div className="house-card-body">
                       <div className="card-content">
-                        <div className="row-slot">
+                        <div className="double-row">
                           <label className="house-field field">
                             <span>ตำแหน่งจอด</span>
                             <DropdownList
@@ -1143,8 +1147,6 @@ const AdminVehicles = () => {
                               placeholder="เลือกตำแหน่งจอด"
                             />
                           </label>
-                        </div>
-                        <div className="row-slot">
                           <label className="house-field field">
                             <span>Lock no (ส่วนกลางเท่านั้น)</span>
                             <input
@@ -1156,13 +1158,11 @@ const AdminVehicles = () => {
                             />
                           </label>
                         </div>
-                        <div className="row-slot">
+                        <div className="double-row">
                           <label className="house-field field">
                             <span>ค่าจอด</span>
                             <input name="parking_fee" value={form.parking_fee} onChange={handleChange} placeholder="0.00" />
                           </label>
-                        </div>
-                        <div className="row-slot">
                           <label className="house-field field">
                             <span>สถานะ</span>
                             <DropdownList
