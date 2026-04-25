@@ -1184,7 +1184,7 @@ const AdminVehicles = () => {
                   </div>
                 </div>
 
-                <section className="house-card">
+                <section className="house-card house-card--media">
                   <div className="house-card-head">รูปภาพรถ (สูงสุด 5 รูป)</div>
                   <div className="house-card-body">
                     <div className="card-content">

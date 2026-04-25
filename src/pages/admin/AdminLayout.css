@@ -1749,7 +1749,12 @@ button, input, select, textarea {
 
 .house-md--xl {
   --house-md-max-w: 1060px;
-  --house-md-max-h: 920px;
+  --house-md-max-h: 860px;
+}
+
+.house-md > .house-md-head {
+  background: #bbc6d1 !important;
+  border-bottom: 1px solid #d8e2ef !important;
 }
 
 @media (max-width: 1024px) {
@@ -1875,8 +1880,16 @@ button, input, select, textarea {
 .house-cards-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 18px;
+  gap: 18px 20px;
   align-items: stretch;
+}
+
+.house-cards-grid > .house-card {
+  max-height: 390px;
+}
+
+.house-cards-grid > .house-card .card-content {
+  height: 100%;
 }
 
 .house-card {
@@ -1886,7 +1899,6 @@ button, input, select, textarea {
   display: flex;
   flex-direction: column;
   overflow: visible;
-  max-height: 570px;
 }
 
 .house-card-head {
@@ -1926,11 +1938,19 @@ button, input, select, textarea {
 }
 
 .card-content {
-  height: 475px;
   padding: 14px;
   display: flex;
   flex-direction: column;
   gap: 10px;
+  min-height: 0;
+}
+
+.house-card--media {
+  max-height: 300px;
+}
+
+.house-card--media .card-content {
+  height: 100%;
 }
 
 .row-slot {
