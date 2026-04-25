@@ -1125,12 +1125,6 @@ const AdminVehicles = () => {
                             </label>
                           </div>
                         ) : null}
-                        <div className="row-slot">
-                          <label className="house-field field">
-                            <span>หมายเหตุ</span>
-                            <textarea name="note" value={form.note} onChange={handleChange} rows="1" placeholder="รายละเอียดเพิ่มเติม" />
-                          </label>
-                        </div>
                       </div>
                     </div>
                   </div>
@@ -1177,6 +1171,12 @@ const AdminVehicles = () => {
                               onChange={(nextValue) => applyFormValue('status', nextValue)}
                               placeholder="เลือกสถานะ"
                             />
+                          </label>
+                        </div>
+                        <div className="row-slot">
+                          <label className="house-field field">
+                            <span>หมายเหตุ</span>
+                            <textarea name="note" value={form.note} onChange={handleChange} rows="1" placeholder="รายละเอียดเพิ่มเติม" />
                           </label>
                         </div>
                       </div>
