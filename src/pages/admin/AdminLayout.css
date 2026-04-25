@@ -1880,8 +1880,9 @@ button, input, select, textarea {
 .house-cards-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 18px;
-  align-items: start;
+  column-gap: 18px;
+  row-gap: 24px;
+  align-items: stretch;
 }
 
 .house-cards-grid > .house-card {
@@ -1944,6 +1945,7 @@ button, input, select, textarea {
 }
 
 .house-card--media {
+  margin-top: 24px;
   max-height: 260px;
 }
 
