@@ -1794,6 +1794,11 @@ button, input, select, textarea {
   border-bottom: 1px solid #d8e2ef;
 }
 
+.house-md.house-md--lg > .house-md-head {
+  background-color: #f2f4f8 !important;
+  border-bottom: 1px solid #d8e2ef !important;
+}
+
 .house-md-title {
   margin: 0;
   font-size: 26px;
