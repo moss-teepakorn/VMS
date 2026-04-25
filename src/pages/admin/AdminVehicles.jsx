@@ -1081,8 +1081,8 @@ const AdminVehicles = () => {
                     <div className="house-card-head">รายละเอียดรถ</div>
                     <div className="house-card-body">
                       <div className="card-content">
-                        <div className="row-slot">
-                          <label className={`house-field field ${form.brand === 'อื่นๆ' ? 'has-nested' : ''}`}>
+                        <div className="double-row">
+                          <label className="house-field field">
                             <span>ยี่ห้อ</span>
                             <DropdownList
                               value={form.brand}
@@ -1090,16 +1090,18 @@ const AdminVehicles = () => {
                               onChange={(nextValue) => applyFormValue('brand', nextValue)}
                               placeholder="เลือกยี่ห้อ"
                             />
-                            {form.brand === 'อื่นๆ' ? (
+                          </label>
+                          {form.brand === 'อื่นๆ' ? (
+                            <label className="house-field field">
+                              <span>ระบุยี่ห้อ</span>
                               <input
-                                className="nested-input"
                                 name="brand_other"
                                 value={form.brand_other}
                                 onChange={handleChange}
                                 placeholder="ระบุยี่ห้ออื่นๆ เช่น NETA"
                               />
-                            ) : null}
-                          </label>
+                            </label>
+                          ) : null}
                         </div>
                         <div className="row-slot">
                           <label className="house-field field">
@@ -1107,8 +1109,8 @@ const AdminVehicles = () => {
                             <input name="model" value={form.model} onChange={handleChange} placeholder="เช่น City / Revo" />
                           </label>
                         </div>
-                        <div className="row-slot">
-                          <label className={`house-field field ${form.color === 'อื่นๆ' ? 'has-nested' : ''}`}>
+                        <div className="double-row">
+                          <label className="house-field field">
                             <span>สี</span>
                             <DropdownList
                               value={form.color}
@@ -1116,16 +1118,18 @@ const AdminVehicles = () => {
                               onChange={(nextValue) => applyFormValue('color', nextValue)}
                               placeholder="เลือกสี"
                             />
-                            {form.color === 'อื่นๆ' ? (
+                          </label>
+                          {form.color === 'อื่นๆ' ? (
+                            <label className="house-field field">
+                              <span>ระบุสี</span>
                               <input
-                                className="nested-input"
                                 name="color_other"
                                 value={form.color_other}
                                 onChange={handleChange}
                                 placeholder="ระบุสีอื่นๆ เช่น เทาอมฟ้า"
                               />
-                            ) : null}
-                          </label>
+                            </label>
+                          ) : null}
                         </div>
                       </div>
                     </div>
