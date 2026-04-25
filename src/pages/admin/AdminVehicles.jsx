@@ -1013,195 +1013,227 @@ const AdminVehicles = () => {
 
             <form onSubmit={handleSubmit}>
               <div className="house-md-body">
-                <section className="house-sec">
-                  <div className="house-sec-title">บ้านและข้อมูลทะเบียน</div>
-                  <div className="house-grid house-grid-4">
-                    <label className="house-field">
-                      <span>บ้าน *</span>
-                      <DropdownList
-                        value={form.house_id}
-                        options={[{ value: '', label: 'เลือกบ้าน' }, ...houseOptions]}
-                        onChange={(nextValue) => applyFormValue('house_id', nextValue)}
-                        placeholder="พิมพ์ค้นหา บ้านเลขที่ / เจ้าของ / ซอย"
-                      />
-                    </label>
-                    <label className="house-field">
-                      <span>ทะเบียนรถ *</span>
-                      <div className="plate-split-wrap">
+                <div className="house-cards-grid">
+                  <div className="house-card">
+                    <div className="house-card-head">บ้านและข้อมูลทะเบียน</div>
+                    <div className="house-card-body">
+                      <div className="card-content">
+                        <div className="row-slot">
+                          <label className="house-field field">
+                            <span>บ้าน *</span>
+                            <DropdownList
+                              value={form.house_id}
+                              options={[{ value: '', label: 'เลือกบ้าน' }, ...houseOptions]}
+                              onChange={(nextValue) => applyFormValue('house_id', nextValue)}
+                              placeholder="พิมพ์ค้นหา บ้านเลขที่ / เจ้าของ / ซอย"
+                            />
+                          </label>
+                        </div>
+                        <div className="row-slot">
+                          <label className="house-field field">
+                            <span>ทะเบียนรถ *</span>
+                            <div className="plate-split-wrap">
+                              <input
+                                className="plate-prefix"
+                                name="license_plate_prefix"
+                                value={form.license_plate_prefix}
+                                onChange={handleChange}
+                                placeholder="7กจ"
+                              />
+                              <span className="plate-dash">-</span>
+                              <input
+                                className="plate-number"
+                                name="license_plate_number"
+                                value={form.license_plate_number}
+                                onChange={handleChange}
+                                placeholder="5533"
+                              />
+                            </div>
+                          </label>
+                        </div>
+                        <div className="row-slot">
+                          <label className="house-field field">
+                            <span>จังหวัด</span>
+                            <DropdownList
+                              value={form.province}
+                              options={PROVINCE_OPTIONS.map((province) => ({ value: province, label: province }))}
+                              onChange={(nextValue) => applyFormValue('province', nextValue)}
+                              placeholder="เลือกจังหวัด"
+                            />
+                          </label>
+                        </div>
+                        <div className="row-slot">
+                          <label className="house-field field">
+                            <span>ประเภทรถ</span>
+                            <DropdownList
+                              value={form.vehicle_type}
+                              options={VEHICLE_TYPES}
+                              onChange={(nextValue) => applyFormValue('vehicle_type', nextValue)}
+                              placeholder="เลือกประเภทรถ"
+                            />
+                          </label>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="house-card">
+                    <div className="house-card-head">รายละเอียดรถ</div>
+                    <div className="house-card-body">
+                      <div className="card-content">
+                        <div className="row-slot">
+                          <label className="house-field field">
+                            <span>ยี่ห้อ</span>
+                            <DropdownList
+                              value={form.brand}
+                              options={BRAND_OPTIONS.map((brand) => ({ value: brand, label: brand }))}
+                              onChange={(nextValue) => applyFormValue('brand', nextValue)}
+                              placeholder="เลือกยี่ห้อ"
+                            />
+                          </label>
+                        </div>
+                        <div className="row-slot">
+                          <label className="house-field field">
+                            <span>รุ่น</span>
+                            <input name="model" value={form.model} onChange={handleChange} placeholder="เช่น City / Revo" />
+                          </label>
+                        </div>
+                        <div className="row-slot">
+                          <label className="house-field field">
+                            <span>สี</span>
+                            <DropdownList
+                              value={form.color}
+                              options={COLOR_OPTIONS.map((color) => ({ value: color, label: color }))}
+                              onChange={(nextValue) => applyFormValue('color', nextValue)}
+                              placeholder="เลือกสี"
+                            />
+                          </label>
+                        </div>
+                        {form.color === 'อื่นๆ' ? (
+                          <div className="row-slot">
+                            <label className="house-field field">
+                              <span>ระบุสีอื่นๆ *</span>
+                              <input name="color_other" value={form.color_other} onChange={handleChange} placeholder="เช่น เทาอมฟ้า" />
+                            </label>
+                          </div>
+                        ) : null}
+                        {form.brand === 'อื่นๆ' ? (
+                          <div className="row-slot">
+                            <label className="house-field field">
+                              <span>ระบุยี่ห้ออื่นๆ *</span>
+                              <input name="brand_other" value={form.brand_other} onChange={handleChange} placeholder="เช่น NETA" />
+                            </label>
+                          </div>
+                        ) : null}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="house-card">
+                    <div className="house-card-head">ที่จอดและสถานะ</div>
+                    <div className="house-card-body">
+                      <div className="card-content">
+                        <div className="row-slot">
+                          <label className="house-field field">
+                            <span>ตำแหน่งจอด</span>
+                            <DropdownList
+                              value={form.parking_location}
+                              options={PARKING_OPTIONS}
+                              onChange={(nextValue) => applyFormValue('parking_location', nextValue)}
+                              placeholder="เลือกตำแหน่งจอด"
+                            />
+                          </label>
+                        </div>
+                        <div className="row-slot">
+                          <label className="house-field field">
+                            <span>Lock no (ส่วนกลางเท่านั้น)</span>
+                            <input
+                              name="parking_lock_no"
+                              value={form.parking_lock_no}
+                              onChange={handleChange}
+                              placeholder="เช่น C-12"
+                              disabled={form.parking_location !== 'ส่วนกลาง'}
+                            />
+                          </label>
+                        </div>
+                        <div className="row-slot">
+                          <label className="house-field field">
+                            <span>ค่าจอด</span>
+                            <input name="parking_fee" value={form.parking_fee} onChange={handleChange} placeholder="0.00" />
+                          </label>
+                        </div>
+                        <div className="row-slot">
+                          <label className="house-field field">
+                            <span>สถานะ</span>
+                            <DropdownList
+                              value={form.status}
+                              options={STATUS_OPTIONS}
+                              onChange={(nextValue) => applyFormValue('status', nextValue)}
+                              placeholder="เลือกสถานะ"
+                            />
+                          </label>
+                        </div>
+                        <div className="row-slot">
+                          <label className="house-field field">
+                            <span>หมายเหตุ</span>
+                            <textarea name="note" value={form.note} onChange={handleChange} rows="1" placeholder="รายละเอียดเพิ่มเติม" />
+                          </label>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <section className="house-card">
+                  <div className="house-card-head">รูปภาพรถ (สูงสุด 5 รูป)</div>
+                  <div className="house-card-body">
+                    <div className="card-content">
+                      <div className="house-field">
+                        <label>แนบไฟล์รูปภาพ</label>
                         <input
-                          className="plate-prefix"
-                          name="license_plate_prefix"
-                          value={form.license_plate_prefix}
-                          onChange={handleChange}
-                          placeholder="7กจ"
-                        />
-                        <span className="plate-dash">-</span>
-                        <input
-                          className="plate-number"
-                          name="license_plate_number"
-                          value={form.license_plate_number}
-                          onChange={handleChange}
-                          placeholder="5533"
+                          type="file"
+                          accept="image/*"
+                          multiple
+                          onChange={handleAttachFiles}
+                          disabled={attachments.length >= MAX_ATTACHMENTS}
                         />
                       </div>
-                    </label>
-                    <label className="house-field house-field-province">
-                      <span>จังหวัด</span>
-                      <DropdownList
-                        value={form.province}
-                        options={PROVINCE_OPTIONS.map((province) => ({ value: province, label: province }))}
-                        onChange={(nextValue) => applyFormValue('province', nextValue)}
-                        placeholder="เลือกจังหวัด"
-                      />
-                    </label>
-                    <label className="house-field">
-                      <span>ประเภทรถ</span>
-                      <DropdownList
-                        value={form.vehicle_type}
-                        options={VEHICLE_TYPES}
-                        onChange={(nextValue) => applyFormValue('vehicle_type', nextValue)}
-                        placeholder="เลือกประเภทรถ"
-                      />
-                    </label>
-                  </div>
-                </section>
-
-                <section className="house-sec">
-                  <div className="house-sec-title">รายละเอียดรถ</div>
-                  <div className="house-grid house-grid-3">
-                    <label className="house-field">
-                      <span>ยี่ห้อ</span>
-                      <DropdownList
-                        value={form.brand}
-                        options={BRAND_OPTIONS.map((brand) => ({ value: brand, label: brand }))}
-                        onChange={(nextValue) => applyFormValue('brand', nextValue)}
-                        placeholder="เลือกยี่ห้อ"
-                      />
-                    </label>
-                    {form.brand === 'อื่นๆ' ? (
-                      <label className="house-field">
-                        <span>ระบุยี่ห้ออื่นๆ *</span>
-                        <input name="brand_other" value={form.brand_other} onChange={handleChange} placeholder="เช่น NETA" />
-                      </label>
-                    ) : (
-                      <div />
-                    )}
-                  </div>
-                  <div className="house-grid house-grid-3" style={{ marginTop: '8px' }}>
-                    <label className="house-field">
-                      <span>รุ่น</span>
-                      <input name="model" value={form.model} onChange={handleChange} placeholder="เช่น City / Revo" />
-                    </label>
-                    <label className="house-field">
-                      <span>สี</span>
-                      <DropdownList
-                        value={form.color}
-                        options={COLOR_OPTIONS.map((color) => ({ value: color, label: color }))}
-                        onChange={(nextValue) => applyFormValue('color', nextValue)}
-                        placeholder="เลือกสี"
-                      />
-                    </label>
-                    {form.color === 'อื่นๆ' ? (
-                      <label className="house-field">
-                        <span>ระบุสีอื่นๆ *</span>
-                        <input name="color_other" value={form.color_other} onChange={handleChange} placeholder="เช่น เทาอมฟ้า" />
-                      </label>
-                    ) : (
-                      <div />
-                    )}
-                  </div>
-                </section>
-
-                <section className="house-sec">
-                  <div className="house-sec-title">ที่จอดและสถานะ</div>
-                  <div className="house-grid house-grid-3">
-                    <label className="house-field">
-                      <span>ตำแหน่งจอด</span>
-                      <DropdownList
-                        value={form.parking_location}
-                        options={PARKING_OPTIONS}
-                        onChange={(nextValue) => applyFormValue('parking_location', nextValue)}
-                        placeholder="เลือกตำแหน่งจอด"
-                      />
-                    </label>
-                    <label className="house-field">
-                      <span>Lock no (ส่วนกลางเท่านั้น)</span>
-                      <input
-                        name="parking_lock_no"
-                        value={form.parking_lock_no}
-                        onChange={handleChange}
-                        placeholder="เช่น C-12"
-                        disabled={form.parking_location !== 'ส่วนกลาง'}
-                      />
-                    </label>
-                    <label className="house-field">
-                      <span>ค่าจอด</span>
-                      <input name="parking_fee" value={form.parking_fee} onChange={handleChange} placeholder="0.00" />
-                    </label>
-                    <label className="house-field">
-                      <span>สถานะ</span>
-                      <DropdownList
-                        value={form.status}
-                        options={STATUS_OPTIONS}
-                        onChange={(nextValue) => applyFormValue('status', nextValue)}
-                        placeholder="เลือกสถานะ"
-                      />
-                    </label>
-                    <label className="house-field house-field-span-2">
-                      <span>หมายเหตุ</span>
-                      <textarea name="note" value={form.note} onChange={handleChange} rows="1" placeholder="รายละเอียดเพิ่มเติม" />
-                    </label>
-                  </div>
-                </section>
-
-                <section className="house-sec">
-                  <div className="house-sec-title">รูปภาพรถ (สูงสุด 5 รูป)</div>
-                  <div className="house-grid house-grid-3">
-                    <label className="house-field house-field-span-3">
-                      <span>แนบไฟล์รูปภาพ</span>
-                      <input
-                        type="file"
-                        accept="image/*"
-                        multiple
-                        onChange={handleAttachFiles}
-                        disabled={attachments.length >= MAX_ATTACHMENTS}
-                      />
-                    </label>
-                  </div>
-                  <div style={{ marginTop: '8px', fontSize: '12px', color: 'var(--mu)' }}>
-                    แนบแล้ว {attachments.length}/{MAX_ATTACHMENTS} รูป • ระบบย่อไฟล์ไม่เกิน 100KB และตั้งชื่อ CAR_YYYYMMDD_HHMMSS_001.jpg
-                  </div>
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginTop: '8px' }}>
-                    {attachments.length === 0 ? (
-                      <div style={{ fontSize: '12px', color: 'var(--mu)' }}>ยังไม่มีรูปแนบ</div>
-                    ) : attachments.map((image, index) => (
-                      <div key={`${image.name}-${index}`} style={{ width: '64px' }}>
-                        <button
-                          type="button"
-                          onClick={() => handlePreviewAttachment(image)}
-                          style={{
-                            width: '64px',
-                            height: '64px',
-                            borderRadius: '8px',
-                            border: '1px solid var(--bo)',
-                            background: '#fff',
-                            padding: '0',
-                            overflow: 'hidden',
-                            cursor: 'pointer',
-                          }}
-                        >
-                          <img src={image.url} alt={image.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => handleRemoveAttachment(image)}
-                          className="btn btn-xs btn-dg"
-                          style={{ marginTop: '4px', width: '100%' }}
-                        >
-                          ลบ
-                        </button>
+                      <div style={{ fontSize: '12px', color: 'var(--mu)' }}>
+                        แนบแล้ว {attachments.length}/{MAX_ATTACHMENTS} รูป • ระบบย่อไฟล์ไม่เกิน 100KB และตั้งชื่อ CAR_YYYYMMDD_HHMMSS_001.jpg
                       </div>
-                    ))}
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginTop: '8px' }}>
+                        {attachments.length === 0 ? (
+                          <div style={{ fontSize: '12px', color: 'var(--mu)' }}>ยังไม่มีรูปแนบ</div>
+                        ) : attachments.map((image, index) => (
+                          <div key={`${image.name}-${index}`} style={{ width: '64px' }}>
+                            <button
+                              type="button"
+                              onClick={() => handlePreviewAttachment(image)}
+                              style={{
+                                width: '64px',
+                                height: '64px',
+                                borderRadius: '8px',
+                                border: '1px solid var(--bo)',
+                                background: '#fff',
+                                padding: '0',
+                                overflow: 'hidden',
+                                cursor: 'pointer',
+                              }}
+                            >
+                              <img src={image.url} alt={image.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveAttachment(image)}
+                              className="btn btn-xs btn-dg"
+                              style={{ marginTop: '4px', width: '100%' }}
+                            >
+                              ลบ
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
                   </div>
                 </section>
               </div>
