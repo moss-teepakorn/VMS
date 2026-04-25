@@ -712,7 +712,7 @@ const AdminHouses = () => {
 
       {showModal && (
         <div className="house-mo">
-          <div className="house-md house-md--md">
+          <div className="house-md house-md--lg">
             <div className="house-md-head">
               <div>
                 <div className="house-md-title">🏠 {editingHouse ? 'แก้ไขข้อมูลบ้าน' : 'เพิ่มข้อมูลบ้าน'}</div>
@@ -722,110 +722,118 @@ const AdminHouses = () => {
 
             <form onSubmit={handleSubmit}>
               <div className="house-md-body">
-                <section className="house-sec">
-                  <div className="house-sec-title">ที่อยู่</div>
-                  <div className="house-grid house-grid-3">
-                    <label className="house-field">
-                      <span>บ้านเลขที่</span>
-                      <input name="house_no" value={form.house_no} onChange={handleChange} placeholder="10/1" />
-                    </label>
-                    <label className="house-field">
-                      <span>ซอย</span>
-                      <DropdownList
-                        value={form.soi}
-                        options={SOI_OPTIONS}
-                        onChange={(nextValue) => setForm((current) => ({ ...current, soi: nextValue }))}
-                        placeholder="เลือกซอย"
-                      />
-                    </label>
-                    <label className="house-field">
-                      <span>ชั้นที่</span>
-                      <input name="floor_no" type="number" min="0" max="99" step="1" value={form.floor_no} onChange={handleChange} placeholder="0" />
-                    </label>
-                    <label className="house-field">
-                      <span>หมายเลขห้อง</span>
-                      <input name="room_no" value={form.room_no} onChange={handleChange} placeholder="เช่น A-502" />
-                    </label>
-                    <label className="house-field house-field-span-1">
-                      <span>ถนน / ที่อยู่</span>
-                      <input name="address" value={form.address} onChange={handleChange} placeholder="ถนนใหญ่ 1" />
-                    </label>
+                <div className="house-cards-grid">
+                  <div className="house-card">
+                    <div className="house-card-head">ที่อยู่</div>
+                    <div className="house-card-body">
+                      <div className="house-grid house-grid-3">
+                        <label className="house-field">
+                          <span>บ้านเลขที่</span>
+                          <input name="house_no" value={form.house_no} onChange={handleChange} placeholder="10/1" />
+                        </label>
+                        <label className="house-field">
+                          <span>ซอย</span>
+                          <DropdownList
+                            value={form.soi}
+                            options={SOI_OPTIONS}
+                            onChange={(nextValue) => setForm((current) => ({ ...current, soi: nextValue }))}
+                            placeholder="เลือกซอย"
+                          />
+                        </label>
+                        <label className="house-field">
+                          <span>ชั้นที่</span>
+                          <input name="floor_no" type="number" min="0" max="99" step="1" value={form.floor_no} onChange={handleChange} placeholder="0" />
+                        </label>
+                        <label className="house-field">
+                          <span>หมายเลขห้อง</span>
+                          <input name="room_no" value={form.room_no} onChange={handleChange} placeholder="เช่น A-502" />
+                        </label>
+                        <label className="house-field house-field-span-1">
+                          <span>ถนน / ที่อยู่</span>
+                          <input name="address" value={form.address} onChange={handleChange} placeholder="ถนนใหญ่ 1" />
+                        </label>
+                      </div>
+                    </div>
                   </div>
-                </section>
 
-                <section className="house-sec">
-                  <div className="house-sec-title">เจ้าของ / ผู้อาศัย</div>
-                  <div className="house-grid house-grid-2">
-                    <label className="house-field">
-                      <span>เจ้าของกรรมสิทธิ์</span>
-                      <input name="owner_name" value={form.owner_name} onChange={handleChange} placeholder="สมชาย ใจดี" />
-                    </label>
-                    <label className="house-field">
-                      <span>ผู้เช่า / ผู้อาศัย</span>
-                      <input name="resident_name" value={form.resident_name} onChange={handleChange} placeholder="ไม่มี" />
-                    </label>
-                    <label className="house-field">
-                      <span>ผู้ติดต่อ</span>
-                      <input name="contact_name" value={form.contact_name} onChange={handleChange} placeholder="สมชาย ใจดี" />
-                    </label>
-                    <label className="house-field">
-                      <span>เบอร์โทร</span>
-                      <input name="phone" value={form.phone} onChange={handleChange} placeholder="081-234-5678" />
-                    </label>
-                    <label className="house-field">
-                      <span>Line ID</span>
-                      <input name="line_id" value={form.line_id} onChange={handleChange} placeholder="somchai.id" />
-                    </label>
-                    <label className="house-field">
-                      <span>EMAIL</span>
-                      <input name="email" value={form.email} onChange={handleChange} placeholder="somchai@email.com" />
-                    </label>
+                  <div className="house-card">
+                    <div className="house-card-head">เจ้าของ / ผู้ติดต่อ</div>
+                    <div className="house-card-body">
+                      <div className="house-grid house-grid-2">
+                        <label className="house-field house-field-span-2">
+                          <span>เจ้าของกรรมสิทธิ์</span>
+                          <input name="owner_name" value={form.owner_name} onChange={handleChange} placeholder="สมชาย ใจดี" />
+                        </label>
+                        <label className="house-field">
+                          <span>ผู้เช่า / ผู้อาศัย</span>
+                          <input name="resident_name" value={form.resident_name} onChange={handleChange} placeholder="ไม่มี" />
+                        </label>
+                        <label className="house-field">
+                          <span>ผู้ติดต่อ</span>
+                          <input name="contact_name" value={form.contact_name} onChange={handleChange} placeholder="สมชาย ใจดี" />
+                        </label>
+                        <label className="house-field">
+                          <span>เบอร์โทร</span>
+                          <input name="phone" value={form.phone} onChange={handleChange} placeholder="081-234-5678" />
+                        </label>
+                        <label className="house-field">
+                          <span>Line ID</span>
+                          <input name="line_id" value={form.line_id} onChange={handleChange} placeholder="somchai.id" />
+                        </label>
+                        <label className="house-field">
+                          <span>EMAIL</span>
+                          <input name="email" value={form.email} onChange={handleChange} placeholder="somchai@email.com" />
+                        </label>
+                      </div>
+                    </div>
                   </div>
-                </section>
 
-                <section className="house-sec">
-                  <div className="house-sec-title">การเงิน</div>
-                  <div className="house-grid house-grid-3">
-                    <label className="house-field">
-                      <span>ขนาด ตร.ว.</span>
-                      <input name="area_sqw" type="number" min="0" step="0.01" value={form.area_sqw} onChange={handleChange} placeholder="52" />
-                    </label>
-                    <label className="house-field">
-                      <span>สิทธิ์จอดรถ (คัน)</span>
-                      <input name="parking_rights" type="number" min="0" step="1" value={form.parking_rights} onChange={handleChange} placeholder="1" />
-                    </label>
-                    <label className="house-field">
-                      <span>อัตราค่าส่วนกลางจาก setup</span>
-                      <input value={formatDecimal(setup.feeRatePerSqw)} readOnly className="house-readonly" />
-                    </label>
-                    <label className="house-field">
-                      <span>ค่าส่วนกลาง/ปี</span>
-                      <input value={formatDecimal(annualFee)} readOnly className="house-readonly" />
-                    </label>
-                    <label className="house-field">
-                      <span>ประเภท</span>
-                      <DropdownList
-                        value={form.house_type}
-                        options={HOUSE_TYPE_OPTIONS}
-                        onChange={(nextValue) => setForm((current) => ({ ...current, house_type: nextValue }))}
-                        placeholder="เลือกประเภท"
-                      />
-                    </label>
-                    <label className="house-field house-field-span-2">
-                      <span>สถานะบ้าน</span>
-                      <DropdownList
-                        value={form.status}
-                        options={HOUSE_STATUS_OPTIONS}
-                        onChange={(nextValue) => setForm((current) => ({ ...current, status: nextValue }))}
-                        placeholder="เลือกสถานะ"
-                      />
-                    </label>
-                    <label className="house-field house-field-span-3">
-                      <span>หมายเหตุ</span>
-                      <textarea name="note" value={form.note} onChange={handleChange} rows="2" placeholder="รายละเอียดเพิ่มเติม" />
-                    </label>
+                  <div className="house-card">
+                    <div className="house-card-head">การเงิน / สถานะ</div>
+                    <div className="house-card-body">
+                      <div className="house-grid house-grid-3">
+                        <label className="house-field">
+                          <span>ขนาด ตร.ว.</span>
+                          <input name="area_sqw" type="number" min="0" step="0.01" value={form.area_sqw} onChange={handleChange} placeholder="52" />
+                        </label>
+                        <label className="house-field">
+                          <span>สิทธิ์จอดรถ (คัน)</span>
+                          <input name="parking_rights" type="number" min="0" step="1" value={form.parking_rights} onChange={handleChange} placeholder="1" />
+                        </label>
+                        <label className="house-field">
+                          <span>อัตราค่าส่วนกลางจาก setup</span>
+                          <input value={formatDecimal(setup.feeRatePerSqw)} readOnly className="house-readonly" />
+                        </label>
+                        <label className="house-field">
+                          <span>ค่าส่วนกลาง/ปี</span>
+                          <input value={formatDecimal(annualFee)} readOnly className="house-readonly" />
+                        </label>
+                        <label className="house-field">
+                          <span>ประเภท</span>
+                          <DropdownList
+                            value={form.house_type}
+                            options={HOUSE_TYPE_OPTIONS}
+                            onChange={(nextValue) => setForm((current) => ({ ...current, house_type: nextValue }))}
+                            placeholder="เลือกประเภท"
+                          />
+                        </label>
+                        <label className="house-field house-field-span-2">
+                          <span>สถานะบ้าน</span>
+                          <DropdownList
+                            value={form.status}
+                            options={HOUSE_STATUS_OPTIONS}
+                            onChange={(nextValue) => setForm((current) => ({ ...current, status: nextValue }))}
+                            placeholder="เลือกสถานะ"
+                          />
+                        </label>
+                        <label className="house-field house-field-span-3">
+                          <span>หมายเหตุ</span>
+                          <textarea name="note" value={form.note} onChange={handleChange} rows="2" placeholder="รายละเอียดเพิ่มเติม" />
+                        </label>
+                      </div>
+                    </div>
                   </div>
-                </section>
+                </div>
               </div>
 
               <div className="house-md-foot">

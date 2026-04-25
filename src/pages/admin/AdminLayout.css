@@ -1743,8 +1743,8 @@ button, input, select, textarea {
 }
 
 .house-md--lg {
-  --house-md-max-w: 930px;
-  --house-md-max-h: 900px;
+  --house-md-max-w: 1100px;
+  --house-md-max-h: 85vh;
 }
 
 .house-md--xl {
@@ -1838,6 +1838,45 @@ button, input, select, textarea {
 .house-md-body::-webkit-scrollbar {
   width: 0;
   height: 0;
+}
+
+/* Three-column card layout inside modal for wide screens */
+.house-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
+  align-items: start;
+}
+
+.house-card {
+  background: #fbfdff;
+  border: 1px solid #eef3fb;
+  border-radius: 12px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  min-height: 160px;
+}
+
+.house-card-head {
+  color: #214d72;
+  font-size: 13px;
+  font-weight: 800;
+  margin-bottom: 8px;
+}
+
+.house-card-body {
+  flex: 1;
+  min-height: 0;
+}
+
+@media (max-width: 900px) {
+  .house-cards-grid {
+    grid-template-columns: 1fr;
+  }
+  .house-card {
+    padding: 10px;
+  }
 }
 
 .house-sec {
