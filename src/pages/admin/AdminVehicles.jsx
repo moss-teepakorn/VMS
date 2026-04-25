@@ -1106,15 +1106,15 @@ const AdminVehicles = () => {
                               placeholder="เลือกสี"
                             />
                           </label>
-                          {form.color === 'อื่นๆ' ? (
-                            <label className="house-field field">
-                              <span>ระบุสีอื่นๆ *</span>
-                              <input name="color_other" value={form.color_other} onChange={handleChange} placeholder="เช่น เทาอมฟ้า" />
-                            </label>
-                          ) : form.brand === 'อื่นๆ' ? (
+                          {form.brand === 'อื่นๆ' ? (
                             <label className="house-field field">
                               <span>ระบุยี่ห้ออื่นๆ *</span>
                               <input name="brand_other" value={form.brand_other} onChange={handleChange} placeholder="เช่น NETA" />
+                            </label>
+                          ) : form.color === 'อื่นๆ' ? (
+                            <label className="house-field field">
+                              <span>ระบุสีอื่นๆ *</span>
+                              <input name="color_other" value={form.color_other} onChange={handleChange} placeholder="เช่น เทาอมฟ้า" />
                             </label>
                           ) : (
                             <div />
@@ -1123,8 +1123,8 @@ const AdminVehicles = () => {
                         {form.color === 'อื่นๆ' && form.brand === 'อื่นๆ' ? (
                           <div className="double-row">
                             <label className="house-field field">
-                              <span>ระบุยี่ห้ออื่นๆ *</span>
-                              <input name="brand_other" value={form.brand_other} onChange={handleChange} placeholder="เช่น NETA" />
+                              <span>ระบุสีอื่นๆ *</span>
+                              <input name="color_other" value={form.color_other} onChange={handleChange} placeholder="เช่น เทาอมฟ้า" />
                             </label>
                             <div />
                           </div>
