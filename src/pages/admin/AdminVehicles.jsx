@@ -1082,7 +1082,7 @@ const AdminVehicles = () => {
                     <div className="house-card-body">
                       <div className="card-content">
                         <div className="row-slot">
-                          <label className="house-field field">
+                          <label className={`house-field field ${form.brand === 'อื่นๆ' ? 'has-nested' : ''}`}>
                             <span>ยี่ห้อ</span>
                             <DropdownList
                               value={form.brand}
@@ -1108,7 +1108,7 @@ const AdminVehicles = () => {
                           </label>
                         </div>
                         <div className="row-slot">
-                          <label className="house-field field">
+                          <label className={`house-field field ${form.color === 'อื่นๆ' ? 'has-nested' : ''}`}>
                             <span>สี</span>
                             <DropdownList
                               value={form.color}

@@ -2103,6 +2103,14 @@ button, input, select, textarea {
 
 .house-field .nested-input {
   margin-top: 6px;
+  border-radius: 0 0 10px 10px;
+  border-top: 1px solid #d5deea;
+}
+
+.house-field.has-nested select,
+.house-field.has-nested input[type="text"] {
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
 }
 
 .house-field select.issue-select-wide {
