@@ -518,9 +518,11 @@ const AdminLayout = () => {
         <div className="topbar">
           <div className="tb-ham" onClick={() => setSidebarOpen(!sidebarOpen)}>☰</div>
           <div className="tb-title tb-title-desktop">
-            {topbarTitle.main} — <span className="hl">{topbarTitle.sub}</span>
+            {topbarTitle.main}
           </div>
-          <div className="tb-title tb-title-mobile">สวัสดี ผู้ดูแลระบบ</div>
+          <div className="tb-title tb-title-mobile">
+            {topbarTitle.main}
+          </div>
           <div className="tb-universal-wrap" id="admin-universal-search">
             <span className="tb-universal-icon">🔎</span>
             <input
@@ -630,7 +632,6 @@ const AdminLayout = () => {
               )}
             </div>
 
-            <span className="tb-user-greeting" style={{ fontSize: '13px', fontWeight: 500, whiteSpace: 'nowrap', marginRight: '4px' }}>สวัสดี คุณ{profile?.full_name || profile?.username || ''}</span>
             <div className="setup-wrap">
               <div className="tb-ico" onClick={() => setSetupOpen((prev) => !prev)}>⚙️</div>
 
@@ -642,7 +643,6 @@ const AdminLayout = () => {
                   </div>
 
                   <div className="setup-section">
-                    <div style={{ fontSize: '13px', color: 'var(--tx)', marginBottom: '10px', fontWeight: 600 }}>สวัสดี คุณ{profile?.full_name || profile?.username || ''}</div>
                     <div className="setup-label">Profile</div>
                     <div className="setup-profile-row"><span>ชื่อ</span><strong>{profile?.full_name || '-'}</strong></div>
                     <div className="setup-profile-row"><span>Username</span><strong>{profile?.username || '-'}</strong></div>
