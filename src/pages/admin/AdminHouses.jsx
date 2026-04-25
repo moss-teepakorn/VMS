@@ -871,12 +871,6 @@ const AdminHouses = () => {
                             <input value={formatDecimal(annualFee)} readOnly className="house-readonly" />
                           </label>
                         </div>
-                        <div className="row-slot tall">
-                          <label className="house-field field">
-                            <span>หมายเหตุการเงิน</span>
-                            <textarea name="note" value={form.note} onChange={handleChange} rows="3" placeholder="รายละเอียดเพิ่มเติม เช่น ประวัติค้างชำระ หรือหมายเหตุการเงิน" />
-                          </label>
-                        </div>
                         <div className="row-slot" />
                         <div className="row-slot" />
                         <div />
