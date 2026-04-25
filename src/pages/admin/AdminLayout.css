@@ -1744,7 +1744,7 @@ button, input, select, textarea {
 
 .house-md--lg {
   --house-md-max-w: 1120px;
-  --house-md-max-h: 720px;
+  --house-md-max-h: 780px;
 }
 
 .house-md--xl {
@@ -1886,7 +1886,7 @@ button, input, select, textarea {
   display: flex;
   flex-direction: column;
   overflow: visible;
-  max-height: 480px;
+  max-height: 570px;
 }
 
 .house-card-head {
@@ -1926,6 +1926,7 @@ button, input, select, textarea {
 }
 
 .card-content {
+  height: 475px;
   padding: 14px;
   display: flex;
   flex-direction: column;
