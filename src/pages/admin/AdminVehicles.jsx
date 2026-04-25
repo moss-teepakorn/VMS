@@ -1092,6 +1092,7 @@ const AdminVehicles = () => {
                             />
                             {form.brand === 'อื่นๆ' ? (
                               <input
+                                className="nested-input"
                                 name="brand_other"
                                 value={form.brand_other}
                                 onChange={handleChange}
@@ -1117,6 +1118,7 @@ const AdminVehicles = () => {
                             />
                             {form.color === 'อื่นๆ' ? (
                               <input
+                                className="nested-input"
                                 name="color_other"
                                 value={form.color_other}
                                 onChange={handleChange}
