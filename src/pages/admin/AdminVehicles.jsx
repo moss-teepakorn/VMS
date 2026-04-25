@@ -1081,7 +1081,7 @@ const AdminVehicles = () => {
                     <div className="house-card-head">รายละเอียดรถ</div>
                     <div className="house-card-body">
                       <div className="card-content">
-                        <div className="double-row">
+                        <div className="row-slot">
                           <label className="house-field field">
                             <span>ยี่ห้อ</span>
                             <DropdownList
@@ -1090,13 +1090,23 @@ const AdminVehicles = () => {
                               onChange={(nextValue) => applyFormValue('brand', nextValue)}
                               placeholder="เลือกยี่ห้อ"
                             />
+                            {form.brand === 'อื่นๆ' ? (
+                              <input
+                                name="brand_other"
+                                value={form.brand_other}
+                                onChange={handleChange}
+                                placeholder="ระบุยี่ห้ออื่นๆ เช่น NETA"
+                              />
+                            ) : null}
                           </label>
+                        </div>
+                        <div className="row-slot">
                           <label className="house-field field">
                             <span>รุ่น</span>
                             <input name="model" value={form.model} onChange={handleChange} placeholder="เช่น City / Revo" />
                           </label>
                         </div>
-                        <div className="double-row">
+                        <div className="row-slot">
                           <label className="house-field field">
                             <span>สี</span>
                             <DropdownList
@@ -1105,30 +1115,16 @@ const AdminVehicles = () => {
                               onChange={(nextValue) => applyFormValue('color', nextValue)}
                               placeholder="เลือกสี"
                             />
+                            {form.color === 'อื่นๆ' ? (
+                              <input
+                                name="color_other"
+                                value={form.color_other}
+                                onChange={handleChange}
+                                placeholder="ระบุสีอื่นๆ เช่น เทาอมฟ้า"
+                              />
+                            ) : null}
                           </label>
-                          {form.brand === 'อื่นๆ' ? (
-                            <label className="house-field field">
-                              <span>ระบุยี่ห้ออื่นๆ *</span>
-                              <input name="brand_other" value={form.brand_other} onChange={handleChange} placeholder="เช่น NETA" />
-                            </label>
-                          ) : form.color === 'อื่นๆ' ? (
-                            <label className="house-field field">
-                              <span>ระบุสีอื่นๆ *</span>
-                              <input name="color_other" value={form.color_other} onChange={handleChange} placeholder="เช่น เทาอมฟ้า" />
-                            </label>
-                          ) : (
-                            <div />
-                          )}
                         </div>
-                        {form.color === 'อื่นๆ' && form.brand === 'อื่นๆ' ? (
-                          <div className="double-row">
-                            <label className="house-field field">
-                              <span>ระบุสีอื่นๆ *</span>
-                              <input name="color_other" value={form.color_other} onChange={handleChange} placeholder="เช่น เทาอมฟ้า" />
-                            </label>
-                            <div />
-                          </div>
-                        ) : null}
                       </div>
                     </div>
                   </div>
