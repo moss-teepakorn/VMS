@@ -1743,8 +1743,8 @@ button, input, select, textarea {
 }
 
 .house-md--lg {
-  --house-md-max-w: 1100px;
-  --house-md-max-h: 85vh;
+  --house-md-max-w: 1120px;
+  --house-md-max-h: 720px;
 }
 
 .house-md--xl {
@@ -1785,36 +1785,40 @@ button, input, select, textarea {
 
 .house-md-head {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
   gap: 16px;
-  padding: 16px 20px 14px;
-  background: linear-gradient(135deg, #4f6ef7 0%, #7c5cf6 100%);
-  border-bottom: none;
+  padding: 18px 24px;
+  height: 82px;
+  background: #f7f9fc;
+  border-bottom: 1px solid #d8e2ef;
 }
 
 .house-md-title {
-  font-size: 20px;
-  font-weight: 800;
-  line-height: 1.1;
-  color: #ffffff;
+  margin: 0;
+  font-size: 26px;
+  line-height: 1.15;
+  font-weight: 700;
+  color: #15233a;
 }
 
 .house-md-sub {
-  margin-top: 4px;
-  font-size: 13px;
+  margin: 5px 0 0;
+  font-size: 14px;
   font-weight: 500;
-  color: rgba(255,255,255,.8);
+  color: #7b8798;
 }
 
 .house-md-body {
   flex: 1;
   min-height: 0;
-  padding: 20px 24px 24px;
-  overflow-y: auto;
-  background: #ffffff;
+  padding: 16px 20px;
+  overflow: hidden;
+  background: #f7f9fd;
   border-top: none;
-  -ms-overflow-style: none;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
 }
 
 /* Shared sample-like pagination */
@@ -1841,8 +1845,28 @@ button, input, select, textarea {
 }
 
 .house-md-foot {
-  position: static;
-  background: #f7f9ff;
+  height: 64px;
+  padding: 12px 22px;
+  background: #f5f8fc;
+  border-top: 1px solid #d8e2ef;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.house-md-foot .footer-text {
+  font-size: 12.5px;
+  color: #7b8798;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.house-md-foot .actions {
+  display: flex;
+  gap: 10px;
+  flex-shrink: 0;
 }
 
 /* Three-column card layout inside modal for wide screens */
@@ -1854,46 +1878,74 @@ button, input, select, textarea {
 }
 
 .house-card {
-  background: #f7f9ff;
-  border: 1px solid #e7eff9;
-  border-radius: 16px;
-  padding: 18px;
+  background: #fbfdff;
+  border: 1px solid #d8e2ef;
+  border-radius: 18px;
   display: flex;
   flex-direction: column;
-  min-height: 320px;
+  overflow: hidden;
 }
 
 .house-card-head {
+  height: 48px;
+  margin: 0;
+  padding: 0 14px;
+  background: #eef2f6;
+  border-bottom: 1px solid #d8e2ef;
+  font-size: 16px;
+  font-weight: 700;
+  color: #24364f;
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 12px 0 12px 18px;
-  margin-bottom: 14px;
-  border-bottom: 1px solid rgba(81, 113, 167, .12);
-  color: #1f3a60;
-  font-size: 13px;
-  font-weight: 800;
+  gap: 8px;
   position: relative;
 }
 
 .house-card-head::before {
   content: '';
-  position: absolute;
-  left: 0;
-  top: 50%;
-  transform: translateY(-50%);
   width: 4px;
-  height: 28px;
-  background: #4f6ef7;
+  height: 18px;
   border-radius: 999px;
+  background: #4169f5;
+  flex: 0 0 auto;
 }
 
 .house-card-body {
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
   flex: 1;
   min-height: 0;
+}
+
+.card-content {
+  flex: 1;
+  min-height: 0;
+  padding: 14px;
+  display: grid;
+  grid-template-rows: repeat(7, 64px) 1fr;
+  row-gap: 10px;
+  align-items: start;
+}
+
+.row-slot {
+  min-height: 64px;
+  display: flex;
+  align-items: start;
+}
+
+.row-slot.tall {
+  min-height: 84px;
+}
+
+.field {
+  width: 100%;
+  min-width: 0;
+}
+
+.double-row {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  align-items: start;
 }
 
 @media (max-width: 900px) {
