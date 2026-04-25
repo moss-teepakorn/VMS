@@ -1813,12 +1813,9 @@ button, input, select, textarea {
   flex: 1;
   min-height: 0;
   padding: 16px 20px;
-  overflow: hidden;
+  overflow-y: auto;
   background: #f7f9fd;
   border-top: none;
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 16px;
 }
 
 /* Shared sample-like pagination */
