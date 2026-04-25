@@ -1881,15 +1881,12 @@ button, input, select, textarea {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 18px 20px;
-  align-items: stretch;
+  align-items: start;
 }
 
 .house-cards-grid > .house-card {
   max-height: 390px;
-}
-
-.house-cards-grid > .house-card .card-content {
-  height: 100%;
+  align-self: start;
 }
 
 .house-card {
@@ -1928,7 +1925,7 @@ button, input, select, textarea {
 .house-card-body {
   flex: 1;
   min-height: 0;
-  overflow: visible;
+  overflow: auto;
 }
 
 .house-card-body::-webkit-scrollbar,
@@ -1943,14 +1940,20 @@ button, input, select, textarea {
   flex-direction: column;
   gap: 10px;
   min-height: 0;
+  height: auto;
 }
 
 .house-card--media {
-  max-height: 300px;
+  max-height: 260px;
+  overflow: hidden;
+}
+
+.house-card--media .house-card-body {
+  overflow: auto;
 }
 
 .house-card--media .card-content {
-  height: 100%;
+  height: auto;
 }
 
 .row-slot {
