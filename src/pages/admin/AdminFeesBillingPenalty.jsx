@@ -222,7 +222,6 @@ export default function AdminFeesBillingPenalty() {
           <h1>สร้างใบแจ้งหนี้และคำนวณค่าปรับ</h1>
           <p>จัดกระบวนการให้เป็นขั้นตอน ลดพื้นที่ว่าง และแยก action หลักออกจาก action รอง</p>
         </div>
-        <div className="status-chip"><span className="status-dot"></span> พร้อมดำเนินการ</div>
       </div>
 
       <section className="workflow" aria-label="Process overview">
@@ -304,7 +303,6 @@ export default function AdminFeesBillingPenalty() {
               </div>
 
               <div className="action-row">
-                <button type="button" className="btn-outline">ดูรายการที่จะสร้าง</button>
                 <button type="button" className="btn-primary" onClick={handleProcessInvoices} disabled={processingInvoice}>
                   {processingInvoice ? 'กำลังสร้าง...' : 'Process สร้างทั้งหมด'}
                 </button>
