@@ -216,118 +216,186 @@ export default function AdminFeesBillingPenalty() {
   }
 
   return (
-    <div className="pane on houses-compact fees-compact" style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-      <div className="ph">
-        <div className="ph-in">
+    <div className="pane on houses-compact fees-compact fees-billing-penalty-page">
+      <div className="page-header">
+        <div className="title-wrap">
+          <h1>สร้างใบแจ้งหนี้และคำนวณค่าปรับ</h1>
+          <p>จัดกระบวนการให้เป็นขั้นตอน ลดพื้นที่ว่าง และแยก action หลักออกจาก action รอง</p>
+        </div>
+        <div className="status-chip"><span className="status-dot"></span> พร้อมดำเนินการ</div>
+      </div>
+
+      <section className="workflow" aria-label="Process overview">
+        <div className="step-card">
+          <div className="step-no">1</div>
           <div>
-            <div className="ph-h1">สร้างใบแจ้งหนี้/ค่าปรับ</div>
-            <div className="ph-sub">หน้ารวมการสร้างใบแจ้งหนี้ทุกหลัง และคำนวณค่าปรับตามเงื่อนไขเดิม</div>
+            <div className="step-title">เลือกปีและรอบ</div>
+            <div className="step-desc">กำหนดเงื่อนไขก่อนสร้างใบแจ้งหนี้</div>
           </div>
         </div>
-      </div>
-
-      <div className="card">
-        <div className="ch houses-list-head houses-main-head">
-          <div className="ct">ส่วนที่ 1: สร้างใบแจ้งหนี้</div>
+        <div className="step-card">
+          <div className="step-no">2</div>
+          <div>
+            <div className="step-title">สร้างใบแจ้งหนี้</div>
+            <div className="step-desc">ค่าส่วนกลางและค่าขยะตาม setup</div>
+          </div>
         </div>
-        <form className="cb" style={{ display: 'grid', gap: 12, padding: 12 }} onSubmit={handleProcessInvoices}>
-          <div className="house-grid house-grid-3" style={{ gap: 10 }}>
-            <label className="house-field">
-              <span>ปี (พ.ศ.)</span>
-              <StyledSelect value={processForm.yearBE} onChange={(e) => setProcessForm((prev) => ({ ...prev, yearBE: e.target.value }))}>
-                {processYearOptions.map((yearBE) => (
-                  <option key={yearBE} value={String(yearBE)}>{yearBE}</option>
-                ))}
-              </StyledSelect>
-            </label>
-            <label className="house-field">
-              <span>รอบ</span>
-              <StyledSelect value={processForm.period} onChange={(e) => setProcessForm((prev) => ({ ...prev, period: e.target.value }))}>
-                {periodOptions.map((item) => (
-                  <option key={item.value} value={item.value}>{item.label}</option>
-                ))}
-              </StyledSelect>
-            </label>
-            <label className="house-field" style={{ justifyContent: 'center', display: 'flex', alignItems: 'center', gap: 8 }}>
-              <input
-                type="checkbox"
-                checked={processForm.overwritePending}
-                onChange={(e) => setProcessForm((prev) => ({ ...prev, overwritePending: e.target.checked }))}
-                style={{ width: 16, height: 16 }}
-              />
-              <span>ทับใบที่อยู่สถานะรอตรวจสอบ</span>
-            </label>
+        <div className="step-card">
+          <div className="step-no">3</div>
+          <div>
+            <div className="step-title">คำนวณค่าปรับ</div>
+            <div className="step-desc">ค่าปรับ 10% และค่าทวงถาม 200 บาท</div>
           </div>
+        </div>
+      </section>
 
-          <div style={{ fontSize: 13, color: 'var(--mu)', lineHeight: 1.8 }}>
-            <div>ค่าส่วนกลาง = พื้นที่บ้าน x 6 เดือน x อัตรา setup ({Number(setup.fee_rate_per_sqw || 0).toLocaleString('th-TH')})</div>
-            <div>ค่าขยะ = ค่า setup ต่อรอบ ({Number(setup.waste_fee_per_period || 0).toLocaleString('th-TH')})</div>
-            <div>Process นี้จะทำทุกหลังในระบบ และใช้เงื่อนไขเดิมทั้งหมด</div>
-          </div>
+      <section className="main-grid">
+        <div>
+          <section className="panel">
+            <div className="panel-head">
+              <h2 className="panel-title">ตั้งค่าเพื่อสร้างใบแจ้งหนี้</h2>
+              <div className="panel-subtitle">Invoice Batch Setup</div>
+            </div>
+            <div className="panel-body">
+              <div className="form-grid">
+                <div className="field">
+                  <label htmlFor="year">ปี (พ.ศ.)</label>
+                  <StyledSelect id="year" value={processForm.yearBE} onChange={(e) => setProcessForm((prev) => ({ ...prev, yearBE: e.target.value }))}>
+                    {processYearOptions.map((yearBE) => (
+                      <option key={yearBE} value={String(yearBE)}>{yearBE}</option>
+                    ))}
+                  </StyledSelect>
+                </div>
 
-          <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-            <button
-              className="vms-light-btn vms-light-btn--primary"
-              type="submit"
-              disabled={processingInvoice}
-              style={{ minWidth: 160 }}
-            >
-              {processingInvoice ? 'กำลังประมวลผล...' : 'Process สร้างทั้งหมด'}
-            </button>
-          </div>
+                <div className="field">
+                  <label htmlFor="round">รอบ</label>
+                  <StyledSelect id="round" value={processForm.period} onChange={(e) => setProcessForm((prev) => ({ ...prev, period: e.target.value }))}>
+                    {periodOptions.map((item) => (
+                      <option key={item.value} value={item.value}>{item.label}</option>
+                    ))}
+                  </StyledSelect>
+                </div>
+              </div>
 
-          {invoiceSummary && (
-            <div style={{ border: '1px solid var(--bo)', borderRadius: 10, padding: '10px 12px', background: '#f8fafc' }}>
-              <div style={{ fontWeight: 700, marginBottom: 8 }}>สรุปผลสร้างใบแจ้งหนี้ ({toBE(toGregorianYear(processForm.yearBE))})</div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(140px, 1fr))', gap: 8, fontSize: 13 }}>
-                <div>ทั้งหมด: <strong>{invoiceSummary.total}</strong></div>
-                <div>สร้างใหม่: <strong>{invoiceSummary.created}</strong></div>
-                <div>อัปเดต: <strong>{invoiceSummary.updated}</strong></div>
-                <div>สำเร็จ: <strong>{invoiceSummary.success}</strong></div>
-                <div>ไม่สำเร็จ: <strong>{invoiceSummary.failed}</strong></div>
-                <div>ทับรายการ: <strong>{invoiceSummary.overwritten}</strong></div>
+              <div className="formula-box">
+                <div className="formula-item">
+                  <div className="formula-label">ค่าส่วนกลาง</div>
+                  <div className="formula-text">พื้นที่บ้าน × 6 เดือน × อัตรา setup ({Number(setup.fee_rate_per_sqw || 0).toLocaleString('th-TH')})</div>
+                </div>
+                <div className="formula-item">
+                  <div className="formula-label">ค่าขยะ</div>
+                  <div className="formula-text">ค่า setup ต่อรอบ ({Number(setup.waste_fee_per_period || 0).toLocaleString('th-TH')})</div>
+                </div>
+              </div>
+
+              <div className="option-card">
+                <div>
+                  <div className="check-title">ทับใบที่อยู่สถานะรอตรวจสอบ</div>
+                  <div className="check-desc">เปิดใช้เมื่อต้องการสร้างใบแจ้งหนี้ใหม่ทับรายการที่ยังรอตรวจสอบ</div>
+                </div>
+                <label className="switch">
+                  <input
+                    type="checkbox"
+                    checked={processForm.overwritePending}
+                    onChange={(e) => setProcessForm((prev) => ({ ...prev, overwritePending: e.target.checked }))}
+                  />
+                  <span className="slider"></span>
+                </label>
+              </div>
+
+              <div className="action-row">
+                <button type="button" className="btn-outline">ดูรายการที่จะสร้าง</button>
+                <button type="button" className="btn-primary" onClick={handleProcessInvoices} disabled={processingInvoice}>
+                  {processingInvoice ? 'กำลังสร้าง...' : 'Process สร้างทั้งหมด'}
+                </button>
               </div>
             </div>
-          )}
-        </form>
-      </div>
+          </section>
 
-      <div className="card">
-        <div className="ch houses-list-head houses-main-head">
-          <div className="ct">ส่วนที่ 2: คำนวณค่าปรับ</div>
-        </div>
-        <div className="cb" style={{ display: 'grid', gap: 12, padding: 12 }}>
-          <div style={{ fontSize: 13, color: 'var(--mu)' }}>
-            คำนวณค่าปรับทั้งระบบด้วย logic เดิม: ค่าปรับ {Number(setup.overdue_fine_pct || 0)}% + ค่าทวงถาม {Number(setup.notice_fee || 0).toLocaleString('th-TH')} บาท
-          </div>
-
-          <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-            <button
-              className="vms-light-btn vms-light-btn--warning"
-              type="button"
-              onClick={handleCalculateOverdue}
-              disabled={processingOverdue}
-              style={{ minWidth: 160 }}
-            >
-              {processingOverdue ? 'กำลังคำนวณ...' : 'คำนวณค่าปรับ'}
-            </button>
-          </div>
-
-          {overdueSummary && (
-            <div style={{ border: '1px solid var(--bo)', borderRadius: 10, padding: '10px 12px', background: '#fff7ed' }}>
-              <div style={{ fontWeight: 700, marginBottom: 8 }}>สรุปผลคำนวณค่าปรับ</div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(140px, 1fr))', gap: 8, fontSize: 13 }}>
-                <div>ทั้งหมด: <strong>{overdueSummary.total}</strong></div>
-                <div>อัปเดต: <strong>{overdueSummary.updated}</strong></div>
-                <div>สำเร็จ: <strong>{overdueSummary.success}</strong></div>
-                <div>ไม่สำเร็จ: <strong>{overdueSummary.failed}</strong></div>
-                <div>ทับรายการ: <strong>{overdueSummary.overwritten}</strong></div>
-                <div>ข้าม: <strong>{overdueSummary.skippedPaid + overdueSummary.skippedNotDue}</strong></div>
+          <section className="panel penalty-panel">
+            <div className="panel-head">
+              <h2 className="panel-title">คำนวณค่าปรับ</h2>
+              <div className="panel-subtitle">Penalty Calculation</div>
+            </div>
+            <div className="panel-body">
+              <div className="penalty-content">
+                <div className="penalty-note">
+                  คำนวณค่าปรับทั้งระบบด้วย logic เดิม: <strong>ค่าปรับ {Number(setup.overdue_fine_pct || 0)}%</strong> + <strong>ค่าทวงถาม {Number(setup.notice_fee || 0).toLocaleString('th-TH')} บาท</strong><br />
+                  เหมาะสำหรับรันหลังจากตรวจสอบใบแจ้งหนี้เรียบร้อยแล้ว
+                </div>
+                <button type="button" className="btn-warning" onClick={handleCalculateOverdue} disabled={processingOverdue}>
+                  {processingOverdue ? 'กำลังคำนวณ...' : 'คำนวณค่าปรับ'}
+                </button>
               </div>
             </div>
-          )}
+          </section>
         </div>
-      </div>
+
+        <aside className="summary-stack">
+          <section className="panel">
+            <div className="panel-head">
+              <h2 className="panel-title">สรุปก่อน Process</h2>
+              <div className="panel-subtitle">Preview</div>
+            </div>
+            <div className="panel-body">
+              <div className="mini-summary">
+                <div className="stat">
+                  <div className="stat-label">ปี พ.ศ.</div>
+                  <div className="stat-value">{processForm.yearBE}</div>
+                  <div className="stat-note">ปีที่เลือก</div>
+                </div>
+                <div className="stat">
+                  <div className="stat-label">รอบ</div>
+                  <div className="stat-value">{periodOptions.find((item) => item.value === processForm.period)?.label || '-'}</div>
+                  <div className="stat-note">ช่วงวันที่เรียกเก็บ</div>
+                </div>
+                <div className="stat">
+                  <div className="stat-label">อัตราค่าส่วนกลาง</div>
+                  <div className="stat-value">{Number(setup.fee_rate_per_sqw || 0).toLocaleString('th-TH')}</div>
+                  <div className="stat-note">บาท / ตร.ว.</div>
+                </div>
+                <div className="stat">
+                  <div className="stat-label">ค่าขยะต่อรอบ</div>
+                  <div className="stat-value">{Number(setup.waste_fee_per_period || 0).toLocaleString('th-TH')}</div>
+                  <div className="stat-note">บาท / รอบ</div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section className="panel">
+            <div className="panel-head">
+              <h2 className="panel-title">ลำดับการทำงาน</h2>
+              <div className="panel-subtitle">Checklist</div>
+            </div>
+            <div className="panel-body">
+              <div className="process-list">
+                <div className="process-item">
+                  <div className="process-icon">✓</div>
+                  <div>
+                    <div className="process-name">ตรวจสอบ setup</div>
+                    <div className="process-detail">อัตราค่าส่วนกลาง ค่าขยะ และรอบการเรียกเก็บ</div>
+                  </div>
+                </div>
+                <div className="process-item">
+                  <div className="process-icon">2</div>
+                  <div>
+                    <div className="process-name">สร้างใบแจ้งหนี้</div>
+                    <div className="process-detail">ระบบสร้างจากข้อมูลบ้านและเงื่อนไขที่เลือก</div>
+                  </div>
+                </div>
+                <div className="process-item">
+                  <div className="process-icon">3</div>
+                  <div>
+                    <div className="process-name">คำนวณค่าปรับ</div>
+                    <div className="process-detail">รันหลังตรวจสอบยอดค้างชำระและวันที่ครบกำหนด</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+        </aside>
+      </section>
     </div>
   )
 }

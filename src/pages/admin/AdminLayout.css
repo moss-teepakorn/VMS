@@ -2337,6 +2337,455 @@ button, input, select, textarea {
   background: var(--bg2);
 }
 
+.fees-billing-penalty-page {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.fees-billing-penalty-page .page-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 16px 18px;
+  background: #fff;
+  border: 1px solid var(--bo);
+  border-radius: 18px;
+}
+
+.fees-billing-penalty-page .page-header .title-wrap h1 {
+  margin: 0;
+  font-size: 24px;
+  line-height: 1.2;
+  font-weight: 700;
+}
+
+.fees-billing-penalty-page .page-header .title-wrap p {
+  margin: 8px 0 0;
+  color: var(--mu);
+  font-size: 14px;
+}
+
+.fees-billing-penalty-page .status-chip {
+  height: 40px;
+  padding: 0 14px;
+  border-radius: 999px;
+  border: 1px solid var(--bo);
+  background: #fff;
+  color: var(--tx);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.fees-billing-penalty-page .status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--pr);
+}
+
+.fees-billing-penalty-page .workflow {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.fees-billing-penalty-page .step-card {
+  background: #fff;
+  border: 1px solid var(--bo);
+  border-radius: 18px;
+  padding: 14px 16px;
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.fees-billing-penalty-page .step-no {
+  width: 34px;
+  height: 34px;
+  border-radius: 12px;
+  background: #eef4ff;
+  color: var(--pr);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  flex: 0 0 auto;
+}
+
+.fees-billing-penalty-page .step-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: #27364d;
+  margin-bottom: 2px;
+}
+
+.fees-billing-penalty-page .step-desc {
+  font-size: 12.5px;
+  color: var(--mu);
+  line-height: 1.35;
+}
+
+.fees-billing-penalty-page .main-grid {
+  display: grid;
+  grid-template-columns: 1.15fr .85fr;
+  gap: 18px;
+  align-items: start;
+}
+
+.fees-billing-penalty-page .panel {
+  background: #fff;
+  border: 1px solid var(--bo);
+  border-radius: 18px;
+  box-shadow: 0 18px 45px rgba(25, 44, 73, .08);
+  overflow: hidden;
+}
+
+.fees-billing-penalty-page .panel-head {
+  min-height: 58px;
+  padding: 16px 18px;
+  background: #f8fafc;
+  border-bottom: 1px solid var(--bo);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.fees-billing-penalty-page .panel-title {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.fees-billing-penalty-page .panel-title::before {
+  content: "";
+  width: 4px;
+  height: 18px;
+  border-radius: 999px;
+  background: var(--pr);
+}
+
+.fees-billing-penalty-page .panel-subtitle {
+  font-size: 12.5px;
+  color: var(--mu);
+  white-space: nowrap;
+}
+
+.fees-billing-penalty-page .panel-body {
+  padding: 18px;
+}
+
+.fees-billing-penalty-page .form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+.fees-billing-penalty-page .field.full {
+  grid-column: 1 / -1;
+}
+
+.fees-billing-penalty-page label {
+  display: block;
+  margin-bottom: 7px;
+  color: #26364d;
+  font-size: 13.5px;
+  font-weight: 700;
+}
+
+.fees-billing-penalty-page select,
+.fees-billing-penalty-page input {
+  width: 100%;
+  height: 44px;
+  border: 1px solid #cad7e7;
+  border-radius: 12px;
+  background: #fff;
+  color: var(--tx);
+  font-family: inherit;
+  font-size: 14px;
+  padding: 0 12px;
+  outline: none;
+}
+
+.fees-billing-penalty-page select {
+  appearance: none;
+  background-image:
+    linear-gradient(45deg, transparent 50%, #7b8798 50%),
+    linear-gradient(135deg, #7b8798 50%, transparent 50%);
+  background-position: calc(100% - 18px) 18px, calc(100% - 12px) 18px;
+  background-size: 6px 6px, 6px 6px;
+  background-repeat: no-repeat;
+  padding-right: 36px;
+}
+
+.fees-billing-penalty-page select:focus,
+.fees-billing-penalty-page input:focus {
+  border-color: var(--pr);
+  box-shadow: 0 0 0 3px rgba(56, 103, 246, .12);
+}
+
+.fees-billing-penalty-page .formula-box {
+  margin-top: 16px;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+}
+
+.fees-billing-penalty-page .formula-item {
+  border: 1px solid var(--bo);
+  border-radius: 14px;
+  background: #fbfcfe;
+  padding: 12px;
+  min-height: 82px;
+}
+
+.fees-billing-penalty-page .formula-label {
+  font-size: 12.5px;
+  color: var(--mu);
+  margin-bottom: 6px;
+}
+
+.fees-billing-penalty-page .formula-text {
+  color: #2a3b53;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.45;
+}
+
+.fees-billing-penalty-page .option-card {
+  margin-top: 16px;
+  border: 1px solid var(--bo);
+  border-radius: 16px;
+  background: #f8fafc;
+  padding: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.fees-billing-penalty-page .check-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: #2b3d55;
+  margin-bottom: 3px;
+}
+
+.fees-billing-penalty-page .check-desc {
+  font-size: 12.5px;
+  color: var(--mu);
+  line-height: 1.45;
+}
+
+.fees-billing-penalty-page .switch {
+  position: relative;
+  width: 48px;
+  height: 28px;
+  flex: 0 0 auto;
+}
+
+.fees-billing-penalty-page .switch input {
+  display: none;
+}
+
+.fees-billing-penalty-page .slider {
+  position: absolute;
+  inset: 0;
+  border-radius: 999px;
+  background: #ccd6e4;
+  cursor: pointer;
+  transition: .15s ease;
+}
+
+.fees-billing-penalty-page .slider::before {
+  content: "";
+  position: absolute;
+  width: 22px;
+  height: 22px;
+  left: 3px;
+  top: 3px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 2px 5px rgba(0,0,0,.15);
+  transition: .15s ease;
+}
+
+.fees-billing-penalty-page .switch input:checked + .slider {
+  background: var(--pr);
+}
+
+.fees-billing-penalty-page .switch input:checked + .slider::before {
+  transform: translateX(20px);
+}
+
+.fees-billing-penalty-page .action-row {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 18px;
+}
+
+.fees-billing-penalty-page .btn-primary {
+  background: var(--pr);
+  color: #fff;
+  box-shadow: 0 10px 20px rgba(56, 103, 246, .18);
+}
+
+.fees-billing-penalty-page .btn-primary:hover {
+  background: #244ed9;
+}
+
+.fees-billing-penalty-page .btn-outline {
+  background: #fff;
+  border-color: #cbd8e8;
+  color: #41516a;
+}
+
+.fees-billing-penalty-page .btn-outline:hover {
+  background: #f8fbff;
+}
+
+.fees-billing-penalty-page .btn-warning {
+  background: #fff4ea;
+  color: #b45a11;
+  border-color: #ffc48d;
+}
+
+.fees-billing-penalty-page .summary-stack {
+  display: grid;
+  gap: 14px;
+}
+
+.fees-billing-penalty-page .mini-summary {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+
+.fees-billing-penalty-page .stat {
+  border: 1px solid var(--bo);
+  border-radius: 16px;
+  background: #fff;
+  padding: 14px;
+}
+
+.fees-billing-penalty-page .stat-label {
+  font-size: 12.5px;
+  color: var(--mu);
+  margin-bottom: 6px;
+}
+
+.fees-billing-penalty-page .stat-value {
+  font-size: 22px;
+  font-weight: 700;
+  color: #1f2d44;
+  line-height: 1.1;
+}
+
+.fees-billing-penalty-page .stat-note {
+  margin-top: 5px;
+  font-size: 12px;
+  color: var(--mu);
+}
+
+.fees-billing-penalty-page .process-list {
+  display: grid;
+  gap: 10px;
+}
+
+.fees-billing-penalty-page .process-item {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  border: 1px solid var(--bo);
+  border-radius: 14px;
+  padding: 12px;
+  background: #fff;
+}
+
+.fees-billing-penalty-page .process-icon {
+  width: 28px;
+  height: 28px;
+  border-radius: 10px;
+  background: #eef4ff;
+  color: var(--pr);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  flex: 0 0 auto;
+}
+
+.fees-billing-penalty-page .process-name {
+  font-size: 14px;
+  font-weight: 700;
+  color: #25364f;
+  margin-bottom: 2px;
+}
+
+.fees-billing-penalty-page .process-detail {
+  font-size: 12.5px;
+  color: var(--mu);
+  line-height: 1.45;
+}
+
+.fees-billing-penalty-page .penalty-panel {
+  margin-top: 18px;
+}
+
+.fees-billing-penalty-page .penalty-content {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 16px;
+}
+
+.fees-billing-penalty-page .penalty-note {
+  border-radius: 16px;
+  background: #fff4ea;
+  border: 1px solid #ffd0a3;
+  padding: 14px;
+  color: #7a3d0d;
+  font-size: 14px;
+  line-height: 1.55;
+}
+
+@media (max-width: 980px) {
+  .fees-billing-penalty-page .main-grid,
+  .fees-billing-penalty-page .workflow {
+    grid-template-columns: 1fr;
+  }
+
+  .fees-billing-penalty-page .page-header {
+    flex-direction: column;
+  }
+}
+
+@media (max-width: 640px) {
+  .fees-billing-penalty-page .form-grid,
+  .fees-billing-penalty-page .formula-box,
+  .fees-billing-penalty-page .mini-summary,
+  .fees-billing-penalty-page .penalty-content {
+    grid-template-columns: 1fr;
+  }
+
+  .fees-billing-penalty-page .action-row {
+    flex-direction: column;
+  }
+
+  .fees-billing-penalty-page button {
+    width: 100%;
+  }
+}
+
 .topbar .tb-title,
 .topbar .tb-title .hl,
 .topbar .tb-user-greeting,
