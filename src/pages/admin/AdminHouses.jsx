@@ -724,9 +724,9 @@ const AdminHouses = () => {
               <div className="house-md-body">
                 <div className="house-cards-grid">
                   <div className="house-card">
-                    <div className="house-card-head">ที่อยู่</div>
+                    <div className="house-card-head">ข้อมูลบ้าน</div>
                     <div className="house-card-body">
-                      <div className="house-grid house-grid-3">
+                      <div className="house-grid house-grid-2">
                         <label className="house-field">
                           <span>บ้านเลขที่</span>
                           <input name="house_no" value={form.house_no} onChange={handleChange} placeholder="10/1" />
@@ -748,7 +748,7 @@ const AdminHouses = () => {
                           <span>หมายเลขห้อง</span>
                           <input name="room_no" value={form.room_no} onChange={handleChange} placeholder="เช่น A-502" />
                         </label>
-                        <label className="house-field house-field-span-1">
+                        <label className="house-field house-field-span-2">
                           <span>ถนน / ที่อยู่</span>
                           <input name="address" value={form.address} onChange={handleChange} placeholder="ถนนใหญ่ 1" />
                         </label>
@@ -762,15 +762,15 @@ const AdminHouses = () => {
                       <div className="house-grid house-grid-2">
                         <label className="house-field house-field-span-2">
                           <span>เจ้าของกรรมสิทธิ์</span>
-                          <input name="owner_name" value={form.owner_name} onChange={handleChange} placeholder="สมชาย ใจดี" />
+                          <input name="owner_name" value={form.owner_name} onChange={handleChange} placeholder="ชื่อ - นามสกุล เจ้าของกรรมสิทธิ์" />
                         </label>
                         <label className="house-field">
-                          <span>ผู้เช่า / ผู้อาศัย</span>
-                          <input name="resident_name" value={form.resident_name} onChange={handleChange} placeholder="ไม่มี" />
+                          <span>ผู้เช่า / ผู้พักอาศัย</span>
+                          <input name="resident_name" value={form.resident_name} onChange={handleChange} placeholder="ชื่อ - นามสกุล ผู้เช่า / ผู้พักอาศัย" />
                         </label>
                         <label className="house-field">
-                          <span>ผู้ติดต่อ</span>
-                          <input name="contact_name" value={form.contact_name} onChange={handleChange} placeholder="สมชาย ใจดี" />
+                          <span>ผู้ติดต่อหลัก</span>
+                          <input name="contact_name" value={form.contact_name} onChange={handleChange} placeholder="ชื่อ - นามสกุล ผู้ติดต่อ" />
                         </label>
                         <label className="house-field">
                           <span>เบอร์โทร</span>
@@ -781,6 +781,15 @@ const AdminHouses = () => {
                           <input name="line_id" value={form.line_id} onChange={handleChange} placeholder="somchai.id" />
                         </label>
                         <label className="house-field">
+                          <span>ประเภท</span>
+                          <DropdownList
+                            value={form.house_type}
+                            options={HOUSE_TYPE_OPTIONS}
+                            onChange={(nextValue) => setForm((current) => ({ ...current, house_type: nextValue }))}
+                            placeholder="อยู่เอง / ให้เช่า"
+                          />
+                        </label>
+                        <label className="house-field house-field-span-2">
                           <span>EMAIL</span>
                           <input name="email" value={form.email} onChange={handleChange} placeholder="somchai@email.com" />
                         </label>
@@ -809,15 +818,6 @@ const AdminHouses = () => {
                           <input value={formatDecimal(annualFee)} readOnly className="house-readonly" />
                         </label>
                         <label className="house-field">
-                          <span>ประเภท</span>
-                          <DropdownList
-                            value={form.house_type}
-                            options={HOUSE_TYPE_OPTIONS}
-                            onChange={(nextValue) => setForm((current) => ({ ...current, house_type: nextValue }))}
-                            placeholder="เลือกประเภท"
-                          />
-                        </label>
-                        <label className="house-field house-field-span-2">
                           <span>สถานะบ้าน</span>
                           <DropdownList
                             value={form.status}
@@ -828,7 +828,7 @@ const AdminHouses = () => {
                         </label>
                         <label className="house-field house-field-span-3">
                           <span>หมายเหตุ</span>
-                          <textarea name="note" value={form.note} onChange={handleChange} rows="2" placeholder="รายละเอียดเพิ่มเติม" />
+                          <textarea name="note" value={form.note} onChange={handleChange} rows="3" placeholder="รายละเอียดเพิ่มเติม เช่น ประวัติค่าชำระ หรือหมายเหตุการเงิน" />
                         </label>
                       </div>
                     </div>

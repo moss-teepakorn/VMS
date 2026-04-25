@@ -1714,7 +1714,7 @@ button, input, select, textarea {
 
 .house-md {
   --house-md-max-w: 1100px;
-  --house-md-max-h: 720px;
+  --house-md-max-h: 760px;
   width: min(var(--house-md-max-w), 100%);
   max-height: var(--house-md-max-h);
   height: auto;
@@ -1810,11 +1810,12 @@ button, input, select, textarea {
 .house-md-body {
   flex: 1;
   min-height: 0;
-  padding: 16px 20px 84px; /* leave space for sticky footer */
-  overflow-y: visible;
+  padding: 20px 24px 24px;
+  overflow-y: auto;
   background: #ffffff;
   border-top: none;
   -ms-overflow-style: none;
+}
 
 /* Shared sample-like pagination */
 .vms-pagination {
@@ -1833,7 +1834,6 @@ button, input, select, textarea {
   border-radius: 999px;
   padding: 4px 10px;
 }
-}
 
 .house-md-body::-webkit-scrollbar {
   width: 0;
@@ -1841,9 +1841,8 @@ button, input, select, textarea {
 }
 
 .house-md-foot {
-  position: sticky;
-  bottom: 0;
-  z-index: 6;
+  position: static;
+  background: #f7f9ff;
 }
 
 /* Three-column card layout inside modal for wide screens */
@@ -1851,27 +1850,48 @@ button, input, select, textarea {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 18px;
-  align-items: start;
+  align-items: stretch;
 }
 
 .house-card {
-  background: #fbfdff;
-  border: 1px solid #eef3fb;
-  border-radius: 12px;
-  padding: 12px;
+  background: #f7f9ff;
+  border: 1px solid #e7eff9;
+  border-radius: 16px;
+  padding: 18px;
   display: flex;
   flex-direction: column;
-  min-height: 220px;
+  min-height: 320px;
 }
 
 .house-card-head {
-  color: #214d72;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 0 12px 18px;
+  margin-bottom: 14px;
+  border-bottom: 1px solid rgba(81, 113, 167, .12);
+  color: #1f3a60;
   font-size: 13px;
   font-weight: 800;
-  margin-bottom: 8px;
+  position: relative;
+}
+
+.house-card-head::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 4px;
+  height: 28px;
+  background: #4f6ef7;
+  border-radius: 999px;
 }
 
 .house-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
   flex: 1;
   min-height: 0;
 }
