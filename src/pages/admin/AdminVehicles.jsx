@@ -84,6 +84,13 @@ const MAX_IMAGE_TARGET_BYTES = 95 * 1024
 
 const ALLOWED_VEHICLE_TYPES = new Set(VEHICLE_TYPES.map((item) => item.value))
 
+const normalizeValue = (value) => String(value || '').trim().toLowerCase()
+
+const findMatchingOption = (value, options) => {
+  const normalized = normalizeValue(value)
+  return options.find((option) => normalizeValue(option) === normalized) || null
+}
+
 const VEHICLE_EXCEL_COLUMN_ALIASES = {
   house_no: ['house_no', 'house no', 'บ้านเลขที่', 'เลขที่บ้าน'],
   soi: ['soi', 'ซอย'],
@@ -293,8 +300,8 @@ const AdminVehicles = () => {
   }
 
   const openEditModal = async (vehicle) => {
-    const baseBrand = BRAND_OPTIONS.includes(vehicle.brand || '') ? vehicle.brand : 'อื่นๆ'
-    const baseColor = COLOR_OPTIONS.includes(vehicle.color || '') ? vehicle.color : 'อื่นๆ'
+    const baseBrand = findMatchingOption(vehicle.brand, BRAND_OPTIONS) || 'อื่นๆ'
+    const baseColor = findMatchingOption(vehicle.color, COLOR_OPTIONS) || 'อื่นๆ'
 
     setEditingVehicle(vehicle)
     const parsedPlate = parsePlate(vehicle.license_plate)
