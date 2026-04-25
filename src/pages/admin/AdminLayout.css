@@ -2786,6 +2786,21 @@ button, input, select, textarea {
   }
 }
 
+.fees-billing-penalty-page {
+  overflow-x: hidden;
+}
+
+.fees-billing-penalty-page,
+.fees-billing-penalty-page * {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.fees-billing-penalty-page *::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+}
+
 .topbar .tb-title,
 .topbar .tb-title .hl,
 .topbar .tb-user-greeting,
