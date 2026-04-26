@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react'
+import DropdownList from '../../components/DropdownList'
 import StyledSelect from '../../components/StyledSelect'
 import html2canvas from 'html2canvas'
 import { jsPDF } from 'jspdf'
@@ -550,22 +551,20 @@ export default function AdminFeatureExpensePayment() {
       <div className="card houses-main-card">
         <div className="vms-panel-toolbar">
           <div className="vms-toolbar-left">
-            <StyledSelect value={monthFilter} onChange={(e) => setMonthFilter(e.target.value)} style={{ height: 32, fontSize: 12, padding: '0 22px 0 8px', border: '1.5px solid #d1d5e0', borderRadius: 8, minWidth: 120 }}>
-              {Array.from({ length: 12 }, (_, index) => index + 1).map((month) => (
-                <option key={month} value={String(month)}>
-                  {new Date(2000, month - 1, 1).toLocaleString('th-TH', { month: 'long' })}
-                </option>
-              ))}
-            </StyledSelect>
-            <StyledSelect value={yearFilter} onChange={(e) => setYearFilter(e.target.value)} style={{ height: 32, fontSize: 12, padding: '0 22px 0 8px', border: '1.5px solid #d1d5e0', borderRadius: 8, minWidth: 100 }}>
-              {yearOptions.map((year) => (
-                <option key={year} value={String(year)}>{year + 543}</option>
-              ))}
-            </StyledSelect>
-            <div className="vms-inline-search">
-              <svg width="12" height="12" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd" /></svg>
-              <input placeholder="ค้นหา..." value={search} onChange={(e) => setSearch(e.target.value)} />
-            </div>
+            <DropdownList
+              compact
+              value={String(monthFilter)}
+              options={monthOptions.map((m) => ({ value: String(m.value), label: m.label }))}
+              onChange={(value) => setMonthFilter(value)}
+              placeholder="เดือน"
+            />
+            <DropdownList
+              compact
+              value={String(yearFilter)}
+              options={yearOptions.map((y) => ({ value: String(y), label: String(y + 543) }))}
+              onChange={(value) => setYearFilter(value)}
+              placeholder="ปี"
+            />
           </div>
           <div className="vms-toolbar-right">
             <button className="vms-sm-btn vms-sm-btn--primary" onClick={openCreate}>+ สร้างรายการ</button>
