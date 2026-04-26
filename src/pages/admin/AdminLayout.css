@@ -2657,6 +2657,7 @@ button, input, select, textarea {
   background: #fff4ea;
   color: #b45a11;
   border-color: #ffc48d;
+  box-shadow: 0 10px 20px rgba(56, 103, 246, .18);
 }
 
 .fees-billing-penalty-page .summary-stack {
