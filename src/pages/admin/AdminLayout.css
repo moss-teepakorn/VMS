@@ -2803,6 +2803,44 @@ button, input, select, textarea {
   background: #dbe3f2;
 }
 
+.pane.on.houses-compact.payments-compact .vms-panel-toolbar.payments-toolbar {
+  align-items: flex-start;
+  flex-wrap: wrap;
+}
+
+.pane.on.houses-compact.payments-compact .vms-toolbar-left.payments-toolbar-left {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.pane.on.houses-compact.payments-compact .payments-filter-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  width: 100%;
+}
+
+.pane.on.houses-compact.payments-compact .payments-filter-row .cars-ss--compact,
+.pane.on.houses-compact.payments-compact .payments-filter-row .cars-ss {
+  width: auto !important;
+  min-width: 120px;
+  flex-shrink: 0;
+}
+
+.pane.on.houses-compact.payments-compact .payments-toolbar-left .vms-inline-search {
+  width: 100%;
+  min-width: 0;
+}
+
+.pane.on.houses-compact.payments-compact .payments-toolbar-left .vms-inline-search input {
+  width: 100%;
+  min-width: 0;
+}
+
 .fees-billing-penalty-page {
   overflow-x: hidden;
 }
