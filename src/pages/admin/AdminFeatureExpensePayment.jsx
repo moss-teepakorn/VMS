@@ -42,6 +42,21 @@ const STATUS_MAP = {
   approved: { label: 'อนุมัติ', color: '#1d4ed8', bg: '#eff6ff' },
 }
 
+const monthOptions = [
+  { value: 1, label: 'มกราคม' },
+  { value: 2, label: 'กุมภาพันธ์' },
+  { value: 3, label: 'มีนาคม' },
+  { value: 4, label: 'เมษายน' },
+  { value: 5, label: 'พฤษภาคม' },
+  { value: 6, label: 'มิถุนายน' },
+  { value: 7, label: 'กรกฎาคม' },
+  { value: 8, label: 'สิงหาคม' },
+  { value: 9, label: 'กันยายน' },
+  { value: 10, label: 'ตุลาคม' },
+  { value: 11, label: 'พฤศจิกายน' },
+  { value: 12, label: 'ธันวาคม' },
+]
+
 const THAI_BANKS = [
   'ธนาคารกรุงเทพ', 'ธนาคารกสิกรไทย', 'ธนาคารกรุงไทย', 'ธนาคารไทยพาณิชย์',
   'ธนาคารกรุงศรีอยุธยา', 'ธนาคารทหารไทยธนชาต', 'ธนาคารยูโอบี', 'ธนาคารซีไอเอ็มบี ไทย',
