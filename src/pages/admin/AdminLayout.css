@@ -1744,7 +1744,7 @@ button, input, select, textarea {
 
 .house-md--lg {
   --house-md-max-w: 1120px;
-  --house-md-max-h: 780px;
+  --house-md-max-h: 900px;
 }
 
 .house-md--xl {
@@ -1800,7 +1800,7 @@ button, input, select, textarea {
 }
 
 .house-md.house-md--lg > .house-md-head {
-  background: #f2f4f8 !important;
+  background: #bbc6d1 !important;
   border-bottom: 1px solid #d8e2ef !important;
 }
 
@@ -1886,7 +1886,7 @@ button, input, select, textarea {
 }
 
 .house-cards-grid > .house-card {
-  max-height: 390px;
+  max-height: none;
 }
 
 .house-card {
@@ -1925,7 +1925,7 @@ button, input, select, textarea {
 .house-card-body {
   flex: 1;
   min-height: 0;
-  overflow: hidden;
+  overflow: visible;
 }
 
 .house-card-body::-webkit-scrollbar,
@@ -1937,7 +1937,7 @@ button, input, select, textarea {
 .card-content {
   flex: 1;
   min-height: 0;
-  overflow: auto;
+  overflow: visible;
   padding: 14px;
   display: flex;
   flex-direction: column;
