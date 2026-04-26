@@ -536,6 +536,17 @@ export default function AdminFeatureExpensePayment() {
 
       {!isCreateInline && (
       <>
+      <div className="stats">
+        {statCards.map((c) => (
+          <div key={c.key} className="sc" style={{ cursor: 'pointer', outline: statusFilter === c.key ? '2px solid #1E40AF' : undefined, outlineOffset: 2 }} onClick={() => setStatusFilter((p) => (p === c.key ? 'all' : c.key))}>
+            <div className={`sc-ico ${c.cls}`}>{c.ico}</div>
+            <div className="sc-v">{c.v}</div>
+            <div className="sc-l">{c.label}</div>
+            {c.s && <div className="sc-s">{c.s}</div>}
+          </div>
+        ))}
+      </div>
+
       <div className="card houses-main-card">
         <div className="vms-panel-toolbar">
           <div className="vms-toolbar-left">
@@ -560,17 +571,6 @@ export default function AdminFeatureExpensePayment() {
             <button className="vms-sm-btn vms-sm-btn--primary" onClick={openCreate}>+ สร้างรายการ</button>
           </div>
         </div>
-      </div>
-
-      <div className="stats">
-        {statCards.map((c) => (
-          <div key={c.key} className="sc" style={{ cursor: 'pointer', outline: statusFilter === c.key ? '2px solid #1E40AF' : undefined, outlineOffset: 2 }} onClick={() => setStatusFilter((p) => (p === c.key ? 'all' : c.key))}>
-            <div className={`sc-ico ${c.cls}`}>{c.ico}</div>
-            <div className="sc-v">{c.v}</div>
-            <div className="sc-l">{c.label}</div>
-            {c.s && <div className="sc-s">{c.s}</div>}
-          </div>
-        ))}
       </div>
 
       <div className="card houses-main-card">
