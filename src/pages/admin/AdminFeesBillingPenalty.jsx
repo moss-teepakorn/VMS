@@ -320,7 +320,7 @@ export default function AdminFeesBillingPenalty() {
                 <div className="penalty-note">
                   คำนวณค่าปรับทั้งระบบและค่าทวงถามพร้อมตรวจสอบใบแจ้งหนี้และใบทวงถาม
                 </div>
-                <button type="button" className="btn-warning" onClick={handleCalculateOverdue} disabled={processingOverdue}>
+                <button type="button" className="btn-primary" onClick={handleCalculateOverdue} disabled={processingOverdue}>
                   {processingOverdue ? 'กำลังคำนวณ...' : 'คำนวณค่าปรับ'}
                 </button>
               </div>
