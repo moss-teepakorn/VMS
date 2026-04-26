@@ -220,7 +220,7 @@ export default function AdminFeesBillingPenalty() {
       <div className="page-header">
         <div className="title-wrap">
           <h1>สร้างใบแจ้งหนี้และคำนวณค่าปรับ</h1>
-          <p>จัดกระบวนการให้เป็นขั้นตอน ลดพื้นที่ว่าง และแยก action หลักออกจาก action รอง</p>
+          <p>สร้างใบแจ้งหนี้ประจำงวด และคำนวณค่าปรับ</p>
         </div>
       </div>
 
@@ -243,7 +243,7 @@ export default function AdminFeesBillingPenalty() {
           <div className="step-no">3</div>
           <div>
             <div className="step-title">คำนวณค่าปรับ</div>
-            <div className="step-desc">ค่าปรับ 10% และค่าทวงถาม 200 บาท</div>
+            <div className="step-desc">ค่าปรับและค่าทวงถามตามเงื่อนไข</div>
           </div>
         </div>
       </section>
@@ -318,8 +318,7 @@ export default function AdminFeesBillingPenalty() {
             <div className="panel-body">
               <div className="penalty-content">
                 <div className="penalty-note">
-                  คำนวณค่าปรับทั้งระบบด้วย logic เดิม: <strong>ค่าปรับ {Number(setup.overdue_fine_pct || 0)}%</strong> + <strong>ค่าทวงถาม {Number(setup.notice_fee || 0).toLocaleString('th-TH')} บาท</strong><br />
-                  เหมาะสำหรับรันหลังจากตรวจสอบใบแจ้งหนี้เรียบร้อยแล้ว
+                  คำนวณค่าปรับทั้งระบบและค่าทวงถาม {Number(setup.notice_fee || 0).toLocaleString('th-TH')} บาท และตรวจสอบใบแจ้งหนี้และใบทวงถาม
                 </div>
                 <button type="button" className="btn-warning" onClick={handleCalculateOverdue} disabled={processingOverdue}>
                   {processingOverdue ? 'กำลังคำนวณ...' : 'คำนวณค่าปรับ'}
