@@ -2789,7 +2789,7 @@ button, input, select, textarea {
 
 .pane.on.houses-compact.payments-compact .btn.btn-xs.btn-o {
   height: 2.25rem;
-  min-height: 2.25rem;
+  min-height: 3.0rem;
   padding: 0 11px;
   background: #dbe3f2;
   border-color: #4f6ef7;
