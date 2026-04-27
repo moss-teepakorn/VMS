@@ -20,6 +20,7 @@ import AdminMarketplace from './pages/admin/AdminMarketplace'
 import AdminRules from './pages/admin/AdminRules'
 import AdminConfig from './pages/admin/AdminConfig'
 import AdminPaymentCycles from './pages/admin/AdminPaymentCycles'
+import AdminHolidayCalendarReport from './pages/admin/reports/AdminHolidayCalendarReport'
 import AdminHolidays from './pages/admin/AdminHolidays'
 import AdminUsers from './pages/admin/AdminUsers'
 import AdminLogs from './pages/admin/AdminLogs'
@@ -121,6 +122,7 @@ function AppRoutes() {
         <Route path="reports/overdue" element={<AdminReportOverdue />} />
         <Route path="reports/violations-summary" element={<AdminReportViolationsSummary />} />
         <Route path="reports/expense-payments" element={<AdminReportExpensePayments />} />
+        <Route path="reports/holiday-calendar" element={<AdminHolidayCalendarReport />} />
         <Route path="work-reports" element={<Suspense fallback={<PageLoader />}><AdminWorkReports /></Suspense>} />
         <Route path="work-reports/new" element={<Suspense fallback={<PageLoader />}><AdminWorkReportForm /></Suspense>} />
         <Route path="work-reports/:id/edit" element={<Suspense fallback={<PageLoader />}><AdminWorkReportForm /></Suspense>} />

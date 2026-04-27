@@ -225,6 +225,7 @@ const AdminLayout = () => {
       { id: 'rpt-overdue', label: 'รายงานค้างชำระ', icon: '📄', path: '/admin/reports/outstanding' },
       { id: 'rpt-expense', label: 'รายงานการจ่ายเงินออก', icon: '📄', path: '/admin/reports/expense-payments' },
       { id: 'rpt-violations', label: 'รายงานการรับชำระเงิน', icon: '📄', path: '/admin/reports/violations-summary' },
+      { id: 'rpt-holidays', label: 'ปฏิทินวันหยุด', icon: '🗓️', path: '/admin/reports/holiday-calendar' },
     ]},
     { section: 'ตั้งค่า', tone: 'system', sectionIcon: '⚙️', items: [
       { id: 'cfg', label: 'ตั้งค่าระบบ', icon: '⚙️', path: '/admin/config' },

@@ -33,6 +33,7 @@ const AdminReports = () => {
                     <li><Link to="/admin/reports/payments" className="btn">รายงานจ่ายค่าส่วนกลาง</Link></li>
                     <li><Link to="/admin/reports/outstanding" className="btn">รายงานค่างชำระ</Link></li>
                     <li><Link to="/admin/reports/overdue" className="btn">สรุปค้างชำระ</Link></li>
+                    <li><Link to="/admin/reports/holiday-calendar" className="btn">ปฏิทินวันหยุด</Link></li>
                   </ul>
                 </div>
               </div>
