@@ -919,6 +919,187 @@
   box-shadow: none !important;
 }
 
+.holiday-report-card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.holiday-report-body {
+  display: grid;
+  gap: 16px;
+}
+
+.holiday-report-month-view {
+  display: grid;
+  grid-template-columns: minmax(280px, 1fr) minmax(220px, 320px);
+  gap: 16px;
+}
+
+.holiday-report-calendar-panel,
+.holiday-report-details-panel {
+  background: var(--card);
+  border: 1px solid var(--bo);
+  border-radius: 14px;
+  padding: 14px;
+}
+
+.holiday-report-calendar-header {
+  font-size: 14px;
+  font-weight: 700;
+  margin-bottom: 12px;
+}
+
+.holiday-calendar-grid,
+.holiday-year-month-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 4px;
+}
+
+.holiday-calendar-weekday-cell,
+.holiday-year-month-weekday {
+  text-align: center;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--mu);
+}
+
+.holiday-calendar-cell,
+.holiday-year-month-cell {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  min-height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--tx);
+}
+
+.holiday-calendar-cell--empty,
+.holiday-year-month-cell--empty {
+  background: transparent;
+}
+
+.holiday-calendar-cell--weekly,
+.holiday-year-month-cell--weekly {
+  background: #e5e7eb;
+}
+
+.holiday-calendar-cell--fixed,
+.holiday-year-month-cell--fixed {
+  background: #fee2e2;
+}
+
+.holiday-report-legend {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  align-items: center;
+  margin-top: 12px;
+  font-size: 12px;
+}
+
+.holiday-report-legend--year {
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--bo);
+}
+
+.holiday-legend-dot {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  margin-right: 6px;
+  vertical-align: middle;
+}
+
+.holiday-legend-dot--weekly {
+  background: #e5e7eb;
+}
+
+.holiday-legend-dot--fixed {
+  background: #fee2e2;
+}
+
+.holiday-report-details-title {
+  font-size: 13px;
+  font-weight: 700;
+  margin-bottom: 12px;
+}
+
+.holiday-report-empty {
+  color: var(--mu);
+  font-size: 13px;
+}
+
+.holiday-report-details-list {
+  display: grid;
+  gap: 8px;
+}
+
+.holiday-report-details-row {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 10px;
+  align-items: center;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: var(--bg);
+  border: 1px solid var(--bo);
+  font-size: 13px;
+}
+
+.holiday-year-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.holiday-year-month {
+  background: var(--card);
+  border: 1px solid var(--bo);
+  border-radius: 12px;
+  padding: 10px;
+}
+
+.holiday-year-month-title {
+  font-size: 12px;
+  font-weight: 700;
+  margin-bottom: 8px;
+  text-align: center;
+}
+
+@media (max-width: 960px) {
+  .holiday-report-month-view {
+    grid-template-columns: 1fr;
+  }
+  .holiday-year-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 720px) {
+  .holiday-year-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 520px) {
+  .holiday-report-card {
+    gap: 10px;
+  }
+  .holiday-report-body {
+    gap: 10px;
+  }
+  .holiday-year-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
 .houses-list-head .houses-list-actions .btn:hover {
   background: rgba(255, 255, 255, 0.26) !important;
   border-color: rgba(255, 255, 255, 0.65) !important;

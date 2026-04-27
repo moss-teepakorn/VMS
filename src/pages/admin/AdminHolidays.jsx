@@ -102,6 +102,38 @@ function DateInputBE({ value, onChange, disabled = false, className = '' }) {
   )
 }
 
+const MONTH_LABELS = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.']
+
+function buildMonthCalendar(year, month) {
+  const firstDay = new Date(year, month - 1, 1).getDay()
+  const daysInMonth = new Date(year, month, 0).getDate()
+  const cells = []
+  for (let index = 0; index < 42; index += 1) {
+    const day = index - firstDay + 1
+    if (day < 1 || day > daysInMonth) {
+      cells.push(null)
+    } else {
+      const date = new Date(year, month - 1, day)
+      cells.push({
+        isoDate: `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`,
+        day,
+        weekday: date.getDay(),
+      })
+    }
+  }
+  return cells
+}
+
+function getFixedHolidaysByMonth(rows, year, month) {
+  return rows
+    .filter((row) => {
+      if (!row.holiday_date) return false
+      const matches = String(row.holiday_date).split('-')
+      return Number(matches[0]) === year && Number(matches[1]) === month
+    })
+    .sort((a, b) => (String(a.holiday_date).localeCompare(String(b.holiday_date))))
+}
+
 export default function AdminHolidays() {
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
@@ -117,6 +149,8 @@ export default function AdminHolidays() {
     note: '',
     is_active: true,
   })
+  const [reportView, setReportView] = useState('month')
+  const [reportMonth, setReportMonth] = useState(new Date().getMonth() + 1)
 
   const yearCE = useMemo(() => toCE(yearBE), [yearBE])
   const weeklyWeekdays = useMemo(() => weeklyRows.map((row) => Number(row.weekday)), [weeklyRows])
@@ -126,6 +160,18 @@ export default function AdminHolidays() {
       return acc
     }, {})
   }, [weeklyRows])
+
+  const weeklyHolidaySet = useMemo(() => new Set(weeklyRows.map((row) => Number(row.weekday))), [weeklyRows])
+  const fixedHolidayMap = useMemo(() => {
+    const map = new Map()
+    fixedRows.forEach((row) => {
+      if (row?.holiday_date) map.set(row.holiday_date, row)
+    })
+    return map
+  }, [fixedRows])
+  const selectedReportMonth = Number(reportMonth) || 1
+  const monthCalendar = useMemo(() => buildMonthCalendar(yearCE, selectedReportMonth), [yearCE, selectedReportMonth])
+  const monthFixedHolidays = useMemo(() => getFixedHolidaysByMonth(fixedRows, yearCE, selectedReportMonth), [fixedRows, yearCE, selectedReportMonth])
 
   const load = async () => {
     if (!yearCE) {
@@ -266,6 +312,111 @@ export default function AdminHolidays() {
               <div className="ph-sub">กำหนดวันหยุดประจำสัปดาห์และวันหยุดนักขัตฤกษ์</div>
             </div>
           </div>
+        </div>
+      </div>
+
+      <div className="card houses-main-card holiday-report-card">
+        <div className="ch houses-list-head houses-main-head">
+          <div className="ct">รายงานวันหยุดประจำปี</div>
+          <div className="houses-list-actions" style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+            <StyledSelect value={reportView} onChange={(e) => setReportView(e.target.value)} style={{ minWidth: 140 }}>
+              <option value="month">แสดงเป็นเดือน</option>
+              <option value="year">แสดงทั้งปี</option>
+            </StyledSelect>
+            {reportView === 'month' && (
+              <StyledSelect value={String(reportMonth)} onChange={(e) => setReportMonth(Number(e.target.value))} style={{ minWidth: 140 }}>
+                {MONTH_LABELS.map((label, index) => (
+                  <option key={label} value={index + 1}>{label}</option>
+                ))}
+              </StyledSelect>
+            )}
+            <button className="btn btn-p btn-sm" type="button" onClick={load}>โหลดปี</button>
+          </div>
+        </div>
+        <div className="cb houses-table-card-body houses-main-body holiday-report-body">
+          {reportView === 'month' ? (
+            <div className="holiday-report-month-view">
+              <div className="holiday-report-calendar-panel">
+                <div className="holiday-report-calendar-header">{`${MONTH_LABELS[selectedReportMonth - 1] || ''} ${yearBE}`}</div>
+                <div className="holiday-calendar-grid">
+                  {['อ', 'จ', 'อ', 'พ', 'พ', 'ศ', 'ส'].map((label) => (
+                    <div key={label} className="holiday-calendar-weekday-cell">{label}</div>
+                  ))}
+                  {monthCalendar.map((cell, index) => {
+                    if (!cell) {
+                      return <div key={index} className="holiday-calendar-cell holiday-calendar-cell--empty" />
+                    }
+                    const isFixed = fixedHolidayMap.has(cell.isoDate)
+                    const isWeekly = !isFixed && weeklyHolidaySet.has(cell.weekday)
+                    return (
+                      <div
+                        key={cell.isoDate}
+                        className={`holiday-calendar-cell ${isFixed ? 'holiday-calendar-cell--fixed' : ''} ${isWeekly ? 'holiday-calendar-cell--weekly' : ''}`}
+                        title={isFixed ? fixedHolidayMap.get(cell.isoDate)?.name || 'วันหยุดนักขัตฤกษ์' : isWeekly ? 'วันหยุดประจำสัปดาห์' : ''}
+                      >
+                        {cell.day}
+                      </div>
+                    )
+                  })}
+                </div>
+                <div className="holiday-report-legend">
+                  <span><span className="holiday-legend-dot holiday-legend-dot--weekly" />วันหยุดประจำสัปดาห์</span>
+                  <span><span className="holiday-legend-dot holiday-legend-dot--fixed" />วันหยุดประเพณี</span>
+                </div>
+              </div>
+              <div className="holiday-report-details-panel">
+                <div className="holiday-report-details-title">วันหยุดประเพณีเดือน {MONTH_LABELS[selectedReportMonth - 1] || ''}</div>
+                {monthFixedHolidays.length === 0 ? (
+                  <div className="holiday-report-empty">ไม่มีวันหยุดประเพณีในเดือนนี้</div>
+                ) : (
+                  <div className="holiday-report-details-list">
+                    {monthFixedHolidays.map((row) => (
+                      <div key={row.id} className="holiday-report-details-row">
+                        <span>{formatHolidayDateToBE(row.holiday_date)}</span>
+                        <strong>{row.name}</strong>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          ) : (
+            <div className="holiday-report-year-view">
+              <div className="holiday-report-legend holiday-report-legend--year">
+                <span><span className="holiday-legend-dot holiday-legend-dot--weekly" />วันหยุดประจำสัปดาห์</span>
+                <span><span className="holiday-legend-dot holiday-legend-dot--fixed" />วันหยุดประเพณี</span>
+              </div>
+              <div className="holiday-year-grid">
+                {Array.from({ length: 12 }).map((_, index) => {
+                  const monthIndex = index + 1
+                  const monthCells = buildMonthCalendar(yearCE, monthIndex)
+                  return (
+                    <div key={`year-${monthIndex}`} className="holiday-year-month">
+                      <div className="holiday-year-month-title">{MONTH_LABELS[monthIndex - 1]}</div>
+                      <div className="holiday-year-month-grid">
+                        {['อ', 'จ', 'อ', 'พ', 'พ', 'ศ', 'ส'].map((label) => (
+                          <div key={`${monthIndex}-${label}`} className="holiday-year-month-weekday">{label}</div>
+                        ))}
+                        {monthCells.map((cell, cellIndex) => {
+                          if (!cell) return <div key={`${monthIndex}-${cellIndex}`} className="holiday-year-month-cell holiday-year-month-cell--empty" />
+                          const isFixed = fixedHolidayMap.has(cell.isoDate)
+                          const isWeekly = !isFixed && weeklyHolidaySet.has(cell.weekday)
+                          return (
+                            <div
+                              key={cell.isoDate}
+                              className={`holiday-year-month-cell ${isFixed ? 'holiday-year-month-cell--fixed' : ''} ${isWeekly ? 'holiday-year-month-cell--weekly' : ''}`}
+                            >
+                              {cell.day}
+                            </div>
+                          )
+                        })}
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
