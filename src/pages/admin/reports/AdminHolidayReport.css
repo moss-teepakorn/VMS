@@ -101,7 +101,6 @@
   background: transparent;
   color: var(--tx);
   height: 100%;
-  border: 1px solid #e5e7eb;
   box-sizing: border-box;
 }
 
