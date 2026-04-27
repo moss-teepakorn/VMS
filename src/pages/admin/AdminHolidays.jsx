@@ -25,6 +25,47 @@ function toCE(yearBE) {
   return year > 2400 ? year - 543 : year
 }
 
+function formatHolidayDateToBE(isoDate) {
+  if (!isoDate) return ''
+  const parsed = new Date(isoDate)
+  if (!Number.isFinite(parsed.getTime())) return String(isoDate)
+  const day = String(parsed.getDate()).padStart(2, '0')
+  const month = String(parsed.getMonth() + 1).padStart(2, '0')
+  const yearBE = parsed.getFullYear() + 543
+  return `${day}/${month}/${yearBE}`
+}
+
+function parseHolidayDateFromBE(value) {
+  const raw = String(value || '').trim()
+  if (!raw) return null
+
+  const parts = raw.includes('/') ? raw.split('/') : raw.split('-')
+  if (parts.length !== 3) return null
+
+  const [part1, part2, part3] = parts.map((item) => String(item).trim())
+  let day
+  let month
+  let year
+
+  if (raw.includes('/')) {
+    day = Number(part1)
+    month = Number(part2)
+    year = Number(part3)
+  } else {
+    year = Number(part1)
+    month = Number(part2)
+    day = Number(part3)
+  }
+
+  if (!Number.isFinite(day) || !Number.isFinite(month) || !Number.isFinite(year)) return null
+  if (year > 2400) year -= 543
+
+  const date = new Date(Date.UTC(year, month - 1, day))
+  if (date.getUTCFullYear() !== year || date.getUTCMonth() !== month - 1 || date.getUTCDate() !== day) return null
+
+  return `${String(year).padStart(4, '0')}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`
+}
+
 export default function AdminHolidays() {
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
@@ -115,7 +156,7 @@ export default function AdminHolidays() {
     setModalMode('edit')
     setHolidayForm({
       id: row.id,
-      holiday_date: row.holiday_date || '',
+      holiday_date: formatHolidayDateToBE(row.holiday_date || ''),
       name: row.name || '',
       note: row.note || '',
       is_active: !!row.is_active,
@@ -138,10 +179,15 @@ export default function AdminHolidays() {
 
     try {
       setSaving(true)
+      const parsedHolidayDate = parseHolidayDateFromBE(holidayForm.holiday_date)
+      if (!parsedHolidayDate) {
+        return Swal.fire({ icon: 'warning', title: 'วันที่ไม่ถูกต้อง', text: 'กรุณากรอกวันที่วันหยุดในรูปแบบ DD/MM/YYYY' })
+      }
+
       const payload = {
         year: yearCE,
         type: 'fixed',
-        holiday_date: holidayForm.holiday_date,
+        holiday_date: parsedHolidayDate,
         name: holidayForm.name,
         note: holidayForm.note,
         is_active: !!holidayForm.is_active,
@@ -245,7 +291,7 @@ export default function AdminHolidays() {
                   <tr><td colSpan={5} style={{ textAlign: 'center', color: 'var(--mu)' }}>ยังไม่มีวันหยุดนักขัตฤกษ์</td></tr>
                 ) : fixedRows.map((row) => (
                   <tr key={row.id}>
-                    <td>{row.holiday_date || '-'}</td>
+                    <td>{formatHolidayDateToBE(row.holiday_date) || '-'}</td>
                     <td>{row.name || '-'}</td>
                     <td>{row.note || '-'}</td>
                     <td>{row.is_active ? 'ใช้งาน' : 'ปิด'}</td>
@@ -272,7 +318,7 @@ export default function AdminHolidays() {
                   <div className="mcard-title">{row.name || '-'}</div>
                 </div>
                 <div className="mcard-meta">
-                  <span><span className="mcard-label">วันที่</span> {row.holiday_date || '-'}</span>
+                  <span><span className="mcard-label">วันที่</span> {formatHolidayDateToBE(row.holiday_date) || '-'}</span>
                   <span><span className="mcard-label">รายละเอียด</span> {row.note || '-'}</span>
                 </div>
                 <div className="mcard-actions">
@@ -300,7 +346,8 @@ export default function AdminHolidays() {
                   <label className="house-field">
                     <span>วันที่</span>
                     <input
-                      type="date"
+                      type="text"
+                      placeholder="วว/ดด/ปปปป"
                       value={holidayForm.holiday_date}
                       onChange={(e) => setHolidayForm((prev) => ({ ...prev, holiday_date: e.target.value }))}
                     />
