@@ -3,6 +3,7 @@ import StyledSelect from '../../components/StyledSelect'
 import Swal from 'sweetalert2'
 import { listHolidays, createHoliday, updateHoliday, deleteHoliday } from '../../lib/holidays'
 import './AdminDashboard.css'
+import './AdminPaymentCycles.css'
 
 const WEEKDAYS = [
   { value: 0, label: 'อาทิตย์' },
@@ -25,45 +26,35 @@ function toCE(yearBE) {
   return year > 2400 ? year - 543 : year
 }
 
+function twoDigits(value) {
+  return String(value).padStart(2, '0')
+}
+
 function formatHolidayDateToBE(isoDate) {
   if (!isoDate) return ''
   const parsed = new Date(isoDate)
-  if (!Number.isFinite(parsed.getTime())) return String(isoDate)
-  const day = String(parsed.getDate()).padStart(2, '0')
-  const month = String(parsed.getMonth() + 1).padStart(2, '0')
+  if (Number.isNaN(parsed.getTime())) return ''
+  const day = twoDigits(parsed.getDate())
+  const month = twoDigits(parsed.getMonth() + 1)
   const yearBE = parsed.getFullYear() + 543
   return `${day}/${month}/${yearBE}`
 }
 
-function parseHolidayDateFromBE(value) {
-  const raw = String(value || '').trim()
-  if (!raw) return null
-
-  const parts = raw.includes('/') ? raw.split('/') : raw.split('-')
-  if (parts.length !== 3) return null
-
-  const [part1, part2, part3] = parts.map((item) => String(item).trim())
-  let day
-  let month
-  let year
-
-  if (raw.includes('/')) {
-    day = Number(part1)
-    month = Number(part2)
-    year = Number(part3)
-  } else {
-    year = Number(part1)
-    month = Number(part2)
-    day = Number(part3)
-  }
-
-  if (!Number.isFinite(day) || !Number.isFinite(month) || !Number.isFinite(year)) return null
-  if (year > 2400) year -= 543
-
-  const date = new Date(Date.UTC(year, month - 1, day))
-  if (date.getUTCFullYear() !== year || date.getUTCMonth() !== month - 1 || date.getUTCDate() !== day) return null
-
-  return `${String(year).padStart(4, '0')}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`
+function DateInputBE({ value, onChange, disabled = false, className = '' }) {
+  const displayText = value ? formatHolidayDateToBE(value) : 'วว/ดด/ปปปป'
+  return (
+    <label className="fi-date-wrap">
+      <input
+        className={`${className} fi-date-native`.trim()}
+        type="date"
+        lang="th-TH-u-ca-buddhist"
+        value={value || ''}
+        onChange={onChange}
+        disabled={disabled}
+      />
+      <span className={`fi-date-be ${disabled ? 'is-disabled' : ''} ${value ? '' : 'is-placeholder'}`}>{displayText}</span>
+    </label>
+  )
 }
 
 export default function AdminHolidays() {
@@ -156,7 +147,7 @@ export default function AdminHolidays() {
     setModalMode('edit')
     setHolidayForm({
       id: row.id,
-      holiday_date: formatHolidayDateToBE(row.holiday_date || ''),
+      holiday_date: row.holiday_date || '',
       name: row.name || '',
       note: row.note || '',
       is_active: !!row.is_active,
@@ -345,9 +336,8 @@ export default function AdminHolidays() {
                 <div className="house-grid" style={{ gridTemplateColumns: '1fr 1fr', gap: 10 }}>
                   <label className="house-field">
                     <span>วันที่</span>
-                    <input
-                      type="text"
-                      placeholder="วว/ดด/ปปปป"
+                    <DateInputBE
+                      className="fi"
                       value={holidayForm.holiday_date}
                       onChange={(e) => setHolidayForm((prev) => ({ ...prev, holiday_date: e.target.value }))}
                     />
