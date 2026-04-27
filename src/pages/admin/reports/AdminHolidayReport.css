@@ -71,9 +71,16 @@
 .holiday-year-month-grid {
   display: grid;
   grid-template-columns: repeat(7, minmax(0, 1fr));
-  grid-auto-rows: 60px;
   gap: 2px;
   width: 100%;
+}
+
+.holiday-calendar-grid {
+  grid-auto-rows: 80px;
+}
+
+.holiday-year-month-grid {
+  grid-auto-rows: 25px;
 }
 
 .holiday-calendar-weekday-cell,
