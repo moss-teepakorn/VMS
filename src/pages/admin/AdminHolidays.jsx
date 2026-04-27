@@ -269,8 +269,6 @@ export default function AdminHolidays() {
         </div>
       </div>
 
-      </div>
-
       <div className="card houses-main-card">
         <div className="ch houses-list-head houses-main-head">
           <div className="ct">ปีงบประมาณ / ปี พ.ศ.</div>
