@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import StyledSelect from '../../../components/StyledSelect'
 import Swal from 'sweetalert2'
-import { listHolidays } from '../../lib/holidays'
+import { listHolidays } from '../../../lib/holidays'
 import './AdminHolidayReport.css'
 
 const MONTH_LABELS = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.']
