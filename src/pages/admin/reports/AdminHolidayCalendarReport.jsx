@@ -83,15 +83,12 @@ export default function AdminHolidayCalendarReport() {
     [fixedRows, yearCE, selectedReportMonth],
   )
 
-  const load = async () => {
-    if (!yearCE) {
-      await Swal.fire({ icon: 'warning', title: 'ปีไม่ถูกต้อง', text: 'กรุณาระบุปี พ.ศ. ให้ถูกต้อง' })
-      return
-    }
+  const load = async (year = yearCE) => {
+    if (!year) return
 
     try {
       setLoading(true)
-      const data = await listHolidays(yearCE)
+      const data = await listHolidays(year)
       setWeeklyRows(data.filter((item) => item.type === 'weekly'))
       setFixedRows(data.filter((item) => item.type === 'fixed'))
     } catch (error) {
@@ -141,11 +138,15 @@ export default function AdminHolidayCalendarReport() {
             <input
               type="number"
               value={yearBE}
-              onChange={(e) => setYearBE(e.target.value)}
+              onChange={(e) => {
+                const nextYearBE = e.target.value
+                setYearBE(nextYearBE)
+                const nextYearCE = toCE(nextYearBE)
+                if (nextYearCE) load(nextYearCE)
+              }}
               className="holiday-report-year-input"
               placeholder="ปี พ.ศ."
             />
-            <button className="btn btn-p btn-sm" type="button" onClick={load} disabled={loading}>{loading ? 'โหลด...' : 'โหลดปี'}</button>
           </div>
         </div>
         <div className="cb holiday-report-card-body">
