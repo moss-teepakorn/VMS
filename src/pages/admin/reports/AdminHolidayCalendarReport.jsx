@@ -123,7 +123,7 @@ export default function AdminHolidayCalendarReport() {
         </div>
       </div>
 
-      <div className="card">
+      <div className="card holiday-report-card">
         <div className="ch houses-list-head houses-main-head">
           <div className="ct">ตัวเลือกการแสดงผล</div>
           <div className="houses-list-actions holiday-report-controls">

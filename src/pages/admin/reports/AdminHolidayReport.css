@@ -12,9 +12,13 @@
   color: var(--tx);
 }
 
+.holiday-report-card {
+  width: 100%;
+}
+
 .holiday-report-card .houses-list-actions {
   display: grid;
-  grid-template-columns: minmax(100px, 160px) minmax(90px, 140px) minmax(72px, 90px) auto;
+  grid-template-columns: minmax(120px, 240px) minmax(110px, 200px) minmax(70px, 95px) auto;
   gap: 8px;
   align-items: center;
   width: 100%;
@@ -27,12 +31,10 @@
 
 .holiday-report-month-view {
   display: grid;
-  grid-template-columns: 0.68fr 0.32fr;
+  grid-template-columns: 0.7fr 0.3fr;
   gap: 8px;
   align-items: start;
-  max-width: 1100px;
   width: 100%;
-  margin: 0 auto;
 }
 
 .holiday-report-calendar-panel,
@@ -55,6 +57,7 @@
   grid-template-columns: repeat(7, minmax(0, 1fr));
   grid-auto-rows: 2.7rem;
   gap: 2px;
+  width: 100%;
 }
 
 .holiday-calendar-weekday-cell,
