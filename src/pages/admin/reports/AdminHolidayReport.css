@@ -93,6 +93,8 @@
   background: #f4f5f8;
   border: 1px solid #e5e7eb;
   border-radius: 4px;
+  min-height: 25px;
+  height: 25px;
 }
 
 .holiday-calendar-cell {
