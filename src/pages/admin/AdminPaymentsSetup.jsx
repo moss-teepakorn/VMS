@@ -52,6 +52,8 @@ export default function AdminPaymentsSetup() {
     return [...partnerRows].sort((a, b) => String(a.name || '').localeCompare(String(b.name || ''), 'th', { numeric: true, sensitivity: 'base' }))
   }, [partnerRows])
 
+  const partnerGridTemplate = 'minmax(220px, 260px) minmax(140px, 160px) minmax(260px, 1.4fr) minmax(140px, 160px) minmax(240px, 1fr) 120px 180px'
+
   const load = async () => {
     setLoading(true)
     try {
@@ -472,8 +474,8 @@ export default function AdminPaymentsSetup() {
         </div>
         <div className="cb houses-table-card-body houses-main-body" style={{ minHeight: 0 }}>
           <div className="houses-table-wrap houses-main-wrap payments-setup-table-wrap houses-desktop-only" style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden', minHeight: 0, minWidth: 0 }}>
-            <div style={{ overflowX: 'auto', overflowY: 'hidden', minWidth: 0 }}>
-              <div style={{ minWidth: 'max-content', display: 'grid', gridTemplateColumns: '220px 140px 260px 140px 240px 90px 150px', gap: 0, alignItems: 'center', background: '#fafafa', borderBottom: '1px solid rgba(0,0,0,.08)', fontSize: 13, fontWeight: 600, lineHeight: 1.4, color: 'var(--txt-60)', height: 48 }}>
+            <div style={{ overflowX: 'auto', overflowY: 'hidden', minWidth: 0, width: '100%' }}>
+              <div style={{ width: '100%', minWidth: 0, display: 'grid', gridTemplateColumns: partnerGridTemplate, gap: 0, alignItems: 'center', background: '#fafafa', borderBottom: '1px solid rgba(0,0,0,.08)', fontSize: 13, fontWeight: 600, lineHeight: 1.4, color: 'var(--txt-60)', height: 48 }}>
                 <div style={{ padding: '0 12px' }}>ชื่อคู่ค้า</div>
                 <div style={{ padding: '0 12px' }}>เลขที่ผู้เสียภาษี</div>
                 <div style={{ padding: '0 12px' }}>ที่อยู่</div>
@@ -489,7 +491,7 @@ export default function AdminPaymentsSetup() {
               ) : sortedPartnerRows.length === 0 ? (
                 <div style={{ padding: 24, textAlign: 'center', color: 'var(--mu)' }}>ยังไม่มีคู่ค้า</div>
               ) : sortedPartnerRows.map((row) => (
-                <div key={row.id} style={{ minWidth: 'max-content', display: 'grid', gridTemplateColumns: '220px 140px 260px 140px 240px 90px 150px', gap: 0, alignItems: 'center', padding: '10px 0', borderBottom: '1px solid rgba(0,0,0,.08)' }}>
+                <div key={row.id} style={{ width: '100%', minWidth: 0, display: 'grid', gridTemplateColumns: partnerGridTemplate, gap: 0, alignItems: 'center', padding: '14px 0', border: '1px solid #e5e7eb', borderRadius: 10, margin: '0 8px 8px', background: '#fff' }}>
                   <div style={{ padding: '0 12px' }}>
                     <input
                       value={row.name}
