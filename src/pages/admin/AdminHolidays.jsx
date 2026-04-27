@@ -40,6 +40,51 @@ function formatHolidayDateToBE(isoDate) {
   return `${day}/${month}/${yearBE}`
 }
 
+function parseHolidayDateFromBE(value) {
+  const raw = String(value || '').trim()
+  if (!raw) return null
+
+  const isoMatch = raw.match(/^(\d{4})-(\d{2})-(\d{2})$/)
+  if (isoMatch) {
+    const [, year, month, day] = isoMatch
+    return `${year}-${month}-${day}`
+  }
+
+  const parsed = new Date(raw)
+  if (!Number.isNaN(parsed.getTime())) {
+    const year = parsed.getFullYear()
+    const month = twoDigits(parsed.getMonth() + 1)
+    const day = twoDigits(parsed.getDate())
+    return `${year}-${month}-${day}`
+  }
+
+  const parts = raw.includes('/') ? raw.split('/') : raw.split('-')
+  if (parts.length !== 3) return null
+
+  const [part1, part2, part3] = parts.map((item) => String(item).trim())
+  let day
+  let month
+  let year
+
+  if (raw.includes('/')) {
+    day = Number(part1)
+    month = Number(part2)
+    year = Number(part3)
+  } else {
+    year = Number(part1)
+    month = Number(part2)
+    day = Number(part3)
+  }
+
+  if (!Number.isFinite(day) || !Number.isFinite(month) || !Number.isFinite(year)) return null
+  if (year > 2400) year -= 543
+
+  const date = new Date(Date.UTC(year, month - 1, day))
+  if (date.getUTCFullYear() !== year || date.getUTCMonth() !== month - 1 || date.getUTCDate() !== day) return null
+
+  return `${String(year).padStart(4, '0')}-${twoDigits(month)}-${twoDigits(day)}`
+}
+
 function DateInputBE({ value, onChange, disabled = false, className = '' }) {
   const displayText = value ? formatHolidayDateToBE(value) : 'วว/ดด/ปปปป'
   return (
