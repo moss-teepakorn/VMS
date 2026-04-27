@@ -52,8 +52,6 @@ export default function AdminPaymentsSetup() {
     return [...partnerRows].sort((a, b) => String(a.name || '').localeCompare(String(b.name || ''), 'th', { numeric: true, sensitivity: 'base' }))
   }, [partnerRows])
 
-  const partnerGridTemplate = 'minmax(220px, 260px) minmax(140px, 160px) minmax(260px, 1.4fr) minmax(140px, 180px) minmax(240px, 1fr) 160px 220px'
-
   const load = async () => {
     setLoading(true)
     try {
@@ -475,81 +473,108 @@ export default function AdminPaymentsSetup() {
         <div className="cb houses-table-card-body houses-main-body" style={{ minHeight: 0 }}>
           <div className="houses-table-wrap houses-main-wrap payments-setup-table-wrap houses-desktop-only" style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden', minHeight: 0, minWidth: 0 }}>
             <div style={{ overflowX: 'auto', overflowY: 'hidden', minWidth: 0, width: '100%' }}>
-              <div style={{ width: '100%', minWidth: 0, display: 'grid', gridTemplateColumns: partnerGridTemplate, gap: 0, alignItems: 'center', background: '#fafafa', borderBottom: '1px solid rgba(0,0,0,.08)', fontSize: 13, fontWeight: 600, lineHeight: 1.4, color: 'var(--txt-60)', height: 48 }}>
-                <div style={{ padding: '0 12px' }}>ชื่อคู่ค้า</div>
-                <div style={{ padding: '0 12px' }}>เลขที่ผู้เสียภาษี</div>
-                <div style={{ padding: '0 12px' }}>ที่อยู่</div>
-                <div style={{ padding: '0 12px' }}>เบอร์โทร</div>
-                <div style={{ padding: '0 12px' }}>รายละเอียด</div>
-                <div style={{ padding: '0 12px' }}>สถานะ</div>
-                <div style={{ padding: '0 12px' }}>การจัดการ</div>
-              </div>
+              <table className="tw houses-table houses-main-table" style={{ width: '100%', minWidth: 980, tableLayout: 'fixed' }}>
+                <colgroup>
+                  <col style={{ width: '18%' }} />
+                  <col style={{ width: '14%' }} />
+                  <col style={{ width: '24%' }} />
+                  <col style={{ width: '12%' }} />
+                  <col style={{ width: '18%' }} />
+                  <col style={{ width: '8%' }} />
+                  <col style={{ width: '6%' }} />
+                </colgroup>
+                <thead>
+                  <tr style={{ background: '#fafafa' }}>
+                    <th style={{ padding: '0 12px', textAlign: 'left' }}>ชื่อคู่ค้า</th>
+                    <th style={{ padding: '0 12px', textAlign: 'left' }}>เลขที่ผู้เสียภาษี</th>
+                    <th style={{ padding: '0 12px', textAlign: 'left' }}>ที่อยู่</th>
+                    <th style={{ padding: '0 12px', textAlign: 'left' }}>เบอร์โทร</th>
+                    <th style={{ padding: '0 12px', textAlign: 'left' }}>รายละเอียด</th>
+                    <th style={{ padding: '0 12px', textAlign: 'left' }}>สถานะ</th>
+                    <th style={{ padding: '0 12px', textAlign: 'left' }}>การจัดการ</th>
+                  </tr>
+                </thead>
+              </table>
             </div>
             <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', overflowX: 'auto', minWidth: 0, background: '#fff' }}>
-              {loading ? (
-                <div style={{ padding: 24, textAlign: 'center', color: 'var(--mu)' }}>กำลังโหลดข้อมูล...</div>
-              ) : sortedPartnerRows.length === 0 ? (
-                <div style={{ padding: 24, textAlign: 'center', color: 'var(--mu)' }}>ยังไม่มีคู่ค้า</div>
-              ) : sortedPartnerRows.map((row) => (
-                <div key={row.id} style={{ width: '100%', minWidth: 0, display: 'grid', gridTemplateColumns: partnerGridTemplate, gap: 0, alignItems: 'center', padding: '14px 0' }}>
-                  <div style={{ padding: '0 12px' }}>
-                    <input
-                      value={row.name}
-                      onChange={(e) => onUpdatePartnerRow(row.id, 'name', e.target.value)}
-                      placeholder="ชื่อคู่ค้า"
-                      style={{ width: '100%', minWidth: 0, border: '1px solid var(--bd)', borderRadius: 4, padding: '6px 8px' }}
-                    />
-                  </div>
-                  <div style={{ padding: '0 12px' }}>
-                    <input
-                      value={row.tax_id || ''}
-                      onChange={(e) => onUpdatePartnerRow(row.id, 'tax_id', e.target.value)}
-                      placeholder="เลขที่ผู้เสียภาษี"
-                      style={{ width: '100%', minWidth: 0, border: '1px solid var(--bd)', borderRadius: 4, padding: '6px 8px' }}
-                    />
-                  </div>
-                  <div style={{ padding: '0 12px' }}>
-                    <input
-                      value={row.address || ''}
-                      onChange={(e) => onUpdatePartnerRow(row.id, 'address', e.target.value)}
-                      placeholder="ที่อยู่"
-                      style={{ width: '100%', minWidth: 0, border: '1px solid var(--bd)', borderRadius: 4, padding: '6px 8px' }}
-                    />
-                  </div>
-                  <div style={{ padding: '0 12px' }}>
-                    <input
-                      value={row.phone || ''}
-                      onChange={(e) => onUpdatePartnerRow(row.id, 'phone', e.target.value)}
-                      placeholder="เบอร์โทร"
-                      style={{ width: '100%', minWidth: 0, border: '1px solid var(--bd)', borderRadius: 4, padding: '6px 8px' }}
-                    />
-                  </div>
-                  <div style={{ padding: '0 12px' }}>
-                    <input
-                      value={row.note || ''}
-                      onChange={(e) => onUpdatePartnerRow(row.id, 'note', e.target.value)}
-                      placeholder="รายละเอียด"
-                      style={{ width: '100%', minWidth: 0, border: '1px solid var(--bd)', borderRadius: 4, padding: '6px 8px' }}
-                    />
-                  </div>
-                  <div style={{ padding: '0 12px' }}>
-                    <StyledSelect
-                      value={row.is_active ? '1' : '0'}
-                      onChange={(e) => onUpdatePartnerRow(row.id, 'is_active', e.target.value === '1')}
-                    >
-                      <option value="1">ใช้งาน</option>
-                      <option value="0">ปิด</option>
-                    </StyledSelect>
-                  </div>
-                  <div style={{ padding: '0 12px', display: 'flex', justifyContent: 'flex-end', gap: 8, alignItems: 'center' }}>
-                    {String(row.id).startsWith('tmp-') ? (
-                      <button className="btn btn-xs btn-dg" type="button" onClick={() => removePartnerRow(row.id)}>ลบ</button>
-                    ) : (
-                      <button className="btn btn-xs btn-dg" type="button" onClick={() => handleDeletePartner(row.id)}>ลบ</button>
-                    )}
-                  </div>
-                </div>
-              ))}
+              <table className="tw houses-table houses-main-table" style={{ width: '100%', minWidth: 980, tableLayout: 'fixed' }}>
+                <colgroup>
+                  <col style={{ width: '18%' }} />
+                  <col style={{ width: '14%' }} />
+                  <col style={{ width: '24%' }} />
+                  <col style={{ width: '12%' }} />
+                  <col style={{ width: '18%' }} />
+                  <col style={{ width: '8%' }} />
+                  <col style={{ width: '6%' }} />
+                </colgroup>
+                <tbody>
+                  {loading ? (
+                    <tr><td colSpan={7} style={{ textAlign: 'center', color: 'var(--mu)', padding: 24 }}>กำลังโหลดข้อมูล...</td></tr>
+                  ) : sortedPartnerRows.length === 0 ? (
+                    <tr><td colSpan={7} style={{ textAlign: 'center', color: 'var(--mu)', padding: 24 }}>ยังไม่มีคู่ค้า</td></tr>
+                  ) : sortedPartnerRows.map((row) => (
+                    <tr key={row.id}>
+                      <td style={{ padding: '10px 12px' }}>
+                        <input
+                          value={row.name}
+                          onChange={(e) => onUpdatePartnerRow(row.id, 'name', e.target.value)}
+                          placeholder="ชื่อคู่ค้า"
+                          style={{ width: '100%', border: '1px solid rgba(148, 163, 184, 0.35)', borderRadius: 8, padding: '10px 12px', background: '#fff' }}
+                        />
+                      </td>
+                      <td style={{ padding: '10px 12px' }}>
+                        <input
+                          value={row.tax_id || ''}
+                          onChange={(e) => onUpdatePartnerRow(row.id, 'tax_id', e.target.value)}
+                          placeholder="เลขที่ผู้เสียภาษี"
+                          style={{ width: '100%', border: '1px solid rgba(148, 163, 184, 0.35)', borderRadius: 8, padding: '10px 12px', background: '#fff' }}
+                        />
+                      </td>
+                      <td style={{ padding: '10px 12px' }}>
+                        <input
+                          value={row.address || ''}
+                          onChange={(e) => onUpdatePartnerRow(row.id, 'address', e.target.value)}
+                          placeholder="ที่อยู่"
+                          style={{ width: '100%', border: '1px solid rgba(148, 163, 184, 0.35)', borderRadius: 8, padding: '10px 12px', background: '#fff' }}
+                        />
+                      </td>
+                      <td style={{ padding: '10px 12px' }}>
+                        <input
+                          value={row.phone || ''}
+                          onChange={(e) => onUpdatePartnerRow(row.id, 'phone', e.target.value)}
+                          placeholder="เบอร์โทร"
+                          style={{ width: '100%', border: '1px solid rgba(148, 163, 184, 0.35)', borderRadius: 8, padding: '10px 12px', background: '#fff' }}
+                        />
+                      </td>
+                      <td style={{ padding: '10px 12px' }}>
+                        <input
+                          value={row.note || ''}
+                          onChange={(e) => onUpdatePartnerRow(row.id, 'note', e.target.value)}
+                          placeholder="รายละเอียด"
+                          style={{ width: '100%', border: '1px solid rgba(148, 163, 184, 0.35)', borderRadius: 8, padding: '10px 12px', background: '#fff' }}
+                        />
+                      </td>
+                      <td style={{ padding: '10px 12px' }}>
+                        <StyledSelect
+                          value={row.is_active ? '1' : '0'}
+                          onChange={(e) => onUpdatePartnerRow(row.id, 'is_active', e.target.value === '1')}
+                          style={{ width: '100%', borderRadius: 8 }}
+                        >
+                          <option value="1">ใช้งาน</option>
+                          <option value="0">ปิด</option>
+                        </StyledSelect>
+                      </td>
+                      <td style={{ padding: '10px 12px', textAlign: 'right' }}>
+                        {String(row.id).startsWith('tmp-') ? (
+                          <button className="btn btn-xs btn-dg" type="button" onClick={() => removePartnerRow(row.id)}>ลบ</button>
+                        ) : (
+                          <button className="btn btn-xs btn-dg" type="button" onClick={() => handleDeletePartner(row.id)}>ลบ</button>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           </div>
 
