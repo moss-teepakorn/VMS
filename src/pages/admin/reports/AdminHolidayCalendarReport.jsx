@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
-import StyledSelect from '../../components/StyledSelect'
+import StyledSelect from '../../../components/StyledSelect'
 import Swal from 'sweetalert2'
 import { listHolidays } from '../../lib/holidays'
 import './AdminHolidayReport.css'
