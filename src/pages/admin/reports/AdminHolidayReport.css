@@ -76,7 +76,7 @@
 }
 
 .holiday-calendar-grid {
-  grid-auto-rows: 80px;
+  grid-auto-rows: 70px;
 }
 
 .holiday-year-month-grid {
@@ -99,7 +99,7 @@
 
 .holiday-calendar-cell {
   width: 100%;
-  min-height: 80px;
+  min-height: 70px;
   display: flex;
   align-items: center;
   justify-content: center;
