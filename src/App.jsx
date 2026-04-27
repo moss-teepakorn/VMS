@@ -20,6 +20,7 @@ import AdminMarketplace from './pages/admin/AdminMarketplace'
 import AdminRules from './pages/admin/AdminRules'
 import AdminConfig from './pages/admin/AdminConfig'
 import AdminPaymentCycles from './pages/admin/AdminPaymentCycles'
+import AdminHolidays from './pages/admin/AdminHolidays'
 import AdminUsers from './pages/admin/AdminUsers'
 import AdminLogs from './pages/admin/AdminLogs'
 import AdminLoginLogs from './pages/admin/AdminLoginLogs'
@@ -116,6 +117,7 @@ function AppRoutes() {
         <Route path="receive-payments" element={<AdminFeatureReceivePayment />} />
         <Route path="disbursements" element={<AdminFeatureExpensePayment />} />
         <Route path="payments/setup" element={<AdminPaymentsSetup />} />
+        <Route path="config/holidays" element={<AdminHolidays />} />
         <Route path="reports/overdue" element={<AdminReportOverdue />} />
         <Route path="reports/violations-summary" element={<AdminReportViolationsSummary />} />
         <Route path="reports/expense-payments" element={<AdminReportExpensePayments />} />
