@@ -52,7 +52,7 @@ export default function AdminPaymentsSetup() {
     return [...partnerRows].sort((a, b) => String(a.name || '').localeCompare(String(b.name || ''), 'th', { numeric: true, sensitivity: 'base' }))
   }, [partnerRows])
 
-  const partnerGridTemplate = 'minmax(220px, 260px) minmax(140px, 160px) minmax(260px, 1.4fr) minmax(140px, 160px) minmax(240px, 1fr) 120px 180px'
+  const partnerGridTemplate = 'minmax(220px, 260px) minmax(140px, 160px) minmax(260px, 1.4fr) minmax(140px, 180px) minmax(240px, 1fr) 160px 220px'
 
   const load = async () => {
     setLoading(true)
@@ -491,7 +491,7 @@ export default function AdminPaymentsSetup() {
               ) : sortedPartnerRows.length === 0 ? (
                 <div style={{ padding: 24, textAlign: 'center', color: 'var(--mu)' }}>ยังไม่มีคู่ค้า</div>
               ) : sortedPartnerRows.map((row) => (
-                <div key={row.id} style={{ width: '100%', minWidth: 0, display: 'grid', gridTemplateColumns: partnerGridTemplate, gap: 0, alignItems: 'center', padding: '14px 0', border: '1px solid #e5e7eb', borderRadius: 10, margin: '0 8px 8px', background: '#fff' }}>
+                <div key={row.id} style={{ width: '100%', minWidth: 0, display: 'grid', gridTemplateColumns: partnerGridTemplate, gap: 0, alignItems: 'center', padding: '14px 0' }}>
                   <div style={{ padding: '0 12px' }}>
                     <input
                       value={row.name}
@@ -541,7 +541,7 @@ export default function AdminPaymentsSetup() {
                       <option value="0">ปิด</option>
                     </StyledSelect>
                   </div>
-                  <div style={{ padding: '0 12px', display: 'flex', gap: 8, alignItems: 'center' }}>
+                  <div style={{ padding: '0 12px', display: 'flex', justifyContent: 'flex-end', gap: 8, alignItems: 'center' }}>
                     {String(row.id).startsWith('tmp-') ? (
                       <button className="btn btn-xs btn-dg" type="button" onClick={() => removePartnerRow(row.id)}>ลบ</button>
                     ) : (
