@@ -1140,10 +1140,12 @@ export default function AdminFeatureReceivePayment() {
                           </tbody>
                         </table>
                       </div>
-                      <button type="button" className="btn btn-xs btn-o" onClick={addReceiveItemRow}>+ เพิ่มรายการ</button>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap', color: 'var(--mu)', fontSize: 13 }}>
-                        <span>จำนวนรายการ {receiveForm.selectedItems.length} รายการ</span>
-                        <span style={{ fontWeight: 700, color: 'var(--tx)' }}>ยอดรับชำระรวม: ฿{formatMoney(receiveTotal)}</span>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10, flexWrap: 'wrap', marginBottom: 8 }}>
+                        <button type="button" className="btn btn-xs btn-o" onClick={addReceiveItemRow} style={{ padding: '0 10px', minHeight: '2rem', whiteSpace: 'nowrap' }}>+ เพิ่มรายการ</button>
+                        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, flexWrap: 'wrap', color: 'var(--mu)', fontSize: 13, flex: '1 1 auto' }}>
+                          <span>จำนวนรายการ {receiveForm.selectedItems.length} รายการ</span>
+                          <span style={{ fontWeight: 700, color: 'var(--tx)' }}>ยอดรับชำระรวม: ฿{formatMoney(receiveTotal)}</span>
+                        </div>
                       </div>
                     </div>
 
