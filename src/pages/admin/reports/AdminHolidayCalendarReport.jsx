@@ -126,13 +126,13 @@ export default function AdminHolidayCalendarReport() {
       <div className="card">
         <div className="ch houses-list-head houses-main-head">
           <div className="ct">ตัวเลือกการแสดงผล</div>
-          <div className="houses-list-actions" style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
-            <StyledSelect value={reportView} onChange={(e) => setReportView(e.target.value)} style={{ minWidth: 160 }}>
+          <div className="houses-list-actions holiday-report-controls">
+            <StyledSelect value={reportView} onChange={(e) => setReportView(e.target.value)} style={{ minWidth: 120 }}>
               <option value="month">แสดงเป็นเดือน</option>
               <option value="year">แสดงทั้งปี</option>
             </StyledSelect>
             {reportView === 'month' && (
-              <StyledSelect value={String(reportMonth)} onChange={(e) => setReportMonth(Number(e.target.value))} style={{ minWidth: 140 }}>
+              <StyledSelect value={String(reportMonth)} onChange={(e) => setReportMonth(Number(e.target.value))} style={{ minWidth: 100 }}>
                 {MONTH_LABELS.map((label, index) => (
                   <option key={label} value={index + 1}>{label}</option>
                 ))}
