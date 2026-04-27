@@ -25,9 +25,7 @@ const EMPTY_PARTNER_FORM = {
 
 export default function AdminPaymentsSetup() {
   const [rows, setRows] = useState([])
-  const [partnerRows, setPartnerRows] = useState([])
-  const [partnerChanges, setPartnerChanges] = useState(false)
-  const [savingPartners, setSavingPartners] = useState(false)
+  const [partners, setPartners] = useState([])
   const [loading, setLoading] = useState(false)
   const [itemTypeTab, setItemTypeTab] = useState('receive')
 
@@ -48,9 +46,9 @@ export default function AdminPaymentsSetup() {
     return filtered.sort((a, b) => String(a.code || '').localeCompare(String(b.code || ''), 'th', { numeric: true, sensitivity: 'base' }))
   }, [rows, itemTypeTab])
 
-  const sortedPartnerRows = useMemo(() => {
-    return [...partnerRows].sort((a, b) => String(a.name || '').localeCompare(String(b.name || ''), 'th', { numeric: true, sensitivity: 'base' }))
-  }, [partnerRows])
+  const sortedPartners = useMemo(() => {
+    return [...partners].sort((a, b) => String(a.name || '').localeCompare(String(b.name || ''), 'th', { numeric: true, sensitivity: 'base' }))
+  }, [partners])
 
   const load = async () => {
     setLoading(true)
@@ -60,11 +58,7 @@ export default function AdminPaymentsSetup() {
         listPartners(),
       ])
       setRows(data || [])
-      setPartnerRows((partnerData || []).map((partner) => ({
-        ...partner,
-        is_active: !!partner.is_active,
-      })))
-      setPartnerChanges(false)
+      setPartners(partnerData || [])
     } catch (err) {
       Swal.fire({ icon: 'error', title: 'Error', text: err.message })
     }
@@ -167,68 +161,6 @@ export default function AdminPaymentsSetup() {
       is_active: !!row.is_active,
     })
     setShowPartnerModal(true)
-  }
-
-  const onUpdatePartnerRow = (rowId, field, value) => {
-    setPartnerRows((prev) => prev.map((row) => row.id === rowId ? { ...row, [field]: value } : row))
-    setPartnerChanges(true)
-  }
-
-  const addPartnerRow = () => {
-    setPartnerRows((prev) => [
-      ...prev,
-      {
-        id: `tmp-${Date.now()}-${prev.length}`,
-        name: '',
-        tax_id: '',
-        address: '',
-        phone: '',
-        note: '',
-        is_active: true,
-      },
-    ])
-    setPartnerChanges(true)
-  }
-
-  const savePartnerRows = async () => {
-    try {
-      setSavingPartners(true)
-      const toSave = partnerRows.filter((row) => {
-        const isNew = String(row.id).startsWith('tmp-')
-        const hasData = String(row.name || '').trim() || String(row.tax_id || '').trim() || String(row.address || '').trim() || String(row.phone || '').trim() || String(row.note || '').trim()
-        return isNew ? hasData : true
-      })
-
-      for (const row of toSave) {
-        const payload = {
-          name: row.name,
-          tax_id: row.tax_id,
-          address: row.address,
-          phone: row.phone,
-          note: row.note,
-          is_active: !!row.is_active,
-        }
-
-        if (String(row.id).startsWith('tmp-')) {
-          await createPartner(payload)
-        } else {
-          await updatePartner(row.id, payload)
-        }
-      }
-
-      Swal.fire({ icon: 'success', title: 'บันทึกคู่ค้าเรียบร้อย', timer: 1200, showConfirmButton: false })
-      await load()
-    } catch (err) {
-      Swal.fire({ icon: 'error', title: 'ผิดพลาด', text: err.message })
-    } finally {
-      setSavingPartners(false)
-      setPartnerChanges(false)
-    }
-  }
-
-  const removePartnerRow = (rowId) => {
-    setPartnerRows((prev) => prev.filter((row) => row.id !== rowId))
-    setPartnerChanges(true)
   }
 
   const closePartnerModal = () => {
@@ -382,8 +314,6 @@ export default function AdminPaymentsSetup() {
         </div>
       </div>
 
-      {/*
-      Old partner modal-based CRUD preserved for reference:
       <div className="card houses-main-card">
         <div className="ch houses-list-head houses-main-head">
           <div className="ct">คู่ค้าของนิติ (บุคคลภายนอก)</div>
@@ -456,153 +386,6 @@ export default function AdminPaymentsSetup() {
           </div>
         </div>
       </div>
-      */}
-
-      <div className="card houses-main-card">
-        <div className="ch houses-list-head houses-main-head">
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <div className="ct">คู่ค้าของนิติ (บุคคลภายนอก)</div>
-          </div>
-          <div className="houses-list-actions" style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-            <button className="btn btn-a btn-sm" type="button" onClick={addPartnerRow}>+ แถว</button>
-            <button className="btn btn-p btn-sm" type="button" onClick={savePartnerRows} disabled={!partnerChanges || savingPartners}>
-              {savingPartners ? 'กำลังบันทึก...' : 'บันทึก'}
-            </button>
-          </div>
-        </div>
-        <div className="cb houses-table-card-body houses-main-body" style={{ minHeight: 0 }}>
-          <div className="houses-table-wrap houses-main-wrap payments-setup-table-wrap houses-desktop-only" style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden', minHeight: 0, minWidth: 0 }}>
-            <div style={{ overflowX: 'auto', overflowY: 'hidden', minWidth: 0, width: '100%' }}>
-              <table className="tw houses-table houses-main-table" style={{ width: '100%', minWidth: 980, tableLayout: 'fixed' }}>
-                <colgroup>
-                  <col style={{ width: '18%' }} />
-                  <col style={{ width: '14%' }} />
-                  <col style={{ width: '24%' }} />
-                  <col style={{ width: '12%' }} />
-                  <col style={{ width: '18%' }} />
-                  <col style={{ width: '8%' }} />
-                  <col style={{ width: '6%' }} />
-                </colgroup>
-                <thead>
-                  <tr style={{ background: '#fafafa' }}>
-                    <th style={{ padding: '0 12px', textAlign: 'left' }}>ชื่อคู่ค้า</th>
-                    <th style={{ padding: '0 12px', textAlign: 'left' }}>เลขที่ผู้เสียภาษี</th>
-                    <th style={{ padding: '0 12px', textAlign: 'left' }}>ที่อยู่</th>
-                    <th style={{ padding: '0 12px', textAlign: 'left' }}>เบอร์โทร</th>
-                    <th style={{ padding: '0 12px', textAlign: 'left' }}>รายละเอียด</th>
-                    <th style={{ padding: '0 12px', textAlign: 'left' }}>สถานะ</th>
-                    <th style={{ padding: '0 12px', textAlign: 'left' }}>การจัดการ</th>
-                  </tr>
-                </thead>
-              </table>
-            </div>
-            <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', overflowX: 'auto', minWidth: 0, background: '#fff' }}>
-              <table className="tw houses-table houses-main-table" style={{ width: '100%', minWidth: 980, tableLayout: 'fixed' }}>
-                <colgroup>
-                  <col style={{ width: '18%' }} />
-                  <col style={{ width: '14%' }} />
-                  <col style={{ width: '24%' }} />
-                  <col style={{ width: '12%' }} />
-                  <col style={{ width: '18%' }} />
-                  <col style={{ width: '8%' }} />
-                  <col style={{ width: '6%' }} />
-                </colgroup>
-                <tbody>
-                  {loading ? (
-                    <tr><td colSpan={7} style={{ textAlign: 'center', color: 'var(--mu)', padding: 24 }}>กำลังโหลดข้อมูล...</td></tr>
-                  ) : sortedPartnerRows.length === 0 ? (
-                    <tr><td colSpan={7} style={{ textAlign: 'center', color: 'var(--mu)', padding: 24 }}>ยังไม่มีคู่ค้า</td></tr>
-                  ) : sortedPartnerRows.map((row) => (
-                    <tr key={row.id}>
-                      <td style={{ padding: '10px 12px' }}>
-                        <input
-                          value={row.name}
-                          onChange={(e) => onUpdatePartnerRow(row.id, 'name', e.target.value)}
-                          placeholder="ชื่อคู่ค้า"
-                          style={{ width: '100%', border: '1px solid rgba(148, 163, 184, 0.35)', borderRadius: 8, padding: '10px 12px', background: '#fff' }}
-                        />
-                      </td>
-                      <td style={{ padding: '10px 12px' }}>
-                        <input
-                          value={row.tax_id || ''}
-                          onChange={(e) => onUpdatePartnerRow(row.id, 'tax_id', e.target.value)}
-                          placeholder="เลขที่ผู้เสียภาษี"
-                          style={{ width: '100%', border: '1px solid rgba(148, 163, 184, 0.35)', borderRadius: 8, padding: '10px 12px', background: '#fff' }}
-                        />
-                      </td>
-                      <td style={{ padding: '10px 12px' }}>
-                        <input
-                          value={row.address || ''}
-                          onChange={(e) => onUpdatePartnerRow(row.id, 'address', e.target.value)}
-                          placeholder="ที่อยู่"
-                          style={{ width: '100%', border: '1px solid rgba(148, 163, 184, 0.35)', borderRadius: 8, padding: '10px 12px', background: '#fff' }}
-                        />
-                      </td>
-                      <td style={{ padding: '10px 12px' }}>
-                        <input
-                          value={row.phone || ''}
-                          onChange={(e) => onUpdatePartnerRow(row.id, 'phone', e.target.value)}
-                          placeholder="เบอร์โทร"
-                          style={{ width: '100%', border: '1px solid rgba(148, 163, 184, 0.35)', borderRadius: 8, padding: '10px 12px', background: '#fff' }}
-                        />
-                      </td>
-                      <td style={{ padding: '10px 12px' }}>
-                        <input
-                          value={row.note || ''}
-                          onChange={(e) => onUpdatePartnerRow(row.id, 'note', e.target.value)}
-                          placeholder="รายละเอียด"
-                          style={{ width: '100%', border: '1px solid rgba(148, 163, 184, 0.35)', borderRadius: 8, padding: '10px 12px', background: '#fff' }}
-                        />
-                      </td>
-                      <td style={{ padding: '10px 12px' }}>
-                        <StyledSelect
-                          value={row.is_active ? '1' : '0'}
-                          onChange={(e) => onUpdatePartnerRow(row.id, 'is_active', e.target.value === '1')}
-                          style={{ width: '100%', borderRadius: 8 }}
-                        >
-                          <option value="1">ใช้งาน</option>
-                          <option value="0">ปิด</option>
-                        </StyledSelect>
-                      </td>
-                      <td style={{ padding: '10px 12px', textAlign: 'right' }}>
-                        {String(row.id).startsWith('tmp-') ? (
-                          <button className="btn btn-xs btn-dg" type="button" onClick={() => removePartnerRow(row.id)}>ลบ</button>
-                        ) : (
-                          <button className="btn btn-xs btn-dg" type="button" onClick={() => handleDeletePartner(row.id)}>ลบ</button>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-
-          <div className="houses-mobile-only">
-            {loading ? (
-              <div className="mcard-empty">กำลังโหลดข้อมูล...</div>
-            ) : sortedPartnerRows.length === 0 ? (
-              <div className="mcard-empty">ยังไม่มีคู่ค้า</div>
-            ) : sortedPartnerRows.map((row) => (
-              <div key={`m-partner-${row.id}`} className="mcard">
-                <div className="mcard-top">
-                  <div className="mcard-title">{row.name || '-'}</div>
-                  <span className={`bd ${row.is_active ? 'b-ok' : 'b-mu'} mcard-badge`}>{row.is_active ? 'ใช้งาน' : 'ปิด'}</span>
-                </div>
-                <div className="mcard-meta">
-                  <span><span className="mcard-label">เลขที่ผู้เสียภาษี</span> {row.tax_id || '-'}</span>
-                  <span><span className="mcard-label">เบอร์โทร</span> {row.phone || '-'}</span>
-                  <span><span className="mcard-label">ที่อยู่</span> {row.address || '-'}</span>
-                  <span><span className="mcard-label">รายละเอียด</span> {row.note || '-'}</span>
-                </div>
-                <div className="mcard-actions">
-                  <button className="btn btn-dg btn-sm" onClick={() => (String(row.id).startsWith('tmp-') ? removePartnerRow(row.id) : handleDeletePartner(row.id))}>ลบ</button>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
 
       {showItemModal && (
         <div className="house-mo">
@@ -654,10 +437,6 @@ export default function AdminPaymentsSetup() {
         </div>
       )}
 
-      {/*
-      Old partner modal block preserved for reference.
-      {/*
-      Old partner modal form preserved for reference.
       {showPartnerModal && (
         <div className="house-mo">
           <div className="house-md house-md--sm" style={{ height: 'auto', maxHeight: 'min(560px, 88vh)' }}>
@@ -707,7 +486,6 @@ export default function AdminPaymentsSetup() {
           </div>
         </div>
       )}
-      */}
     </div>
   )
 }
