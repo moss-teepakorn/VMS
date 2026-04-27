@@ -32,25 +32,11 @@ FOR EACH ROW EXECUTE PROCEDURE trigger_set_timestamp();
 
 ALTER TABLE IF EXISTS public.holidays ENABLE ROW LEVEL SECURITY;
 
-DROP POLICY IF EXISTS holidays_public_select ON public.holidays;
-CREATE POLICY holidays_public_select ON public.holidays
-  FOR SELECT
-  USING (auth.role() = 'authenticated');
-
-DROP POLICY IF EXISTS holidays_public_insert ON public.holidays;
-CREATE POLICY holidays_public_insert ON public.holidays
-  FOR INSERT
-  WITH CHECK (auth.role() = 'authenticated');
-
-DROP POLICY IF EXISTS holidays_public_update ON public.holidays;
-CREATE POLICY holidays_public_update ON public.holidays
-  FOR UPDATE
-  USING (auth.role() = 'authenticated')
-  WITH CHECK (auth.role() = 'authenticated');
-
-DROP POLICY IF EXISTS holidays_public_delete ON public.holidays;
-CREATE POLICY holidays_public_delete ON public.holidays
-  FOR DELETE
-  USING (auth.role() = 'authenticated');
+DROP POLICY IF EXISTS holidays_public_all ON public.holidays;
+CREATE POLICY holidays_public_all ON public.holidays
+  FOR ALL
+  TO public
+  USING (true)
+  WITH CHECK (true);
 
 COMMIT;
